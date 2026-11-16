@@ -1290,12 +1290,18 @@ constants, the entries, the indices at which the evaluation at literals is ready
 certificate to a truth value. -/
 def thmConvChecksTy : Tree := [tT, tList tT, tList tT, tT, tT].foldr tArrow tT
 
--- the evaluation at literals, its test of readiness, the conversion checker and its test of a
--- theorem are the program's globals of indices 2052, 2097, 2141 and 2142
+/-- The type of the check of a development with certificates: from the constants, the entries
+and the declarations to the optional state. -/
+def checkConvDevTy : Tree := [tT, tList tT, tList tT].foldr tArrow tT
+
+-- the evaluation at literals, its test of readiness, the conversion checker, its test of a
+-- theorem and its check of a development are the program's globals of indices 2052, 2097, 2175,
+-- 2176 and 2199
 kernel_rfl metalogic_g2052 : metalogic.globals[2052]? = some metalogic.g2052
 kernel_rfl metalogic_g2097 : metalogic.globals[2097]? = some metalogic.g2097
-kernel_rfl metalogic_g2141 : metalogic.globals[2141]? = some metalogic.g2141
-kernel_rfl metalogic_g2142 : metalogic.globals[2142]? = some metalogic.g2142
+kernel_rfl metalogic_g2175 : metalogic.globals[2175]? = some metalogic.g2175
+kernel_rfl metalogic_g2176 : metalogic.globals[2176]? = some metalogic.g2176
+kernel_rfl metalogic_g2199 : metalogic.globals[2199]? = some metalogic.g2199
 
 set_option maxRecDepth 100000 in
 /-- The program's global of index 2052 is the mirror's term of a term's value by the evaluation
@@ -1317,24 +1323,34 @@ theorem metalogic_ready :
     metalogic.«Literals.ready_heq»))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 2141 is the mirror's conversion checker, at its type. -/
+/-- The program's global of index 2175 is the mirror's conversion checker, at its type. -/
 theorem metalogic_convCheck :
-    metalogic.globals[2141]? = some (⟨convCheckTy, «Conversion.convCheck»⟩ : Glob) :=
-  metalogic_g2141.trans (congrArg some (glob_ext
-    ((infer_of_loadStep metalogic.step2141).elim fun _ h ↦
+    metalogic.globals[2175]? = some (⟨convCheckTy, «Conversion.convCheck»⟩ : Glob) :=
+  metalogic_g2175.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2175).elim fun _ h ↦
       infer_lams ([tT, tList tT, tT, tList tT, tT].foldr tArrow tT) _
         [tT, tList tT, tList tT, tT, tT] h)
     metalogic.«Conversion.convCheck_heq»))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 2142 is the mirror's test that a certificate of the conversion
+/-- The program's global of index 2176 is the mirror's test that a certificate of the conversion
 checker proves a theorem, at its type. -/
 theorem metalogic_thmConvChecks :
-    metalogic.globals[2142]? = some (⟨thmConvChecksTy, «Conversion.thmConvChecks»⟩ : Glob) :=
-  metalogic_g2142.trans (congrArg some (glob_ext
-    ((infer_of_loadStep metalogic.step2142).elim fun _ h ↦
+    metalogic.globals[2176]? = some (⟨thmConvChecksTy, «Conversion.thmConvChecks»⟩ : Glob) :=
+  metalogic_g2176.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2176).elim fun _ h ↦
       infer_lams tT _ [tT, tList tT, tList tT, tT, tT] h)
     metalogic.«Conversion.thmConvChecks_heq»))
+
+set_option maxRecDepth 100000 in
+/-- The program's global of index 2199 is the mirror's check of a development with certificates
+of the conversion checker, at its type. -/
+theorem metalogic_checkConvDev :
+    metalogic.globals[2199]? = some (⟨checkConvDevTy, «Conversion.checkConvDev»⟩ : Glob) :=
+  metalogic_g2199.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2199).elim fun _ h ↦
+      infer_lams tT _ [tT, tList tT, tList tT] h)
+    metalogic.«Conversion.checkConvDev_heq»))
 
 /-! The checker's functions: the partial Horn checker, the theory, the inference of typings and
 the step of a development. -/

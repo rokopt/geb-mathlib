@@ -4646,18 +4646,24 @@ import-direction rules above are enforced by
   literals (`bootstrap/free-topos/literals.geb`), which represents a
   bitstring by the number it denotes and computes the library's
   arithmetic by the kernel's primitives on labels, the environment machine
-  (`bootstrap/free-topos/machine.geb`), which computes each delayed value
-  where it builds its node, and the checker
-  (`bootstrap/free-topos/conversion.geb`). `Agreement/Literals.lean`
+  (`bootstrap/free-topos/machine.geb`), which applies each level of its
+  recursion to lists of jobs and computes each delayed value where it
+  builds its node, and the checker (`bootstrap/free-topos/conversion.geb`)
+  with its check of a development's declarations. `Agreement/Literals.lean`
   proves the evaluation, its equations and its test of readiness equal to
   `Geb.FreeTopos.Literals.eval`, `Geb.FreeTopos.Literals.lemmas` and
-  `Geb.FreeTopos.Literals.ready`, and `Agreement/Conversion.lean` the
-  checker equal to `Geb.FreeTopos.Internal.convCheck` at every encoded
-  certificate none of whose steps is the reduction by the machine or
-  names a prepared theorem (`conversion_agree`); the agreement of the
-  machine remains. `GebTests/Prototypes/FreeTopos/ConversionMirror.lean`
-  tests the evaluation and the checker's steps of the machine against
-  Lean's at the library's arithmetic, and
+  `Geb.FreeTopos.Literals.ready`; `Agreement/Machine.lean` the machine's
+  reduction equal to `Geb.FreeTopos.Internal.machineReduce` at every
+  depth of recursion (`machineReduce_eq`), a level being the image of a
+  function of its jobs and that function's rounds the step of the
+  machine's operations; and `Agreement/Conversion.lean` the checker equal
+  to `Geb.FreeTopos.Internal.convCheck` at every encoded certificate none
+  of whose steps names a prepared theorem, and its check of a development
+  equal to `Geb.FreeTopos.Internal.checkConvDev` (`conversion_agree`).
+  `GebTests/Prototypes/FreeTopos/ConversionMirror.lean` tests the
+  evaluation, the machine within each depth of recursion, the checker's
+  steps of the machine and the check of a development against Lean's at
+  the library's arithmetic, and
   `GebBench/Prototypes/FreeTopos/MachineMirror.lean` measures the two
   machines' times.
   Depends on the modules of `Geb/Prototypes/FreeTopos/` above and

@@ -1811,17 +1811,6 @@ def «Machine.delayed» :=
       («Theory.l2» («Base.getD» x0 «Machine.failV») x1);
     x2
 
-def «Machine.delay» :=
-  fun (x0 : T → List T → T → T)
-    (x1 : T → T)
-    (x2 : T)
-    (x3 : List T)
-    (x4 : T) =>
-    let x5 : T := «Machine.delayed»
-      («Base.bindO» (x0 x2 x3 x4) x1)
-      («Language.mNode» (leaf 14) («Theory.l2» x2 x4) x3);
-    x5
-
 def «Machine.freeVar» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := (if (Const.lt x1 x0).label ≠ 0 then
@@ -1997,481 +1986,6 @@ def «Machine.varLeaves» :=
       x0;
     x1
 
-def «Machine.evalDefn» :=
-  fun (x0 : T)
-    (x1 : T → T)
-    (x2 : T → List T → T → T)
-    (x3 : List T)
-    (x4 : T)
-    (x5 : T) =>
-    let x6 : T := (let x6 : T := «Language.mD» x4 (leaf 0);
-                   let x7 : List T := Const.children («Language.mD» x4 (leaf 1));
-                   let x8 : T := «Prelude.some»
-                     («Language.mNode»
-                       (leaf 12)
-                       (Const.children (Const.child x4 (leaf 0)))
-                       x3);
-                   let x9 : T := (if (x1 x6).label ≠ 0 then
-                     «Language.bindDL»
-                       («Language/ODefinition.nthOf» («Language.gDefs» x0) x6)
-                       «Language.defLanguage»
-                   else
-                     «Language/OLDefn.nothing»);
-                   if (Const.eq (Const.label x9) (leaf 1)).label ≠ 0 then
-                     let x10 : List T := Const.children x9;
-                     let x11 : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x10
-                       (leaf 0)
-                       (fun (x11 : T) (_ : List T) => x11);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x10
-                       ([] : List T)
-                       (fun (_ : T) (x13 : List T) => x13);
-                     if (Const.eq
-                       («Prelude.length» x3)
-                       («Prelude.length» («Language.ldParams» x11))).label ≠ 0 then
-                       x2
-                         (if («Base.isEmpty» x7).label ≠ 0 then
-                           «Language.ldBody» x11
-                         else
-                           «Language.osubst» x7 («Language.ldBody» x11))
-                         x3
-                         x5
-                     else
-                       x8
-                   else
-                     let _ : List T := Const.children x9; x8);
-    x6
-
-def «Machine.evalStep» :=
-  fun (x0 : T)
-    (x1 : T → T)
-    (x2 : T → List T → T → T)
-    (x3 : T → T)
-    (x4 : T)
-    (x5 : List T)
-    (x6 : T) =>
-    let x7 : T := (let x7 : T := Const.label x4;
-                   let x8 : List T := «Language.mArgs» x4;
-                   if (Const.eq x7 (leaf 0)).label ≠ 0 then
-                     let x9 : T := «Language.mD» x4 (leaf 0);
-                     «Prelude.some»
-                       (if (Const.lt x9 («Prelude.length» x5)).label ≠ 0 then
-                         «Prelude.at» x5 x9
-                       else
-                         «Machine.freeVar» x6 (Const.sub x9 («Prelude.length» x5)))
-                   else
-                     if («Language.mIs» (leaf 1) (leaf 0) x4).label ≠ 0 then
-                       «Prelude.some» («Language.mNode» (leaf 2) ([] : List T) ([] : List T))
-                     else
-                       if («Language.mIs» (leaf 5) (leaf 1) x4).label ≠ 0 then
-                         «Prelude.some»
-                           («Language.mNode»
-                             (leaf 4)
-                             («Theory.l3»
-                               («Language.mD» x4 (leaf 0))
-                               («Language.mArg» x4 (leaf 0))
-                               x6)
-                             x5)
-                       else
-                         if («Prelude.and»
-                           («Prelude.or» (Const.eq x7 (leaf 3)) (Const.eq x7 (leaf 4)))
-                           (Const.eq («Prelude.length» x8) (leaf 1))).label ≠ 0 then
-                           «Base.bindO»
-                             (x2 («Language.mArg» x4 (leaf 0)) x5 x6)
-                             (fun (x9 : T) =>
-                               x3
-                                 («Language.mNode»
-                                   (if (Const.eq x7 (leaf 3)).label ≠ 0 then leaf 7 else leaf 8)
-                                   ([] : List T)
-                                   («Prelude.single» x9)))
-                         else
-                           if («Language.mIs» (leaf 6) (leaf 2) x4).label ≠ 0 then
-                             «Base.bindO»
-                               (x2 («Language.mArg» x4 (leaf 0)) x5 x6)
-                               (fun (x9 : T) =>
-                                 x3
-                                   («Language.mNode»
-                                     (leaf 6)
-                                     ([] : List T)
-                                     («Theory.l2»
-                                       x9
-                                       («Machine.delay»
-                                         x2
-                                         x3
-                                         («Language.mArg» x4 (leaf 1))
-                                         x5
-                                         x6))))
-                           else
-                             if («Prelude.and»
-                               («Prelude.or» (Const.eq x7 (leaf 8)) (Const.eq x7 (leaf 9)))
-                               (Const.eq («Prelude.length» x8) (leaf 3))).label ≠ 0 then
-                               «Base.bindO»
-                                 (x2 («Language.mArg» x4 (leaf 2)) x5 x6)
-                                 (fun (x9 : T) =>
-                                   x3
-                                     («Language.mNode»
-                                       (if (Const.eq x7 (leaf 8)).label ≠ 0 then
-                                         leaf 9
-                                       else
-                                         leaf 10)
-                                       («Theory.l2» («Language.mArg» x4 (leaf 1)) x6)
-                                       ((«Machine.delay»
-                                         x2
-                                         x3
-                                         («Language.mArg» x4 (leaf 0))
-                                         x5
-                                         x6) ::
-                                         (x9 :: x5))))
-                             else
-                               if («Language.mIs» (leaf 10) (leaf 2) x4).label ≠ 0 then
-                                 «Base.bindO»
-                                   (x2 («Language.mArg» x4 (leaf 1)) x5 x6)
-                                   (fun (x9 : T) =>
-                                     x3
-                                       («Language.mNode»
-                                         (leaf 11)
-                                         («Theory.l3»
-                                           («Language.mD» x4 (leaf 0))
-                                           («Language.mArg» x4 (leaf 0))
-                                           x6)
-                                         (x9 :: x5)))
-                               else
-                                 let x9 : List
-                                   T := «Base.mapT»
-                                   (fun (x9 : T) => «Machine.delay» x2 x3 x9 x5 x6)
-                                   x8;
-                                 if (Const.eq x7 (leaf 11)).label ≠ 0 then
-                                   «Machine.evalDefn» x0 x1 x2 x9 x4 x6
-                                 else
-                                   if (Const.eq x7 (leaf 2)).label ≠ 0 then
-                                     «Prelude.some» («Language.mNode» (leaf 3) ([] : List T) x9)
-                                   else
-                                     if (Const.eq x7 (leaf 3)).label ≠ 0 then
-                                       «Prelude.some» («Language.mNode» (leaf 7) ([] : List T) x9)
-                                     else
-                                       if (Const.eq x7 (leaf 4)).label ≠ 0 then
-                                         «Prelude.some» («Language.mNode» (leaf 8) ([] : List T) x9)
-                                       else
-                                         if (Const.eq x7 (leaf 6)).label ≠ 0 then
-                                           «Prelude.some»
-                                             («Language.mNode» (leaf 6) ([] : List T) x9)
-                                         else
-                                           if (Const.eq x7 (leaf 7)).label ≠ 0 then
-                                             «Prelude.some»
-                                               («Language.mNode»
-                                                 (leaf 5)
-                                                 (Const.children (Const.child x4 (leaf 0)))
-                                                 x9)
-                                           else
-                                             if (Const.eq x7 (leaf 12)).label ≠ 0 then
-                                               «Prelude.some»
-                                                 («Language.mNode» (leaf 13) ([] : List T) x9)
-                                             else
-                                               «Prelude.none»);
-    x7
-
-def «Machine.whnfApp» :=
-  fun (x0 : T)
-    (x1 : T → List T → T → T)
-    (x2 : T → T)
-    (x3 : T)
-    (x4 : T) =>
-    let x5 : T := «Base.bindO»
-      (x2 x3)
-      (fun (x5 : T) =>
-        let x6 : T := «Prelude.some»
-          («Language.mNode» (leaf 6) ([] : List T) («Theory.l2» x5 x4));
-        if (Const.eq (Const.label x5) (leaf 4)).label ≠ 0 then
-          «Base.bindO»
-            (x1
-              («Language.mD» x5 (leaf 1))
-              (x4 :: («Language.mArgs» x5))
-              («Language.mD» x5 (leaf 2)))
-            x2
-        else
-          if («Prelude.and»
-            («Language.mIs» (leaf 5) (leaf 1) x5)
-            («Derivation.primIs»
-              x0
-              («Language.mD» x5 (leaf 0))
-              «Derivation.casePrim»)).label ≠ 0 then
-            «Base.bindO»
-              (x2 x4)
-              (fun (x7 : T) =>
-                let x8 : T := «Prelude.some»
-                  («Language.mNode» (leaf 6) ([] : List T) («Theory.l2» x5 x7));
-                if («Prelude.and»
-                  («Language.mIs» (leaf 5) (leaf 1) x7)
-                  («Prelude.or»
-                    («Derivation.primIs»
-                      x0
-                      («Language.mD» x7 (leaf 0))
-                      «Derivation.inlPrim»)
-                    («Derivation.primIs»
-                      x0
-                      («Language.mD» x7 (leaf 0))
-                      «Derivation.inrPrim»))).label ≠ 0 then
-                  «Base.bindO»
-                    (x2 («Language.mArg» x5 (leaf 0)))
-                    (fun (x9 : T) =>
-                      if («Language.mIs» (leaf 3) (leaf 2) x9).label ≠ 0 then
-                        x2
-                          («Language.mNode»
-                            (leaf 6)
-                            ([] : List T)
-                            («Theory.l2»
-                              («Language.mArg»
-                                x9
-                                (if («Derivation.primIs»
-                                  x0
-                                  («Language.mD» x7 (leaf 0))
-                                  «Derivation.inlPrim»).label ≠ 0 then
-                                  leaf 0
-                                else
-                                  leaf 1))
-                              («Language.mArg» x7 (leaf 0))))
-                      else
-                        x8)
-                else
-                  x8)
-          else
-            x6);
-    x5
-
-def «Machine.whnfNat» :=
-  fun (x0 : T) (x1 : T → List T → T → T) (x2 : T → T) (x3 : T) =>
-    let x4 : T := (let x4 : T := «Language.mD» x3 (leaf 0);
-                   let x5 : T := «Language.mD» x3 (leaf 1);
-                   let x6 : T := «Language.mArg» x3 (leaf 0);
-                   let x7 : List T := «Prelude.drop» (leaf 2) («Language.mArgs» x3);
-                   «Base.bindO»
-                     (x2 («Language.mArg» x3 (leaf 1)))
-                     (fun (x8 : T) =>
-                       let x9 : T := «Prelude.some»
-                         («Language.mNode» (leaf 9) («Theory.l2» x4 x5) (x6 :: (x8 :: x7)));
-                       if («Prelude.and»
-                         («Language.mIs» (leaf 5) (leaf 1) x8)
-                         («Base.isEmpty»
-                           (Const.children («Language.mD» x8 (leaf 1))))).label ≠ 0 then
-                         let x10 : T := «Language.mArg» x8 (leaf 0);
-                         if («Derivation.primIs»
-                           x0
-                           («Language.mD» x8 (leaf 0))
-                           «Derivation.zeroPrim»).label ≠ 0 then
-                           «Base.bindO»
-                             (x2 x10)
-                             (fun (x11 : T) =>
-                               if («Language.mIs» (leaf 2) (leaf 0) x11).label ≠ 0 then
-                                 x2 x6
-                               else
-                                 x9)
-                         else
-                           if («Derivation.primIs»
-                             x0
-                             («Language.mD» x8 (leaf 0))
-                             «Derivation.succPrim»).label ≠ 0 then
-                             let x11 : T := «Language.mNode»
-                               (leaf 9)
-                               («Theory.l2» x4 x5)
-                               (x6 :: (x10 :: x7));
-                             «Base.bindO» (x1 x4 ((«Machine.delayed» (x2 x11) x11) :: x7) x5) x2
-                           else
-                             x9
-                       else
-                         x9));
-    x4
-
-def «Machine.whnfList» :=
-  fun (x0 : T) (x1 : T → List T → T → T) (x2 : T → T) (x3 : T) =>
-    let x4 : T := (let x4 : T := «Language.mD» x3 (leaf 0);
-                   let x5 : T := «Language.mD» x3 (leaf 1);
-                   let x6 : T := «Language.mArg» x3 (leaf 0);
-                   let x7 : List T := «Prelude.drop» (leaf 2) («Language.mArgs» x3);
-                   «Base.bindO»
-                     (x2 («Language.mArg» x3 (leaf 1)))
-                     (fun (x8 : T) =>
-                       let x9 : T := «Prelude.some»
-                         («Language.mNode» (leaf 10) («Theory.l2» x4 x5) (x6 :: (x8 :: x7)));
-                       if («Prelude.and»
-                         («Language.mIs» (leaf 5) (leaf 1) x8)
-                         (Const.eq
-                           («Prelude.length» (Const.children («Language.mD» x8 (leaf 1))))
-                           (leaf 1))).label ≠ 0 then
-                         let x10 : T := «Language.mArg» x8 (leaf 0);
-                         if («Derivation.primIs»
-                           x0
-                           («Language.mD» x8 (leaf 0))
-                           «Derivation.nilPrim»).label ≠ 0 then
-                           «Base.bindO»
-                             (x2 x10)
-                             (fun (x11 : T) =>
-                               if («Language.mIs» (leaf 2) (leaf 0) x11).label ≠ 0 then
-                                 x2 x6
-                               else
-                                 x9)
-                         else
-                           if («Derivation.primIs»
-                             x0
-                             («Language.mD» x8 (leaf 0))
-                             «Derivation.consPrim»).label ≠ 0 then
-                             «Base.bindO»
-                               (x2 x10)
-                               (fun (x11 : T) =>
-                                 if («Language.mIs» (leaf 3) (leaf 2) x11).label ≠ 0 then
-                                   let x12 : T := «Language.mNode»
-                                     (leaf 10)
-                                     («Theory.l2» x4 x5)
-                                     (x6 :: ((«Language.mArg» x11 (leaf 1)) :: x7));
-                                   «Base.bindO»
-                                     (x1
-                                       x4
-                                       ((«Machine.delayed» (x2 x12) x12) ::
-                                         ((«Language.mArg» x11 (leaf 0)) :: x7))
-                                       x5)
-                                     x2
-                                 else
-                                   x9)
-                           else
-                             x9
-                       else
-                         x9));
-    x4
-
-def «Machine.whnfRose» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : T)
-    (x3 : T → List T → T → T)
-    (x4 : T → T)
-    (x5 : T) =>
-    let x6 : T := (let x6 : T := «Language.mD» x5 (leaf 0);
-                   let x7 : T := «Language.mD» x5 (leaf 1);
-                   let x8 : T := «Language.mD» x5 (leaf 2);
-                   let x9 : List T := «Prelude.tail» («Language.mArgs» x5);
-                   «Base.bindO»
-                     (x4 («Language.mArg» x5 (leaf 0)))
-                     (fun (x10 : T) =>
-                       let x11 : T := «Prelude.some»
-                         («Language.mNode» (leaf 11) («Theory.l3» x6 x7 x8) (x10 :: x9));
-                       if («Prelude.and»
-                         («Language.mIs» (leaf 5) (leaf 1) x10)
-                         («Prelude.and»
-                           («Prelude.or»
-                             («Derivation.primIs»
-                               x0
-                               («Language.mD» x10 (leaf 0))
-                               «Derivation.nodePrim»)
-                             («Derivation.primIs»
-                               x0
-                               («Language.mD» x10 (leaf 0))
-                               «Derivation.lnodePrim»))
-                           («Prelude.and»
-                             («Derivation.primIs» x0 x1 «Derivation.nilPrim»)
-                             («Derivation.primIs» x0 x2 «Derivation.consPrim»)))).label ≠ 0 then
-                         «Base.bindO»
-                           (x4 («Language.mArg» x10 (leaf 0)))
-                           (fun (x12 : T) =>
-                             if («Language.mIs» (leaf 3) (leaf 2) x12).label ≠ 0 then
-                               let x13 : T := «Language.mNode»
-                                 (leaf 10)
-                                 («Theory.l2»
-                                   («Language.mArr»
-                                     x2
-                                     («Prelude.single» x6)
-                                     («Language.mPair»
-                                       («Language.mRoseRec»
-                                         x6
-                                         («Derivation.weakenStep2» x7)
-                                         («Language.var» (leaf 1)))
-                                       («Language.var» (leaf 0))))
-                                   x8)
-                                 ((«Language.mNode»
-                                   (leaf 5)
-                                   («Theory.l2» x1 (Const.node (leaf 0) («Prelude.single» x6)))
-                                   («Prelude.single»
-                                     («Language.mNode» (leaf 2) ([] : List T) ([] : List T)))) ::
-                                   ((«Language.mArg» x12 (leaf 1)) :: x9));
-                               «Base.bindO»
-                                 (x3
-                                   x7
-                                   ((«Language.mNode»
-                                     (leaf 3)
-                                     ([] : List T)
-                                     («Theory.l2»
-                                       («Language.mArg» x12 (leaf 0))
-                                       («Machine.delayed» (x4 x13) x13))) ::
-                                     x9)
-                                   x8)
-                                 x4
-                             else
-                               x11)
-                       else
-                         x11));
-    x6
-
-def «Machine.whnfStep» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : T)
-    (x3 : T → List T → T → T)
-    (x4 : T → T)
-    (x5 : T) =>
-    let x6 : T := (let x6 : T := Const.label x5;
-                   let x7 : List T := «Language.mArgs» x5;
-                   if («Language.mIs» (leaf 15) (leaf 2) x5).label ≠ 0 then
-                     let x8 : T := «Language.mArg» x5 (leaf 0);
-                     if (Const.eq (Const.label x8) (leaf 16)).label ≠ 0 then
-                       «Prelude.none»
-                     else
-                       «Prelude.some» x8
-                   else
-                     if («Prelude.and»
-                       («Prelude.or» (Const.eq x6 (leaf 7)) (Const.eq x6 (leaf 8)))
-                       (Const.eq («Prelude.length» x7) (leaf 1))).label ≠ 0 then
-                       «Base.bindO»
-                         (x4 («Language.mArg» x5 (leaf 0)))
-                         (fun (x8 : T) =>
-                           if («Language.mIs» (leaf 3) (leaf 2) x8).label ≠ 0 then
-                             x4
-                               («Language.mArg»
-                                 x8
-                                 (if (Const.eq x6 (leaf 7)).label ≠ 0 then leaf 0 else leaf 1))
-                           else
-                             «Prelude.some»
-                               («Language.mNode» x6 ([] : List T) («Prelude.single» x8)))
-                     else
-                       if («Language.mIs» (leaf 6) (leaf 2) x5).label ≠ 0 then
-                         «Machine.whnfApp»
-                           x0
-                           x3
-                           x4
-                           («Language.mArg» x5 (leaf 0))
-                           («Language.mArg» x5 (leaf 1))
-                       else
-                         if («Prelude.and»
-                           (Const.eq x6 (leaf 9))
-                           («Base.not» (Const.lt («Prelude.length» x7) (leaf 2)))).label ≠ 0 then
-                           «Machine.whnfNat» x0 x3 x4 x5
-                         else
-                           if («Prelude.and»
-                             (Const.eq x6 (leaf 10))
-                             («Base.not» (Const.lt («Prelude.length» x7) (leaf 2)))).label ≠ 0 then
-                             «Machine.whnfList» x0 x3 x4 x5
-                           else
-                             if («Prelude.and»
-                               (Const.eq x6 (leaf 11))
-                               («Base.not» («Base.isEmpty» x7))).label ≠ 0 then
-                               «Machine.whnfRose» x0 x1 x2 x3 x4 x5
-                             else
-                               «Prelude.some» x5);
-    x6
-
 def «Machine.marked» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := «Prelude.some»
@@ -2484,224 +1998,1223 @@ def «Machine.nfTerm» :=
 def «Machine.nfMark» :=
   fun (x0 : T) => let x1 : T := Const.child x0 (leaf 1); x1
 
-def «Machine.nfNode» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : T → List T → T → T)
-    (x3 : List T → T → T → T)
-    (x4 : List T)
-    (x5 : T)
-    (x6 : T) =>
-    let x7 : T := (let x7 : T := Const.label x6;
-                   let x8 : List T := «Language.mArgs» x6;
-                   if («Prelude.and»
-                     (Const.eq x7 (leaf 9))
-                     («Base.not» (Const.lt («Prelude.length» x8) (leaf 2)))).label ≠ 0 then
-                     «Base.bindO»
-                       (x3 x4 x5 («Prelude.at» x8 (leaf 0)))
-                       (fun (x9 : T) =>
-                         «Base.bindO»
-                           (x3 x4 x5 («Prelude.at» x8 (leaf 1)))
-                           (fun (x10 : T) =>
-                             «Base.bindO»
-                               («Derivation.typeIn» x0 x1 x4 («Machine.nfTerm» x9))
-                               (fun (x11 : T) =>
-                                 «Base.bindO»
-                                   («Base.bindO»
-                                     (x2
-                                       («Language.mD» x6 (leaf 0))
-                                       ((«Machine.level» x5) :: («Prelude.drop» (leaf 2) x8))
-                                       («Language.mD» x6 (leaf 1)))
-                                     (fun (x12 : T) => x3 (x11 :: x4) (Const.add x5 (leaf 1)) x12))
-                                   (fun (x12 : T) =>
-                                     «Machine.marked»
-                                       («Language.mNatRec»
-                                         («Machine.nfTerm» x9)
-                                         («Machine.nfTerm» x12)
-                                         («Machine.nfTerm» x10))
-                                       («Prelude.or»
-                                         («Machine.nfMark» x9)
-                                         («Machine.nfMark» x10))))))
-                   else
-                     if («Prelude.and»
-                       (Const.eq x7 (leaf 10))
-                       («Base.not» (Const.lt («Prelude.length» x8) (leaf 2)))).label ≠ 0 then
-                       «Base.bindO»
-                         (x3 x4 x5 («Prelude.at» x8 (leaf 0)))
-                         (fun (x9 : T) =>
-                           «Base.bindO»
-                             (x3 x4 x5 («Prelude.at» x8 (leaf 1)))
-                             (fun (x10 : T) =>
-                               «Base.bindO»
-                                 («Derivation.typeIn» x0 x1 x4 («Machine.nfTerm» x9))
-                                 (fun (x11 : T) =>
-                                   «Base.bindO»
-                                     («Base.bindO»
-                                       («Derivation.typeIn» x0 x1 x4 («Machine.nfTerm» x10))
-                                       «Language.listPart»)
-                                     (fun (x12 : T) =>
-                                       «Base.bindO»
-                                         («Base.bindO»
-                                           (x2
-                                             («Language.mD» x6 (leaf 0))
-                                             ((«Machine.level» (Const.add x5 (leaf 1))) ::
-                                               ((«Machine.level» x5) ::
-                                                 («Prelude.drop» (leaf 2) x8)))
-                                             («Language.mD» x6 (leaf 1)))
-                                           (fun (x13 : T) =>
-                                             x3 (x11 :: (x12 :: x4)) (Const.add x5 (leaf 2)) x13))
-                                         (fun (x13 : T) =>
-                                           «Machine.marked»
-                                             («Language.mListRec»
-                                               («Machine.nfTerm» x9)
-                                               («Machine.nfTerm» x13)
-                                               («Machine.nfTerm» x10))
-                                             («Prelude.or»
-                                               («Machine.nfMark» x9)
-                                               («Machine.nfMark» x10)))))))
-                     else
-                       if («Prelude.and»
-                         (Const.eq x7 (leaf 11))
-                         («Base.not» («Base.isEmpty» x8))).label ≠ 0 then
-                         «Base.bindO»
-                           (x3 x4 x5 («Prelude.at» x8 (leaf 0)))
-                           (fun (x9 : T) =>
-                             «Base.bindO»
-                               («Base.bindO»
-                                 («Derivation.typeIn» x0 x1 x4 («Machine.nfTerm» x9))
-                                 «Language.roseLabel»)
-                               (fun (x10 : T) =>
-                                 «Base.bindO»
-                                   («Base.bindO»
-                                     (x2
-                                       («Language.mD» x6 (leaf 1))
-                                       ((«Machine.level» x5) :: («Prelude.tail» x8))
-                                       («Language.mD» x6 (leaf 2)))
-                                     (fun (x11 : T) =>
-                                       x3
-                                         ((«Theory.prod»
-                                           x10
-                                           («Theory.list» («Language.mD» x6 (leaf 0)))) ::
-                                           x4)
-                                         (Const.add x5 (leaf 1))
-                                         x11))
-                                   (fun (x11 : T) =>
-                                     «Machine.marked»
-                                       («Language.mRoseRec»
-                                         («Language.mD» x6 (leaf 0))
-                                         («Machine.nfTerm» x11)
-                                         («Machine.nfTerm» x9))
-                                       («Machine.nfMark» x9))))
-                       else
-                         if (Const.eq x7 (leaf 4)).label ≠ 0 then
-                           «Base.bindO»
-                             («Base.bindO»
-                               (x2
-                                 («Language.mD» x6 (leaf 1))
-                                 ((«Machine.level» x5) :: x8)
-                                 («Language.mD» x6 (leaf 2)))
-                               (fun (x9 : T) =>
-                                 x3 ((«Language.mD» x6 (leaf 0)) :: x4) (Const.add x5 (leaf 1)) x9))
-                             (fun (x9 : T) =>
-                               «Machine.marked»
-                                 («Language.mLam» («Language.mD» x6 (leaf 0)) («Machine.nfTerm» x9))
-                                 («Machine.nfMark» x9))
-                         else
-                           if («Prelude.or»
-                             (Const.lt x7 (leaf 4))
-                             («Prelude.or»
-                               («Prelude.and» (Const.lt (leaf 4) x7) (Const.lt x7 (leaf 9)))
-                               («Prelude.or»
-                                 (Const.eq x7 (leaf 12))
-                                 (Const.eq x7 (leaf 13))))).label ≠ 0 then
-                             let x9 : List T := «Base.mapT» (fun (x9 : T) => x3 x4 x5 x9) x8;
-                             if («Base.allT» «Prelude.isSome» x9).label ≠ 0 then
-                               «Machine.marked»
-                                 («Machine.readStep»
-                                   x5
-                                   x6
-                                   («Base.mapT»
-                                     (fun (x10 : T) => «Machine.nfTerm» («Prelude.get» x10))
-                                     x9))
-                                 («Base.anyT»
-                                   (fun (x10 : T) => «Machine.nfMark» («Prelude.get» x10))
-                                   x9)
-                             else
-                               «Prelude.none»
-                           else
-                             if (Const.eq x7 (leaf 16)).label ≠ 0 then
-                               «Prelude.none»
-                             else
-                               «Machine.marked» («Machine.readBack» x5 x6) (leaf 0));
-    x7
+def «Machine.jobE» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := «Language.mNode» (leaf 0) («Theory.l2» x0 x2) x1; x3
 
-def «Machine.renorm» :=
-  fun (x0 : T → List T → T → T)
-    (x1 : List T → T → T → T)
-    (x2 : List T)
-    (x3 : T)
-    (x4 : T) =>
-    let x5 : T := «Base.bindO»
-      («Base.bindO» (x0 x4 ([] : List T) x3) (fun (x5 : T) => x1 x2 x3 x5))
-      (fun (x5 : T) => «Machine.marked» («Machine.nfTerm» x5) (leaf 1));
+def «Machine.jobW» :=
+  fun (x0 : T) =>
+    let x1 : T := «Language.mNode»
+      (leaf 1)
+      («Prelude.single» x0)
+      ([] : List T);
+    x1
+
+def «Machine.jobN» :=
+  fun (x0 : List T) (x1 : T) (x2 : T) =>
+    let x3 : T := «Language.mNode» (leaf 2) («Theory.l2» x1 x2) x0; x3
+
+def «Machine.msDone» :=
+  fun (x0 : T) =>
+    let x1 : T := «Language.mNode»
+      (leaf 0)
+      («Prelude.single» x0)
+      ([] : List T);
+    x1
+
+def «Machine.msTail» :=
+  fun (x0 : T) =>
+    let x1 : T := «Language.mNode»
+      (leaf 1)
+      ([] : List T)
+      («Prelude.single» x0);
+    x1
+
+def «Machine.msWhnf» :=
+  fun (x0 : T) =>
+    let x1 : T := «Language.mNode»
+      (leaf 2)
+      ([] : List T)
+      («Prelude.single» x0);
+    x1
+
+def «Machine.bindS» :=
+  fun (x0 : T) (x1 : T → T) =>
+    let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then
+      x1 («Prelude.get» x0)
+    else
+      «Machine.msDone» «Prelude.none»);
+    x2
+
+def «Machine.eHasStrict» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := Const.label x0;
+                   let x2 : List T := «Language.mArgs» x0;
+                   «Prelude.or»
+                     («Prelude.and»
+                       («Prelude.or» (Const.eq x1 (leaf 3)) (Const.eq x1 (leaf 4)))
+                       (Const.eq («Prelude.length» x2) (leaf 1)))
+                     («Prelude.or»
+                       («Language.mIs» (leaf 6) (leaf 2) x0)
+                       («Prelude.or»
+                         («Prelude.and»
+                           («Prelude.or» (Const.eq x1 (leaf 8)) (Const.eq x1 (leaf 9)))
+                           (Const.eq («Prelude.length» x2) (leaf 3)))
+                         («Language.mIs» (leaf 10) (leaf 2) x0))));
+    x1
+
+def «Machine.eKids» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := Const.label x0;
+            let x2 : List T := «Language.mArgs» x0;
+            if («Prelude.and»
+              («Prelude.or» (Const.eq x1 (leaf 8)) (Const.eq x1 (leaf 9)))
+              (Const.eq («Prelude.length» x2) (leaf 3))).label ≠ 0 then
+              «Theory.l2» («Prelude.at» x2 (leaf 2)) («Prelude.at» x2 (leaf 0))
+            else
+              if («Language.mIs» (leaf 10) (leaf 2) x0).label ≠ 0 then
+                «Prelude.single» («Prelude.at» x2 (leaf 1))
+              else
+                x2);
+    x1
+
+def «Machine.eDelayed» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (if («Machine.eHasStrict» x0).label ≠ 0 then
+      «Prelude.tail» («Machine.eKids» x0)
+    else
+      «Machine.eKids» x0);
+    x1
+
+def «Machine.eStart» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := «Language.mD» x0 (leaf 0);
+                   let x2 : T := «Language.mD» x0 (leaf 1);
+                   let x3 : List T := «Language.mArgs» x0;
+                   if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
+                     let x4 : T := «Language.mD» x1 (leaf 0);
+                     «Machine.msDone»
+                       («Prelude.some»
+                         (if (Const.lt x4 («Prelude.length» x3)).label ≠ 0 then
+                           «Prelude.at» x3 x4
+                         else
+                           «Machine.freeVar» x2 (Const.sub x4 («Prelude.length» x3))))
+                   else
+                     if («Language.mIs» (leaf 1) (leaf 0) x1).label ≠ 0 then
+                       «Machine.msDone»
+                         («Prelude.some»
+                           («Language.mNode» (leaf 2) ([] : List T) ([] : List T)))
+                     else
+                       if («Language.mIs» (leaf 5) (leaf 1) x1).label ≠ 0 then
+                         «Machine.msDone»
+                           («Prelude.some»
+                             («Language.mNode»
+                               (leaf 4)
+                               («Theory.l3»
+                                 («Language.mD» x1 (leaf 0))
+                                 («Language.mArg» x1 (leaf 0))
+                                 x2)
+                               x3))
+                       else
+                         «Language.mNode»
+                           (leaf 3)
+                           («Prelude.single» x0)
+                           («Base.mapT»
+                             (fun (x4 : T) => «Machine.jobE» x4 x3 x2)
+                             («Machine.eKids» x1)));
+    x1
+
+def «Machine.eArgs» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : T := (let x2 : T := «Machine.eHasStrict» («Language.mD» x0 (leaf 0));
+                   «Language.mNode»
+                     (leaf 4)
+                     («Theory.l2»
+                       x0
+                       (if (x2).label ≠ 0 then «Prelude.at» x1 (leaf 0) else «Prelude.none»))
+                     («Base.mapT»
+                       «Machine.jobW»
+                       (if (x2).label ≠ 0 then «Prelude.tail» x1 else x1)));
+    x2
+
+def «Machine.eDelays» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := (let x2 : List T := «Machine.eDelayed» («Language.mD» x0 (leaf 0));
+            «Base.mapT»
+              (fun (x3 : T) =>
+                «Machine.delayed»
+                  («Prelude.at» x1 x3)
+                  («Language.mNode»
+                    (leaf 14)
+                    («Theory.l2» («Prelude.at» x2 x3) («Language.mD» x0 (leaf 1)))
+                    («Language.mArgs» x0)))
+              («Base.range» («Prelude.length» x2)));
+    x2
+
+def «Machine.evalDefn» :=
+  fun (x0 : T) (x1 : T → T) (x2 : List T) (x3 : T) (x4 : T) =>
+    let x5 : T := (let x5 : T := «Language.mD» x3 (leaf 0);
+                   let x6 : List T := Const.children («Language.mD» x3 (leaf 1));
+                   let x7 : T := «Machine.msDone»
+                     («Prelude.some»
+                       («Language.mNode»
+                         (leaf 12)
+                         (Const.children (Const.child x3 (leaf 0)))
+                         x2));
+                   let x8 : T := (if (x1 x5).label ≠ 0 then
+                     «Language.bindDL»
+                       («Language/ODefinition.nthOf» («Language.gDefs» x0) x5)
+                       «Language.defLanguage»
+                   else
+                     «Language/OLDefn.nothing»);
+                   if (Const.eq (Const.label x8) (leaf 1)).label ≠ 0 then
+                     let x9 : List T := Const.children x8;
+                     let x10 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x9
+                       (leaf 0)
+                       (fun (x10 : T) (_ : List T) => x10);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x9
+                       ([] : List T)
+                       (fun (_ : T) (x12 : List T) => x12);
+                     if (Const.eq
+                       («Prelude.length» x2)
+                       («Prelude.length» («Language.ldParams» x10))).label ≠ 0 then
+                       «Machine.msTail»
+                         («Machine.jobE»
+                           (if («Base.isEmpty» x6).label ≠ 0 then
+                             «Language.ldBody» x10
+                           else
+                             «Language.osubst» x6 («Language.ldBody» x10))
+                           x2
+                           x4)
+                     else
+                       x7
+                   else
+                     let _ : List T := Const.children x8; x7);
     x5
 
-def «Machine.nfStep» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : List T → T → T → T)
-    (x3 : T → List T → T → T)
-    (x4 : T → T)
-    (x5 : List T → T → T → T)
-    (x6 : List T)
-    (x7 : T)
-    (x8 : T) =>
-    let x9 : T := «Base.bindO»
-      (x4 x8)
-      (fun (x9 : T) =>
-        «Base.bindO»
-          («Machine.nfNode» x0 x1 x3 x5 x6 x7 x9)
-          (fun (x10 : T) =>
-            if («Prelude.and»
-              («Machine.nfMark» x10)
-              («Prelude.and»
-                (Const.lt (leaf 5) (Const.label x9))
-                (Const.lt (Const.label x9) (leaf 12)))).label ≠ 0 then
-              «Machine.renorm» x3 x5 x6 x7 («Machine.nfTerm» x10)
-            else
-              let x11 : T := x2 x6 x7 («Machine.nfTerm» x10);
-              if («Prelude.and»
-                («Prelude.isSome» x11)
-                («Machine.varLeaves» («Prelude.get» x11))).label ≠ 0 then
-                «Machine.renorm» x3 x5 x6 x7 («Prelude.get» x11)
-              else
-                «Prelude.some» x10));
-    x9
+def «Machine.eFinal» :=
+  fun (x0 : T) (x1 : T → T) (x2 : T) (x3 : T) (x4 : List T) =>
+    let x5 : T := (let x5 : T := «Language.mD» x2 (leaf 0);
+                   let x6 : T := «Language.mD» x2 (leaf 1);
+                   let x7 : List T := «Language.mArgs» x2;
+                   let x8 : T := Const.label x5;
+                   let x9 : List T := «Language.mArgs» x5;
+                   if («Prelude.and»
+                     («Prelude.or» (Const.eq x8 (leaf 3)) (Const.eq x8 (leaf 4)))
+                     (Const.eq («Prelude.length» x9) (leaf 1))).label ≠ 0 then
+                     «Machine.msTail»
+                       («Machine.jobW»
+                         («Base.mapO»
+                           (fun (x10 : T) =>
+                             «Language.mNode»
+                               (if (Const.eq x8 (leaf 3)).label ≠ 0 then leaf 7 else leaf 8)
+                               ([] : List T)
+                               («Prelude.single» x10))
+                           x3))
+                   else
+                     if («Language.mIs» (leaf 6) (leaf 2) x5).label ≠ 0 then
+                       «Machine.msTail»
+                         («Machine.jobW»
+                           («Base.mapO»
+                             (fun (x10 : T) =>
+                               «Language.mNode»
+                                 (leaf 6)
+                                 ([] : List T)
+                                 («Theory.l2» x10 («Prelude.at» x4 (leaf 0))))
+                             x3))
+                     else
+                       if («Prelude.and»
+                         («Prelude.or» (Const.eq x8 (leaf 8)) (Const.eq x8 (leaf 9)))
+                         (Const.eq («Prelude.length» x9) (leaf 3))).label ≠ 0 then
+                         «Machine.msTail»
+                           («Machine.jobW»
+                             («Base.mapO»
+                               (fun (x10 : T) =>
+                                 «Language.mNode»
+                                   (if (Const.eq x8 (leaf 8)).label ≠ 0 then leaf 9 else leaf 10)
+                                   («Theory.l2» («Language.mArg» x5 (leaf 1)) x6)
+                                   ((«Prelude.at» x4 (leaf 0)) :: (x10 :: x7)))
+                               x3))
+                       else
+                         if («Language.mIs» (leaf 10) (leaf 2) x5).label ≠ 0 then
+                           «Machine.msTail»
+                             («Machine.jobW»
+                               («Base.mapO»
+                                 (fun (x10 : T) =>
+                                   «Language.mNode»
+                                     (leaf 11)
+                                     («Theory.l3»
+                                       («Language.mD» x5 (leaf 0))
+                                       («Language.mArg» x5 (leaf 0))
+                                       x6)
+                                     (x10 :: x7))
+                                 x3))
+                         else
+                           if (Const.eq x8 (leaf 11)).label ≠ 0 then
+                             «Machine.evalDefn» x0 x1 x4 x5 x6
+                           else
+                             if (Const.eq x8 (leaf 2)).label ≠ 0 then
+                               «Machine.msDone»
+                                 («Prelude.some» («Language.mNode» (leaf 3) ([] : List T) x4))
+                             else
+                               if (Const.eq x8 (leaf 3)).label ≠ 0 then
+                                 «Machine.msDone»
+                                   («Prelude.some» («Language.mNode» (leaf 7) ([] : List T) x4))
+                               else
+                                 if (Const.eq x8 (leaf 4)).label ≠ 0 then
+                                   «Machine.msDone»
+                                     («Prelude.some» («Language.mNode» (leaf 8) ([] : List T) x4))
+                                 else
+                                   if (Const.eq x8 (leaf 6)).label ≠ 0 then
+                                     «Machine.msDone»
+                                       («Prelude.some» («Language.mNode» (leaf 6) ([] : List T) x4))
+                                   else
+                                     if (Const.eq x8 (leaf 7)).label ≠ 0 then
+                                       «Machine.msDone»
+                                         («Prelude.some»
+                                           («Language.mNode»
+                                             (leaf 5)
+                                             (Const.children (Const.child x5 (leaf 0)))
+                                             x4))
+                                     else
+                                       if (Const.eq x8 (leaf 12)).label ≠ 0 then
+                                         «Machine.msDone»
+                                           («Prelude.some»
+                                             («Language.mNode» (leaf 13) ([] : List T) x4))
+                                       else
+                                         «Machine.msDone» «Prelude.none»);
+    x5
 
-def «Machine.machStep» :=
+def «Machine.wStart» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := Const.label x0;
+                   let x2 : List T := «Language.mArgs» x0;
+                   if («Language.mIs» (leaf 15) (leaf 2) x0).label ≠ 0 then
+                     let x3 : T := «Language.mArg» x0 (leaf 0);
+                     «Machine.msDone»
+                       (if (Const.eq (Const.label x3) (leaf 16)).label ≠ 0 then
+                         «Prelude.none»
+                       else
+                         «Prelude.some» x3)
+                   else
+                     if («Prelude.or»
+                       («Prelude.and»
+                         («Prelude.or» (Const.eq x1 (leaf 7)) (Const.eq x1 (leaf 8)))
+                         (Const.eq («Prelude.length» x2) (leaf 1)))
+                       («Prelude.or»
+                         («Language.mIs» (leaf 6) (leaf 2) x0)
+                         («Prelude.and»
+                           (Const.eq x1 (leaf 11))
+                           («Base.not» («Base.isEmpty» x2))))).label ≠ 0 then
+                       «Language.mNode»
+                         (leaf 5)
+                         («Prelude.single» x0)
+                         («Prelude.single»
+                           («Machine.jobW» («Prelude.some» («Prelude.at» x2 (leaf 0)))))
+                     else
+                       if («Prelude.and»
+                         («Prelude.or» (Const.eq x1 (leaf 9)) (Const.eq x1 (leaf 10)))
+                         («Base.not» (Const.lt («Prelude.length» x2) (leaf 2)))).label ≠ 0 then
+                         «Language.mNode»
+                           (leaf 5)
+                           («Prelude.single» x0)
+                           («Prelude.single»
+                             («Machine.jobW» («Prelude.some» («Prelude.at» x2 (leaf 1)))))
+                       else
+                         «Machine.msDone» («Prelude.some» x0));
+    x1
+
+def «Machine.wProj» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (if («Language.mIs» (leaf 3) (leaf 2) x1).label ≠ 0 then
+      «Machine.msTail»
+        («Machine.jobW»
+          («Prelude.some»
+            («Language.mArg»
+              x1
+              (if (Const.eq (Const.label x0) (leaf 7)).label ≠ 0 then
+                leaf 0
+              else
+                leaf 1))))
+    else
+      «Machine.msDone»
+        («Prelude.some»
+          («Language.mNode»
+            (Const.label x0)
+            ([] : List T)
+            («Prelude.single» x1))));
+    x2
+
+def «Machine.wApp» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : T := (let x3 : T := «Language.mArg» x1 (leaf 1);
+                   if (Const.eq (Const.label x2) (leaf 4)).label ≠ 0 then
+                     «Machine.msWhnf»
+                       («Machine.jobE»
+                         («Language.mD» x2 (leaf 1))
+                         (x3 :: («Language.mArgs» x2))
+                         («Language.mD» x2 (leaf 2)))
+                   else
+                     if («Prelude.and»
+                       («Language.mIs» (leaf 5) (leaf 1) x2)
+                       («Derivation.primIs»
+                         x0
+                         («Language.mD» x2 (leaf 0))
+                         «Derivation.casePrim»)).label ≠ 0 then
+                       «Language.mNode»
+                         (leaf 6)
+                         («Prelude.single» x2)
+                         («Prelude.single» («Machine.jobW» («Prelude.some» x3)))
+                     else
+                       «Machine.msDone»
+                         («Prelude.some»
+                           («Language.mNode» (leaf 6) ([] : List T) («Theory.l2» x2 x3))));
+    x3
+
+def «Machine.wCase» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : T := (if («Prelude.and»
+      («Language.mIs» (leaf 5) (leaf 1) x2)
+      («Prelude.or»
+        («Derivation.primIs»
+          x0
+          («Language.mD» x2 (leaf 0))
+          «Derivation.inlPrim»)
+        («Derivation.primIs»
+          x0
+          («Language.mD» x2 (leaf 0))
+          «Derivation.inrPrim»))).label ≠ 0 then
+      «Language.mNode»
+        (leaf 7)
+        («Theory.l2» x1 x2)
+        («Prelude.single»
+          («Machine.jobW» («Prelude.some» («Language.mArg» x1 (leaf 0)))))
+    else
+      «Machine.msDone»
+        («Prelude.some»
+          («Language.mNode» (leaf 6) ([] : List T) («Theory.l2» x1 x2))));
+    x3
+
+def «Machine.wCase2» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
+    let x4 : T := (if («Language.mIs» (leaf 3) (leaf 2) x3).label ≠ 0 then
+      «Machine.msTail»
+        («Machine.jobW»
+          («Prelude.some»
+            («Language.mNode»
+              (leaf 6)
+              ([] : List T)
+              («Theory.l2»
+                («Language.mArg»
+                  x3
+                  (if («Derivation.primIs»
+                    x0
+                    («Language.mD» x2 (leaf 0))
+                    «Derivation.inlPrim»).label ≠ 0 then
+                    leaf 0
+                  else
+                    leaf 1))
+                («Language.mArg» x2 (leaf 0))))))
+    else
+      «Machine.msDone»
+        («Prelude.some»
+          («Language.mNode» (leaf 6) ([] : List T) («Theory.l2» x1 x2))));
+    x4
+
+def «Machine.foldStuck» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := «Machine.msDone»
+      («Prelude.some»
+        («Language.mNode»
+          (Const.label x0)
+          (Const.children (Const.child x0 (leaf 0)))
+          ((«Language.mArg» x0 (leaf 0)) ::
+            (x1 :: («Prelude.drop» (leaf 2) («Language.mArgs» x0))))));
+    x2
+
+def «Machine.roseStuck» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := «Machine.msDone»
+      («Prelude.some»
+        («Language.mNode»
+          (leaf 11)
+          (Const.children (Const.child x0 (leaf 0)))
+          (x1 :: («Prelude.tail» («Language.mArgs» x0)))));
+    x2
+
+def «Machine.wRecOf» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : List T) =>
+    let x5 : T := «Language.mNode»
+      (leaf 11)
+      («Theory.l5» x0 x1 x2 x3 (Const.node (leaf 0) x4))
+      («Prelude.single» («Machine.jobW» («Prelude.some» x2)));
+    x5
+
+def «Machine.wRec» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := (let x2 : T := «Machine.delayed» x1 («Prelude.at» x0 (leaf 2));
+                   let x3 : T := «Prelude.at» x0 (leaf 3);
+                   «Machine.msWhnf»
+                     («Machine.jobE»
+                       («Prelude.at» x0 (leaf 0))
+                       ((if («Prelude.isSome» x3).label ≠ 0 then
+                         «Language.mNode»
+                           (leaf 3)
+                           ([] : List T)
+                           («Theory.l2» («Prelude.get» x3) x2)
+                       else
+                         x2) ::
+                         (Const.children («Prelude.at» x0 (leaf 4))))
+                       («Prelude.at» x0 (leaf 1))));
+    x2
+
+def «Machine.wBase» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : T := (if («Language.mIs» (leaf 2) (leaf 0) x2).label ≠ 0 then
+      «Machine.msTail»
+        («Machine.jobW» («Prelude.some» («Language.mArg» x0 (leaf 0))))
+    else
+      «Machine.foldStuck» x0 x1);
+    x3
+
+def «Machine.wNat» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : T := (if («Prelude.and»
+      («Language.mIs» (leaf 5) (leaf 1) x2)
+      («Base.isEmpty»
+        (Const.children («Language.mD» x2 (leaf 1))))).label ≠ 0 then
+      let x3 : T := «Language.mArg» x2 (leaf 0);
+      if («Derivation.primIs»
+        x0
+        («Language.mD» x2 (leaf 0))
+        «Derivation.zeroPrim»).label ≠ 0 then
+        «Language.mNode»
+          (leaf 8)
+          («Theory.l2» x1 x2)
+          («Prelude.single» («Machine.jobW» («Prelude.some» x3)))
+      else
+        if («Derivation.primIs»
+          x0
+          («Language.mD» x2 (leaf 0))
+          «Derivation.succPrim»).label ≠ 0 then
+          «Machine.wRecOf»
+            («Language.mD» x1 (leaf 0))
+            («Language.mD» x1 (leaf 1))
+            («Language.mNode»
+              (leaf 9)
+              (Const.children (Const.child x1 (leaf 0)))
+              ((«Language.mArg» x1 (leaf 0)) ::
+                (x3 :: («Prelude.drop» (leaf 2) («Language.mArgs» x1)))))
+            «Prelude.none»
+            («Prelude.drop» (leaf 2) («Language.mArgs» x1))
+        else
+          «Machine.foldStuck» x1 x2
+    else
+      «Machine.foldStuck» x1 x2);
+    x3
+
+def «Machine.wList» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : T := (if («Prelude.and»
+      («Language.mIs» (leaf 5) (leaf 1) x2)
+      (Const.eq
+        («Prelude.length» (Const.children («Language.mD» x2 (leaf 1))))
+        (leaf 1))).label ≠ 0 then
+      let x3 : T := «Language.mArg» x2 (leaf 0);
+      if («Derivation.primIs»
+        x0
+        («Language.mD» x2 (leaf 0))
+        «Derivation.nilPrim»).label ≠ 0 then
+        «Language.mNode»
+          (leaf 8)
+          («Theory.l2» x1 x2)
+          («Prelude.single» («Machine.jobW» («Prelude.some» x3)))
+      else
+        if («Derivation.primIs»
+          x0
+          («Language.mD» x2 (leaf 0))
+          «Derivation.consPrim»).label ≠ 0 then
+          «Language.mNode»
+            (leaf 9)
+            («Theory.l2» x1 x2)
+            («Prelude.single» («Machine.jobW» («Prelude.some» x3)))
+        else
+          «Machine.foldStuck» x1 x2
+    else
+      «Machine.foldStuck» x1 x2);
+    x3
+
+def «Machine.wCons» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    let x3 : T := (if («Language.mIs» (leaf 3) (leaf 2) x2).label ≠ 0 then
+      let x3 : List T := «Prelude.drop» (leaf 2) («Language.mArgs» x0);
+      «Machine.wRecOf»
+        («Language.mD» x0 (leaf 0))
+        («Language.mD» x0 (leaf 1))
+        («Language.mNode»
+          (leaf 10)
+          (Const.children (Const.child x0 (leaf 0)))
+          ((«Language.mArg» x0 (leaf 0)) ::
+            ((«Language.mArg» x2 (leaf 1)) :: x3)))
+        «Prelude.none»
+        ((«Language.mArg» x2 (leaf 0)) :: x3)
+    else
+      «Machine.foldStuck» x0 x1);
+    x3
+
+def «Machine.wRose» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
+    let x5 : T := (if («Prelude.and»
+      («Language.mIs» (leaf 5) (leaf 1) x4)
+      («Prelude.and»
+        («Prelude.or»
+          («Derivation.primIs»
+            x0
+            («Language.mD» x4 (leaf 0))
+            «Derivation.nodePrim»)
+          («Derivation.primIs»
+            x0
+            («Language.mD» x4 (leaf 0))
+            «Derivation.lnodePrim»))
+        («Prelude.and»
+          («Derivation.primIs» x0 x1 «Derivation.nilPrim»)
+          («Derivation.primIs» x0 x2 «Derivation.consPrim»)))).label ≠ 0 then
+      «Language.mNode»
+        (leaf 10)
+        («Theory.l2» x3 x4)
+        («Prelude.single»
+          («Machine.jobW» («Prelude.some» («Language.mArg» x4 (leaf 0)))))
+    else
+      «Machine.roseStuck» x3 x4);
+    x5
+
+def «Machine.wRose2» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
+    let x5 : T := (if («Language.mIs» (leaf 3) (leaf 2) x4).label ≠ 0 then
+      let x5 : T := «Language.mD» x2 (leaf 0);
+      let x6 : T := «Language.mD» x2 (leaf 1);
+      let x7 : T := «Language.mD» x2 (leaf 2);
+      let x8 : List T := «Prelude.tail» («Language.mArgs» x2);
+      «Machine.wRecOf»
+        x6
+        x7
+        («Language.mNode»
+          (leaf 10)
+          («Theory.l2»
+            («Language.mArr»
+              x1
+              («Prelude.single» x5)
+              («Language.mPair»
+                («Language.mRoseRec»
+                  x5
+                  («Derivation.weakenStep2» x6)
+                  («Language.var» (leaf 1)))
+                («Language.var» (leaf 0))))
+            x7)
+          ((«Language.mNode»
+            (leaf 5)
+            («Theory.l2» x0 (Const.node (leaf 0) («Prelude.single» x5)))
+            («Prelude.single»
+              («Language.mNode» (leaf 2) ([] : List T) ([] : List T)))) ::
+            ((«Language.mArg» x4 (leaf 1)) :: x8)))
+        («Prelude.some» («Language.mArg» x4 (leaf 0)))
+        x8
+    else
+      «Machine.roseStuck» x2 x3);
+    x5
+
+def «Machine.wHead» :=
+  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
+    let x5 : T := (let x5 : T := Const.label x3;
+                   if («Prelude.or»
+                     (Const.eq x5 (leaf 7))
+                     (Const.eq x5 (leaf 8))).label ≠ 0 then
+                     «Machine.wProj» x3 x4
+                   else
+                     if (Const.eq x5 (leaf 6)).label ≠ 0 then
+                       «Machine.wApp» x0 x3 x4
+                     else
+                       if (Const.eq x5 (leaf 9)).label ≠ 0 then
+                         «Machine.wNat» x0 x3 x4
+                       else
+                         if (Const.eq x5 (leaf 10)).label ≠ 0 then
+                           «Machine.wList» x0 x3 x4
+                         else
+                           «Machine.wRose» x0 x1 x2 x3 x4);
+    x5
+
+def «Machine.nRenorm» :=
+  fun (x0 : List T) (x1 : T) (x2 : T) =>
+    let x3 : T := «Language.mNode»
+      (leaf 17)
+      («Theory.l2» (Const.node (leaf 0) x0) x1)
+      («Prelude.single» («Machine.jobE» x2 ([] : List T) x1));
+    x3
+
+def «Machine.nPost» :=
+  fun (x0 : List T → T → T → T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : T)
+    (x4 : T)
+    (x5 : T) =>
+    let x6 : T := (if («Prelude.and»
+      x5
+      («Prelude.and»
+        (Const.lt (leaf 5) (Const.label x3))
+        (Const.lt (Const.label x3) (leaf 12)))).label ≠ 0 then
+      «Machine.nRenorm» x1 x2 x4
+    else
+      let x6 : T := x0 x1 x2 x4;
+      if («Prelude.and»
+        («Prelude.isSome» x6)
+        («Machine.varLeaves» («Prelude.get» x6))).label ≠ 0 then
+        «Machine.nRenorm» x1 x2 («Prelude.get» x6)
+      else
+        «Machine.msDone» («Machine.marked» x4 x5));
+    x6
+
+def «Machine.nNode» :=
+  fun (x0 : List T → T → T → T) (x1 : List T) (x2 : T) (x3 : T) =>
+    let x4 : T := (let x4 : T := Const.label x3;
+                   let x5 : List T := «Language.mArgs» x3;
+                   let x6 : List T := «Theory.l3» (Const.node (leaf 0) x1) x2 x3;
+                   if («Prelude.and»
+                     («Prelude.or» (Const.eq x4 (leaf 9)) (Const.eq x4 (leaf 10)))
+                     («Base.not» (Const.lt («Prelude.length» x5) (leaf 2)))).label ≠ 0 then
+                     «Language.mNode»
+                       (leaf 13)
+                       x6
+                       («Theory.l2»
+                         («Machine.jobN» x1 x2 («Prelude.some» («Prelude.at» x5 (leaf 0))))
+                         («Machine.jobN» x1 x2 («Prelude.some» («Prelude.at» x5 (leaf 1)))))
+                   else
+                     if («Prelude.and»
+                       (Const.eq x4 (leaf 11))
+                       («Base.not» («Base.isEmpty» x5))).label ≠ 0 then
+                       «Language.mNode»
+                         (leaf 13)
+                         x6
+                         («Prelude.single»
+                           («Machine.jobN» x1 x2 («Prelude.some» («Prelude.at» x5 (leaf 0)))))
+                     else
+                       if (Const.eq x4 (leaf 4)).label ≠ 0 then
+                         «Language.mNode»
+                           (leaf 14)
+                           («Theory.l6»
+                             (Const.node (leaf 0) x1)
+                             x2
+                             x3
+                             (Const.node (leaf 0) ((«Language.mD» x3 (leaf 0)) :: x1))
+                             (Const.add x2 (leaf 1))
+                             (Const.node (leaf 0) ([] : List T)))
+                           («Prelude.single»
+                             («Machine.jobE»
+                               («Language.mD» x3 (leaf 1))
+                               ((«Machine.level» x2) :: x5)
+                               («Language.mD» x3 (leaf 2))))
+                       else
+                         if («Prelude.or»
+                           (Const.lt x4 (leaf 4))
+                           («Prelude.or»
+                             («Prelude.and» (Const.lt (leaf 4) x4) (Const.lt x4 (leaf 9)))
+                             («Prelude.or»
+                               (Const.eq x4 (leaf 12))
+                               (Const.eq x4 (leaf 13))))).label ≠ 0 then
+                           «Language.mNode»
+                             (leaf 16)
+                             x6
+                             («Base.mapT»
+                               (fun (x7 : T) => «Machine.jobN» x1 x2 («Prelude.some» x7))
+                               x5)
+                         else
+                           if (Const.eq x4 (leaf 16)).label ≠ 0 then
+                             «Machine.msDone» «Prelude.none»
+                           else
+                             «Machine.nPost» x0 x1 x2 x3 («Machine.readBack» x2 x3) (leaf 0));
+    x4
+
+def «Machine.nFold» :=
+  fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) (x4 : T) (x5 : List T) =>
+    let x6 : T := (let x6 : List T := «Language.mArgs» x4;
+                   if (Const.eq (Const.label x4) (leaf 11)).label ≠ 0 then
+                     «Machine.bindS»
+                       («Prelude.at» x5 (leaf 0))
+                       (fun (x7 : T) =>
+                         «Machine.bindS»
+                           («Base.bindO»
+                             («Derivation.typeIn» x0 x1 x2 («Machine.nfTerm» x7))
+                             «Language.roseLabel»)
+                           (fun (x8 : T) =>
+                             «Language.mNode»
+                               (leaf 14)
+                               («Theory.l6»
+                                 (Const.node (leaf 0) x2)
+                                 x3
+                                 x4
+                                 (Const.node
+                                   (leaf 0)
+                                   ((«Theory.prod»
+                                     x8
+                                     («Theory.list» («Language.mD» x4 (leaf 0)))) ::
+                                     x2))
+                                 (Const.add x3 (leaf 1))
+                                 (Const.node
+                                   (leaf 0)
+                                   («Theory.l2» («Machine.nfTerm» x7) («Machine.nfMark» x7))))
+                               («Prelude.single»
+                                 («Machine.jobE»
+                                   («Language.mD» x4 (leaf 1))
+                                   ((«Machine.level» x3) :: («Prelude.tail» x6))
+                                   («Language.mD» x4 (leaf 2))))))
+                   else
+                     «Machine.bindS»
+                       («Prelude.at» x5 (leaf 0))
+                       (fun (x7 : T) =>
+                         «Machine.bindS»
+                           («Prelude.at» x5 (leaf 1))
+                           (fun (x8 : T) =>
+                             «Machine.bindS»
+                               («Derivation.typeIn» x0 x1 x2 («Machine.nfTerm» x7))
+                               (fun (x9 : T) =>
+                                 let x10 : T := Const.node
+                                   (leaf 0)
+                                   («Theory.l3»
+                                     («Machine.nfTerm» x7)
+                                     («Machine.nfTerm» x8)
+                                     («Prelude.or» («Machine.nfMark» x7) («Machine.nfMark» x8)));
+                                 if (Const.eq (Const.label x4) (leaf 9)).label ≠ 0 then
+                                   «Language.mNode»
+                                     (leaf 14)
+                                     («Theory.l6»
+                                       (Const.node (leaf 0) x2)
+                                       x3
+                                       x4
+                                       (Const.node (leaf 0) (x9 :: x2))
+                                       (Const.add x3 (leaf 1))
+                                       x10)
+                                     («Prelude.single»
+                                       («Machine.jobE»
+                                         («Language.mD» x4 (leaf 0))
+                                         ((«Machine.level» x3) :: («Prelude.drop» (leaf 2) x6))
+                                         («Language.mD» x4 (leaf 1))))
+                                 else
+                                   «Machine.bindS»
+                                     («Base.bindO»
+                                       («Derivation.typeIn» x0 x1 x2 («Machine.nfTerm» x8))
+                                       «Language.listPart»)
+                                     (fun (x11 : T) =>
+                                       «Language.mNode»
+                                         (leaf 14)
+                                         («Theory.l6»
+                                           (Const.node (leaf 0) x2)
+                                           x3
+                                           x4
+                                           (Const.node (leaf 0) (x9 :: (x11 :: x2)))
+                                           (Const.add x3 (leaf 2))
+                                           x10)
+                                         («Prelude.single»
+                                           («Machine.jobE»
+                                             («Language.mD» x4 (leaf 0))
+                                             ((«Machine.level» (Const.add x3 (leaf 1))) ::
+                                               ((«Machine.level» x3) ::
+                                                 («Prelude.drop» (leaf 2) x6)))
+                                             («Language.mD» x4 (leaf 1)))))))));
+    x6
+
+def «Machine.nBody» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := «Language.mNode»
+      (leaf 15)
+      («Theory.l4»
+        («Prelude.at» x0 (leaf 0))
+        («Prelude.at» x0 (leaf 1))
+        («Prelude.at» x0 (leaf 2))
+        («Prelude.at» x0 (leaf 5)))
+      («Prelude.single»
+        («Machine.jobN»
+          (Const.children («Prelude.at» x0 (leaf 3)))
+          («Prelude.at» x0 (leaf 4))
+          x1));
+    x2
+
+def «Machine.nBuildT» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := (let x3 : T := Const.label x0;
+                   if (Const.eq x3 (leaf 9)).label ≠ 0 then
+                     «Language.mNatRec»
+                       («Prelude.at» x1 (leaf 0))
+                       («Machine.nfTerm» x2)
+                       («Prelude.at» x1 (leaf 1))
+                   else
+                     if (Const.eq x3 (leaf 10)).label ≠ 0 then
+                       «Language.mListRec»
+                         («Prelude.at» x1 (leaf 0))
+                         («Machine.nfTerm» x2)
+                         («Prelude.at» x1 (leaf 1))
+                     else
+                       if (Const.eq x3 (leaf 11)).label ≠ 0 then
+                         «Language.mRoseRec»
+                           («Language.mD» x0 (leaf 0))
+                           («Machine.nfTerm» x2)
+                           («Prelude.at» x1 (leaf 0))
+                       else
+                         «Language.mLam» («Language.mD» x0 (leaf 0)) («Machine.nfTerm» x2));
+    x3
+
+def «Machine.nBuildB» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := (let x3 : T := Const.label x0;
+                   if («Prelude.or»
+                     (Const.eq x3 (leaf 9))
+                     (Const.eq x3 (leaf 10))).label ≠ 0 then
+                     «Prelude.at» x1 (leaf 2)
+                   else
+                     if (Const.eq x3 (leaf 11)).label ≠ 0 then
+                       «Prelude.at» x1 (leaf 1)
+                     else
+                       «Machine.nfMark» x2);
+    x3
+
+def «Machine.nDone» :=
+  fun (x0 : List T → T → T → T) (x1 : List T) (x2 : T) =>
+    let x3 : T := (let x3 : T := «Prelude.at» x1 (leaf 2);
+                   let x4 : List T := Const.children («Prelude.at» x1 (leaf 3));
+                   «Machine.nPost»
+                     x0
+                     (Const.children («Prelude.at» x1 (leaf 0)))
+                     («Prelude.at» x1 (leaf 1))
+                     x3
+                     («Machine.nBuildT» x3 x4 x2)
+                     («Machine.nBuildB» x3 x4 x2));
+    x3
+
+def «Machine.nKids» :=
+  fun (x0 : List T → T → T → T)
+    (x1 : List T)
+    (x2 : T)
+    (x3 : T)
+    (x4 : List T) =>
+    let x5 : T := (if («Base.allT» «Prelude.isSome» x4).label ≠ 0 then
+      «Machine.nPost»
+        x0
+        x1
+        x2
+        x3
+        («Machine.readStep»
+          x2
+          x3
+          («Base.mapT»
+            (fun (x5 : T) => «Machine.nfTerm» («Prelude.get» x5))
+            x4))
+        («Base.anyT» (fun (x5 : T) => «Machine.nfMark» («Prelude.get» x5)) x4)
+    else
+      «Machine.msDone» «Prelude.none»);
+    x5
+
+def «Machine.msStart» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := Const.label x0;
+                   if (Const.eq x1 (leaf 0)).label ≠ 0 then
+                     «Machine.eStart» x0
+                   else
+                     if (Const.eq x1 (leaf 1)).label ≠ 0 then
+                       «Machine.bindS» («Language.mD» x0 (leaf 0)) «Machine.wStart»
+                     else
+                       «Language.mNode»
+                         (leaf 12)
+                         («Theory.l2»
+                           (Const.node (leaf 0) («Language.mArgs» x0))
+                           («Language.mD» x0 (leaf 0)))
+                         («Prelude.single» («Machine.jobW» («Language.mD» x0 (leaf 1)))));
+    x1
+
+def «Machine.msResult» :=
+  fun (x0 : T) =>
+    let x1 : T := (if (Const.eq (Const.label x0) (leaf 0)).label ≠ 0 then
+      «Language.mD» x0 (leaf 0)
+    else
+      «Prelude.none»);
+    x1
+
+def «Machine.msAdv» :=
   fun (x0 : T)
     (x1 : T)
     (x2 : T → T)
     (x3 : T)
     (x4 : T)
     (x5 : List T → T → T → T)
-    (x6 : (T → List T → T → T) × ((T → T) × (List T → T → T → T))) =>
-    let x7 : (T → List T → T → T) ×
-      ((T → T) ×
-        (List T →
-          T →
-            T →
-              T)) := (let x7 : T → List T → T → T := (x6).1;
-                      let x8 : T → T := ((x6).2).1;
-                      let x9 : List T → T → T → T := ((x6).2).2;
-                      (fun (x10 : T) (x11 : List T) (x12 : T) =>
-                        «Machine.evalStep» x0 x2 x7 x8 x10 x11 x12,
-                        (fun (x10 : T) => «Machine.whnfStep» x0 x3 x4 x7 x8 x10,
-                          fun (x10 : List T) (x11 : T) (x12 : T) =>
-                            «Machine.nfStep» x0 x1 x5 x7 x8 x9 x10 x11 x12)));
+    (x6 : T)
+    (x7 : List T) =>
+    let x8 : T := (let x8 : T := Const.label x6;
+                   let x9 : T := «Prelude.at» x7 (leaf 0);
+                   if (Const.eq x8 (leaf 0)).label ≠ 0 then
+                     x6
+                   else
+                     if (Const.eq x8 (leaf 1)).label ≠ 0 then
+                       «Machine.msDone» x9
+                     else
+                       if (Const.eq x8 (leaf 2)).label ≠ 0 then
+                         «Machine.msTail» («Machine.jobW» x9)
+                       else
+                         if (Const.eq x8 (leaf 3)).label ≠ 0 then
+                           «Machine.eArgs» («Language.mD» x6 (leaf 0)) x7
+                         else
+                           if (Const.eq x8 (leaf 4)).label ≠ 0 then
+                             «Machine.eFinal»
+                               x0
+                               x2
+                               («Language.mD» x6 (leaf 0))
+                               («Language.mD» x6 (leaf 1))
+                               («Machine.eDelays» («Language.mD» x6 (leaf 0)) x7)
+                           else
+                             if (Const.eq x8 (leaf 5)).label ≠ 0 then
+                               «Machine.bindS»
+                                 x9
+                                 (fun (x10 : T) =>
+                                   «Machine.wHead» x0 x3 x4 («Language.mD» x6 (leaf 0)) x10)
+                             else
+                               if (Const.eq x8 (leaf 6)).label ≠ 0 then
+                                 «Machine.bindS»
+                                   x9
+                                   (fun (x10 : T) =>
+                                     «Machine.wCase» x0 («Language.mD» x6 (leaf 0)) x10)
+                               else
+                                 if (Const.eq x8 (leaf 7)).label ≠ 0 then
+                                   «Machine.bindS»
+                                     x9
+                                     (fun (x10 : T) =>
+                                       «Machine.wCase2»
+                                         x0
+                                         («Language.mD» x6 (leaf 0))
+                                         («Language.mD» x6 (leaf 1))
+                                         x10)
+                                 else
+                                   if (Const.eq x8 (leaf 8)).label ≠ 0 then
+                                     «Machine.bindS»
+                                       x9
+                                       (fun (x10 : T) =>
+                                         «Machine.wBase»
+                                           («Language.mD» x6 (leaf 0))
+                                           («Language.mD» x6 (leaf 1))
+                                           x10)
+                                   else
+                                     if (Const.eq x8 (leaf 9)).label ≠ 0 then
+                                       «Machine.bindS»
+                                         x9
+                                         (fun (x10 : T) =>
+                                           «Machine.wCons»
+                                             («Language.mD» x6 (leaf 0))
+                                             («Language.mD» x6 (leaf 1))
+                                             x10)
+                                     else
+                                       if (Const.eq x8 (leaf 10)).label ≠ 0 then
+                                         «Machine.bindS»
+                                           x9
+                                           (fun (x10 : T) =>
+                                             «Machine.wRose2»
+                                               x3
+                                               x4
+                                               («Language.mD» x6 (leaf 0))
+                                               («Language.mD» x6 (leaf 1))
+                                               x10)
+                                       else
+                                         if (Const.eq x8 (leaf 11)).label ≠ 0 then
+                                           «Machine.wRec»
+                                             (Const.children (Const.child x6 (leaf 0)))
+                                             x9
+                                         else
+                                           if (Const.eq x8 (leaf 12)).label ≠ 0 then
+                                             «Machine.bindS»
+                                               x9
+                                               (fun (x10 : T) =>
+                                                 «Machine.nNode»
+                                                   x5
+                                                   (Const.children («Language.mD» x6 (leaf 0)))
+                                                   («Language.mD» x6 (leaf 1))
+                                                   x10)
+                                           else
+                                             if (Const.eq x8 (leaf 13)).label ≠ 0 then
+                                               «Machine.nFold»
+                                                 x0
+                                                 x1
+                                                 (Const.children («Language.mD» x6 (leaf 0)))
+                                                 («Language.mD» x6 (leaf 1))
+                                                 («Language.mD» x6 (leaf 2))
+                                                 x7
+                                             else
+                                               if (Const.eq x8 (leaf 14)).label ≠ 0 then
+                                                 «Machine.nBody»
+                                                   (Const.children (Const.child x6 (leaf 0)))
+                                                   x9
+                                               else
+                                                 if (Const.eq x8 (leaf 15)).label ≠ 0 then
+                                                   «Machine.bindS»
+                                                     x9
+                                                     (fun (x10 : T) =>
+                                                       «Machine.nDone»
+                                                         x5
+                                                         (Const.children (Const.child x6 (leaf 0)))
+                                                         x10)
+                                                 else
+                                                   if (Const.eq x8 (leaf 16)).label ≠ 0 then
+                                                     «Machine.nKids»
+                                                       x5
+                                                       (Const.children («Language.mD» x6 (leaf 0)))
+                                                       («Language.mD» x6 (leaf 1))
+                                                       («Language.mD» x6 (leaf 2))
+                                                       x7
+                                                   else
+                                                     if (Const.eq x8 (leaf 17)).label ≠ 0 then
+                                                       «Language.mNode»
+                                                         (leaf 18)
+                                                         ([] : List T)
+                                                         («Prelude.single»
+                                                           («Machine.jobN»
+                                                             (Const.children
+                                                               («Language.mD» x6 (leaf 0)))
+                                                             («Language.mD» x6 (leaf 1))
+                                                             x9))
+                                                     else
+                                                       «Machine.msDone»
+                                                         («Base.bindO»
+                                                           x9
+                                                           (fun (x10 : T) =>
+                                                             «Machine.marked»
+                                                               («Machine.nfTerm» x10)
+                                                               (leaf 1))));
+    x8
+
+def «Machine.splitRs» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := List T → List T × List T)
+      (fun (_ : T) (x3 : List T → List T × List T) (x4 : List T) =>
+        Const.lcase
+          (α := T)
+          (β := List T × List T)
+          x4
+          (([] : List T), ([] : List T))
+          (fun (x5 : T) (x6 : List T) =>
+            let x7 : List T × List T := x3 x6; ((x5 :: (x7).1), (x7).2)))
+      (fun (x2 : List T) => (([] : List T), x2))
+      x0
+      x1;
+    x2
+
+def «Machine.msRound» :=
+  fun (x0 : T)
+    (x1 : T)
+    (x2 : T → T)
+    (x3 : T)
+    (x4 : T)
+    (x5 : List T → T → T → T)
+    (x6 : List T → List T)
+    (x7 : List T) =>
+    let x8 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x8 : T) (x9 : List T → List T) (x10 : List T) =>
+        let x11 : List T ×
+          List T := «Machine.splitRs» («Language.mArgs» x8) x10;
+        ((«Machine.msAdv» x0 x1 x2 x3 x4 x5 x8 (x11).1) :: (x9 (x11).2)))
+      (fun (_ : List T) => ([] : List T))
+      x7
+      (x6
+        (Const.foldr
+          (α := T)
+          (β := List T)
+          (fun (x8 : T) (x9 : List T) =>
+            «Prelude.append» («Language.mArgs» x8) x9)
+          ([] : List T)
+          x7));
+    x8
+
+def «Machine.machStepB» :=
+  fun (x0 : T)
+    (x1 : T)
+    (x2 : T → T)
+    (x3 : T)
+    (x4 : T)
+    (x5 : List T → T → T → T)
+    (x6 : List T → List T) =>
+    let x7 : List T →
+      List
+        T := (fun (x7 : List T) =>
+      Const.lcase
+        (α := T)
+        (β := List T)
+        x7
+        ([] : List T)
+        (fun (_ : T) (_ : List T) =>
+          «Base.mapT»
+            «Machine.msResult»
+            («Machine.msRound»
+              x0
+              x1
+              x2
+              x3
+              x4
+              x5
+              x6
+              («Machine.msRound»
+                x0
+                x1
+                x2
+                x3
+                x4
+                x5
+                x6
+                («Machine.msRound»
+                  x0
+                  x1
+                  x2
+                  x3
+                  x4
+                  x5
+                  x6
+                  («Machine.msRound»
+                    x0
+                    x1
+                    x2
+                    x3
+                    x4
+                    x5
+                    x6
+                    («Machine.msRound»
+                      x0
+                      x1
+                      x2
+                      x3
+                      x4
+                      x5
+                      x6
+                      («Machine.msRound»
+                        x0
+                        x1
+                        x2
+                        x3
+                        x4
+                        x5
+                        x6
+                        («Base.mapT» «Machine.msStart» x7)))))))));
     x7
 
-def «Machine.machine» :=
+def «Machine.machB» :=
   fun (x0 : T)
     (x1 : T)
     (x2 : T → T)
@@ -2709,17 +3222,12 @@ def «Machine.machine» :=
     (x4 : T)
     (x5 : List T → T → T → T)
     (x6 : T) =>
-    let x7 : (T → List T → T → T) ×
-      ((T → T) ×
-        (List T →
-          T →
-            T →
-              T)) := Const.iter
-      (α := (T → List T → T → T) × ((T → T) × (List T → T → T → T)))
-      («Machine.machStep» x0 x1 x2 x3 x4 x5)
-      (fun (_ : T) (_ : List T) (_ : T) => «Prelude.none»,
-        (fun (_ : T) => «Prelude.none»,
-          fun (_ : List T) (_ : T) (_ : T) => «Prelude.none»))
+    let x7 : List T →
+      List
+        T := Const.iter
+      (α := List T → List T)
+      («Machine.machStepB» x0 x1 x2 x3 x4 x5)
+      (fun (x7 : List T) => «Base.mapT» (fun (_ : T) => «Prelude.none») x7)
       x6;
     x7
 
@@ -2733,13 +3241,18 @@ def «Machine.machineReduce» :=
     (x6 : T)
     (x7 : List T)
     (x8 : T) =>
-    let x9 : T := (let x9 : (T → List T → T → T) ×
-                     ((T → T) ×
-                       (List T → T → T → T)) := «Machine.machine» x0 x1 x2 x3 x4 x5 x6;
+    let x9 : T := (let x9 : List T → List T := «Machine.machB» x0 x1 x2 x3 x4 x5 x6;
                    «Base.bindO»
-                     («Base.bindO»
-                       ((x9).1 x8 ([] : List T) (leaf 0))
-                       (fun (x10 : T) => ((x9).2).2 x7 (leaf 0) x10))
+                     («Prelude.at»
+                       (x9
+                         («Prelude.single»
+                           («Machine.jobN»
+                             x7
+                             (leaf 0)
+                             («Prelude.at»
+                               (x9 («Prelude.single» («Machine.jobE» x8 ([] : List T) (leaf 0))))
+                               (leaf 0)))))
+                       (leaf 0))
                      (fun (x10 : T) => «Prelude.some» («Machine.nfTerm» x10)));
     x9
 
@@ -3234,6 +3747,497 @@ def «Conversion.thmConvChecks» :=
                    else
                      leaf 0);
     x5
+
+def «Conversion.indices» :=
+  fun (x0 : List T) => Const.node (leaf 0) x0
+
+def «Conversion.convState» :=
+  fun (x0 : T) (x1 : T) (x2 : T) =>
+    Const.node (leaf 0) (x0 :: (x1 :: (x2 :: ([] : List T))))
+
+def «Conversion/OConvState.nothing» :=
+  Const.node (leaf 0) ([] : List T)
+
+def «Conversion/OConvState.just» :=
+  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+
+def «Conversion/OConvState.isJust» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                     let x2 : List T := Const.children x1;
+                     let _ : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x2
+                       (leaf 0)
+                       (fun (x3 : T) (_ : List T) => x3);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x2
+                       ([] : List T)
+                       (fun (_ : T) (x5 : List T) => x5);
+                     leaf 1
+                   else
+                     let _ : List T := Const.children x1; leaf 0);
+    x1
+
+def «Conversion/OConvState.fromMaybe» :=
+  fun (x0 : T) (x1 : T) =>
+    let x2 : T := (let x2 : T := x1;
+                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+                     let x3 : List T := Const.children x2;
+                     let x4 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x3
+                       (leaf 0)
+                       (fun (x4 : T) (_ : List T) => x4);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x3
+                       ([] : List T)
+                       (fun (_ : T) (x6 : List T) => x6);
+                     x4
+                   else
+                     let _ : List T := Const.children x2; x0);
+    x2
+
+def «Conversion/OConvState.nthOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := Const.lcase
+      (α := T)
+      (β := T)
+      (Const.iter
+        (α := List T)
+        (fun (x2 : List T) =>
+          Const.lcase
+            (α := T)
+            (β := List T)
+            x2
+            ([] : List T)
+            (fun (_ : T) (x4 : List T) => x4))
+        x0
+        x1)
+      «Conversion/OConvState.nothing»
+      (fun (x2 : T) (_ : List T) => «Conversion/OConvState.just» x2);
+    x2
+
+def «Conversion/OConvState.allJust» :=
+  fun (x0 : List T) =>
+    let x1 : T ×
+      List
+        T := Const.foldr
+      (α := T)
+      (β := T × List T)
+      (fun (x1 : T) (x2 : T × List T) =>
+        let x3 : T := x1;
+        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
+          let x4 : List T := Const.children x3;
+          let x5 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x4
+            (leaf 0)
+            (fun (x5 : T) (_ : List T) => x5);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x4
+            ([] : List T)
+            (fun (_ : T) (x7 : List T) => x7);
+          ((x2).1, (x5 :: (x2).2))
+        else
+          let _ : List T := Const.children x3; (leaf 0, (x2).2))
+      (leaf 1, ([] : List T))
+      x0;
+    x1
+
+def «Conversion.csConsts» :=
+  fun (x0 : T) =>
+    let x1 : T := (let x1 : T := x0;
+                   let x2 : List T := Const.children x1;
+                   let x3 : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x2
+                     (leaf 0)
+                     (fun (x3 : T) (_ : List T) => x3);
+                   let x4 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x2
+                     ([] : List T)
+                     (fun (_ : T) (x5 : List T) => x5);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x4
+                     (leaf 0)
+                     (fun (x5 : T) (_ : List T) => x5);
+                   let x6 : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x4
+                     ([] : List T)
+                     (fun (_ : T) (x7 : List T) => x7);
+                   let _ : T := Const.lcase
+                     (α := T)
+                     (β := T)
+                     x6
+                     (leaf 0)
+                     (fun (x7 : T) (_ : List T) => x7);
+                   let _ : List
+                     T := Const.lcase
+                     (α := T)
+                     (β := List T)
+                     x6
+                     ([] : List T)
+                     (fun (_ : T) (x9 : List T) => x9);
+                   x3);
+    x1
+
+def «Conversion.csEntries» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let x5 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let x9 : T := x5;
+            let x10 : List T := Const.children x9; let x11 : List T := x10; x11);
+    x1
+
+def «Conversion.csIndices» :=
+  fun (x0 : T) =>
+    let x1 : List
+      T := (let x1 : T := x0;
+            let x2 : List T := Const.children x1;
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x2
+              (leaf 0)
+              (fun (x3 : T) (_ : List T) => x3);
+            let x4 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x2
+              ([] : List T)
+              (fun (_ : T) (x5 : List T) => x5);
+            let _ : T := Const.lcase
+              (α := T)
+              (β := T)
+              x4
+              (leaf 0)
+              (fun (x5 : T) (_ : List T) => x5);
+            let x6 : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x4
+              ([] : List T)
+              (fun (_ : T) (x7 : List T) => x7);
+            let x7 : T := Const.lcase
+              (α := T)
+              (β := T)
+              x6
+              (leaf 0)
+              (fun (x7 : T) (_ : List T) => x7);
+            let _ : List
+              T := Const.lcase
+              (α := T)
+              (β := List T)
+              x6
+              ([] : List T)
+              (fun (_ : T) (x9 : List T) => x9);
+            let x9 : T := x7;
+            let x10 : List T := Const.children x9; let x11 : List T := x10; x11);
+    x1
+
+def «Conversion.cdBase» :=
+  fun (x0 : T) => Const.node (leaf 0) (x0 :: ([] : List T))
+
+def «Conversion.cdConv» :=
+  fun (x0 : T) (x1 : T) =>
+    Const.node (leaf 1) (x0 :: (x1 :: ([] : List T)))
+
+def «Conversion.cdReady» :=
+  fun (x0 : T) => Const.node (leaf 2) (x0 :: ([] : List T))
+
+def «Conversion.convDeclStep» :=
+  fun (x0 : T) (x1 : List T) (x2 : List T) (x3 : T) =>
+    let x4 : T := (let x4 : T := x3;
+                   if (Const.eq (Const.label x4) (leaf 0)).label ≠ 0 then
+                     let x5 : List T := Const.children x4;
+                     let x6 : T := Const.lcase
+                       (α := T)
+                       (β := T)
+                       x5
+                       (leaf 0)
+                       (fun (x6 : T) (_ : List T) => x6);
+                     let _ : List
+                       T := Const.lcase
+                       (α := T)
+                       (β := List T)
+                       x5
+                       ([] : List T)
+                       (fun (_ : T) (x8 : List T) => x8);
+                     let x8 : T := «Derivation.declStep» x0 x1 x6;
+                     if (Const.eq (Const.label x8) (leaf 1)).label ≠ 0 then
+                       let x9 : List T := Const.children x8;
+                       let x10 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x9
+                         (leaf 0)
+                         (fun (x10 : T) (_ : List T) => x10);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x9
+                         ([] : List T)
+                         (fun (_ : T) (x12 : List T) => x12);
+                       let x12 : T := x10;
+                       let x13 : List T := Const.children x12;
+                       let x14 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x13
+                         (leaf 0)
+                         (fun (x14 : T) (_ : List T) => x14);
+                       let x15 : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x13
+                         ([] : List T)
+                         (fun (_ : T) (x16 : List T) => x16);
+                       let x16 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x15
+                         (leaf 0)
+                         (fun (x16 : T) (_ : List T) => x16);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x15
+                         ([] : List T)
+                         (fun (_ : T) (x18 : List T) => x18);
+                       «Conversion/OConvState.just»
+                         («Conversion.convState» x14 x16 («Conversion.indices» x2))
+                     else
+                       let _ : List T := Const.children x8; «Conversion/OConvState.nothing»
+                   else
+                     if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
+                       let x5 : List T := Const.children x4;
+                       let x6 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x5
+                         (leaf 0)
+                         (fun (x6 : T) (_ : List T) => x6);
+                       let x7 : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x5
+                         ([] : List T)
+                         (fun (_ : T) (x8 : List T) => x8);
+                       let x8 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x7
+                         (leaf 0)
+                         (fun (x8 : T) (_ : List T) => x8);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x7
+                         ([] : List T)
+                         (fun (_ : T) (x10 : List T) => x10);
+                       if («Conversion.thmConvChecks» x0 x1 x2 x6 x8).label ≠ 0 then
+                         «Conversion/OConvState.just»
+                           («Conversion.convState»
+                             x0
+                             («Derivation.entries»
+                               («Derivation.push» x1 («Derivation.entLang» x6)))
+                             («Conversion.indices» x2))
+                       else
+                         «Conversion/OConvState.nothing»
+                     else
+                       let x5 : List T := Const.children x4;
+                       let x6 : T := Const.lcase
+                         (α := T)
+                         (β := T)
+                         x5
+                         (leaf 0)
+                         (fun (x6 : T) (_ : List T) => x6);
+                       let _ : List
+                         T := Const.lcase
+                         (α := T)
+                         (β := List T)
+                         x5
+                         ([] : List T)
+                         (fun (_ : T) (x8 : List T) => x8);
+                       if («Literals.ready» x0 x1 x6).label ≠ 0 then
+                         «Conversion/OConvState.just»
+                           («Conversion.convState»
+                             x0
+                             («Derivation.entries» x1)
+                             («Conversion.indices» (x6 :: x2)))
+                       else
+                         «Conversion/OConvState.nothing»);
+    x4
+
+def «Conversion/ConvDecls.single» :=
+  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+
+def «Conversion/ConvDecls.length» :=
+  fun (x0 : List T) =>
+    let x1 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
+      (leaf 0)
+      x0;
+    x1
+
+def «Conversion/ConvDecls.append» :=
+  fun (x0 : List T) (x1 : List T) =>
+    let x2 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T)
+      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «Conversion/ConvDecls.reverse» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.foldr
+      (α := T)
+      (β := List T → List T)
+      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
+      (fun (x1 : List T) => x1)
+      x0
+      ([] : List T);
+    x1
+
+def «Conversion/ConvDecls.tail» :=
+  fun (x0 : List T) =>
+    let x1 : List
+      T := Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2);
+    x1
+
+def «Conversion/ConvDecls.drop» :=
+  fun (x0 : T) (x1 : List T) =>
+    let x2 : List
+      T := Const.iter (α := List T) «Conversion/ConvDecls.tail» x1 x0;
+    x2
+
+def «Conversion/ConvDecls.atOr» :=
+  fun (x0 : T) (x1 : List T) (x2 : T) =>
+    let x3 : T := Const.lcase
+      (α := T)
+      (β := T)
+      («Conversion/ConvDecls.drop» x2 x1)
+      x0
+      (fun (x3 : T) (_ : List T) => x3);
+    x3
+
+def «Conversion.checkConvDev» :=
+  fun (x0 : T) (x1 : List T) (x2 : List T) =>
+    let x3 : T := Const.foldr
+      (α := T)
+      (β := T)
+      (fun (x3 : T) (x4 : T) =>
+        let x5 : T := x4;
+        if (Const.eq (Const.label x5) (leaf 1)).label ≠ 0 then
+          let x6 : List T := Const.children x5;
+          let x7 : T := Const.lcase
+            (α := T)
+            (β := T)
+            x6
+            (leaf 0)
+            (fun (x7 : T) (_ : List T) => x7);
+          let _ : List
+            T := Const.lcase
+            (α := T)
+            (β := List T)
+            x6
+            ([] : List T)
+            (fun (_ : T) (x9 : List T) => x9);
+          «Conversion.convDeclStep»
+            («Conversion.csConsts» x7)
+            («Conversion.csEntries» x7)
+            («Conversion.csIndices» x7)
+            x3
+        else
+          let _ : List T := Const.children x5; «Conversion/OConvState.nothing»)
+      («Conversion/OConvState.just»
+        («Conversion.convState»
+          x0
+          («Derivation.entries» x1)
+          («Conversion.indices» ([] : List T))))
+      («Conversion/ConvDecls.reverse» x2);
+    x3
 
 end GebMirror.Metalogic
 
