@@ -452,9 +452,11 @@ translations:
   that each body written for a definition passes the test of source
   forms, that each marker is the one its datatype's atom finds among
   the markers, that each marker's datatype is named by an atom other
-  than the trees' type's and the unit type's, and that each marker has
-  at most one constructor of each label. Their proofs of every program
-  on which the passes succeed remove them from the statement.
+  than the trees' type's and the unit type's, that each marker has at
+  most one constructor of each label, and that no name a form declares
+  is one of the implementation's. Their proofs of every program on
+  which the passes succeed, the last of the forms module elaboration
+  gives the expansion, remove them from the statement.
 * The setoid language: quotients whose respect is proved, subset types by
   propositions, definitions by equations whose unique solution is
   proved, and dependent products of families, each a construction of
@@ -3167,10 +3169,32 @@ the condition on each marker among the kernel forms are computed from a
 program's forms, and the conditions on the markers' names and
 constructors are stated of every name and of every label; their proof
 of every program on which the passes succeed follows the bootstrap (the
-road map). What remains of the transfer is the proof of the two facts
-about the numerals' digits, which do not depend on the program, the
-discharge of the conditions on the names a form declares, and the
-compilers' entry point.
+road map). So do the conditions on the names a form declares, which
+are computed from a program's forms: the expansion's passes do not
+check them, and their proof is one about the module elaboration that
+gives the expansion its forms.
+
+The values the soundness reads are functions of Lean. The kernel loads
+the program the soundness is stated in
+(`bootstrap/datatype-soundness.manifest`) to the Lean the bootstrap
+compiler emits from it
+(`bootstrap/lean/GebMirror/DatatypeSoundness.lean`), each step of the
+loading a theorem the kernel checks
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeLoad.lean`), and the
+program loaded has, definition by definition, the trees of the one the
+soundness is stated in, as Lean's evaluator decides
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeMirror.lean`). The
+two facts about the numerals' digits, which depend on no program, hold
+of the mirror
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeNumerals.lean`): the
+typing's digits of a label are its shortest decimal spelling, defined
+as the metalogic's printer defines them, which the reader reads as the
+label and whose characters, no atoms, the expansion of numeral
+abbreviations fixes. The soundness is then a statement about the
+mirror's functions with no parameter but a program's forms
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramMirror.lean`).
+What remains of the transfer is the compilers' entry point: that the
+passes succeed on the forms the expansion accepts.
 
 The rewriting of the definitions the elementary-affine search rejects in
 the compilers' sources waits on this completion, whose soundness of the

@@ -20,12 +20,15 @@ public import GebTests.Prototypes.FreeTopos.Certified.DatatypeGenerated
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeHypotheses
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeList
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeLoad
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeMirror
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeNumerals
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypePasses
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgram
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramConclusion
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramData
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramExplicit
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramKinds
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramMirror
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramPasses
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramReading
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramSound

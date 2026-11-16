@@ -31,6 +31,8 @@ values of the globals the kernel loads.
 * {lit}`HypFns` — the values of the compilers' definitions the hypotheses call.
 * {lit}`PlainOk`, {lit}`MarkersOk`, {lit}`StaticOk`, {lit}`FormsOk` — the four hypotheses, as
   those values compute them.
+* {lit}`NamesOk`, {lit}`CtorsOk`, {lit}`DigitsRead`, {lit}`DigitsFixed` — what {lit}`StaticOk`
+  assumes of the markers' names, of their constructors, and of the numerals' digits.
 
 ## Main statements
 
@@ -318,19 +320,34 @@ def filterK (l : Kernel.Tree) (xs : List Kernel.Tree) : List Kernel.Tree :=
   xs.foldr (fun x r ↦
     if (Kernel.Const.eq (Kernel.Const.child x (Kernel.leaf 0)) l).label ≠ 0 then x :: r else r) []
 
-/-- What the soundness assumes of markers and of the numerals: each marker's datatype is named
-by an atom, other than the trees' type's and the unit type's; each marker's constructors have
-at most one of each label; the digits of a tree's label read as its leaf; and they are fixed
-by the expansion of any numeral abbreviations. -/
-def StaticOk (ms : List Kernel.Tree) : Prop :=
-  (∀ n, (f.isSome (f.indexOf n (f.markerNames ms))).label ≠ 0 →
+/-- What the soundness assumes of the markers' names: each marker's datatype is named by an
+atom, other than the trees' type's and the unit type's. -/
+def NamesOk (ms : List Kernel.Tree) : Prop :=
+  ∀ n, (f.isSome (f.indexOf n (f.markerNames ms))).label ≠ 0 →
     (f.isAtom n).label ≠ 0 ∧ ((f.named n f.kwT).label ≠ 0 → False) ∧
-      ((f.named n f.kwUnit).label ≠ 0 → False)) ∧
-  (∀ dt, ∀ l, (Kernel.Const.lt (f.length (filterK l (f.markerCtors ms dt).2))
-    (Kernel.leaf 2)).label ≠ 0) ∧
-  (∀ t : Kernel.Tree, f.numeral (f.decimalChars t) = f.just (Kernel.leaf t.label)) ∧
+      ((f.named n f.kwUnit).label ≠ 0 → False)
+
+/-- What the soundness assumes of the markers' constructors: each marker's constructors have at
+most one of each label. -/
+def CtorsOk (ms : List Kernel.Tree) : Prop :=
+  ∀ dt, ∀ l, (Kernel.Const.lt (f.length (filterK l (f.markerCtors ms dt).2))
+    (Kernel.leaf 2)).label ≠ 0
+
+/-- The reader reads the digits of a tree's label as the leaf of the label. -/
+def DigitsRead : Prop :=
+  ∀ t : Kernel.Tree, f.numeral (f.decimalChars t) = f.just (Kernel.leaf t.label)
+
+/-- The expansion of any numeral abbreviations fixes the digits of a tree's label. -/
+def DigitsFixed : Prop :=
   ∀ (nums : List Kernel.Tree) (t : Kernel.Tree),
     (f.charsFixed (fun y ↦ f.expandNums nums y) (f.decimalChars t)).label ≠ 0
+
+/-- What the soundness assumes of markers and of the numerals: of the markers' names
+({name}`NamesOk`) and constructors ({name}`CtorsOk`), and that the digits of a tree's label read
+as its leaf ({name}`DigitsRead`) and are fixed by the expansion of any numeral abbreviations
+({name}`DigitsFixed`). -/
+def StaticOk (ms : List Kernel.Tree) : Prop :=
+  f.NamesOk ms ∧ f.CtorsOk ms ∧ f.DigitsRead ∧ f.DigitsFixed
 
 /-- What the soundness assumes of a form: where it declares a datatype, no constructor's name
 and not the recognizer's is one of the implementation's; it does not declare a tree datatype;

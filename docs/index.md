@@ -4805,7 +4805,16 @@ import-direction rules above are enforced by
   program the soundness is stated in, `bootstrap/datatype-soundness.manifest`,
   to the Lean the bootstrap compiler emits from it,
   `bootstrap/lean/GebMirror/DatatypeSoundness.lean`, each step of the
-  loading checked by the kernel (`Certified/DatatypeLoad.lean`). The
+  loading checked by the kernel (`Certified/DatatypeLoad.lean`), and the
+  program loaded has the definitions of the one the soundness reads, as
+  Lean's evaluator decides, so the values the soundness reads are the
+  mirror's definitions (`Certified/DatatypeMirror.lean`). Of them the
+  two facts about the numerals' digits hold: the reader reads the
+  typing's digits of a label as the label, and the expansion of numeral
+  abbreviations fixes them (`Certified/DatatypeNumerals.lean`). The
+  soundness is then a statement about the mirror's functions, with no
+  parameter but a program's forms
+  (`Certified/DatatypeProgramMirror.lean`). The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of
