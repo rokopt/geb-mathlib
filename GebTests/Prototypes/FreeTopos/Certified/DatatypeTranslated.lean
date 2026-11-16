@@ -167,16 +167,20 @@ def Loaded (Gk : List Kernel.Glob) (idx : String → ℕ) (name : String) (T : K
     (f : Kernel.Ty.den T) : Prop :=
   ∃ n, idx name = lib.length + n ∧ Gk[n]? = some ⟨T, f⟩
 
+/-- The bundled definitions and the kernel types that the evaluated facts are stated of are the
+translated program's. -/
+theorem Translated.bundledTypes_eq {PST : Prog × Defs × Defs3} (L : Translated PST) :
+    DatatypeAccepted.bundledTypes = some (L.ds, L.gt) := by
+  simp only [DatatypeAccepted.bundledTypes, L.bundled, L.program, Option.bind_eq_bind,
+    Option.bind_some, Option.pure_def]
+
 /-- A named definition among those whose kernel types the evaluator checked
 ({name}`DatatypeAccepted.typedIn`) is loaded at its type. -/
 theorem Translated.loaded {PST : Prog × Defs × Defs3} (L : Translated PST)
     {l : List (String × Kernel.Tree)}
     (hl : DatatypeAccepted.typedIn DatatypeAccepted.bundledTypes l = true) {name : String}
     {T : Kernel.Tree} (hm : (name, T) ∈ l) : ∃ f, Loaded L.Gk PST.1.idx name T f := by
-  have hb : DatatypeAccepted.bundledTypes = some (L.ds, L.gt) := by
-    simp only [DatatypeAccepted.bundledTypes, L.bundled, L.program, Option.bind_eq_bind,
-      Option.bind_some, Option.pure_def]
-  rw [hb] at hl
+  rw [L.bundledTypes_eq] at hl
   have hp := List.all_eq_true.mp hl (name, T) hm
   split at hp
   · next i hi =>

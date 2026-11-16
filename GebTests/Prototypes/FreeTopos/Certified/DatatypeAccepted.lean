@@ -7,11 +7,15 @@ module
 
 public import Geb.Prototypes.FreeTopos.Internal.RepresentLogic
 public import Geb.Prototypes.FreeTopos.Internal.Unfolded
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeLoad
 public import GebTests.Prototypes.FreeTopos.DatatypeBase
+public import GebTests.Prototypes.FreeTopos.DatatypeProgramStep
 public import GebTests.Prototypes.ProgramCommand
 public meta import Geb.Prototypes.FreeTopos.Internal.RepresentLogic -- shake: keep
 public meta import Geb.Prototypes.FreeTopos.Internal.Unfolded -- shake: keep
+public meta import GebTests.Prototypes.FreeTopos.Certified.DatatypeLoad -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.DatatypeBase -- shake: keep
+public meta import GebTests.Prototypes.FreeTopos.DatatypeProgramStep -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -30,7 +34,9 @@ The module states the other facts about the compilers' program that Lean's evalu
 for the soundness's transfer to Lean: the constants of the translation alone are accepted
 too, the definitions the compiler's passes call have, in the types the translation records,
 the kernel types named with them, and the extended program's constants have, at their indices,
-the definitions the soundness's conclusion is stated by.
+the definitions the soundness's conclusion is stated by. The compilers' program is also the one
+the kernel loads to its mirror's definitions ({lit}`DatatypeLoad`): its definitions' trees are
+those loaded, and the entries of its manifest are at the indices named with them.
 
 ## Main definitions
 
@@ -40,6 +46,8 @@ the definitions the soundness's conclusion is stated by.
   kernel types.
 * {lit}`statementDefs` — the definitions the soundness's conclusion is stated by, with their
   indices.
+* {lit}`mirrorIndices` — the entries of the program's manifest, with their indices among the
+  program's definitions.
 
 ## Main statements
 
@@ -53,6 +61,10 @@ the definitions the soundness's conclusion is stated by.
   conclusion is stated by, and the primitive arrows of the natural numbers.
 * {lit}`envTy_eq` — the type of the typing's environments the program records is the
   translation of their kernel type.
+* {lit}`mirrorTrees`, {lit}`mirrorIndexed` — the program's definitions are those the kernel
+  loads to the mirror's, and the manifest's entries are at the indices named.
+* {lit}`exists_programForms` — the extended program exists, and the soundness of a whole program
+  is stated in it.
 
 ## Tags
 
@@ -397,6 +409,79 @@ theorem natPrims {PST : Prog × Defs × Defs3} (h : extended3 = some PST) :
   have ha := statementsDefined
   rw [h] at ha
   exact of_decide_eq_true (Bool.and_eq_true_iff.mp ha).2
+
+/-- Whether the trees of bundled definitions are the trees given. -/
+def treesIn (o : Option (List (List Char × PartialHorn.Tree) × List PartialHorn.Tree))
+    (ts : List Kernel.Tree) : Bool :=
+  match o with
+  | some (ds, _) => decide (ds.map Prod.snd = ts)
+  | none => false
+
+set_option doc.verso false in
+/-- The definitions of the compilers' program are those of the program the kernel loads to its
+mirror's definitions (`GebMirror.datatypeSoundness`), tree by tree, as Lean's evaluator
+decides. -/
+evaluation_axiom mirrorTrees : treesIn bundledTypes GebMirror.datatypeSoundness = true
+
+/-- Whether each of the named definitions, among bundled definitions, is at the index named
+with it. -/
+def indexedIn (o : Option (List (List Char × PartialHorn.Tree) × List PartialHorn.Tree))
+    (l : List (String × ℕ)) : Bool :=
+  match o with
+  | some (ds, _) => l.all fun p ↦
+    decide ((ds.findIdx? fun d ↦ d.1 == p.1.toList) = some p.2)
+  | none => false
+
+/-- The entries of the manifest of the compilers' program, each with its index among the
+program's definitions. -/
+def mirrorIndices : List (String × ℕ) :=
+  [("Prelude.length", 1), ("Prelude.some", 5), ("Prelude.isSome", 7), ("Prelude.get", 8),
+    ("Prelude.and", 9), ("Prelude.or", 10), ("Prelude.nth", 12), ("Reader.isAtom", 50),
+    ("Reader.nameOf", 52), ("Reader.named", 53), ("Reader.kwT", 54), ("Reader.kwUnit", 55),
+    ("Reader.kwDef", 74), ("Reader.kwDeftype", 75), ("Reader.kwDefnum", 76),
+    ("Reader.indexOf", 78), ("Reader.numeral", 80), ("Reader.expandNums", 81),
+    ("Reader.numOf", 82), ("Reader.node2", 85), ("Reader.readProgram", 107),
+    ("Check.checkProgram", 122), ("Typing.envDefs", 203), ("Typing.envNoms", 204),
+    ("Typing.envMs", 207), ("Typing.env0", 208), ("Typing.lookupName", 209),
+    ("Typing.hasName", 210), ("Typing.recognizerName", 213), ("Typing.markerNames", 243),
+    ("Typing.memberOf", 247), ("Typing.decimalChars", 269), ("Typing.markerCtors", 286),
+    ("Typing/OName.nothing", 299), ("Typing.checkAll", 313), ("Datatype/Txs.reverse", 318),
+    ("Datatype/Txs.drop", 320), ("Datatype.isListTx", 338), ("Datatype.namedTx", 339),
+    ("Datatype.elems", 340), ("Datatype.nthTx", 341), ("Datatype.kwData", 387),
+    ("Datatype.kwTreeData", 388), ("Datatype.kwDefn", 391), ("Datatype.kwGeneric", 396),
+    ("Datatype.memberName", 401), ("Datatype.xpStep", 474), ("Datatype.genericStep", 475),
+    ("Datatype.expandTyped", 476), ("Datatype.markersFirst", 484), ("Datatype.kernelForms", 485),
+    ("Recognize.markers", 531), ("Recognize.insertRecognizers", 543), ("Eval.valQuote", 558),
+    ("Eval.valUnit", 559), ("Eval.valPair", 560), ("Eval.listOf", 565), ("Eval.next", 581),
+    ("Eval.level", 582), ("charsFixed", 591), ("srcForm", 592), ("implName", 594)]
+
+set_option doc.verso false in
+/-- The entries of the manifest of the compilers' program are at the indices named with them, as
+Lean's evaluator decides. -/
+evaluation_axiom mirrorIndexed : indexedIn bundledTypes mirrorIndices = true
+
+/-- Whether the soundness of a whole program is stated in an extended program. -/
+def statedIn (o : Option (Prog × Defs × Defs3)) : Bool :=
+  match o with
+  | some PST => (programFormsThm PST.1 PST.2.1 PST.2.2).isSome
+  | none => false
+
+set_option doc.verso false in
+/-- The compilers' program extends, and the soundness of a whole program is stated in the
+extended program, as Lean's evaluator decides. -/
+evaluation_axiom programStated : statedIn extended3 = true
+
+/-- The extended program exists, and the soundness of a whole program is stated in it. -/
+theorem exists_programForms : ∃ (PST : Prog × Defs × Defs3) (a : Internal.Thm),
+    extended3 = some PST ∧ programFormsThm PST.1 PST.2.1 PST.2.2 = some a := by
+  have ha := programStated
+  cases he : extended3 with
+  | none => rw [he] at ha; exact nomatch ha
+  | some PST =>
+    rw [he] at ha
+    have hs : (programFormsThm PST.1 PST.2.1 PST.2.2).isSome = true := ha
+    obtain ⟨a, hs⟩ := Option.isSome_iff_exists.mp hs
+    exact ⟨PST, a, rfl, hs⟩
 
 end GebTests.Prototypes.FreeTopos.Certified.DatatypeAccepted
 
