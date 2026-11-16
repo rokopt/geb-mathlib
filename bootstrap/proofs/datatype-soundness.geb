@@ -1,0 +1,39 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The definitions the statement of the datatype language's soundness adds to the compilers'. The
+; source forms the reader gives and the expansion writes, at a function on trees: atoms, whose
+; characters the function fixes, lists of source forms, and the expansion's checked nodes of case
+; analysis and of structural recursion over source forms. One fold gives, at each tree and
+; function, the tree rebuilt and whether it is a source form. The reader's name of a named
+; context's variable: a name the numeral abbreviations abbreviate is the name of its numeral's
+; atom, and any other is itself. And whether a name is one of the implementation's, beginning
+; with the percent sign.
+
+(deftype SF (Prod T T))
+(def charsFixed
+  (lam ((f (Arrow T T)) (cs Ts))
+    (equal (node 0 (foldr T Ts (lam ((c T) (a Ts)) (cons (f c) a)) (nil T) cs)) (node 0 cs))))
+(def srcForm
+  (lam ((f (Arrow T T)) (e T))
+    (snd
+      ((fold (Arrow (Arrow T T) SF)
+         (lam ((l T) (rs (List (Arrow (Arrow T T) SF))))
+           (lam ((g (Arrow T T)))
+             (let ps (List SF)
+               (foldr (Arrow (Arrow T T) SF) (List SF)
+                 (lam ((r (Arrow (Arrow T T) SF)) (a (List SF))) (cons (r g) a))
+                 (nil SF)
+                 rs)
+               (let cs Ts (foldr SF Ts (lam ((p SF) (a Ts)) (cons (fst p) a)) (nil T) ps)
+                 (pair (node l cs)
+                   (if (eq l 1) (charsFixed g cs)
+                     (if (or (eq l 2) (or (eq l 13) (eq l 14)))
+                       (foldr SF T (lam ((p SF) (a T)) (and (snd p) a)) 1 ps)
+                       0)))))))
+         e) f))))
+(import Reader)
+(def expName
+  (lam ((nums Ts) (n T)) (let a T (lookupAbbrev n nums) (if (isSome a) (nameOf (get a)) n))))
+(def implName (lam ((n T)) (eq (at (children n) 0) 37)))

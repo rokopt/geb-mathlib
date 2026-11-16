@@ -21,7 +21,9 @@ stage-0 compiler's front end on them, and declares, by
 declared, its tree, its global and the globals before it, each global's value the definition of the
 same name that the bootstrap compiler's Lean backend emits from the program, and the step of loading
 it, proved by the checker-evaluator's equation at each node of the definition, which the kernel
-checks, or stated as an axiom, in the mode {name}`Geb.Kernel.LoadCommand.nativeLoading` reads. The
+checks, in either loading mode: the axiom linter permits the axioms of the loading in the modules
+of the command {lit}`geb_load` alone, where the mode
+{name}`Geb.Kernel.LoadCommand.nativeLoading` reads states the steps as axioms. The
 definitions of a long program are declared ahead of the command, a layer to a module, by the command
 {lit}`geb_load` the generated modules of {lit}`GebMirror` run; {lit}`geb_program` then checks that
 the trees they declared are the program's. It declares the loading of the whole program, composed
@@ -101,7 +103,8 @@ syntax (name := gebProgram) "geb_program " ident " from " str " mirror " ident :
     addDocStringCore name doc
   let count := ds.length
   liftCoreM do
-    declareLoading n m ds (globs.map (·.1)) (← nativeLoading)
+    -- each step the command declares is proved: the axiom linter permits no axiom of its module
+    declareLoading n m ds (globs.map (·.1)) false
     defn n "The trees of the program's definitions." (listOf treeT)
       (listExpr treeT ((List.range count).map fun k ↦ mkConst (nm "d" k)))
     let final := mkConst (nm "pre" count)

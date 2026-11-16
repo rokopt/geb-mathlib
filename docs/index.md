@@ -4801,7 +4801,11 @@ import-direction rules above are enforced by
   (`Certified/DatatypeHypotheses.lean`). Every kernel list of trees
   being represented, the soundness is a statement of the kernel's lists
   of forms alone, with each hypothesis explicit
-  (`Certified/DatatypeProgramExplicit.lean`). The
+  (`Certified/DatatypeProgramExplicit.lean`). The kernel loads the
+  program the soundness is stated in, `bootstrap/datatype-soundness.manifest`,
+  to the Lean the bootstrap compiler emits from it,
+  `bootstrap/lean/GebMirror/DatatypeSoundness.lean`, each step of the
+  loading checked by the kernel (`Certified/DatatypeLoad.lean`). The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of

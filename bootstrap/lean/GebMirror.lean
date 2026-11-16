@@ -5,14 +5,16 @@ Authors: Terence Rokop
 -/
 module
 
+public import GebMirror.DatatypeSoundness
 public import GebMirror.Kernel
 public import GebMirror.Metalogic
 
 /-!
 # The Lean of Geb programs whose agreement with Lean functions is proved
 
-One module for each such program, the Lean the bootstrap compiler emits from it, regenerated and
-compared by `scripts/bootstrap.sh`. The metalogic's is a module per layer of its program, beside
-the modules of `GebMirror.Metalogic.Load`, which declare the program's loading through each layer,
-each step checked by the kernel; those are imported where the loading is used, not here.
+One module for each such program, and for the program a theorem is stated about through the values
+the kernel loads for its definitions, the Lean the bootstrap compiler emits from it, regenerated and
+compared by `scripts/bootstrap.sh`. The metalogic's is a module per layer of its program, beside the
+modules of `GebMirror.Metalogic.Load`, which declare the program's loading through each layer, each
+step checked by the kernel; those are imported where the loading is used, not here.
 -/
