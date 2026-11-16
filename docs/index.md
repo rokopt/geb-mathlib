@@ -4819,7 +4819,12 @@ import-direction rules above are enforced by
   gives a result, the typing's rejection being the absent name wherever
   it is not labelled as a name (`Certified/DatatypeEntry.lean`), so the
   soundness is one of the forms the compiler accepts
-  (`Certified/DatatypeProgramAccepted.lean`). The
+  (`Certified/DatatypeProgramAccepted.lean`). At the type of trees and
+  at a datatype the relation of a value to the type is a fact about the
+  evaluator alone, the value being a tree's quotation and, at a
+  datatype, the tree a member of it (`Certified/DatatypeMembers.lean`),
+  so in an accepted program a definition of one of those types evaluates
+  to such a quotation (`Certified/DatatypeProgramMembers.lean`). The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of
