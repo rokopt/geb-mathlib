@@ -422,7 +422,7 @@
                                         (single (rename vis (at es 4) 0 (boundBy (at es 2)))))))
                                   (single (memberDecl fl)))
                                 stFail)
-                              (if (or (named kw kwData) (named kw kwTreeData))
+                              (if (named kw kwData)
                                 (let ctors Ts (drop 2 es)
                                   (if
                                     (foldr T T

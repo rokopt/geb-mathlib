@@ -1226,27 +1226,27 @@ definitions, an S-expression and the names in scope to an optional term. -/
 def readBackTy : Tree := [tList tT, tT, tList tT].foldr tArrow tT
 
 -- the reader's resolution of what the printer prints and the partial printer are the program's
--- globals of indices 1936 and 1946
-kernel_rfl metalogic_g1936 : metalogic.globals[1936]? = some metalogic.g1936
-kernel_rfl metalogic_g1946 : metalogic.globals[1946]? = some metalogic.g1946
+-- globals of indices 1935 and 1945
+kernel_rfl metalogic_g1935 : metalogic.globals[1935]? = some metalogic.g1935
+kernel_rfl metalogic_g1945 : metalogic.globals[1945]? = some metalogic.g1945
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1936 is the mirror's resolution of what the printer writes, at its
+/-- The program's global of index 1935 is the mirror's resolution of what the printer writes, at its
 type. -/
 theorem metalogic_readBack :
-    metalogic.globals[1936]? = some (⟨readBackTy, «Printer.readBack»⟩ : Glob) :=
-  metalogic_g1936.trans (congrArg some (glob_ext
-    ((infer_of_loadStep metalogic.step1936).elim fun _ h ↦
+    metalogic.globals[1935]? = some (⟨readBackTy, «Printer.readBack»⟩ : Glob) :=
+  metalogic_g1935.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step1935).elim fun _ h ↦
       infer_lams tT _ [tList tT, tT, tList tT] h)
     metalogic.«Printer.readBack_heq»))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 1946 is the mirror's partial printer of kernel terms, at its
+/-- The program's global of index 1945 is the mirror's partial printer of kernel terms, at its
 type. -/
 theorem metalogic_printTermOpt :
-    metalogic.globals[1946]? = some (⟨printTermTy, «Printer.printTermOpt»⟩ : Glob) :=
-  metalogic_g1946.trans (congrArg some (glob_ext
-    ((infer_of_loadStep metalogic.step1946).elim fun _ h ↦
+    metalogic.globals[1945]? = some (⟨printTermTy, «Printer.printTermOpt»⟩ : Glob) :=
+  metalogic_g1945.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step1945).elim fun _ h ↦
       infer_lams tT _ [tList tT, tT, tT] h)
     metalogic.«Printer.printTermOpt_heq»))
 
@@ -1256,15 +1256,15 @@ theorem metalogic_printTermOpt :
 certificate to the optional list of the instances' definitions and decorated types. -/
 def affineCheckTy : Tree := [tList tT, tT].foldr tArrow tT
 
--- the check of a certificate is the program's global of index 2014
-kernel_rfl metalogic_g2014 : metalogic.globals[2014]? = some metalogic.g2014
+-- the check of a certificate is the program's global of index 2013
+kernel_rfl metalogic_g2013 : metalogic.globals[2013]? = some metalogic.g2013
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 2014 is the mirror's check of a certificate, at its type. -/
+/-- The program's global of index 2013 is the mirror's check of a certificate, at its type. -/
 theorem metalogic_affineCheck :
-    metalogic.globals[2014]? = some (⟨affineCheckTy, «Affine.check»⟩ : Glob) :=
-  metalogic_g2014.trans (congrArg some (glob_ext
-    ((infer_of_loadStep metalogic.step2014).elim fun _ h ↦
+    metalogic.globals[2013]? = some (⟨affineCheckTy, «Affine.check»⟩ : Glob) :=
+  metalogic_g2013.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2013).elim fun _ h ↦
       infer_lams tT _ [tList tT, tT] h)
     metalogic.«Affine.check_heq»))
 
@@ -1295,60 +1295,60 @@ and the declarations to the optional state. -/
 def checkConvDevTy : Tree := [tT, tList tT, tList tT].foldr tArrow tT
 
 -- the evaluation at literals, its test of readiness, the conversion checker, its test of a
--- theorem and its check of a development are the program's globals of indices 2052, 2097, 2175,
--- 2176 and 2199
-kernel_rfl metalogic_g2052 : metalogic.globals[2052]? = some metalogic.g2052
-kernel_rfl metalogic_g2097 : metalogic.globals[2097]? = some metalogic.g2097
+-- theorem and its check of a development are the program's globals of indices 2051, 2096, 2174,
+-- 2175 and 2198
+kernel_rfl metalogic_g2051 : metalogic.globals[2051]? = some metalogic.g2051
+kernel_rfl metalogic_g2096 : metalogic.globals[2096]? = some metalogic.g2096
+kernel_rfl metalogic_g2174 : metalogic.globals[2174]? = some metalogic.g2174
 kernel_rfl metalogic_g2175 : metalogic.globals[2175]? = some metalogic.g2175
-kernel_rfl metalogic_g2176 : metalogic.globals[2176]? = some metalogic.g2176
-kernel_rfl metalogic_g2199 : metalogic.globals[2199]? = some metalogic.g2199
+kernel_rfl metalogic_g2198 : metalogic.globals[2198]? = some metalogic.g2198
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 2052 is the mirror's term of a term's value by the evaluation
+/-- The program's global of index 2051 is the mirror's term of a term's value by the evaluation
 at literals, at its type. -/
 theorem metalogic_litEval :
-    metalogic.globals[2052]? = some (⟨litEvalTy, «Literals.litEval»⟩ : Glob) :=
-  metalogic_g2052.trans (congrArg some (glob_ext
-    ((infer_of_loadStep metalogic.step2052).elim fun _ h ↦ infer_lams tT _ [tT] h)
+    metalogic.globals[2051]? = some (⟨litEvalTy, «Literals.litEval»⟩ : Glob) :=
+  metalogic_g2051.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2051).elim fun _ h ↦ infer_lams tT _ [tT] h)
     metalogic.«Literals.litEval_heq»))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 2097 is the mirror's test of the conditions under which the
+/-- The program's global of index 2096 is the mirror's test of the conditions under which the
 evaluation at literals is a rewriting, at its type. -/
 theorem metalogic_ready :
-    metalogic.globals[2097]? = some (⟨readyTy, «Literals.ready»⟩ : Glob) :=
-  metalogic_g2097.trans (congrArg some (glob_ext
-    ((infer_of_loadStep metalogic.step2097).elim fun _ h ↦
+    metalogic.globals[2096]? = some (⟨readyTy, «Literals.ready»⟩ : Glob) :=
+  metalogic_g2096.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2096).elim fun _ h ↦
       infer_lams tT _ [tT, tList tT, tT] h)
     metalogic.«Literals.ready_heq»))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 2175 is the mirror's conversion checker, at its type. -/
+/-- The program's global of index 2174 is the mirror's conversion checker, at its type. -/
 theorem metalogic_convCheck :
-    metalogic.globals[2175]? = some (⟨convCheckTy, «Conversion.convCheck»⟩ : Glob) :=
-  metalogic_g2175.trans (congrArg some (glob_ext
-    ((infer_of_loadStep metalogic.step2175).elim fun _ h ↦
+    metalogic.globals[2174]? = some (⟨convCheckTy, «Conversion.convCheck»⟩ : Glob) :=
+  metalogic_g2174.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2174).elim fun _ h ↦
       infer_lams ([tT, tList tT, tT, tList tT, tT].foldr tArrow tT) _
         [tT, tList tT, tList tT, tT, tT] h)
     metalogic.«Conversion.convCheck_heq»))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 2176 is the mirror's test that a certificate of the conversion
+/-- The program's global of index 2175 is the mirror's test that a certificate of the conversion
 checker proves a theorem, at its type. -/
 theorem metalogic_thmConvChecks :
-    metalogic.globals[2176]? = some (⟨thmConvChecksTy, «Conversion.thmConvChecks»⟩ : Glob) :=
-  metalogic_g2176.trans (congrArg some (glob_ext
-    ((infer_of_loadStep metalogic.step2176).elim fun _ h ↦
+    metalogic.globals[2175]? = some (⟨thmConvChecksTy, «Conversion.thmConvChecks»⟩ : Glob) :=
+  metalogic_g2175.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2175).elim fun _ h ↦
       infer_lams tT _ [tT, tList tT, tList tT, tT, tT] h)
     metalogic.«Conversion.thmConvChecks_heq»))
 
 set_option maxRecDepth 100000 in
-/-- The program's global of index 2199 is the mirror's check of a development with certificates
+/-- The program's global of index 2198 is the mirror's check of a development with certificates
 of the conversion checker, at its type. -/
 theorem metalogic_checkConvDev :
-    metalogic.globals[2199]? = some (⟨checkConvDevTy, «Conversion.checkConvDev»⟩ : Glob) :=
-  metalogic_g2199.trans (congrArg some (glob_ext
-    ((infer_of_loadStep metalogic.step2199).elim fun _ h ↦
+    metalogic.globals[2198]? = some (⟨checkConvDevTy, «Conversion.checkConvDev»⟩ : Glob) :=
+  metalogic_g2198.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step2198).elim fun _ h ↦
       infer_lams tT _ [tT, tList tT, tList tT] h)
     metalogic.«Conversion.checkConvDev_heq»))
 

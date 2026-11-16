@@ -387,7 +387,7 @@ def elabDecl (pre : Ident) (st : ElabState) (e : SExp) : Elab ElabState := do
       | [ps, res, b] => return emit (← declare st s fl) [rename st.vis ps .binders [],
           rename st.vis res .type [], rename st.vis b .term (boundBy ps)] [.decl fl]
       | _ => throw other
-    else if isKw kw "data" || isKw kw "tree-data" then do
+    else if isKw kw "data" then do
       let st1 ← declare st s fl
       let ctors ← rest.mapM fun c ↦ match c.children with
         | n :: fs => need (n.label.map fun cn ↦ (cn, fs)) other

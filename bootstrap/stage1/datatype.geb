@@ -19,8 +19,7 @@
 ; prelude, the reader, the lists of bootstrap/seq.geb and the typing.
 
 (module Datatype
-  (export kwData kwTreeData kwCase kwCata kwRep kwDecode kwDatum kwDefn decimalChars memberName
-    expandProgram
+  (export kwData kwCase kwCata kwRep kwDecode kwDatum kwDefn decimalChars memberName expandProgram
     typeErrorOfForms
     typeErrorOf)
   (import Prelude)
@@ -89,7 +88,6 @@
   (def aQ (tAtom (children kwSplit)))
   (def aE (tAtom (children kwDecoded)))
   (def kwData (quote (0 data)))
-  (def kwTreeData (quote (0 tree-data)))
   (def kwCase (quote (0 case)))
   (def kwCata (quote (0 cata)))
   (def kwDefn (quote (0 defn)))
@@ -444,7 +442,7 @@
           (let es (List Tx) (elems e)
             (let h Tx (nthTx es 0)
               (let k T (Txs.length es)
-                (if (or (namedTx h kwData) (namedTx h kwTreeData))
+                (if (namedTx h kwData)
                   (let dd DS (dataDecl e)
                     (if (fst dd)
                       (let ds (List Decl) (fst (snd dd))
@@ -453,10 +451,8 @@
                             (pair (Decls.append env ds)
                               (Txs.append
                                 (Txs.reverse
-                                  (if (namedTx h kwData)
-                                    (Txs.append (cons (tData (nthTx es 1)) (Txs.tail forms))
-                                      (Txs.single (marker env (nthTx es 1) ds)))
-                                    forms))
+                                  (Txs.append (cons (tData (nthTx es 1)) (Txs.tail forms))
+                                    (Txs.single (marker env (nthTx es 1) ds))))
                                 out)))))
                       xpFail))
                   (if (and (namedTx h kwDefn) (eq k 5))

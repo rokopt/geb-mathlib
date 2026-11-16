@@ -120,18 +120,18 @@ loads. -/
 theorem passFns_loaded (L : Translated PST) : passFns.Loaded L.Gk PST.1.idx := by
   obtain ⟨f, hf⟩ := exists_passFns L
   exact
-    { expandTyped := loaded_at L hf.expandTyped (entry 48 rfl) At.«Datatype.expandTyped»
-      nothing := loaded_at L hf.nothing (entry 33 rfl) At.«Typing/OName.nothing»
-      checkAll := loaded_at L hf.checkAll (entry 34 rfl) At.«Typing.checkAll»
-      env0 := loaded_at L hf.env0 (entry 25 rfl) At.«Typing.env0»
-      markersFirst := loaded_at L hf.markersFirst (entry 49 rfl) At.«Datatype.markersFirst»
+    { expandTyped := loaded_at L hf.expandTyped (entry 46 rfl) At.«Datatype.expandTyped»
+      nothing := loaded_at L hf.nothing (entry 32 rfl) At.«Typing/OName.nothing»
+      checkAll := loaded_at L hf.checkAll (entry 33 rfl) At.«Typing.checkAll»
+      env0 := loaded_at L hf.env0 (entry 24 rfl) At.«Typing.env0»
+      markersFirst := loaded_at L hf.markersFirst (entry 47 rfl) At.«Datatype.markersFirst»
       insertRecognizers := loaded_at L hf.insertRecognizers
-        (entry 52 rfl) At.«Recognize.insertRecognizers»
-      kernelForms := loaded_at L hf.kernelForms (entry 50 rfl) At.«Datatype.kernelForms»
-      readProgram := loaded_at L hf.readProgram (entry 20 rfl) At.«Reader.readProgram»
+        (entry 50 rfl) At.«Recognize.insertRecognizers»
+      kernelForms := loaded_at L hf.kernelForms (entry 48 rfl) At.«Datatype.kernelForms»
+      readProgram := loaded_at L hf.readProgram (entry 19 rfl) At.«Reader.readProgram»
       get := loaded_at L hf.get (entry 3 rfl) At.«Prelude.get»
       isSome := loaded_at L hf.isSome (entry 2 rfl) At.«Prelude.isSome»
-      checkProgram := loaded_at L hf.checkProgram (entry 21 rfl) At.«Check.checkProgram» }
+      checkProgram := loaded_at L hf.checkProgram (entry 20 rfl) At.«Check.checkProgram» }
 
 /-- The functions the soundness's conclusion calls that the mirror defines. -/
 def evalFns : EvalFns where
@@ -160,37 +160,35 @@ theorem evalFns_loaded (L : Translated PST) : evalFns.Loaded L.Gk PST.1.idx := b
   obtain ⟨f, hf⟩ := exists_evalFns L
   exact
     { just := loaded_at L hf.just (entry 1 rfl) At.«Prelude.some»
-      nth := loaded_at L hf.nth (entry 6 rfl) At.«Prelude.nth»
+      nth := loaded_at L hf.nth (entry 5 rfl) At.«Prelude.nth»
       get := loaded_at L hf.get (entry 3 rfl) At.«Prelude.get»
       isSome := loaded_at L hf.isSome (entry 2 rfl) At.«Prelude.isSome»
-      level := loaded_at L hf.level (entry 58 rfl) At.«Eval.level»
-      next := loaded_at L hf.next (entry 57 rfl) At.«Eval.next»
-      valQuote := loaded_at L hf.valQuote (entry 53 rfl) At.«Eval.valQuote»
-      valUnit := loaded_at L hf.valUnit (entry 54 rfl) At.«Eval.valUnit»
-      valPair := loaded_at L hf.valPair (entry 55 rfl) At.«Eval.valPair»
-      listOf := loaded_at L hf.listOf (entry 56 rfl) At.«Eval.listOf»
-      memberOf := loaded_at L hf.memberOf (entry 30 rfl) At.«Typing.memberOf»
-      lookupName := loaded_at L hf.lookupName (entry 26 rfl) At.«Typing.lookupName»
-      envDefs := loaded_at L hf.envDefs (entry 22 rfl) At.«Typing.envDefs»
-      hasName := loaded_at L hf.hasName (entry 27 rfl) At.«Typing.hasName»
-      envNoms := loaded_at L hf.envNoms (entry 23 rfl) At.«Typing.envNoms»
-      recognizerName := loaded_at L hf.recognizerName (entry 28 rfl) At.«Typing.recognizerName»
-      indexOf := loaded_at L hf.indexOf (entry 15 rfl) At.«Reader.indexOf»
-      envMs := loaded_at L hf.envMs (entry 24 rfl) At.«Typing.envMs» }
+      level := loaded_at L hf.level (entry 56 rfl) At.«Eval.level»
+      next := loaded_at L hf.next (entry 55 rfl) At.«Eval.next»
+      valQuote := loaded_at L hf.valQuote (entry 51 rfl) At.«Eval.valQuote»
+      valUnit := loaded_at L hf.valUnit (entry 52 rfl) At.«Eval.valUnit»
+      valPair := loaded_at L hf.valPair (entry 53 rfl) At.«Eval.valPair»
+      listOf := loaded_at L hf.listOf (entry 54 rfl) At.«Eval.listOf»
+      memberOf := loaded_at L hf.memberOf (entry 29 rfl) At.«Typing.memberOf»
+      lookupName := loaded_at L hf.lookupName (entry 25 rfl) At.«Typing.lookupName»
+      envDefs := loaded_at L hf.envDefs (entry 21 rfl) At.«Typing.envDefs»
+      hasName := loaded_at L hf.hasName (entry 26 rfl) At.«Typing.hasName»
+      envNoms := loaded_at L hf.envNoms (entry 22 rfl) At.«Typing.envNoms»
+      recognizerName := loaded_at L hf.recognizerName (entry 27 rfl) At.«Typing.recognizerName»
+      indexOf := loaded_at L hf.indexOf (entry 14 rfl) At.«Reader.indexOf»
+      envMs := loaded_at L hf.envMs (entry 23 rfl) At.«Typing.envMs» }
 
 /-- The functions the soundness's remaining hypotheses call that the mirror defines. -/
 def hypFns : HypFns where
   genericStep := «Datatype.genericStep»
   xpStep := «Datatype.xpStep»
   and := «Prelude.and»
-  or := «Prelude.or»
   isListTx := «Datatype.isListTx»
   namedTx := «Datatype.namedTx»
   nthTx := «Datatype.nthTx»
   elems := «Datatype.elems»
   kwGeneric := «Datatype.kwGeneric»
   kwData := «Datatype.kwData»
-  kwTreeData := «Datatype.kwTreeData»
   kwDefn := «Datatype.kwDefn»
   kwDef := «Reader.kwDef»
   kwDeftype := «Reader.kwDeftype»
@@ -226,46 +224,44 @@ loads. -/
 theorem hypFns_loaded (L : Translated PST) : hypFns.Loaded L.Gk PST.1.idx := by
   obtain ⟨f, hf⟩ := exists_hypFns L
   exact
-    { genericStep := loaded_at L hf.genericStep (entry 47 rfl) At.«Datatype.genericStep»
-      xpStep := loaded_at L hf.xpStep (entry 46 rfl) At.«Datatype.xpStep»
+    { genericStep := loaded_at L hf.genericStep (entry 45 rfl) At.«Datatype.genericStep»
+      xpStep := loaded_at L hf.xpStep (entry 44 rfl) At.«Datatype.xpStep»
       and := loaded_at L hf.and (entry 4 rfl) At.«Prelude.and»
-      or := loaded_at L hf.or (entry 5 rfl) At.«Prelude.or»
-      isListTx := loaded_at L hf.isListTx (entry 37 rfl) At.«Datatype.isListTx»
-      namedTx := loaded_at L hf.namedTx (entry 38 rfl) At.«Datatype.namedTx»
-      nthTx := loaded_at L hf.nthTx (entry 40 rfl) At.«Datatype.nthTx»
-      elems := loaded_at L hf.elems (entry 39 rfl) At.«Datatype.elems»
-      kwGeneric := loaded_at L hf.kwGeneric (entry 44 rfl) At.«Datatype.kwGeneric»
-      kwData := loaded_at L hf.kwData (entry 41 rfl) At.«Datatype.kwData»
-      kwTreeData := loaded_at L hf.kwTreeData (entry 42 rfl) At.«Datatype.kwTreeData»
-      kwDefn := loaded_at L hf.kwDefn (entry 43 rfl) At.«Datatype.kwDefn»
-      kwDef := loaded_at L hf.kwDef (entry 12 rfl) At.«Reader.kwDef»
-      kwDeftype := loaded_at L hf.kwDeftype (entry 13 rfl) At.«Reader.kwDeftype»
-      kwDefnum := loaded_at L hf.kwDefnum (entry 14 rfl) At.«Reader.kwDefnum»
-      kwT := loaded_at L hf.kwT (entry 10 rfl) At.«Reader.kwT»
-      kwUnit := loaded_at L hf.kwUnit (entry 11 rfl) At.«Reader.kwUnit»
-      srcForm := loaded_at L hf.srcForm (entry 60 rfl) At.«srcForm»
-      expandNums := loaded_at L hf.expandNums (entry 17 rfl) At.«Reader.expandNums»
-      numOf := loaded_at L hf.numOf (entry 18 rfl) At.«Reader.numOf»
-      nameOf := loaded_at L hf.nameOf (entry 8 rfl) At.«Reader.nameOf»
-      node2 := loaded_at L hf.node2 (entry 19 rfl) At.«Reader.node2»
-      reverse := loaded_at L hf.reverse (entry 35 rfl) At.«Datatype/Txs.reverse»
-      drop := loaded_at L hf.drop (entry 36 rfl) At.«Datatype/Txs.drop»
-      kernelForms := loaded_at L hf.kernelForms (entry 50 rfl) At.«Datatype.kernelForms»
-      markers := loaded_at L hf.markers (entry 51 rfl) At.«Recognize.markers»
-      markerCtors := loaded_at L hf.markerCtors (entry 32 rfl) At.«Typing.markerCtors»
-      markerNames := loaded_at L hf.markerNames (entry 29 rfl) At.«Typing.markerNames»
-      isAtom := loaded_at L hf.isAtom (entry 7 rfl) At.«Reader.isAtom»
-      named := loaded_at L hf.named (entry 9 rfl) At.«Reader.named»
+      isListTx := loaded_at L hf.isListTx (entry 36 rfl) At.«Datatype.isListTx»
+      namedTx := loaded_at L hf.namedTx (entry 37 rfl) At.«Datatype.namedTx»
+      nthTx := loaded_at L hf.nthTx (entry 39 rfl) At.«Datatype.nthTx»
+      elems := loaded_at L hf.elems (entry 38 rfl) At.«Datatype.elems»
+      kwGeneric := loaded_at L hf.kwGeneric (entry 42 rfl) At.«Datatype.kwGeneric»
+      kwData := loaded_at L hf.kwData (entry 40 rfl) At.«Datatype.kwData»
+      kwDefn := loaded_at L hf.kwDefn (entry 41 rfl) At.«Datatype.kwDefn»
+      kwDef := loaded_at L hf.kwDef (entry 11 rfl) At.«Reader.kwDef»
+      kwDeftype := loaded_at L hf.kwDeftype (entry 12 rfl) At.«Reader.kwDeftype»
+      kwDefnum := loaded_at L hf.kwDefnum (entry 13 rfl) At.«Reader.kwDefnum»
+      kwT := loaded_at L hf.kwT (entry 9 rfl) At.«Reader.kwT»
+      kwUnit := loaded_at L hf.kwUnit (entry 10 rfl) At.«Reader.kwUnit»
+      srcForm := loaded_at L hf.srcForm (entry 58 rfl) At.«srcForm»
+      expandNums := loaded_at L hf.expandNums (entry 16 rfl) At.«Reader.expandNums»
+      numOf := loaded_at L hf.numOf (entry 17 rfl) At.«Reader.numOf»
+      nameOf := loaded_at L hf.nameOf (entry 7 rfl) At.«Reader.nameOf»
+      node2 := loaded_at L hf.node2 (entry 18 rfl) At.«Reader.node2»
+      reverse := loaded_at L hf.reverse (entry 34 rfl) At.«Datatype/Txs.reverse»
+      drop := loaded_at L hf.drop (entry 35 rfl) At.«Datatype/Txs.drop»
+      kernelForms := loaded_at L hf.kernelForms (entry 48 rfl) At.«Datatype.kernelForms»
+      markers := loaded_at L hf.markers (entry 49 rfl) At.«Recognize.markers»
+      markerCtors := loaded_at L hf.markerCtors (entry 31 rfl) At.«Typing.markerCtors»
+      markerNames := loaded_at L hf.markerNames (entry 28 rfl) At.«Typing.markerNames»
+      isAtom := loaded_at L hf.isAtom (entry 6 rfl) At.«Reader.isAtom»
+      named := loaded_at L hf.named (entry 8 rfl) At.«Reader.named»
       length := loaded_at L hf.length (entry 0 rfl) At.«Prelude.length»
-      numeral := loaded_at L hf.numeral (entry 16 rfl) At.«Reader.numeral»
-      decimalChars := loaded_at L hf.decimalChars (entry 31 rfl) At.«Typing.decimalChars»
-      charsFixed := loaded_at L hf.charsFixed (entry 59 rfl) At.«charsFixed»
-      implName := loaded_at L hf.implName (entry 61 rfl) At.«implName»
-      memberName := loaded_at L hf.memberName (entry 45 rfl) At.«Datatype.memberName»
+      numeral := loaded_at L hf.numeral (entry 15 rfl) At.«Reader.numeral»
+      decimalChars := loaded_at L hf.decimalChars (entry 30 rfl) At.«Typing.decimalChars»
+      charsFixed := loaded_at L hf.charsFixed (entry 57 rfl) At.«charsFixed»
+      implName := loaded_at L hf.implName (entry 59 rfl) At.«implName»
+      memberName := loaded_at L hf.memberName (entry 43 rfl) At.«Datatype.memberName»
       get := loaded_at L hf.get (entry 3 rfl) At.«Prelude.get»
       isSome := loaded_at L hf.isSome (entry 2 rfl) At.«Prelude.isSome»
       just := loaded_at L hf.just (entry 1 rfl) At.«Prelude.some»
-      indexOf := loaded_at L hf.indexOf (entry 15 rfl) At.«Reader.indexOf» }
+      indexOf := loaded_at L hf.indexOf (entry 14 rfl) At.«Reader.indexOf» }
 
 end GebTests.Prototypes.FreeTopos.Certified.DatatypeMirror
 

@@ -11,7 +11,6 @@
 ; ```
 ;   (data D (c A ...) ... (c B ... & E))   declares the datatype D and its constructors; a last
 ;                                        field & E takes the remaining children as a list
-;   (tree-data D (c A ...) ...)          declares D as data does, D standing for the trees
 ;   (rep e)                              the representation of a value of a datatype: the tree
 ;   (decode D e f c)                     f applied to the tree e when e is a member of D, c
 ;                                        otherwise, decided by D's recognizer D.member
@@ -39,8 +38,7 @@
 ; them around case and cata; nor does it declare D.member for a datatype D it decodes.
 
 (module Datatype
-  (export aDef kwData kwTreeData kwCase kwCata kwRep kwDecode kwDatum kwDefn decimalChars memberName
-    sTail
+  (export aDef kwData kwCase kwCata kwRep kwDecode kwDatum kwDefn decimalChars memberName sTail
     zipTs
     expandAliases
     expandCase
@@ -110,7 +108,6 @@
   (def aC (quote (1 "%c")))
   (def aQ (quote (1 "%q")))
   (def kwData (quote (0 data)))
-  (def kwTreeData (quote (0 tree-data)))
   (def kwCase (quote (0 case)))
   (def kwCata (quote (0 cata)))
   (def kwDefn (quote (0 defn)))
@@ -540,7 +537,7 @@
             (let es Ts (children e)
               (let h T (at es 0)
                 (let k T (arity e)
-                  (if (or (named h kwData) (named h kwTreeData))
+                  (if (named h kwData)
                     (let dd T (dataDecl e)
                       (if (isSome dd)
                         (let ds Ts (children (child (get dd) 0))
@@ -548,10 +545,8 @@
                             (pair (append env ds)
                               (append
                                 (reverse
-                                  (if (named h kwData)
-                                    (append (children (child (get dd) 1))
-                                      (single (marker env (at es 1) ds)))
-                                    (children (child (get dd) 1))))
+                                  (append (children (child (get dd) 1))
+                                    (single (marker env (at es 1) ds))))
                                 out))))
                         xpFail))
                     (if (and (named h kwDefn) (eq k 5))

@@ -441,7 +441,7 @@ def xpThree (P : Prog) (S : Defs) (name kw : String) (before : List String)
     pure (a, d))
 
 /-- The keywords the expansion's step tests before the definitions' keyword. -/
-def xpData : List String := ["Datatype.kwData", "Datatype.kwTreeData"]
+def xpData : List String := ["Datatype.kwData"]
 
 /-- The expansion's step at a definition's form ({name}`xpThree`): the body expands under the
 declarations, and the state left has the definition of the name as the body's expansion before
@@ -497,8 +497,8 @@ def xpDefn (P : Prog) (S : Defs) : Step :=
         (defForm P n (defnBody P bs R (pc P "Prelude.get" [ex]))) out)))⟩
     let decided : List (Term × Option Deducer × Option Deducer) :=
       xpData.zipIdx.map (fun (k, i) ↦ (named k, none, some (refuteNot K i))) ++
-      [(named "Datatype.kwDefn", some (K.hypFalse 2), none),
-        (pc P "Prelude.isSome" [ex], some (K.hypFalse 3), none)]
+      [(named "Datatype.kwDefn", some (K.hypFalse xpData.length), none),
+        (pc P "Prelude.isSome" [ex], some (K.hypFalse (xpData.length + 1)), none)]
     let some d := decideEach K Γ.length decided (linkK K "xpDefn: expanded" (K.solve 4))
         a.ctx a.hyps a.concl
       | dbgTrace "xpDefn: not proved" fun _ ↦ none
@@ -1535,7 +1535,7 @@ def plainStepT (P : Prog) (s e : Term) : Term :=
     (pc P "Prelude.get" [pc P "Reader.numOf" [nums, b]])) nums
   test (Term.fst s)
     (test (pc P "Prelude.and" [pc P "Datatype.isListTx" [e], named he "Datatype.kwGeneric"]) keep
-      (test (pc P "Prelude.or" [named he "Datatype.kwData", named he "Datatype.kwTreeData"]) keep
+      (test (named he "Datatype.kwData") keep
         (test (named hf "Reader.kwDef")
           (test (srcTestT P nums b) keep (Term.pair (leafT bnilT) (Term.pair dv' nums)))
           (test (named hf "Reader.kwDeftype") keep
@@ -1592,7 +1592,7 @@ def plainDefined (P : Prog) (S : Defs) : Step :=
     let he := pc P "Datatype.nthTx" [pc P "Datatype.elems" [e], leafT bnilT]
     let named (kw : String) : Term := pc P "Datatype.namedTx" [he, pc P kw []]
     let s := plainState dv nums
-    let hyps := ["Datatype.kwGeneric", "Datatype.kwData", "Datatype.kwTreeData"].map
+    let hyps := ["Datatype.kwGeneric", "Datatype.kwData"].map
         (fun kw ↦ notTest P.o (named kw)) ++
       [Term.eq (xpStepT P (xpState dv nil) e) (xpState dv (consT treeTy (defForm P n b) nil)),
         truth P.o (Term.fst (plainRun P (consT treeTy e es) s))]
@@ -1602,11 +1602,10 @@ def plainDefined (P : Prog) (S : Defs) : Step :=
     let decided : List (Term × Option Deducer × Option Deducer) :=
       [(pc P "Datatype.isListTx" [e], none, none),
         (named "Datatype.kwGeneric", none, some (refuteNot K 0)),
-        (named "Datatype.kwData", none, some (refuteNot K 1)),
-        (named "Datatype.kwTreeData", none, some (refuteNot K 2))]
-    let some d := (decideEach K Γ.length decided <| normHyps K [3] <|
+        (named "Datatype.kwData", none, some (refuteNot K 1))]
+    let some d := (decideEach K Γ.length decided <| normHyps K [2] <|
         applyThm K "plainPrefix" (fun Γ' ↦ [at_ es Γ', at_ (plainStepT P s e) Γ'])
-          [linkK K "plainDefined: the run" (K.byHyp 4)] <| fun Γ₁ Φ₁ ψ₁ ↦
+          [linkK K "plainDefined: the run" (K.byHyp 3)] <| fun Γ₁ Φ₁ ψ₁ ↦
         let iOk := Φ₁.length - 1
         decideIn K (fun Γ' ↦ at_ (srcTestT P nums b) Γ')
           (linkK K "plainDefined: the body" (K.hypFalse iOk))

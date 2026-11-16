@@ -101,7 +101,6 @@
       Datatype.marker
       Reader.named
       Datatype.kwData
-      Datatype.kwTreeData
       Reader.kwDef
       Reader.kwDeftype
       Reader.kwDefnum)
@@ -351,31 +350,25 @@
                                       (test-cases (Reader.named any Datatype.kwData) 1 lambek
                                         by-form-rules
                                         (with-rules (split-rules)
-                                          (test-cases (Reader.named any Datatype.kwTreeData) 1
-                                            lambek
-                                            by-form-rules
-                                            (with-rules (split-rules)
-                                              (reduced weak
-                                                (mask-hypotheses absorb cond-same 6
+                                          (reduced weak
+                                            (mask-hypotheses absorb cond-same 6
+                                              (with-rules (split-rules)
+                                                (test-cases (Reader.named any Reader.kwDef) 1 lambek
+                                                  (with-rules (body-rules)
+                                                    (mask-hypotheses absorb cond-same 2
+                                                      (reduce weak)))
                                                   (with-rules (split-rules)
-                                                    (test-cases (Reader.named any Reader.kwDef) 1
+                                                    (test-cases (Reader.named any Reader.kwDeftype)
+                                                      1
                                                       lambek
-                                                      (with-rules (body-rules)
-                                                        (mask-hypotheses absorb cond-same 2
-                                                          (reduce weak)))
+                                                      by-form-rules
                                                       (with-rules (split-rules)
                                                         (test-cases
-                                                          (Reader.named any Reader.kwDeftype)
+                                                          (Reader.named any Reader.kwDefnum)
                                                           1
                                                           lambek
                                                           by-form-rules
-                                                          (with-rules (split-rules)
-                                                            (test-cases
-                                                              (Reader.named any Reader.kwDefnum)
-                                                              1
-                                                              lambek
-                                                              by-form-rules
-                                                              by-form-rules)))))))))))))))))))
+                                                          by-form-rules)))))))))))))))))
                         (with-rules (split-rules) (reduce weak)))))))))))))
   ; Appending the empty list is the identity.
   (theorem append-nil

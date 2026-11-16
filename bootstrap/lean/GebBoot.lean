@@ -6198,17 +6198,6 @@ def «Datatype.aE» :=
 
 def «Datatype.kwData» := mk 0 [leaf 100, leaf 97, leaf 116, leaf 97]
 
-def «Datatype.kwTreeData» :=
-  mk 0 [leaf 116,
-    leaf 114,
-    leaf 101,
-    leaf 101,
-    leaf 45,
-    leaf 100,
-    leaf 97,
-    leaf 116,
-    leaf 97]
-
 def «Datatype.kwCase» := mk 0 [leaf 99, leaf 97, leaf 115, leaf 101]
 
 def «Datatype.kwCata» := mk 0 [leaf 99, leaf 97, leaf 116, leaf 97]
@@ -8100,9 +8089,7 @@ def «Datatype.xpStep» :=
       let x4 : List T := «Datatype.elems» x1;
       let x5 : T := «Datatype.nthTx» x4 (leaf 0);
       let x6 : T := «Datatype/Txs.length» x4;
-      if («Prelude.or»
-        («Datatype.namedTx» x5 «Datatype.kwData»)
-        («Datatype.namedTx» x5 «Datatype.kwTreeData»)).label ≠ 0 then
+      if («Datatype.namedTx» x5 «Datatype.kwData»).label ≠ 0 then
         let x7 : T × (List T × List T) := «Datatype.dataDecl» x1;
         if ((x7).1).label ≠ 0 then
           let x8 : List T := ((x7).2).1;
@@ -8111,14 +8098,11 @@ def «Datatype.xpStep» :=
             («Datatype/Decls.append» x2 x8,
               «Datatype/Txs.append»
                 («Datatype/Txs.reverse»
-                  (if («Datatype.namedTx» x5 «Datatype.kwData»).label ≠ 0 then
-                    «Datatype/Txs.append»
-                      ((«Typing.tData» («Datatype.nthTx» x4 (leaf 1))) ::
-                        («Datatype/Txs.tail» x9))
-                      («Datatype/Txs.single»
-                        («Datatype.marker» x2 («Datatype.nthTx» x4 (leaf 1)) x8))
-                  else
-                    x9))
+                  («Datatype/Txs.append»
+                    ((«Typing.tData» («Datatype.nthTx» x4 (leaf 1))) ::
+                      («Datatype/Txs.tail» x9))
+                    («Datatype/Txs.single»
+                      («Datatype.marker» x2 («Datatype.nthTx» x4 (leaf 1)) x8))))
                 x3))
         else
           «Datatype.xpFail»
@@ -9714,9 +9698,7 @@ def «Modules.elabDecl» :=
             else
               «Modules.stFail»
           else
-            if («Prelude.or»
-              («Reader.named» x5 «Datatype.kwData»)
-              («Reader.named» x5 «Datatype.kwTreeData»)).label ≠ 0 then
+            if («Reader.named» x5 «Datatype.kwData»).label ≠ 0 then
               let x11 : List T := «Prelude.drop» (leaf 2) x3;
               if (Const.foldr
                 (α := T)

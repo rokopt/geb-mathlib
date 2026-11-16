@@ -98,10 +98,6 @@ theorem At.«Prelude.get» : At 8 «Prelude.get» :=
 theorem At.«Prelude.and» : At 9 «Prelude.and» :=
   ⟨_, rfl, datatypeSoundness.«Prelude.and_heq»⟩
 
-/-- The global of the definition {lit}`Prelude.or` is its mirror. -/
-theorem At.«Prelude.or» : At 10 «Prelude.or» :=
-  ⟨_, rfl, datatypeSoundness.«Prelude.or_heq»⟩
-
 /-- The global of the definition {lit}`Prelude.nth` is its mirror. -/
 theorem At.«Prelude.nth» : At 12 «Prelude.nth» :=
   ⟨_, rfl, datatypeSoundness.«Prelude.nth_heq»⟩
@@ -246,84 +242,80 @@ theorem At.«Datatype.nthTx» : At 341 «Datatype.nthTx» :=
 theorem At.«Datatype.kwData» : At 387 «Datatype.kwData» :=
   ⟨_, rfl, datatypeSoundness.«Datatype.kwData_heq»⟩
 
-/-- The global of the definition {lit}`Datatype.kwTreeData` is its mirror. -/
-theorem At.«Datatype.kwTreeData» : At 388 «Datatype.kwTreeData» :=
-  ⟨_, rfl, datatypeSoundness.«Datatype.kwTreeData_heq»⟩
-
 /-- The global of the definition {lit}`Datatype.kwDefn` is its mirror. -/
-theorem At.«Datatype.kwDefn» : At 391 «Datatype.kwDefn» :=
+theorem At.«Datatype.kwDefn» : At 390 «Datatype.kwDefn» :=
   ⟨_, rfl, datatypeSoundness.«Datatype.kwDefn_heq»⟩
 
 /-- The global of the definition {lit}`Datatype.kwGeneric` is its mirror. -/
-theorem At.«Datatype.kwGeneric» : At 396 «Datatype.kwGeneric» :=
+theorem At.«Datatype.kwGeneric» : At 395 «Datatype.kwGeneric» :=
   ⟨_, rfl, datatypeSoundness.«Datatype.kwGeneric_heq»⟩
 
 /-- The global of the definition {lit}`Datatype.memberName` is its mirror. -/
-theorem At.«Datatype.memberName» : At 401 «Datatype.memberName» :=
+theorem At.«Datatype.memberName» : At 400 «Datatype.memberName» :=
   ⟨_, rfl, datatypeSoundness.«Datatype.memberName_heq»⟩
 
 /-- The global of the definition {lit}`Datatype.xpStep` is its mirror. -/
-theorem At.«Datatype.xpStep» : At 474 «Datatype.xpStep» :=
+theorem At.«Datatype.xpStep» : At 473 «Datatype.xpStep» :=
   ⟨_, rfl, datatypeSoundness.«Datatype.xpStep_heq»⟩
 
 /-- The global of the definition {lit}`Datatype.genericStep` is its mirror. -/
-theorem At.«Datatype.genericStep» : At 475 «Datatype.genericStep» :=
+theorem At.«Datatype.genericStep» : At 474 «Datatype.genericStep» :=
   ⟨_, rfl, datatypeSoundness.«Datatype.genericStep_heq»⟩
 
 /-- The global of the definition {lit}`Datatype.expandTyped` is its mirror. -/
-theorem At.«Datatype.expandTyped» : At 476 «Datatype.expandTyped» :=
+theorem At.«Datatype.expandTyped» : At 475 «Datatype.expandTyped» :=
   ⟨_, rfl, datatypeSoundness.«Datatype.expandTyped_heq»⟩
 
 /-- The global of the definition {lit}`Datatype.markersFirst` is its mirror. -/
-theorem At.«Datatype.markersFirst» : At 484 «Datatype.markersFirst» :=
+theorem At.«Datatype.markersFirst» : At 483 «Datatype.markersFirst» :=
   ⟨_, rfl, datatypeSoundness.«Datatype.markersFirst_heq»⟩
 
 /-- The global of the definition {lit}`Datatype.kernelForms` is its mirror. -/
-theorem At.«Datatype.kernelForms» : At 485 «Datatype.kernelForms» :=
+theorem At.«Datatype.kernelForms» : At 484 «Datatype.kernelForms» :=
   ⟨_, rfl, datatypeSoundness.«Datatype.kernelForms_heq»⟩
 
 /-- The global of the definition {lit}`Recognize.markers` is its mirror. -/
-theorem At.«Recognize.markers» : At 531 «Recognize.markers» :=
+theorem At.«Recognize.markers» : At 530 «Recognize.markers» :=
   ⟨_, rfl, datatypeSoundness.«Recognize.markers_heq»⟩
 
 /-- The global of the definition {lit}`Recognize.insertRecognizers` is its mirror. -/
-theorem At.«Recognize.insertRecognizers» : At 543 «Recognize.insertRecognizers» :=
+theorem At.«Recognize.insertRecognizers» : At 542 «Recognize.insertRecognizers» :=
   ⟨_, rfl, datatypeSoundness.«Recognize.insertRecognizers_heq»⟩
 
 /-- The global of the definition {lit}`Eval.valQuote` is its mirror. -/
-theorem At.«Eval.valQuote» : At 558 «Eval.valQuote» :=
+theorem At.«Eval.valQuote» : At 557 «Eval.valQuote» :=
   ⟨_, rfl, datatypeSoundness.«Eval.valQuote_heq»⟩
 
 /-- The global of the definition {lit}`Eval.valUnit` is its mirror. -/
-theorem At.«Eval.valUnit» : At 559 «Eval.valUnit» :=
+theorem At.«Eval.valUnit» : At 558 «Eval.valUnit» :=
   ⟨_, rfl, datatypeSoundness.«Eval.valUnit_heq»⟩
 
 /-- The global of the definition {lit}`Eval.valPair` is its mirror. -/
-theorem At.«Eval.valPair» : At 560 «Eval.valPair» :=
+theorem At.«Eval.valPair» : At 559 «Eval.valPair» :=
   ⟨_, rfl, datatypeSoundness.«Eval.valPair_heq»⟩
 
 /-- The global of the definition {lit}`Eval.listOf` is its mirror. -/
-theorem At.«Eval.listOf» : At 565 «Eval.listOf» :=
+theorem At.«Eval.listOf» : At 564 «Eval.listOf» :=
   ⟨_, rfl, datatypeSoundness.«Eval.listOf_heq»⟩
 
 /-- The global of the definition {lit}`Eval.next` is its mirror. -/
-theorem At.«Eval.next» : At 581 «Eval.next» :=
+theorem At.«Eval.next» : At 580 «Eval.next» :=
   ⟨_, rfl, datatypeSoundness.«Eval.next_heq»⟩
 
 /-- The global of the definition {lit}`Eval.level` is its mirror. -/
-theorem At.«Eval.level» : At 582 «Eval.level» :=
+theorem At.«Eval.level» : At 581 «Eval.level» :=
   ⟨_, rfl, datatypeSoundness.«Eval.level_heq»⟩
 
 /-- The global of the definition {lit}`charsFixed` is its mirror. -/
-theorem At.«charsFixed» : At 591 «charsFixed» :=
+theorem At.«charsFixed» : At 590 «charsFixed» :=
   ⟨_, rfl, datatypeSoundness.«charsFixed_heq»⟩
 
 /-- The global of the definition {lit}`srcForm` is its mirror. -/
-theorem At.«srcForm» : At 592 «srcForm» :=
+theorem At.«srcForm» : At 591 «srcForm» :=
   ⟨_, rfl, datatypeSoundness.«srcForm_heq»⟩
 
 /-- The global of the definition {lit}`implName` is its mirror. -/
-theorem At.«implName» : At 594 «implName» :=
+theorem At.«implName» : At 593 «implName» :=
   ⟨_, rfl, datatypeSoundness.«implName_heq»⟩
 
 end GebTests.Prototypes.FreeTopos.Certified.DatatypeLoad

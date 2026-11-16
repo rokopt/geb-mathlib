@@ -1285,19 +1285,6 @@ Correcting these is a separate concern from any current branch per
 
 ## Triggers (do when condition fires)
 
-- **The statements' texts read from their files**: the definitions the
-  proofs of weakening and of the datatype language's soundness add to
-  their programs are Lean strings (`Weakening.statement`,
-  `Datatypes.sourceForms`, `Datatypes.scopeNames` under
-  `GebTests/Prototypes/FreeTopos/`) and, for the program's mirror, the
-  files `bootstrap/proofs/weakening.geb` and
-  `bootstrap/proofs/datatype-soundness.geb`; the evaluated fact
-  `DatatypeAccepted.mirrorTrees` fails when the two differ in a
-  definition. The strings' modules are in the import closure of the
-  certificates' generator, a change to which reruns every search.
-  Trigger: the next change that regenerates the certificates of the
-  datatype language's soundness, at which the strings become reads of
-  the files.
 - **The checker of shared certificates**: the Bootstrap chapter's section
   The next phase requires two stronger checkers, the conversion step and
   the checker of holes, and makes the checker of the shared certificates,

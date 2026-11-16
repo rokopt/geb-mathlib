@@ -88,7 +88,7 @@ succeed ({name}`PassFns.passes`), whose definitions' bodies are source forms
 ({name}`HypFns.PlainOk`), whose markers are those their datatypes' atoms find
 ({name}`HypFns.MarkersOk`) and are named and constructed as the soundness assumes, with the
 numerals' digits read back and fixed ({name}`HypFns.StaticOk`), and whose forms declare no
-tree datatype and no name of the implementation's ({name}`HypFns.FormsOk`), the definitions are
+name of the implementation's ({name}`HypFns.FormsOk`), the definitions are
 related to the typing environment's and the recognizers decide membership, as the loaded
 evaluator computes them ({name}`Concl`). -/
 theorem program_sound_explicit {a : Internal.Thm}

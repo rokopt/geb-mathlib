@@ -147,17 +147,6 @@ def «Datatype.aQ» := mk 1 [leaf 37, leaf 113]
 
 def «Datatype.kwData» := mk 0 [leaf 100, leaf 97, leaf 116, leaf 97]
 
-def «Datatype.kwTreeData» :=
-  mk 0 [leaf 116,
-    leaf 114,
-    leaf 101,
-    leaf 101,
-    leaf 45,
-    leaf 100,
-    leaf 97,
-    leaf 116,
-    leaf 97]
-
 def «Datatype.kwCase» := mk 0 [leaf 99, leaf 97, leaf 115, leaf 101]
 
 def «Datatype.kwCata» := mk 0 [leaf 99, leaf 97, leaf 116, leaf 97]
@@ -1062,9 +1051,7 @@ def «Datatype.xpStep» :=
       let x4 : List T := Const.children x1;
       let x5 : T := «Prelude.at» x4 (leaf 0);
       let x6 : T := Const.arity x1;
-      if («Prelude.or»
-        («Reader.named» x5 «Datatype.kwData»)
-        («Reader.named» x5 «Datatype.kwTreeData»)).label ≠ 0 then
+      if («Reader.named» x5 «Datatype.kwData»).label ≠ 0 then
         let x7 : T := «Datatype.dataDecl» x1;
         if («Prelude.isSome» x7).label ≠ 0 then
           let x8 : List
@@ -1073,13 +1060,10 @@ def «Datatype.xpStep» :=
             («Prelude.append» x2 x8,
               «Prelude.append»
                 («Prelude.reverse»
-                  (if («Reader.named» x5 «Datatype.kwData»).label ≠ 0 then
-                    «Prelude.append»
-                      (Const.children (Const.child («Prelude.get» x7) (leaf 1)))
-                      («Prelude.single»
-                        («Datatype.marker» x2 («Prelude.at» x4 (leaf 1)) x8))
-                  else
-                    Const.children (Const.child («Prelude.get» x7) (leaf 1))))
+                  («Prelude.append»
+                    (Const.children (Const.child («Prelude.get» x7) (leaf 1)))
+                    («Prelude.single»
+                      («Datatype.marker» x2 («Prelude.at» x4 (leaf 1)) x8))))
                 x3))
         else
           «Datatype.xpFail»

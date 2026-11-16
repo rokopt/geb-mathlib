@@ -55,7 +55,7 @@ expansion on gives a result ({name}`Accepts`), whose definitions' bodies are sou
 ({name}`HypFns.PlainOk`), whose markers are those their datatypes' atoms find
 ({name}`HypFns.MarkersOk`), are named by atoms other than the trees' type's and the unit
 type's ({name}`HypFns.NamesOk`) and have at most one constructor of each label
-({name}`HypFns.CtorsOk`), and whose forms declare no tree datatype and no name of the
+({name}`HypFns.CtorsOk`), and whose forms declare no name of the
 implementation's ({name}`HypFns.FormsOk`), the definitions are related to the typing
 environment's and the recognizers decide membership, as the mirror's evaluator computes them
 ({name}`Concl`). -/

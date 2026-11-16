@@ -73,9 +73,8 @@
         (if (eq (arity e) 3)
           (let h T (at (children e) 0)
             (if (named h kwData) 0
-              (if (named h kwTreeData) 0
-                (if (named h kwDef) (ke (at (children e) 2))
-                  (if (named h kwDeftype) 1 (named h kwDefnum))))))
+              (if (named h kwDef) (ke (at (children e) 2))
+                (if (named h kwDeftype) 1 (named h kwDefnum)))))
           0)
         0)))
   ; the environment after a form: with the alias of a type's abbreviation added
