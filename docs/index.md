@@ -4814,7 +4814,12 @@ import-direction rules above are enforced by
   abbreviations fixes them (`Certified/DatatypeNumerals.lean`). The
   soundness is then a statement about the mirror's functions, with no
   parameter but a program's forms
-  (`Certified/DatatypeProgramMirror.lean`). The
+  (`Certified/DatatypeProgramMirror.lean`). The compiler's passes
+  succeed on the forms at which each of its steps from the expansion on
+  gives a result, the typing's rejection being the absent name wherever
+  it is not labelled as a name (`Certified/DatatypeEntry.lean`), so the
+  soundness is one of the forms the compiler accepts
+  (`Certified/DatatypeProgramAccepted.lean`). The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of

@@ -3193,8 +3193,20 @@ label and whose characters, no atoms, the expansion of numeral
 abbreviations fixes. The soundness is then a statement about the
 mirror's functions with no parameter but a program's forms
 (`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramMirror.lean`).
-What remains of the transfer is the compilers' entry point: that the
-passes succeed on the forms the expansion accepts.
+
+The passes succeed on the forms the compiler accepts. The expansion of
+a program gives a result only where the forms expand and the rejection
+their typing ends in is not labelled as a name, and the result is then
+the erased forms; the rejection is then the absent name, the typing's
+step giving a state the absent name or a name and leaving a state that
+rejects as it is
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeEntry.lean`). The
+soundness is therefore of every list of forms at which the expansion of
+the program, the insertion of the recognizers, the reader and the
+kernel's typing each give a result, as `bootstrap/compile.geb` applies
+them to the forms module elaboration gives, under the hypotheses the
+transfer keeps
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramAccepted.lean`).
 
 The rewriting of the definitions the elementary-affine search rejects in
 the compilers' sources waits on this completion, whose soundness of the
