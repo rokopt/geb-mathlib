@@ -14,6 +14,7 @@ public import GebTests.Prototypes.FreeTopos.Certified.DatatypeCata
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeClosed
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeConclusion
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeDatum
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeEntry
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeFolds
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeForms
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeGenerated
@@ -24,6 +25,7 @@ public import GebTests.Prototypes.FreeTopos.Certified.DatatypeMirror
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeNumerals
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypePasses
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgram
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramAccepted
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramConclusion
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramData
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramExplicit
