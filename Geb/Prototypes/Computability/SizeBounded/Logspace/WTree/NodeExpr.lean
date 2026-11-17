@@ -57,7 +57,7 @@ computes the scan whose check is the expression's, read as a flag.
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

@@ -12,9 +12,9 @@ set_option doc.verso true in
 /-!
 # The internal language of a topos as an LF signature
 
-An LF signature ({cite}`HarperHonsellPlotkin1993`; {cite}`HarperLicata2007`, Section 3, for the
-method) representing a fragment of the Mitchell–Bénabou language of the free elementary topos with
-a natural numbers object ({cite}`MacLaneMoerdijk1992`, Section VI.5), whose terms and
+An LF signature ({citeKey}`HarperHonsellPlotkin1993`; {citeKey}`HarperLicata2007`, Section 3, for
+the method) representing a fragment of the Mitchell–Bénabou language of the free elementary topos
+with a natural numbers object ({citeKey}`MacLaneMoerdijk1992`, Section VI.5), whose terms and
 derivations are those of {lit}`Geb.FreeTopos.Internal`: the types built from the terminal object,
 binary products, exponentials, the subobject classifier, the natural numbers object, list objects,
 the rose-tree object of natural-number labels, rose-tree objects of labels of any type, binary
@@ -28,7 +28,7 @@ rose trees, and the equality of two terms, a formula; and the derivability of fo
 The object types are the canonical terms of the type {lit}`tp`. A term of an object type
 {lit}`A` is a canonical term of {lit}`tm A`, a variable of the language a variable of LF, and an
 abstraction a constant {lit}`lam` applied to an LF abstraction, so that the language's binders
-are LF's, in the manner of higher-order abstract syntax ({cite}`HarperLicata2007`, Section 3.1).
+are LF's, in the manner of higher-order abstract syntax ({citeKey}`HarperLicata2007`, Section 3.1).
 The step of a fold is an LF abstraction over the recursion's value, over the element before it for
 a list, and over the pair of a label and the list of the children's values for a rose tree. A
 derivation of a formula
@@ -49,7 +49,7 @@ derivation of a formula
   being that the list of the predicate's values at them is the list of truths;
 * every formula, from a term of the initial object ({lit}`exfalso`).
 
-These are rules of a local set theory ({cite}`RuizHernandezSolorzano2021`, Section 3.2) and of
+These are rules of a local set theory ({citeKey}`RuizHernandezSolorzano2021`, Section 3.2) and of
 the derivations of {lit}`Geb.FreeTopos.Internal`, whose induction applies to the innermost
 variable where this one names its predicate. The folds are the language's: a start and a step,
 an LF abstraction, may mention the variables around them, so that the folds have parameters, as
@@ -70,9 +70,9 @@ it.
 
 ## References
 
-* {cite}`HarperLicata2007`, Section 3.
-* {cite}`MacLaneMoerdijk1992`, Section VI.5.
-* {cite}`RuizHernandezSolorzano2021`, Section 3.2.
+* {citeKey}`HarperLicata2007`, Section 3.
+* {citeKey}`MacLaneMoerdijk1992`, Section VI.5.
+* {citeKey}`RuizHernandezSolorzano2021`, Section 3.2.
 
 ## Tags
 

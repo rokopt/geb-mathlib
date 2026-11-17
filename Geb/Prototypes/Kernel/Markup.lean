@@ -31,7 +31,8 @@ mathematics; code is a span between single backticks of characters other than th
 empty and neither beginning nor ending with a space; and a role is one of the four names
 {lit}`name`, {lit}`geb`, {lit}`cite` and {lit}`lit` between braces, followed by code.
 
-The roles are those the repository's literate Lean modules use, and one for Geb: {lit}`name`
+The roles are those the repository's literate Lean modules use, the role of a citation, which
+those modules write {lit}`citeKey`, under the name {lit}`cite`, and one for Geb: {lit}`name`
 refers to a Lean constant, {lit}`geb` to a definition of the program, {lit}`cite` to an entry of
 the bibliography, and {lit}`lit` marks code that refers to nothing. A reference to a Geb
 definition resolves as a qualified name of Lean resolves in its namespaces: in a comment inside

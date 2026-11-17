@@ -43,7 +43,7 @@ expansions of the head and of each further element.
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

@@ -35,7 +35,7 @@ binding, and requires that the reader read the recognizer's name as written
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

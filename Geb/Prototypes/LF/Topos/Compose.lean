@@ -17,14 +17,14 @@ set_option doc.verso true in
 
 The decoding of the canonical LF terms of the fragment commutes with renaming and with
 hereditary substitution, the adequacy of a representation being compositional
-({cite}`HarperLicata2007`, Section 3.2): decoding a renamed term renames the decoded term, and
+({citeKey}`HarperLicata2007`, Section 3.2): decoding a renamed term renames the decoded term, and
 decoding a substituted term substitutes the decoded terms. The decoding is at the offset of the
 variables of terms in scope, past which the LF variables are the object variables; a renaming
 that moves the variables past one offset to the same positions past another, and a substitution
 for a variable of a term, which lowers the offset by one, keep the object variables a type
 decodes to. A canonical term of a family of
 terms mentions no variable of a family of proofs, the products of the signature's families of
-terms ranging over terms alone ({cite}`HarperLicata2007`, Section 2.4, for subordination).
+terms ranging over terms alone ({citeKey}`HarperLicata2007`, Section 2.4, for subordination).
 
 ## Main statements
 
@@ -36,7 +36,7 @@ terms ranging over terms alone ({cite}`HarperLicata2007`, Section 2.4, for subor
 
 ## References
 
-* {cite}`HarperLicata2007`, Sections 2.4 and 3.2.
+* {citeKey}`HarperLicata2007`, Sections 2.4 and 3.2.
 
 ## Tags
 

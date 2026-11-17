@@ -13,7 +13,7 @@ set_option doc.verso true in
 /-!
 # Suffix references
 
-The representation used in the soundness argument of {cite}`Kristiansen2005`
+The representation used in the soundness argument of {citeKey}`Kristiansen2005`
 Theorem 4.7: a short word is stored directly, and a long word by an input index
 and its suffix length. The input words are external to the reference.
 
@@ -39,7 +39,7 @@ so this contributes only a constant to the representation length.
 
 ## References
 
-* {cite}`Kristiansen2005`, Theorem 4.7.
+* {citeKey}`Kristiansen2005`, Theorem 4.7.
 
 ## Tags
 

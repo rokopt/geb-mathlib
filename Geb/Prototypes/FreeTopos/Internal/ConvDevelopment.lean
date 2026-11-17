@@ -44,7 +44,7 @@ development's check is the check of its declarations, each of the first kind.
 
 ## References
 
-* {cite}`Davis2009`, Chapter 1, for checkers admitted by relative soundness.
+* {citeKey}`Davis2009`, Chapter 1, for checkers admitted by relative soundness.
 
 ## Tags
 

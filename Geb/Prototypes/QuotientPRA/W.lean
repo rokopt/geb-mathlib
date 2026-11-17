@@ -67,8 +67,8 @@ the term constructors descend to classes of arguments, is a separate property. I
 requires every witness between arguments to lift to a witness between the
 constructed terms, and a choice of representatives for the arguments: finitely many
 choices are constructive, while infinitary arities need a choice principle, as
-{cite}`FiorePittsSteenkamp2020` records for W-types with equations and
-{cite}`Dijkstra2017` records for quotient inductive-inductive definitions. For a
+{citeKey}`FiorePittsSteenkamp2020` records for W-types with equations and
+{citeKey}`Dijkstra2017` records for quotient inductive-inductive definitions. For a
 finitary functor with free arities and congruences the quotient is a model, the
 initial one ({lit}`GebProto.QuotientPRA.InitialModel`), and in particular for a
 finitary signature with one-step equations ({lit}`GebProto.QuotientPRA.Initial`).
@@ -84,10 +84,10 @@ taken by the quotient instead.
 
 ## References
 
-* {cite}`AltenkirchCapriottiDijkstraKrausNordvallForsberg2018`
-* {cite}`Dijkstra2017`
-* {cite}`FiorePittsSteenkamp2020`
-* {cite}`Weber2007`
+* {citeKey}`AltenkirchCapriottiDijkstraKrausNordvallForsberg2018`
+* {citeKey}`Dijkstra2017`
+* {citeKey}`FiorePittsSteenkamp2020`
+* {citeKey}`Weber2007`
 
 ## Tags
 

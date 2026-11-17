@@ -32,7 +32,7 @@ of a datum are kept folded, each opened by its equations one step at a time.
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

@@ -18,7 +18,7 @@ certificate concludes it. Each rule of the checker gives a closure property of d
 Derivable equality is an equivalence relation on the terms derivably defined, and a congruence
 for the operations.
 
-The term model of a context under hypotheses {cite}`Kawase2024` has as values the classes of the
+The term model of a context under hypotheses {citeKey}`Kawase2024` has as values the classes of the
 terms of a sort in the context that are derivably defined, modulo derivable equality; an
 operation is defined at classes exactly when its application to their representatives has a sort
 and is derivably defined, and its value is the application's class. At the assignment of each
@@ -29,7 +29,7 @@ in scope and equate terms of one sort, and in it the hypotheses hold at that ass
 equate terms of one sort.
 
 Completeness follows: an equation that holds in every model of such a theory under such
-hypotheses is derivable ({cite}`PalmgrenVickers2007`, Theorem 22, for the initial model of
+hypotheses is derivable ({citeKey}`PalmgrenVickers2007`, Theorem 22, for the initial model of
 closed terms). The extensions of a theory by well-formed definitions keep its axioms in scope, as
 they keep them equations of terms of one sort.
 
@@ -51,8 +51,8 @@ they keep them equations of terms of one sort.
 
 ## References
 
-* {cite}`PalmgrenVickers2007`, Theorem 22.
-* {cite}`Kawase2024`, Section 6.3.
+* {citeKey}`PalmgrenVickers2007`, Theorem 22.
+* {citeKey}`Kawase2024`, Section 6.3.
 
 ## Tags
 

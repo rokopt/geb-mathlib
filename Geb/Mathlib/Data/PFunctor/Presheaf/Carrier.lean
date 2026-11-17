@@ -76,8 +76,8 @@ and its image under {name}`PresheafPFunctor.objPresheaf` lie in one category.
 
 ## References
 
-* {cite}`Weber2007`
-* {cite}`GambinoKock2013`
+* {citeKey}`Weber2007`
+* {citeKey}`GambinoKock2013`
 
 ## Tags
 

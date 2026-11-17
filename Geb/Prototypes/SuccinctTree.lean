@@ -20,7 +20,7 @@ An opening parenthesis contributes one and a closing parenthesis minus one.
 The total excess and minimum prefix excess, including the empty prefix, suffice
 to recognize a balanced forest. Combining summaries permits independent block
 scans followed by a balanced reduction, or cached summaries in a persistent tree.
-The range min-max construction of {cite}`NavarroSadakane2014` supplies the context;
+The range min-max construction of {citeKey}`NavarroSadakane2014` supplies the context;
 only its total and minimum components are needed for this recognition experiment.
 
 ## Main definitions
@@ -40,7 +40,7 @@ only its total and minimum components are needed for this recognition experiment
 
 ## References
 
-* {cite}`NavarroSadakane2014`
+* {citeKey}`NavarroSadakane2014`
 
 ## Tags
 

@@ -54,7 +54,7 @@ length as the scanner's value does.
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

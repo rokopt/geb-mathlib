@@ -15,7 +15,7 @@ set_option doc.verso true in
 Interpreting all variables in the singleton type supplies a well-founded tree for
 recursion on scoped terms, even though each child extends its parent's context.
 The binding-signature operator is the arbitrary-arity version of the operator in
-{cite}`FiorePlotkinTuri1999`, Section 2. The context-extension construction
+{citeKey}`FiorePlotkinTuri1999`, Section 2. The context-extension construction
 {name}`Geb.PHOAS.PProfunctor.BindingNode` gives
 {lit}`H(M)(Γ) = Σ a, Π b, M(Γ ⊕ C(a,b))`, where
 {lit}`C(a,b) = (P.B a).B b`. The free-monad/end construction realizes the initial
@@ -45,7 +45,7 @@ family is equivalent to the original closed end by
 
 ## References
 
-* {cite}`FiorePlotkinTuri1999`
+* {citeKey}`FiorePlotkinTuri1999`
 
 ## Tags
 

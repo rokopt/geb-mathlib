@@ -54,7 +54,7 @@ equal values ({lit}`Slice.Presentation.evalS_src`), by induction on the witness 
 
 ## References
 
-* {cite}`KellyPower1993`, for presentations of finitary monads by operations and equations.
+* {citeKey}`KellyPower1993`, for presentations of finitary monads by operations and equations.
 
 ## Tags
 

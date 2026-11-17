@@ -40,8 +40,8 @@ of its endpoint shapes on restricted arguments
 
 ## References
 
-* {cite}`FiorePittsSteenkamp2020`, for W-types with equations.
-* {cite}`KellyPower1993`, for presentations of finitary monads by operations and equations.
+* {citeKey}`FiorePittsSteenkamp2020`, for W-types with equations.
+* {citeKey}`KellyPower1993`, for presentations of finitary monads by operations and equations.
 
 ## Tags
 

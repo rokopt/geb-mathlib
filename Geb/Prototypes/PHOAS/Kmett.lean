@@ -14,7 +14,7 @@ set_option doc.verso true in
 /-!
 # Kmett's application and abstraction signature
 
-The signature from {cite}`Kmett2013` has interpretation {lit}`Y × Y ⊕ (X → Y)`.
+The signature from {citeKey}`Kmett2013` has interpretation {lit}`Y × Y ⊕ (X → Y)`.
 Variables belong to its free monad, rather than to the signature. The closed examples
 satisfy the end's wedge condition explicitly.
 
@@ -44,7 +44,7 @@ categories of algebras and coalgebras.
 
 ## References
 
-* {cite}`Kmett2013`
+* {citeKey}`Kmett2013`
 
 ## Tags
 

@@ -34,7 +34,7 @@ dispatches to the lemma for the node's shape, the successor's case being
 excluded by the hypothesis.
 
 {lit}`LOf.correct` is the compiler's half of the soundness of
-{cite}`Kristiansen2005` Theorem 4.1: the compiled program computes the
+{citeKey}`Kristiansen2005` Theorem 4.1: the compiled program computes the
 expression's meaning on the representation that keeps only a bounded word and
 an end segment length.
 
@@ -54,7 +54,7 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

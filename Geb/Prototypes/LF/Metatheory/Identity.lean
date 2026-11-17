@@ -14,8 +14,8 @@ set_option doc.verso true in
 # The identity principles of canonical LF
 
 The η-expansion of a variable is an identity for hereditary substitution, the syntactic content
-of the identity principles of canonical LF ({cite}`WatkinsEtAl2002`, Section 4.6; mentioned in
-{cite}`HarperLicata2007`, Section 2.3), in two senses: substituting a term for a variable into
+of the identity principles of canonical LF ({citeKey}`WatkinsEtAl2002`, Section 4.6; mentioned in
+{citeKey}`HarperLicata2007`, Section 2.3), in two senses: substituting a term for a variable into
 the variable's expansion gives the term, and substituting a variable's expansion for another
 variable renames that variable. Both hold of η-long terms and of expressions whose variables are
 applied only to spines that fill their simple types, the forms the judgments accept
@@ -47,8 +47,8 @@ codomain.
 
 ## References
 
-* {cite}`WatkinsEtAl2002`, Section 4.6.
-* {cite}`HarperLicata2007`, Section 2.3.
+* {citeKey}`WatkinsEtAl2002`, Section 4.6.
+* {citeKey}`HarperLicata2007`, Section 2.3.
 
 ## Tags
 
@@ -562,7 +562,7 @@ theorem etaReduce_base (a : ℕ) : EtaReduceStmt (RoseTree.node (.base a) []) :=
   rw [reduce_node]
   rfl
 
-/-- The identity principles of hereditary substitution, in simple types ({cite}`WatkinsEtAl2002`,
+/-- The identity principles of hereditary substitution, in simple types ({citeKey}`WatkinsEtAl2002`,
 Section 4.6):
 the reduction of the η-expansion of a variable against a spine that fills its type is the
 variable's application, substituting the expansion of a variable for one applied only to such

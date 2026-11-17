@@ -24,7 +24,7 @@ allocated in a common endpoint space.
 
 ## References
 
-* {cite}`DeFalco2010`, Proposition 4.3 and the gluing argument in Proposition 5.3.
+* {citeKey}`DeFalco2010`, Proposition 4.3 and the gluing argument in Proposition 5.3.
 
 ## Tags
 

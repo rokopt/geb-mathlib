@@ -31,7 +31,7 @@ from the endpoint matching.
 
 ## References
 
-* {cite}`DeFalco2010`, Definition 4.1 and Proposition 4.3.
+* {citeKey}`DeFalco2010`, Definition 4.1 and Proposition 4.3.
 
 ## Tags
 

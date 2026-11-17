@@ -60,7 +60,7 @@ prescribes, the latter through
 
 # References
 
-* {cite}`Mazzanti2016`
+* {citeKey}`Mazzanti2016`
 
 # Tags
 

@@ -17,7 +17,7 @@ set_option doc.verso true in
 The positive integer {lit}`n + 1` is encoded by the Elias delta code: the gamma code of its
 binary size, followed by the remaining bits after its leading one. The gamma code prefixes
 the binary representation by one zero for each bit after its leading one.
-This is the delta code of Section V of {cite}`Elias1975`, shifted to include zero.
+This is the delta code of Section V of {citeKey}`Elias1975`, shifted to include zero.
 
 ## Main definitions
 
@@ -33,7 +33,7 @@ This is the delta code of Section V of {cite}`Elias1975`, shifted to include zer
 
 ## References
 
-* {cite}`Elias1975`
+* {citeKey}`Elias1975`
 
 ## Tags
 

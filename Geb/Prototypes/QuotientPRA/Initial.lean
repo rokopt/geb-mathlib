@@ -48,8 +48,8 @@ operations take terms as arguments ({lit}`termArguments`), and the congruence
 
 ## References
 
-* {cite}`FiorePittsSteenkamp2020`
-* {cite}`AltenkirchCapriottiDijkstraKrausNordvallForsberg2018`
+* {citeKey}`FiorePittsSteenkamp2020`
+* {citeKey}`AltenkirchCapriottiDijkstraKrausNordvallForsberg2018`
 
 ## Tags
 

@@ -39,7 +39,7 @@ and the arity is compared with the seventh numeral read into a counter.
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

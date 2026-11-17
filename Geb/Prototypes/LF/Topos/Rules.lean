@@ -14,12 +14,12 @@ set_option doc.verso true in
 # The computation rules of the internal language as rewrite rules
 
 The computation rules of the fragment of the Mitchell–Bénabou language represented by
-{name}`Geb.LF.Topos.sig`, as rewrite rules on its constants ({cite}`CousineauDowek2007`): the β
+{name}`Geb.LF.Topos.sig`, as rewrite rules on its constants ({citeKey}`CousineauDowek2007`): the β
 rule of abstraction, the two computation rules of pairs, the two of each of the folds of the
 natural numbers and of lists, the one of each of the folds of rose trees, and the two of the case
 analysis of a coproduct. Modulo these rules a term and the term it computes to are terms of the
 same types, so that an equation that holds by computation is proved by reflexivity alone, the
-regime in which {cite}`NormanAvigad2025` searches with recursors' reduction rules. The η rules of
+regime in which {citeKey}`NormanAvigad2025` searches with recursors' reduction rules. The η rules of
 pairs and of the terminal type, whose left sides are not applications of a constant, stay
 derivation rules of the signature, as do the computation rules themselves, which are redundant
 modulo the rules.
@@ -33,8 +33,8 @@ modulo the rules.
 
 ## References
 
-* {cite}`CousineauDowek2007`
-* {cite}`NormanAvigad2025`, Section 3.1.
+* {citeKey}`CousineauDowek2007`
+* {citeKey}`NormanAvigad2025`, Section 3.1.
 
 ## Tags
 

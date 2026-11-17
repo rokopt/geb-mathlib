@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Scan
-meta import GebMeta  -- shake: keep; supplies the cite docstring role
+meta import GebMeta  -- shake: keep; supplies the citeKey docstring role
 
 set_option doc.verso true in
 /-!
@@ -16,7 +16,7 @@ A counter over the digits {lit}`0`, {lit}`1` and {lit}`2`, least significant
 first, in which an increment turns a run of twos into ones and raises the
 digit above it, and a decrement turns a run of zeros into ones and lowers the
 digit above it. This is the redundant binary number system of
-{cite}`Okasaki1998` Chapter 9. A machine keeping a counter in this form on a
+{citeKey}`Okasaki1998` Chapter 9. A machine keeping a counter in this form on a
 tape does a constant amount of work per operation amortised: each digit the
 carry or the borrow passes was a two or a zero and becomes a one, so twice the
 number of digits that are not one is a potential paying for every chain. The
@@ -83,7 +83,7 @@ literals, and the canonical form's test is a {name}`decide` rather than
 
 ## References
 
-* {cite}`Okasaki1998`
+* {citeKey}`Okasaki1998`
 
 ## Tags
 

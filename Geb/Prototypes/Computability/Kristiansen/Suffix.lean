@@ -12,7 +12,7 @@ set_option doc.verso true in
 /-!
 # The suffix invariant
 
-Lemma 4.5 of {cite}`Kristiansen2005`: a word computed by the algebra is either
+Lemma 4.5 of {citeKey}`Kristiansen2005`: a word computed by the algebra is either
 bounded in length by an expression-dependent constant or is a suffix of an input.
 The proof follows the paper's invariant (4.6), preservation of a suffix-closed
 set containing the constants and the inputs.
@@ -29,7 +29,7 @@ set containing the constants and the inputs.
 
 ## References
 
-* {cite}`Kristiansen2005`, Lemma 4.5 and equation (4.6).
+* {citeKey}`Kristiansen2005`, Lemma 4.5 and equation (4.6).
 
 ## Tags
 
@@ -120,11 +120,11 @@ theorem preserves_eval : ∀ e : S, Allowed e.1 → Preserves (nsiConst e.1) (ev
   SlicePFunctor.W.induction fun x ih ha ↦
     preserves_evalValue x.1.1 ha.1 (fun d ↦ eval (x.1.2 d)) _ _ (fun d ↦ ih d (ha.2 d))
 
-/-- Equation (4.6) of {cite}`Kristiansen2005`, with the constants bounded by their maximum. -/
+/-- Equation (4.6) of {citeKey}`Kristiansen2005`, with the constants bounded by their maximum. -/
 theorem preserves_sem {n : ℕ} (e : LOf n) : Preserves (nsiConst e.1.1.1) e.sem :=
   preserves_transport _ (preserves_eval e.1.1 e.2)
 
-/-- Lemma 4.5 of {cite}`Kristiansen2005`: every output is short or an input suffix. -/
+/-- Lemma 4.5 of {citeKey}`Kristiansen2005`: every output is short or an input suffix. -/
 theorem short_or_suffix {n : ℕ} (e : LOf n) (x : Fin n → List Bool) :
     (e.sem x).length ≤ nsiConst e.1.1.1 ∨ ∃ i, e.sem x <:+ x i := by
   apply preserves_sem e (fun w ↦ w.length ≤ nsiConst e.1.1.1 ∨ ∃ i, w <:+ x i)

@@ -48,7 +48,7 @@ label and children, a list by its cases.
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

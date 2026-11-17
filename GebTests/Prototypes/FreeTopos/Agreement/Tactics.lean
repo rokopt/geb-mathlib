@@ -1575,9 +1575,8 @@ theorem occRewrite_eq (lk i : ℕ) (t : Term) (d : ℕ) :
   | _ =>
     mirror_simp [«Tactics.occStep», label_encTerm, hC 0 fun _ ↦ rfl]
     mirror_simp [labelData, mArgs_eq, uses_eq, allT_label, Nat.add_zero]
-    all_goals
-      simp only [Bool.beq_eq_decide_eq]
-      split <;> tac_simp [List.map_map]
+    simp only [Bool.beq_eq_decide_eq]
+    split <;> tac_simp [List.map_map]
 
 /-- The mirror's abstraction, over a new variable of a type, of an encoded term's occurrences of
 an encoded term. -/

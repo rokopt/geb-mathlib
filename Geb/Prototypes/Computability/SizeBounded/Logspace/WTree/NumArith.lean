@@ -43,7 +43,7 @@ truth tables on flags, {lit}`tt2` and {lit}`tt3`, and conditionals on flags.
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

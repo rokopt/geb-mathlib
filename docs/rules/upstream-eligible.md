@@ -115,7 +115,7 @@ admitted. They are the imports of a literate module: the first when
 its imports do not otherwise reach the module whose syntax its Verso
 role markup records a compile-time use of, which `lake shake`
 requires imported, and the second, as a `meta import`, for the
-`{cite}` docstring role (`docs/rules/lean-coding.md` § Literate
+`{citeKey}` docstring role (`docs/rules/lean-coding.md` § Literate
 modules). Extraction removes both import lines, per
 `scripts/extract-pr.sh`'s `strip_line` function: neither has meaning
 upstream.

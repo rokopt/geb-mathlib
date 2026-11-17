@@ -39,8 +39,8 @@ in the machine module.
 
 # References
 
-* {cite}`Oitavem2010`, Definition 3.1.
-* {cite}`Kristiansen2005`
+* {citeKey}`Oitavem2010`, Definition 3.1.
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

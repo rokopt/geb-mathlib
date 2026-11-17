@@ -14,12 +14,12 @@ set_option doc.verso true in
 
 The principle of unique choice: a relation that relates each element of its domain to exactly
 one element of its codomain is the graph of a function. It is the axiom of unique choice
-{lit}`AC!` of {cite}`ContenteMaietti2024`, section 3.2, which identifies functional relations
+{lit}`AC!` of {citeKey}`ContenteMaietti2024`, section 3.2, which identifies functional relations
 with functions.
 
 Every topos validates it in its internal logic, where the arrow a functional relation determines
 is part of the structure; every model of the theory of this repository's free topos does
-({lit}`Geb.FreeTopos.unique_choice`, after {cite}`DubucSzyld2015`, Proposition 1.21). Lean's
+({lit}`Geb.FreeTopos.unique_choice`, after {citeKey}`DubucSzyld2015`, Proposition 1.21). Lean's
 logic without {lit}`Classical.choice` does not provide it: a unique existence is a proposition,
 and a proposition does not eliminate into a type to give the function. Stated here as a
 proposition, it is a hypothesis of the theorems that need it, which hold without
@@ -32,8 +32,8 @@ proposition, it is a hypothesis of the theorems that need it, which hold without
 
 ## References
 
-* {cite}`ContenteMaietti2024`, section 3.2, for the axiom of unique choice.
-* {cite}`DubucSzyld2015`, Proposition 1.21, for the functional relations of a topos.
+* {citeKey}`ContenteMaietti2024`, section 3.2, for the axiom of unique choice.
+* {citeKey}`DubucSzyld2015`, Proposition 1.21, for the functional relations of a topos.
 
 ## Tags
 
@@ -50,7 +50,7 @@ universe u v
 
 /-- The principle of unique choice: each relation that relates every element of its domain to
 exactly one element of its codomain holds between each element and the value of a function
-({cite}`ContenteMaietti2024`, section 3.2). -/
+({citeKey}`ContenteMaietti2024`, section 3.2). -/
 def UniqueChoice : Prop :=
   ∀ (α : Sort u) (β : Sort v) (r : α → β → Prop), (∀ a, ∃! b, r a b) → ∃ f : α → β, ∀ a, r a (f a)
 

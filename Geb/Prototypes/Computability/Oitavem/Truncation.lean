@@ -12,7 +12,7 @@ set_option doc.verso true in
 /-!
 # The safe-input truncation lemma
 
-Lemma 3.3 of {cite}`Oitavem2010`: a safe argument is used only through a
+Lemma 3.3 of {citeKey}`Oitavem2010`: a safe argument is used only through a
 numerical truncation at the length of a word computed from the normal arguments.
 The bound is itself an expression of Logs with no safe arguments. The theorem
 here takes the paper's auxiliary function to be the original function itself.
@@ -28,7 +28,7 @@ here takes the paper's auxiliary function to be the original function itself.
 
 ## References
 
-* {cite}`Oitavem2010`, Lemma 3.3.
+* {citeKey}`Oitavem2010`, Lemma 3.3.
 
 ## Tags
 

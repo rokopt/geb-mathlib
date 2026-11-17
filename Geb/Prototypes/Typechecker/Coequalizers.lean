@@ -59,7 +59,7 @@ Different proof trees also remain different base values: quotienting morphisms
 does not quotient the elements of an object's accepted fiber.
 
 For an explicitly given finite undirected graph, connectivity is decidable in
-logspace {cite}`Reingold2008`. Scanning its numbered vertices for the least
+logspace {citeKey}`Reingold2008`. Scanning its numbered vertices for the least
 connected one then computes a normal form in logspace. Applying this observation
 to string-valued diagrams needs a uniformly accessible finite graph presentation
 with polynomial size in the input length, and consistent representative labels
@@ -72,7 +72,7 @@ machine, including its input {lit}`e`. The two maps output {lit}`(e, 0)` and
 extracting these endpoints can be done in logspace by rescanning adjacent
 configurations; no bound on the length of a possible history is assumed.
 Thus the only nonsingleton classes are the pairs whose machine halts, a relation
-also used in the proof of Proposition 7.6 of {cite}`GaoGerdes2010`.
+also used in the proof of Proposition 7.6 of {citeKey}`GaoGerdes2010`.
 
 A coequalizer projection must identify each halting pair. For a nonhalting input,
 the singleton indicator of {lit}`(e, 0)` coequalizes the diagram and separates

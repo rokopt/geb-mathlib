@@ -32,8 +32,8 @@ evaluating them.
 
 ## References
 
-* {cite}`TreeCalculusSpecification`, triage rules (1), (2), and (3a-c).
-* {cite}`TreeCalculusImplementation`, branch-first evaluator.
+* {citeKey}`TreeCalculusSpecification`, triage rules (1), (2), and (3a-c).
+* {citeKey}`TreeCalculusImplementation`, branch-first evaluator.
 
 ## Tags
 

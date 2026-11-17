@@ -24,7 +24,7 @@ set_option doc.verso true in
 # The internal language of a topos in LF
 
 A fragment of the Mitchell–Bénabou language of the free elementary topos with a natural numbers
-object ({cite}`MacLaneMoerdijk1992`, Section VI.5) as an LF signature, its types, terms and
+object ({citeKey}`MacLaneMoerdijk1992`, Section VI.5) as an LF signature, its types, terms and
 derivations the canonical terms of LF types, and its computation rules as rewrite rules on the
 signature's constants; the adequacy of the representation of its terms; and the decoding of the
 canonical terms of the families of proofs as derivations of the language, and its soundness.

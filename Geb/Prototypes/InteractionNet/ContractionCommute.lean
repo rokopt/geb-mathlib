@@ -32,7 +32,7 @@ with isomorphic results.
 
 ## References
 
-* {cite}`DeFalco2010`, Proposition 5.3 and Corollary 5.4.
+* {citeKey}`DeFalco2010`, Proposition 5.3 and Corollary 5.4.
 
 ## Tags
 

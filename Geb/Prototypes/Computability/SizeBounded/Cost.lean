@@ -16,7 +16,7 @@ An evaluator of the algebra that accounts for its work: with the value of an
 expression it returns the time taken and the greatest length of any value read
 or produced on the way, and every expression's time is bounded by a polynomial
 in the length of its arguments while every length is bounded by that length or
-a constant. This is the bitstring form of {cite}`Mazzanti2016` Lemma 2.2 in the
+a constant. This is the bitstring form of {citeKey}`Mazzanti2016` Lemma 2.2 in the
 model of the algebra's own evaluator, which the paper states without proof;
 it is not a bound on a machine, and the remaining distance to one is the
 compilation of this evaluator into a machine whose step count and cell count
@@ -80,7 +80,7 @@ bounded by that rather than by {lit}`m`.
 
 # References
 
-* {cite}`Mazzanti2016`
+* {citeKey}`Mazzanti2016`
 
 # Tags
 

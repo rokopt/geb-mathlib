@@ -12,7 +12,7 @@ public meta import Lean.DocString.Syntax
 public meta import Lean.Elab.DocString.Builtin.Parsing
 
 /-!
-# Axiom-hygiene linter and the `{cite}` docstring role
+# Axiom-hygiene linter and the `{citeKey}` docstring role
 
 `detectNonstandardAxiom` is an `@[env_linter]` that fails
 `lake lint` when a declaration depends on any axiom outside the
@@ -31,8 +31,8 @@ established and the command `evaluation_axiom` declared, the checks of
 the developments certificates store, are permitted to every declaration
 in either mode.
 
-`cite` is a docstring role for literate modules
-(`docs/rules/lean-coding.md` § Literate modules): ``{cite}`Key` ``
+`citeKey` is a docstring role for literate modules
+(`docs/rules/lean-coding.md` § Literate modules): ``{citeKey}`Key` ``
 resolves `Key` in the repository's `docs/references.bib` at
 elaboration, failing on an unknown key, and renders as the key with
 the formatted entry disclosed on demand. `loadBibliography` is the
@@ -49,7 +49,7 @@ parsed bibliography it and the manual's generated entries share.
   the loading mode `native` permits.
 * `GebMeta.evaluationAxiomModules` — the exact module names whose
   axioms every mode permits.
-* `cite` — the docstring role, at the root namespace.
+* `citeKey` — the docstring role, at the root namespace.
 * `GebMeta.loadBibliography` — the parsed `docs/references.bib` of
   the repository containing a given source file.
 
@@ -681,15 +681,19 @@ def BibEntry.formatted (e : BibEntry) : Array (Inline ElabInline) := Id.run do
 
 open Lean.Doc
 
-/-- The `{cite}` docstring role: ``{cite}`Key` `` names an entry of
+/-- The `{citeKey}` docstring role: ``{citeKey}`Key` `` names an entry of
 `docs/references.bib` by its citation key, which must exist, and
 renders as a footnote whose summary is the key and whose body is the
 formatted entry. `scripts/extract-pr.sh` converts it to mathlib's bare
 `[Key]` form at extraction. Declared at the root namespace, since a
-role name is resolved as a constant is, so that ``{cite}`Key` ``
-resolves in a module that opens nothing. -/
+role name is resolved as a constant is, so that ``{citeKey}`Key` ``
+resolves in a module that opens nothing. The name is distinct from
+that of mathlib's role `cite` (`Mathlib.Util.VersoRoles`), also at the
+root namespace and imported by every mathlib module, which takes the
+key as a string argument with the text to render and reports an
+unknown key as a warning. -/
 @[doc_role]
-def _root_.cite (xs : TSyntaxArray ``Parser.inline) : DocM (Inline ElabInline) := do
+def _root_.citeKey (xs : TSyntaxArray ``Parser.inline) : DocM (Inline ElabInline) := do
   let key ← onlyCode xs
   let (path, bib) ← loadBibliography (← getFileName)
   let some entry := bib[key.getVersoCode]?

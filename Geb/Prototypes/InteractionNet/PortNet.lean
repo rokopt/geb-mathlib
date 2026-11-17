@@ -20,7 +20,7 @@ set_option doc.verso true in
 A cell carries its symbol and ordered ports, with port zero principal. A net pairs the
 cell ports and its external boundary by a wire matching and records closed wire components
 separately. The finite presentation indexes cells and boundary ports by finite ordinals.
-This is a presentation of the wires, pointed cells and loops in {cite}`DeFalco2010`,
+This is a presentation of the wires, pointed cells and loops in {citeKey}`DeFalco2010`,
 Definition 3.1, with the cell's order exposed as a port index.
 
 ## Main definitions
@@ -33,7 +33,7 @@ Definition 3.1, with the cell's order exposed as a port index.
 
 ## References
 
-* {cite}`DeFalco2010`, Definitions 3.1 and 3.2.
+* {citeKey}`DeFalco2010`, Definitions 3.1 and 3.2.
 
 ## Tags
 

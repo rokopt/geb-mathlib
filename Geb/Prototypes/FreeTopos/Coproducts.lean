@@ -21,10 +21,10 @@ In a cartesian closed category the product with an object preserves coproducts, 
 adjoint, so that an arrow from the product of {lit}`X` and a coproduct is determined by its
 composites with the products of {lit}`X` and the injections ({lit}`prod_coprod_ext`), and any two
 such composites are those of one arrow, the copairing in the context {lit}`X`
-({lit}`copairIn`): the category is distributive ({cite}`CarboniLackWalters1993`). For the same
+({lit}`copairIn`): the category is distributive ({citeKey}`CarboniLackWalters1993`). For the same
 reason an object with an arrow to the initial object is initial ({lit}`eq_of_hom_zero`): the
 initial object is strict, as it is in every distributive category
-({cite}`CarboniLackWalters1993`, Proposition 3.4). The case analysis of a coproduct
+({citeKey}`CarboniLackWalters1993`, Proposition 3.4). The case analysis of a coproduct
 is an arrow ({lit}`caseArr`), the transpose of the copairing, in the context of a pair of
 functions, of their evaluations: an application of the case analysis of a pair of functions to
 an injection of an argument is the application of the corresponding function to it.
@@ -46,7 +46,7 @@ an injection of an argument is the application of the corresponding function to 
 
 ## References
 
-* {cite}`CarboniLackWalters1993` for distributive categories and their strict initial objects.
+* {citeKey}`CarboniLackWalters1993` for distributive categories and their strict initial objects.
 
 ## Tags
 

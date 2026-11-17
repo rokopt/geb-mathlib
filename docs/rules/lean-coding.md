@@ -161,7 +161,7 @@ each occurrence with a pointer to the upstream rule.
   ``{name}`Foo.bar` ``, checked at elaboration.
 - Literature citations reference a key in `docs/references.bib`
   in `[Key]` form, which a literate module writes as
-  ``{cite}`Key` `` (§ Literate modules); the `## References`
+  ``{citeKey}`Key` `` (§ Literate modules); the `## References`
   section lists the cited keys. The bibliographic detail lives
   only in the `.bib`.
 - No development-history references in docstrings (e.g.,
@@ -584,11 +584,15 @@ their Markdown docstrings; they render too, and are not converted.
 - Docstrings are checked Verso markup rather than Markdown, under the
   `doc.verso` option: a header is a `#` line and a checked reference to
   a constant is written ``{name}`Foo` ``. Verso opens a list on `*`,
-  `-` or `+` alike. A citation is written ``{cite}`Key` ``: the role,
-  defined in `GebMeta`, resolves the key in `docs/references.bib` at
-  elaboration, failing on an unknown key, and renders as the key in
+  `-` or `+` alike. A citation is written ``{citeKey}`Key` ``: the
+  role, defined in `GebMeta`, resolves the key in `docs/references.bib`
+  at elaboration, failing on an unknown key, and renders as the key in
   brackets with the formatted entry disclosed on click, in the
-  literate site and the manual alike; doc-gen4 shows the key alone. A
+  literate site and the manual alike; doc-gen4 shows the key alone. It
+  is not mathlib's role `{cite "Key"}[text]`
+  (`Mathlib.Util.VersoRoles`), which every mathlib import brings into
+  scope: that one takes the text to render, reports an unknown key as
+  a warning, and is not converted by extraction. A
   module using it carries `meta import GebMeta`, annotated
   `-- shake: keep`, since the role runs at elaboration and leaves no
   constant reference for `lake shake` to see. Any other literal
@@ -604,7 +608,7 @@ their Markdown docstrings; they render too, and are not converted.
   (§ Extraction below). The option is compile-time, so a
   consumer compiling the same file without it renders the markup
   literally, which is why extraction converts it.
-- Every code span carries a role: `{cite}` for a bibliography key,
+- Every code span carries a role: `{citeKey}` for a bibliography key,
   `{name}` for a constant that must resolve, `{option}` for a Lean
   option, `{lit}` for anything else.
   A span with no role warns (`doc.verso.suggestions`, which defaults
@@ -642,7 +646,7 @@ their Markdown docstrings; they render too, and are not converted.
   Lake `leanOptions` entry therefore holds only an option Lean core
   registers.
 - Extraction. `scripts/extract-pr.sh` converts a module to the
-  Markdown form upstream expects: inside a docstring, a `{cite}` role
+  Markdown form upstream expects: inside a docstring, a `{citeKey}` role
   becomes the bare `[Key]` form, any other role's code span becomes a
   bare code span, and an escaped bracket becomes the bare bracket;
   outside any docstring, both `set_option doc.verso true` lines, with
@@ -685,7 +689,7 @@ their Markdown docstrings; they render too, and are not converted.
   genre defines four citable kinds, article, in-proceedings, thesis
   and arXiv; an entry of another kind is declared as an article whose
   journal is its publisher, institution or `howpublished` field. The
-  file is read by `GebMeta.loadBibliography`, which the `{cite}`
+  file is read by `GebMeta.loadBibliography`, which the `{citeKey}`
   docstring role shares.
 - `manual/Main.lean` alone does not declare `module`: under the
   module system its `main` compiles private and the executable
@@ -696,7 +700,16 @@ their Markdown docstrings; they render too, and are not converted.
   are `public def`s (a module-private `def` cannot be a `{citep}`
   target from another module).
 - The `def`s `#doc` elaborates carry no docstrings and are
-  exempted from `docBlame` in `scripts/nolints.json`; the manual
+  exempted from `docBlame` in `scripts/nolints.json`: the document
+  constant of each chapter, and the definition Verso adds for each
+  top-level block of the chapter,
+  `«the canonical document object name».block.n`, where `n` is the
+  block's index among the chapter's blocks. The linter prints the
+  name of such a definition with the index in superscript
+  (`block✝ⁿ⁻⁰`). An edit that changes which indices of a chapter
+  name definitions is followed by the same change to the chapter's
+  entries (`TODO.md` § Triggers, Verso's block definitions under
+  `docBlame`). The manual
   library's `moreLeanArgs` disable `linter.hashCommand` (`#doc` is
   the document syntax) and `linter.style.emptyLine` (an empty line
   separates a document's blocks), and widen

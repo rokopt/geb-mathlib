@@ -13,7 +13,7 @@ set_option doc.verso true in
 /-!
 # Weakening
 
-The judgments of canonical LF are stable under renaming ({cite}`HarperLicata2007`, Lemmas 2.6
+The judgments of canonical LF are stable under renaming ({citeKey}`HarperLicata2007`, Lemmas 2.6
 and 2.7, weakening and exchange, in de Bruijn form): an expression judged in a context is judged,
 renamed, in any context into which the renaming maps each variable to one of the renamed type
 ({lit}`CtxRen`). Weakening by a variable is the renaming by the successor into the extended
@@ -40,7 +40,7 @@ expression ({lit}`judge_rename`).
 
 ## References
 
-* {cite}`HarperLicata2007`, Section 2.3.
+* {citeKey}`HarperLicata2007`, Section 2.3.
 
 ## Tags
 

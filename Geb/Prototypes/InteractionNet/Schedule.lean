@@ -34,7 +34,7 @@ the strict diamond before these theorems apply to it.
 
 ## References
 
-* {cite}`DeFalco2010`, Definition 5.2, Proposition 5.3 and Corollary 5.4, give the strict
+* {citeKey}`DeFalco2010`, Definition 5.2, Proposition 5.3 and Corollary 5.4, give the strict
   diamond used for interaction nets, modulo renaming of fresh ports.
 
 ## Tags

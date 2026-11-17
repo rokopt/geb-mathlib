@@ -38,7 +38,7 @@ operator on word values, not a compilation of its base and step functions to a T
 
 ## References
 
-* {cite}`Mazzanti2016`, Section 2 and Theorem 5.3, retaining simultaneous results together.
+* {citeKey}`Mazzanti2016`, Section 2 and Theorem 5.3, retaining simultaneous results together.
 
 ## Tags
 

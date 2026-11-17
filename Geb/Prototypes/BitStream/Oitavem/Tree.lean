@@ -54,7 +54,7 @@ depend on the destructor {name}`PFunctor.M.dest`, whose dependence on
 
 # References
 
-* {cite}`Oitavem2010`, Definition 3.1.
+* {citeKey}`Oitavem2010`, Definition 3.1.
 
 # Tags
 

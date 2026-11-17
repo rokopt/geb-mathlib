@@ -7,7 +7,7 @@ module
 
 public import Geb.Prototypes.LargeIR.Basic
 public import Geb.Mathlib.Data.PFunctor.IndRec.Basic
-meta import GebMeta  -- shake: keep; supplies the cite docstring role
+meta import GebMeta  -- shake: keep; supplies the citeKey docstring role
 
 set_option doc.verso true in
 /-!
@@ -48,7 +48,7 @@ repository's {name}`CategoryTheory.FreeCoprodCompDisc` is the completion of
 equality, so the agreement is stated at the level of objects: the morphism
 action of large inductive-recursive definitions, which compares decodings
 by functions {lit}`T u → T' (h u)` and is what the positivity of
-{cite}`GhaniNordvallForsbergMalatesta2015` provides, is outside what that
+{citeKey}`GhaniNordvallForsbergMalatesta2015` provides, is outside what that
 completion expresses, and is not compared here.
 
 ## Main definitions
@@ -77,8 +77,8 @@ completion expresses, and is not compared here.
 
 ## References
 
-* {cite}`DybjerSetzer2003`
-* {cite}`GhaniNordvallForsbergMalatesta2015`
+* {citeKey}`DybjerSetzer2003`
+* {citeKey}`GhaniNordvallForsbergMalatesta2015`
 
 ## Tags
 

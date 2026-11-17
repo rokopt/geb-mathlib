@@ -9,7 +9,7 @@ public import Geb.Mathlib.Data.PFunctor.Presheaf.Basic
 public import Geb.Mathlib.Data.PFunctor.Slice.W
 public import Mathlib.CategoryTheory.Category.Preorder
 public import Mathlib.Order.Fin.Basic
-meta import GebMeta  -- shake: keep; supplies the cite docstring role
+meta import GebMeta  -- shake: keep; supplies the citeKey docstring role
 
 set_option doc.verso true in
 /-!
@@ -74,8 +74,8 @@ over the constant point, is the iteration of {lit}`P`.
 
 ## References
 
-* {cite}`DybjerSetzer2003`
-* {cite}`HancockMcBrideGhaniMalatestaAltenkirch2013`
+* {citeKey}`DybjerSetzer2003`
+* {citeKey}`HancockMcBrideGhaniMalatestaAltenkirch2013`
 
 ## Tags
 

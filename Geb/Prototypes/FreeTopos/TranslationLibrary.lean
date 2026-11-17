@@ -23,7 +23,7 @@ the equality of trees. A bit is represented by the element of the sum of the ter
 itself it is, a bitstring by its list of bits, and a tree by its nodes.
 
 The arithmetic is specified through the index of a bitstring in the enumeration of
-{cite}`Oitavem2010`, Remark 2.2, in which the bit zero is the digit one and the bit one the
+{citeKey}`Oitavem2010`, Remark 2.2, in which the bit zero is the digit one and the bit one the
 digit two: each arithmetic definition represents the bitstring of the operation on the
 indices.
 
@@ -57,7 +57,7 @@ stated of a function whose values are specified there alone.
 
 ## References
 
-* {cite}`Oitavem2010`, Remark 2.2, for the enumeration of the bitstrings.
+* {citeKey}`Oitavem2010`, Remark 2.2, for the enumeration of the bitstrings.
 
 ## Tags
 
@@ -122,11 +122,11 @@ scoped macro (name := isTy) "is_ty" : tactic =>
     Geb.FreeTopos.Internal.isTy_prod, Geb.FreeTopos.Internal.isTy_exp,
     Geb.FreeTopos.Internal.isTy_lrose, Geb.FreeTopos.x, Geb.FreeTopos.Internal.isTy_var])
 
-/-- The index of a bitstring in the enumeration of {cite}`Oitavem2010`, the bit one the digit
+/-- The index of a bitstring in the enumeration of {citeKey}`Oitavem2010`, the bit one the digit
 two. -/
 def rankB (w : List Bit) : ℕ := Oitavem.rank (w.map Sum.isRight)
 
-/-- The bitstring of an index in the enumeration of {cite}`Oitavem2010`. -/
+/-- The bitstring of an index in the enumeration of {citeKey}`Oitavem2010`. -/
 def ofNum (n : ℕ) : List Bit := (Oitavem.unrank n).map fun b ↦ bif b then .inr () else .inl ()
 
 @[simp] theorem rankB_nil : rankB [] = 0 := rfl

@@ -38,8 +38,8 @@ is: its statement mentions
 
 # References
 
-* {cite}`Kristiansen2005`
-* {cite}`Oitavem2010`
+* {citeKey}`Kristiansen2005`
+* {citeKey}`Oitavem2010`
 
 # Tags
 

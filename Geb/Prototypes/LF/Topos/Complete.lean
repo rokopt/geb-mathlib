@@ -17,7 +17,7 @@ The encoding of a term of the internal language ({name}`Geb.LF.Topos.enc`) that 
 canonical LF term of the family of terms of its type's encoding ({lit}`enc_checks`), and every
 canonical LF term of such a family, in a context of the encoded types, is the encoding of a term
 that compiles, its decoding ({lit}`tmComplete`): the adequacy of the representation of terms
-({cite}`HarperLicata2007`, Section 3.2). Both hold in an extension of the signature that declares
+({citeKey}`HarperLicata2007`, Section 3.2). Both hold in an extension of the signature that declares
 the constants of the language an indices' table names ({name}`Geb.LF.Topos.SigExt`), definitions
 and primitive arrows alike, an application of such a constant instantiating its declaration as a
 telescope.
@@ -30,7 +30,7 @@ telescope.
 
 ## References
 
-* {cite}`HarperLicata2007`, Section 3.2, for adequacy.
+* {citeKey}`HarperLicata2007`, Section 3.2, for adequacy.
 
 ## Tags
 

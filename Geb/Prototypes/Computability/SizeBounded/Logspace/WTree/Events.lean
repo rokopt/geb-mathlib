@@ -46,7 +46,7 @@ the header, of a payload the completion of the leaf.
 
 # References
 
-* {cite}`Elias1975`
+* {citeKey}`Elias1975`
 
 # Tags
 

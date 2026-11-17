@@ -13,7 +13,7 @@ set_option doc.verso true in
 /-!
 # Source documents in the authoring profile
 
-Geb's source is written in the authoring profile of the syntaxes of {cite}`RFC9804`: its
+Geb's source is written in the authoring profile of the syntaxes of {citeKey}`RFC9804`: its
 advanced encoding with line comments, UTF-8 and line breaks in quoted strings, numerals as bare
 runs of digits, the ampersand as a token, and {lit}`?name` for the form {lit}`(hole name)`. A
 source document is the text of a program read without loss of anything a person wrote but the
@@ -31,13 +31,13 @@ definition it documents; that attachment is a redecoration of the trivia.
 Text is bytes, one character per byte as the kernel's readers read files, and the lexer rejects
 a character beyond a byte; UTF-8 text is read as its bytes. An atom is a string of bytes; the
 printer chooses its spelling from its bytes by a spelling ({lit}`Spelling`). The profile's
-({lit}`Spelling.profile`) writes an atom bare when it is a numeral, a token of {cite}`RFC9804`
+({lit}`Spelling.profile`) writes an atom bare when it is a numeral, a token of {citeKey}`RFC9804`
 or the ampersand, and otherwise as a quoted string, whose double quotes and backslashes are
 escaped, and whose other control characters are written as hexadecimal escapes; the advanced
 encoding's ({lit}`Spelling.advanced`) writes only a token bare and escapes every character
 beyond printable ASCII, so that its text is ASCII. The lexer reads back what every lawful
 spelling writes ({lit}`lex_print`). The reader admits the escapes
-of {cite}`RFC9804` and its other spellings of atoms, verbatim, hexadecimal and base-64, each
+of {citeKey}`RFC9804` and its other spellings of atoms, verbatim, hexadecimal and base-64, each
 with or without a length; display hints are rejected.
 
 The printer {lit}`print` is parameterized by a layout, a choice at each token of whether a line
@@ -78,7 +78,7 @@ end of the list or of the text, takes them as its trivia.
 
 ## References
 
-* {cite}`RFC9804` — the syntaxes of S-expressions the profile extends.
+* {citeKey}`RFC9804` — the syntaxes of S-expressions the profile extends.
 
 ## Tags
 
@@ -131,7 +131,7 @@ last. -/
 
 /-! ## Characters and the spelling of atoms -/
 
-/-- Whether a character is whitespace in the syntaxes of {cite}`RFC9804`: a space, a horizontal
+/-- Whether a character is whitespace in the syntaxes of {citeKey}`RFC9804`: a space, a horizontal
 or vertical tab, a form feed, a carriage return or a line feed. -/
 def isSpace (c : Char) : Bool :=
   c == ' ' || c == '\n' || c == '\t' || c == '\r' || c.toNat == 11 || c.toNat == 12
@@ -139,7 +139,7 @@ def isSpace (c : Char) : Bool :=
 /-- Whether a character is a decimal digit, of code point 48 to 57. -/
 def isDigit (c : Char) : Bool := 48 ≤ c.toNat && c.toNat ≤ 57
 
-/-- Whether a character may begin a token of {cite}`RFC9804`: an ASCII letter, of code point
+/-- Whether a character may begin a token of {citeKey}`RFC9804`: an ASCII letter, of code point
 65 to 90 or 97 to 122, or one of its eight pseudo-alphabetic characters. -/
 def isTokenStart (c : Char) : Bool :=
   (65 ≤ c.toNat && c.toNat ≤ 90) || (97 ≤ c.toNat && c.toNat ≤ 122) || c == '-' || c == '.' ||
@@ -194,7 +194,7 @@ def Spelling.profile : Spelling := ⟨fun s ↦ isBare s || s == ['&'], isPlain,
 and the backslash. -/
 def isPlainAscii (c : Char) : Bool := 32 ≤ c.toNat && c.toNat ≤ 126 && c != '"' && c != '\\'
 
-/-- The spelling of the advanced encoding of {cite}`RFC9804` in ASCII alone: a token bare, every
+/-- The spelling of the advanced encoding of {citeKey}`RFC9804` in ASCII alone: a token bare, every
 other atom quoted, its characters other than printable ASCII escaped, and no hole's form
 abbreviated. -/
 def Spelling.advanced : Spelling := ⟨isToken, isPlainAscii, false⟩
@@ -371,7 +371,7 @@ def strStep (s : LexState) (want : Option ℕ) (ch : Char) : LexState :=
   else .fail
 
 /-- The character an escape of one character after its backslash denotes, the escapes of the C
-language that {cite}`RFC9804` admits. -/
+language that {citeKey}`RFC9804` admits. -/
 def escChar (ch : Char) : Option Char :=
   if ch == 'a' then some (Char.ofNat 7) else if ch == 'b' then some (Char.ofNat 8)
   else if ch == 't' then some '\t' else if ch == 'v' then some (Char.ofNat 11)
@@ -380,7 +380,7 @@ def escChar (ch : Char) : Option Char :=
   else if ch == '"' || ch == '\'' || ch == '?' || ch == '\\' then some ch
   else none
 
-/-- The value of a decimal length, written in the shortest form, as {cite}`RFC9804` requires. -/
+/-- The value of a decimal length, written in the shortest form, as {citeKey}`RFC9804` requires. -/
 def decimal? (cs : List Char) : Option ℕ :=
   (Csexp.digitsVal cs).bind fun n ↦ if Csexp.decOf n == cs then some n else none
 
@@ -398,7 +398,7 @@ def decodeHex (cs : List Char) : Option (List Char) :=
   | some (bs, none) => some bs.reverse
   | _ => none
 
-/-- The value of a base-64 character of {cite}`RFC4648`. -/
+/-- The value of a base-64 character of {citeKey}`RFC4648`. -/
 def base64Val (c : Char) : Option ℕ :=
   if 65 ≤ c.toNat && c.toNat ≤ 90 then some (c.toNat - 65)
   else if 97 ≤ c.toNat && c.toNat ≤ 122 then some (c.toNat - 71)

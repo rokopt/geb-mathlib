@@ -13,9 +13,9 @@ set_option doc.verso true in
 /-!
 # Gödel's T over rose trees
 
-A variant of Gödel's T {cite}`Goedel1958`, the quantifier-free theory of the primitive recursive
+A variant of Gödel's T {citeKey}`Goedel1958`, the quantifier-free theory of the primitive recursive
 functionals of finite type, whose atomic formulas are equations between terms of one type and
-which has a rule of induction ({cite}`AvigadFeferman1998`, Section 2.2). The functionals here are
+which has a rule of induction ({citeKey}`AvigadFeferman1998`, Section 2.2). The functionals here are
 the kernel's terms, of the unit, product, function, list and tree types, the rose trees with
 natural-number labels standing in place of the natural numbers; a formula is a sequent, an
 equation under equational hypotheses. Its statements are what a proof about kernel programs
@@ -41,8 +41,8 @@ hypotheses hold, both sides of the conclusion have its type and denote the same 
 
 ## References
 
-* {cite}`Goedel1958`, the theory T.
-* {cite}`AvigadFeferman1998`, Section 2.2, for T as a quantifier-free theory with a rule of
+* {citeKey}`Goedel1958`, the theory T.
+* {citeKey}`AvigadFeferman1998`, Section 2.2, for T as a quantifier-free theory with a rule of
   induction.
 
 ## Tags

@@ -8,7 +8,7 @@ module
 public import Geb.Mathlib.Data.PFunctor.Presheaf.W
 public import Mathlib.CategoryTheory.Category.Preorder
 public import Mathlib.Order.Fin.Basic
-meta import GebMeta  -- shake: keep; supplies the cite docstring role
+meta import GebMeta  -- shake: keep; supplies the citeKey docstring role
 
 set_option doc.verso true in
 /-!
@@ -98,9 +98,9 @@ transport by {name}`cast_eq` and {name}`cast_heq`.
 
 ## References
 
-* {cite}`Weber2007`
-* {cite}`GambinoHyland2004`
-* {cite}`GambinoKock2013`
+* {citeKey}`Weber2007`
+* {citeKey}`GambinoHyland2004`
+* {citeKey}`GambinoKock2013`
 
 ## Tags
 

@@ -31,7 +31,7 @@ cells, even when their auxiliary ports are connected to one another.
 
 ## References
 
-* {cite}`DeFalco2010`, Proposition 5.3, uses this disjointness in the interaction diamond.
+* {citeKey}`DeFalco2010`, Proposition 5.3, uses this disjointness in the interaction diamond.
 
 ## Tags
 

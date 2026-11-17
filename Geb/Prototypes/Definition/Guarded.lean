@@ -15,7 +15,7 @@ set_option doc.verso true in
 
 A block is guarded when no body is a bare reference to an export of the block: each body is
 an operation applied to terms over the imports and exports, or an import
-{cite}`MiliusMoss2009`. Stated as a type, the body at an export is an element of
+{citeKey}`MiliusMoss2009`. Stated as a type, the body at an export is an element of
 {lit}`P.Obj (P.FreeM (Γ ⊕ E)) ⊕ Γ` rather than of {lit}`P.FreeM (Γ ⊕ E)`, so guardedness is
 checked by type checking. The bodies are terms of any depth, and the references into the
 block's own exports may form cycles.
@@ -29,7 +29,7 @@ uniqueness relates the values of a term under any two solutions, since a referen
 export evaluates through its guarded body to a root operation over the values of subterms.
 {name}`Geb.MType.M.bisim` is proved by recursion on depth, the reading of guarded recursion
 as well-founded recursion in presheaves on the ordinal {lit}`ω`
-{cite}`BirkedalMogelbergSchwinghammerStovring2012`.
+{citeKey}`BirkedalMogelbergSchwinghammerStovring2012`.
 
 ## Main definitions
 
@@ -46,9 +46,9 @@ as well-founded recursion in presheaves on the ordinal {lit}`ω`
 
 ## References
 
-* {cite}`MiliusMoss2009`, Sections 3 and 6, for guarded equation morphisms and their unique
+* {citeKey}`MiliusMoss2009`, Sections 3 and 6, for guarded equation morphisms and their unique
   solutions in completely iterative algebras, the M-type among them.
-* {cite}`BirkedalMogelbergSchwinghammerStovring2012` for guarded recursion as recursion on
+* {citeKey}`BirkedalMogelbergSchwinghammerStovring2012` for guarded recursion as recursion on
   depth.
 
 ## Tags

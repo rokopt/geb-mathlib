@@ -18,7 +18,7 @@ set_option doc.verso true in
 The kernel's types and terms ({name}`Geb.Kernel.infer`) translated into the Mitchell–Bénabou
 language ({name}`Geb.FreeTopos.Internal.Term`). A kernel label, a natural number, is a
 bitstring of the language: a list of bits, the bits the coproduct of the terminal object with
-itself, least significant first, in the bijective numeration of {cite}`Oitavem2010`
+itself, least significant first, in the bijective numeration of {citeKey}`Oitavem2010`
 ({name}`Geb.Oitavem.unrank`), in which the bit zero is the digit one and the bit one the digit
 two, so that every list is the numeral of exactly one number. The bitstrings are the initial
 algebra of the functor taking {lit}`X` to {lit}`1 + X + X`, whose fold and its uniqueness are
@@ -52,7 +52,7 @@ tail's number of times and then once or twice.
 
 ## References
 
-* {cite}`Oitavem2010`, Remark 2.2, for the bijective numeration of the bitstrings.
+* {citeKey}`Oitavem2010`, Remark 2.2, for the bijective numeration of the bitstrings.
 
 ## Tags
 
@@ -244,7 +244,7 @@ def b1T (w : Term) : Term := call D.b1 [] [w]
 def trueT : Term := b0T bnilT
 
 /-- The numeral of a natural number: the bitstring of its index in the enumeration of
-{cite}`Oitavem2010`. -/
+{citeKey}`Oitavem2010`. -/
 def numeral (n : ℕ) : Term :=
   (Oitavem.unrank n).foldr (fun b w ↦ if b then b1T w else b0T w) bnilT
 

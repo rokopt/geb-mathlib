@@ -17,7 +17,7 @@ name. A rule names each port of the active pair and a finite set of internal wir
 instantiation substitutes the actual ports and allocates the internal wires consecutively.
 
 The reducer implements interaction and wire elimination in the textual presentation of
-{cite}`HassanMackieSato2015`, Section 3. Wire elimination combines communication, substitution
+{citeKey}`HassanMackieSato2015`, Section 3. Wire elimination combines communication, substitution
 and collection: it substitutes only when the eliminated name occurs exactly once elsewhere
 and does not occur in its replacement. Equations are searched from left to right. An inert
 equation does not prevent a later active pair from reducing. Rules can be registered in either
@@ -38,7 +38,7 @@ orientation; the lookup checks both orientations.
 
 ## References
 
-* {cite}`HassanMackieSato2015`, Section 3.
+* {citeKey}`HassanMackieSato2015`, Section 3.
 
 ## Tags
 

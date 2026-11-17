@@ -31,7 +31,7 @@ non-size-increase condition, despite the linear bound on one contraction's outpu
 
 ## References
 
-* {cite}`TreeCalculusSpecification`, rule (2).
+* {citeKey}`TreeCalculusSpecification`, rule (2).
 
 ## Tags
 

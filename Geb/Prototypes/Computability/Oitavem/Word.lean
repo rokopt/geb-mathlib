@@ -13,7 +13,7 @@ set_option doc.verso true in
 /-!
 # Oitavem's enumeration of binary words
 
-The bijection of {cite}`Oitavem2010` Remark 2.2, with lists written least significant
+The bijection of {citeKey}`Oitavem2010` Remark 2.2, with lists written least significant
 bit first, as in the other function algebras in this repository. Thus the paper's
 rightmost bit is the head of a list. All words, including those with leading
 zeroes, are distinct. The empty word represents zero, and the singleton words
@@ -32,7 +32,7 @@ represent one and two.
 
 ## References
 
-* {cite}`Oitavem2010`, Sections 1.1 and 2, Remark 2.2.
+* {citeKey}`Oitavem2010`, Sections 1.1 and 2, Remark 2.2.
 
 ## Tags
 

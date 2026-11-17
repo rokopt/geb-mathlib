@@ -47,8 +47,8 @@ an encoding is.
 
 # References
 
-* {cite}`Kristiansen2005`
-* {cite}`Mazzanti2016`
+* {citeKey}`Kristiansen2005`
+* {citeKey}`Mazzanti2016`
 
 # Tags
 
@@ -284,7 +284,7 @@ theorem nrunFrom_endPos_le (m tp i : ℕ) (v : List Bool) : ∀ (x : NState) (po
     rw [nrunFrom_cons, List.length_cons, show pos + (v.length + 1) = pos + 1 + v.length by omega]
     refine ih _ (pos + 1) ?_
     unfold nstep
-    cases x.mode <;> dsimp only <;> (try split_ifs) <;> (try cases b) <;> (try dsimp only) <;>
+    cases x.mode <;> dsimp only <;> (try split_ifs) <;> cases b <;> (try dsimp only) <;>
       omega) v
 
 /-- The scanner's end position lies within the word. -/

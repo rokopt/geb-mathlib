@@ -39,7 +39,7 @@ module belongs to {lit}`GebMeta.classicalAllowedModules`.
 
 ## References
 
-* {cite}`Oitavem2010`, Theorem 3.4: the intended application to Logs requires
+* {citeKey}`Oitavem2010`, Theorem 3.4: the intended application to Logs requires
   a separate construction of a machine with the asserted space bound.
 
 ## Tags

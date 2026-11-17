@@ -76,8 +76,8 @@ morphisms.
 
 ## References
 
-* {cite}`nLabCoequalizer`
-* {cite}`AltenkirchCapriottiDijkstraKrausNordvallForsberg2018`
+* {citeKey}`nLabCoequalizer`
+* {citeKey}`AltenkirchCapriottiDijkstraKrausNordvallForsberg2018`
 
 ## Tags
 

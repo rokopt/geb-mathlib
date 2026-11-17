@@ -36,16 +36,16 @@ slice-adjunction structures in mathlib, construct a model from each ordinary cat
 requested chosen structure, or prove freeness for functors preserving structure up to
 isomorphism. Strict initiality alone does not supply that last assertion.
 
-For toposes, {cite}`ForssellLumsdaineSwan2026`, Proposition 1.22, proves the corresponding
+For toposes, {citeKey}`ForssellLumsdaineSwan2026`, Proposition 1.22, proves the corresponding
 upgrade by giving iso-comma categories chosen structure and applying strict initiality.
 Adapting that argument requires proving closure of this particular class of structured
 categories under the iso-comma construction, including dependent products and the NNO.
 
 ## References
 
-* {cite}`PalmgrenVickers2007`, Theorem 22, for initial models of partial Horn theories.
-* {cite}`Seely1984`, Section 2.4, for the slice adjunctions.
-* {cite}`ForssellLumsdaineSwan2026`, Proposition 1.22, for the topos coherence argument.
+* {citeKey}`PalmgrenVickers2007`, Theorem 22, for initial models of partial Horn theories.
+* {citeKey}`Seely1984`, Section 2.4, for the slice adjunctions.
+* {citeKey}`ForssellLumsdaineSwan2026`, Proposition 1.22, for the topos coherence argument.
 
 ## Tags
 

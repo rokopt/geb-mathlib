@@ -48,7 +48,7 @@ subalgebra's soundness theorem compiles to a logarithmic-space machine.
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

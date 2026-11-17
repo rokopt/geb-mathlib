@@ -16,7 +16,7 @@ set_option doc.verso true in
 /-!
 # Partial Horn logic
 
-The logic of partial Horn theories {cite}`PalmgrenVickers2007`, over rose trees. A signature
+The logic of partial Horn theories {citeKey}`PalmgrenVickers2007`, over rose trees. A signature
 names, for each partial operation by its index, the sorts of its arguments and the sort of its
 result. A term is a rose tree: a variable is the node of label zero over the leaf of its index,
 and the operation of index {lit}`k` applied to terms is the node of label {lit}`k + 1` over
@@ -71,7 +71,7 @@ every model of an extension of its signature in which its axioms hold.
 
 ## References
 
-* {cite}`PalmgrenVickers2007`, Definition 1 for the rules, Section 3 for models.
+* {citeKey}`PalmgrenVickers2007`, Definition 1 for the rules, Section 3 for models.
 
 ## Tags
 

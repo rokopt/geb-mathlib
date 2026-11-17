@@ -30,7 +30,7 @@ labels of their trees, in the order the stages test them.
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

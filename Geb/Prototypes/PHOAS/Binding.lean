@@ -13,7 +13,7 @@ set_option doc.verso true in
 # Context extension and binding layers
 
 The binding-signature operator is a sum of products of context extensions of a family.
-It is the arbitrary-arity form of the operator in {cite}`FiorePlotkinTuri1999`, Section 2.
+It is the arbitrary-arity form of the operator in {citeKey}`FiorePlotkinTuri1999`, Section 2.
 At the identity family it selects variables; at a family of terms its children are
 whole terms in extended contexts.
 
@@ -25,7 +25,7 @@ whole terms in extended contexts.
 
 ## References
 
-* {cite}`FiorePlotkinTuri1999`
+* {citeKey}`FiorePlotkinTuri1999`
 
 ## Tags
 

@@ -14,14 +14,14 @@ set_option doc.verso true in
 /-!
 # The substitution theorem
 
-Hereditary substitutions exist and preserve the judgments ({cite}`HarperLicata2007`, Theorem
+Hereditary substitutions exist and preserve the judgments ({citeKey}`HarperLicata2007`, Theorem
 2.11): where a term {lit}`M₀` checks against {lit}`A₀` in {lit}`ΓL`, and an expression is judged
 in {lit}`ΓR ++ A₀ :: ΓL`, the hereditary substitution of {lit}`M₀` for the variable of
 {lit}`A₀` into the expression, into the types of {lit}`ΓR` ({lit}`substCtx`) and into the type it
 is checked against ({lit}`substMode`) exists, and the substituted expression is judged in the
 substituted context.
 
-The proof follows {cite}`HarperLicata2007`: a lexicographic induction on the simple type of
+The proof follows {citeKey}`HarperLicata2007`: a lexicographic induction on the simple type of
 {lit}`A₀` and on the expression, with the statement strengthened to contexts and types known only
 to have the shape of types ({name}`Geb.LF.Expr.TypeShape`). At an application of a head other
 than the substituted variable, the substitution commutes with the instantiation of the head's
@@ -45,7 +45,7 @@ simple types of the domains, smaller than that of {lit}`A₀`.
 
 ## References
 
-* {cite}`HarperLicata2007`, Theorem 2.11.
+* {citeKey}`HarperLicata2007`, Theorem 2.11.
 
 ## Tags
 
@@ -784,7 +784,7 @@ theorem substCtx_ok {sig : Sig} (hsig : sig.ok = true) {ΓL : Ctx} {A₀ M₀ : 
       · rw [List.cons_append, Ctx.ok_cons, Bool.and_eq_true]
         exact ⟨ha'J, hok⟩)
 
-/-- The substitution theorem ({cite}`HarperLicata2007`, Theorem 2.11): where
+/-- The substitution theorem ({citeKey}`HarperLicata2007`, Theorem 2.11): where
 {lit}`ΓR ++ A₀ :: ΓL` is a formed context and {lit}`M₀` checks against {lit}`A₀` in {lit}`ΓL`,
 the substitution of {lit}`M₀` for the variable of {lit}`A₀` into {lit}`ΓR` exists and gives a
 formed context, and every judgment in {lit}`ΓR ++ A₀ :: ΓL`, its type a type there where it is

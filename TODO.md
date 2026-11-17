@@ -1434,6 +1434,20 @@ Correcting these is a separate concern from any current branch per
   defects. Trigger: a Verso pin bump, at which point including such a
   module (any pre-rule `Geb` module) shows whether the conversion has
   been fixed upstream.
+- **Verso's block definitions under `docBlame`**: the pinned Verso
+  elaborates each top-level block of a `#doc` document as a definition
+  of its own, `«the canonical document object name».block.n`
+  (`Verso.Doc.Elab.blockDefinitionName`), which carries no docstring.
+  The pinned Batteries exempts a declaration from its linters where
+  `Lean.Environment.isAutoDecl` holds of its name, and it does not
+  hold of a name that ends in a numeric component, so `docBlame`
+  reports each such definition. `scripts/nolints.json` exempts them
+  one by one, and its entries follow each chapter's blocks
+  (`docs/rules/lean-coding.md` § Verso manual modules). Trigger: a
+  Verso or Batteries pin bump, at which point
+  `lake exe batteries/runLinter GebManual`, run with the block entries
+  removed, shows whether the definitions are still reported, and the
+  entries are deleted once they are not.
 - **mathlib's header linter inspects root-imported modules only**:
   `linter.style.header` runs on a module only when its library root
   imports it directly (`isInLibraryRoot`, a parse of `<Root>.lean`'s

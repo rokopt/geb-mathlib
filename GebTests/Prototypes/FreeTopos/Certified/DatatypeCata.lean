@@ -24,7 +24,7 @@ form, each checked after the statements of the theorems it continues from
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

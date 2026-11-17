@@ -61,7 +61,7 @@ constructors from the coinductive variant, whose trees are those of the M-type.
 
 ## References
 
-* {cite}`Weber2007`
+* {citeKey}`Weber2007`
 
 ## Tags
 

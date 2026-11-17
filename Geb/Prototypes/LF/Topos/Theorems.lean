@@ -15,7 +15,7 @@ set_option doc.verso true in
 The theorems of a development of the internal language enter the signature
 {name}`Geb.LF.Topos.sig` as constants of an extension of it, past its own declarations, as a
 logical framework's signature takes each proved lemma as a constant
-({cite}`HarperLicata2007`, Section 2). A theorem, of object variables, of variables of types in
+({citeKey}`HarperLicata2007`, Section 2). A theorem, of object variables, of variables of types in
 them, of hypotheses and of a conclusion, is the constant of the product over the kind of types,
 one for each object variable, of the product over a family of terms of each variable's type, the
 outermost first, of the products over the families of proofs of its hypotheses, none in the scope
@@ -58,7 +58,7 @@ indices' table names at their positions ({lit}`ExtDecl`).
 
 ## References
 
-* {cite}`HarperLicata2007`, Section 2, for signatures and their constants.
+* {citeKey}`HarperLicata2007`, Section 2, for signatures and their constants.
 
 ## Tags
 

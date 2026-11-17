@@ -26,7 +26,7 @@ Renaming cells transports redexes and preserves their results up to isomorphism.
 
 ## References
 
-* {cite}`DeFalco2010`, Corollary 5.4.
+* {citeKey}`DeFalco2010`, Corollary 5.4.
 
 ## Tags
 

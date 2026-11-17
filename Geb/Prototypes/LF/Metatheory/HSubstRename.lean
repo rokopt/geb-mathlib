@@ -25,7 +25,7 @@ The substitution into an expression commutes with renaming whenever the reductio
 does ({lit}`hsubWith_rename`), by induction on the expression; the reduction at a simple type
 does ({lit}`reduce_rename`), by induction on the simple type, its substitution at the domain
 being the substitution of the first case. Both are the de Bruijn form of the stability of
-hereditary substitution under weakening and exchange ({cite}`HarperLicata2007`, Lemmas 2.6 and
+hereditary substitution under weakening and exchange ({citeKey}`HarperLicata2007`, Lemmas 2.6 and
 2.7).
 
 ## Main definitions
@@ -47,7 +47,7 @@ hereditary substitution under weakening and exchange ({cite}`HarperLicata2007`, 
 
 ## References
 
-* {cite}`HarperLicata2007`, Section 2.3.
+* {citeKey}`HarperLicata2007`, Section 2.3.
 
 ## Tags
 
@@ -275,7 +275,7 @@ theorem iterate_shift (b : ℕ) : ∀ e : Expr, Expr.shift^[b] e = e.rename (· 
 
 /-- Substitution into an expression in which the substituted variable does not occur, an
 expression of the context without it renamed past it, gives that expression
-({cite}`HarperLicata2007`, Lemma 2.8), whatever the reduction. -/
+({citeKey}`HarperLicata2007`, Lemma 2.8), whatever the reduction. -/
 theorem hsubWith_vacuous (red : Expr → List Expr → Option Expr) :
     ∀ (e n : Expr) (j : ℕ), hsubWith red (e.rename (liftR^[j] Nat.succ)) n j = some e :=
   RoseTree.ind fun l cs ih n j ↦ by

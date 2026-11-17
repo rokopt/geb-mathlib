@@ -13,7 +13,7 @@ set_option doc.verso true in
 /-!
 # Polynomial output length in Logs
 
-Every expression of {cite}`Oitavem2010` Definition 3.1 has a polynomial
+Every expression of {citeKey}`Oitavem2010` Definition 3.1 has a polynomial
 output-length bound depending only on the lengths of its normal arguments. Safe
 arguments may have arbitrary length. The bound is computed from the syntax;
 it is not an admissibility condition. A safe-recursion step cannot increase this
@@ -31,7 +31,7 @@ bound through the recursive value, because that value is passed in safe position
 
 ## References
 
-* {cite}`Oitavem2010`, Definition 3.1 and the truncation argument in Theorem 3.4.
+* {citeKey}`Oitavem2010`, Definition 3.1 and the truncation argument in Theorem 3.4.
 
 ## Tags
 

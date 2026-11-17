@@ -26,7 +26,7 @@ the program in which those are, so that a check reads no derivation of another d
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

@@ -18,7 +18,7 @@ Rose trees over the labels {lit}`α ⊕ ℕ` are first-order terms with metavari
 labelled {lit}`Sum.inr x` is the metavariable {lit}`x`, and every other node a function symbol
 applied to its children. A substitution assigns trees to metavariables, and a unifier of a
 list of equations is a substitution making the two sides of each equal. Robinson's algorithm
-{cite}`Robinson1965` finds a most general unifier of a unifiable list and fails on any other: it
+{citeKey}`Robinson1965` finds a most general unifier of a unifiable list and fails on any other: it
 removes an equation whose sides are equal, binds a metavariable to the other side unless it
 occurs there, decomposes an equation between nodes of one label and arity into the equations
 of their children, and fails at nodes of different labels or arities.
@@ -51,7 +51,7 @@ metavariable. Each equation is substituted when it is taken from the list.
 
 ## References
 
-* {cite}`Robinson1965`
+* {citeKey}`Robinson1965`
 
 ## Tags
 

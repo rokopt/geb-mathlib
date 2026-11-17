@@ -75,8 +75,8 @@ and the laws reduce to the category laws of the base after a case split.
 
 ## References
 
-* {cite}`FiorePittsSteenkamp2020`
-* {cite}`Weber2007`
+* {citeKey}`FiorePittsSteenkamp2020`
+* {citeKey}`Weber2007`
 
 ## Tags
 

@@ -13,7 +13,7 @@ set_option doc.verso true in
 # Hereditary substitution
 
 The hereditary substitution of a canonical term for a variable, which computes the canonical form
-of the result of an ordinary substitution ({cite}`HarperLicata2007`, Section 2.2 and Figure 5,
+of the result of an ordinary substitution ({citeKey}`HarperLicata2007`, Section 2.2 and Figure 5,
 after Watkins and others). Where an ordinary substitution would place an abstraction at the head
 of an application, creating a β-redex, the hereditary substitution continues by substituting the
 application's arguments into the abstraction's body, each at its own simple type. The simple type
@@ -41,7 +41,7 @@ binder {lit}`N` is weakened and {lit}`j` raised by one.
 
 ## References
 
-* {cite}`HarperLicata2007`, Section 2.2 and Figure 5.
+* {citeKey}`HarperLicata2007`, Section 2.2 and Figure 5.
 
 ## Tags
 

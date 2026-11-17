@@ -35,7 +35,7 @@ the prover matches a theorem's left side ({name}`Geb.FreeTopos.Internal.matchTer
 then the base checker's application at that instance. At every other node the conversion
 checker takes the base checker's step. Its soundness is therefore relative to the base checker's,
 a stronger checker admitted beside a weaker one by the translation of its certificates
-({cite}`Davis2009`): each step of conversion by the soundness of the base checker
+({citeKey}`Davis2009`): each step of conversion by the soundness of the base checker
 ({name}`Geb.FreeTopos.Internal.check_sound`) at the reduction's derivation, and each other node by
 the soundness of the base checker's step ({name}`Geb.FreeTopos.Internal.checkStep_sound`). A step
 of conversion carries the bound on the depth of its reduction.
@@ -96,7 +96,7 @@ soundness is about the conversion checker as it is defined.
 
 ## References
 
-* {cite}`Davis2009`, Chapter 1, for checkers admitted by relative soundness.
+* {citeKey}`Davis2009`, Chapter 1, for checkers admitted by relative soundness.
 
 ## Tags
 
@@ -266,16 +266,16 @@ theorem para_convFastStep (G : Globals) (E : Array Entry) (R : List ℕ) (n : �
     all_goals
       refine ⟨fun Γ k Φ t ↦ ?_, ?_⟩
       · simp only [convFastStep, ConvRule.hyps, map_weakenBy_zero]
-      · simp only [convFastStep]
-        rw [hcs]
-        simp only [FastChecks.checks, ConvRule.hyps, map_weakenBy_zero]
-        -- the remaining steps' rewritings read no hypothesis, nor the machine's without rules
-        all_goals first
-          | rfl
-          | refine Prod.ext (funext fun Γ ↦ funext fun Φ ↦ funext fun t ↦ ?_) rfl
-            split
-            · simp only [convStep, machineReduceBy, *, ite_true]
-            · rfl
+      simp only [convFastStep]
+      rw [hcs]
+      simp only [FastChecks.checks, ConvRule.hyps, map_weakenBy_zero]
+    -- the remaining steps' rewritings read no hypothesis, nor the machine's without rules
+    case applyMatch | lit => rfl
+    case machine =>
+      refine Prod.ext (funext fun Γ ↦ funext fun Φ ↦ funext fun t ↦ ?_) rfl
+      split
+      · simp only [convStep, machineReduceBy, *, ite_true]
+      · rfl
 
 /-- The conversion checker is the conversion checker with its rewriting under hypotheses weakened
 where they are read, by which the compiler replaces it. -/

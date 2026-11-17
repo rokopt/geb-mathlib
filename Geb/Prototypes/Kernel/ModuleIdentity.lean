@@ -13,8 +13,8 @@ set_option doc.verso true in
 /-!
 # Identities of modules
 
-A module is identified, as a definition is, by the CIDv1 {cite}`RatajBerjon2026` of its payload
-in the canonical encoding {cite}`RFC9804`: {lit}`(geb-module/v1 (members…) (exports…))`, its
+A module is identified, as a definition is, by the CIDv1 {citeKey}`RatajBerjon2026` of its payload
+in the canonical encoding {citeKey}`RFC9804`: {lit}`(geb-module/v1 (members…) (exports…))`, its
 members in order, each a definition by the identifier of its payload or a module nested or
 instantiated in it by the module's identifier, and its exports, each by the identifier of the
 definition it denotes. The modules of a program form a tree, the root block its root, and the
@@ -33,8 +33,8 @@ are expanded where they are used and have no identifiers of their own.
 
 ## References
 
-* {cite}`RatajBerjon2026` — CIDs.
-* {cite}`RFC9804` — the canonical encoding.
+* {citeKey}`RatajBerjon2026` — CIDs.
+* {citeKey}`RFC9804` — the canonical encoding.
 
 ## Tags
 

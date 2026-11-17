@@ -25,7 +25,7 @@ is one form of the authoring profile,
 whose fields after the third are optional and kept as they are read: the host reads none of them,
 and a field the list headed by {lit}`crit` names is one the reader must read, so a document
 requiring a field this host does not read is rejected, as the {lit}`crit` header parameter of
-COSE ({cite}`RFC9052`, § 3.1) and of JWS ({cite}`RFC7515`, § 4.1.11) does. A program's sources
+COSE ({citeKey}`RFC9052`, § 3.1) and of JWS ({citeKey}`RFC7515`, § 4.1.11) does. A program's sources
 take their profile from its manifest; a document in a strict encoding carries its profile in the
 form headed by {lit}`*doc`.
 
@@ -62,8 +62,8 @@ forms that write them.
 
 ## References
 
-* {cite}`RFC9052` — the {lit}`crit` header parameter of COSE.
-* {cite}`RFC7515` — the {lit}`crit` header parameter of JWS.
+* {citeKey}`RFC9052` — the {lit}`crit` header parameter of COSE.
+* {citeKey}`RFC7515` — the {lit}`crit` header parameter of JWS.
 
 ## Tags
 

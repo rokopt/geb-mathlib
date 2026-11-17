@@ -19,7 +19,7 @@ representation without a compatibility proof, including arbitrarily nested opera
 The constructors form the initial algebra of {lit}`Id + H`, where
 {lit}`H(M)(Γ) = Σ a, Π b, M(Γ ⊕ C(a,b))` is the context-extension operator. Equivalently,
 this is the free {lit}`H`-algebra on the identity family, as in the binding-algebra
-account of {cite}`FiorePlotkinTuri1999`, Section 2.
+account of {citeKey}`FiorePlotkinTuri1999`, Section 2.
 
 ## Main definitions
 
@@ -43,7 +43,7 @@ There is no finiteness assumption on the signature's arities.
 
 ## References
 
-* {cite}`FiorePlotkinTuri1999`
+* {citeKey}`FiorePlotkinTuri1999`
 
 ## Tags
 

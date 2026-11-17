@@ -17,7 +17,7 @@ variables an expression mentions ({lit}`judgeWith_renameOn`), whatever it does t
 judgments consult the context only at a node's head variable, so that a renaming need respect
 the types of the variables that occur. Strengthening, the removal from the context of a variable
 an expression does not mention, is the instance at a renaming that skips the removed variable;
-{cite}`HarperLicata2007`, Section 2.4.1, transports canonical forms between contexts that differ
+{citeKey}`HarperLicata2007`, Section 2.4.1, transports canonical forms between contexts that differ
 in declarations their type does not depend on by subordination.
 
 ## Main definitions
@@ -35,7 +35,7 @@ in declarations their type does not depend on by subordination.
 
 ## References
 
-* {cite}`HarperLicata2007`, Section 2.4.1.
+* {citeKey}`HarperLicata2007`, Section 2.4.1.
 
 ## Tags
 

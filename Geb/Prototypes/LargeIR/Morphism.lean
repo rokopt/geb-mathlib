@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.LargeIR.Code
-meta import GebMeta  -- shake: keep; supplies the cite docstring role
+meta import GebMeta  -- shake: keep; supplies the citeKey docstring role
 
 set_option doc.verso true in
 /-!
@@ -29,7 +29,7 @@ the {lit}`ι` point are fixed, the {lit}`δ` assignment is postcomposed with
 the map of index types, and the decoding is carried along by the
 functoriality {lit}`fibreValueMap` of the slice functor's fibre in the
 family, which is the positivity of the code's continuation in the sense of
-{cite}`GhaniNordvallForsbergMalatesta2015`. The action is functorial,
+{citeKey}`GhaniNordvallForsbergMalatesta2015`. The action is functorial,
 {lit}`codeMap_id` and {lit}`codeMap_comp`.
 
 A morphism of walking-arrow presheaves is a morphism of families,
@@ -67,7 +67,7 @@ two sides agree by unfolding.
 
 ## References
 
-* {cite}`GhaniNordvallForsbergMalatesta2015`
+* {citeKey}`GhaniNordvallForsbergMalatesta2015`
 
 ## Tags
 

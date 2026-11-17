@@ -18,7 +18,7 @@ equations, whose shapes name the equations and whose directions at an equation a
 variables, with two derived operations {lit}`lhs rhs : Derived P E`: the two sides of every
 equation, terms of the free monad of {lit}`P` of any depth in the equation's variables.
 Finitary monads are presented by operations and equations between derived operations, as
-coequalizers of free monads {cite}`KellyPower1993`.
+coequalizers of free monads {citeKey}`KellyPower1993`.
 
 A witness of a presentation over variables {lit}`Γ` is a term of the free monad of the sum
 {lit}`sum P E`: an operation of {lit}`P` in it is a congruence, an operation of {lit}`E` an
@@ -65,7 +65,7 @@ it ({lit}`eval_src`), and evaluation in it descends to the classes ({lit}`lift`)
 
 ## References
 
-* {cite}`KellyPower1993`, for finitary monads presented by operations and equations.
+* {citeKey}`KellyPower1993`, for finitary monads presented by operations and equations.
 
 ## Tags
 

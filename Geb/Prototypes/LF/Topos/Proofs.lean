@@ -53,7 +53,7 @@ checker types is the decoding of a term or built from such by the language's ter
 
 ## References
 
-* {cite}`HarperLicata2007`, Section 3.4, for the adequacy of the representation of judgments.
+* {citeKey}`HarperLicata2007`, Section 3.4, for the adequacy of the representation of judgments.
 
 ## Tags
 

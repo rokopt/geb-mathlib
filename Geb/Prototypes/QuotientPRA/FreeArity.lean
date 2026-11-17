@@ -53,8 +53,8 @@ nodes of the shapes on trees ({lit}`FreeArity.W_induction`).
 
 ## References
 
-* {cite}`Weber2007`
-* {cite}`nLabParametricRightAdjoint`
+* {citeKey}`Weber2007`
+* {citeKey}`nLabParametricRightAdjoint`
 
 ## Tags
 

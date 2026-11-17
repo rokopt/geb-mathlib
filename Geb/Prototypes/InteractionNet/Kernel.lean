@@ -35,8 +35,8 @@ translation. No rule calls the kernel's evaluator or denotation to compute its r
 
 ## References
 
-* {cite}`MackiePintoVilaca2009`, for program-specific iterator agents.
-* {cite}`HassanMackieSato2015`, Section 3, for configurations and interaction.
+* {citeKey}`MackiePintoVilaca2009`, for program-specific iterator agents.
+* {citeKey}`HassanMackieSato2015`, Section 3, for configurations and interaction.
 
 ## Tags
 

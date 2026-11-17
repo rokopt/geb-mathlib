@@ -68,7 +68,7 @@ Conventions and pitfalls that cost time last session:
   test's `public import`, and `public meta import` of the module under test.
 - Every new module is literate: `set_option doc.verso true in` before the module
   docstring, `set_option doc.verso true` after, roles `{name}` (must resolve, so
-  only imported or earlier names), `{lit}`, `{cite}`;
+  only imported or earlier names), `{lit}`, `{citeKey}`;
   `meta import GebMeta -- shake: keep`; docstring on every def and theorem;
   `# Main definitions` / `# Main statements` / `# Tags` sections.
 - Axiom linter: `by_cases` on a non-decidable proposition, and `omega` on an `↔`

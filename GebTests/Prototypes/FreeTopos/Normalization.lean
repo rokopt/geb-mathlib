@@ -20,7 +20,7 @@ rose trees over all terms, that a term to which the checker gives a type in a co
 in an environment related to the context and with definitions related to the types of the
 globals, to a value related at that type. It is the internal counterpart of
 {name}`Geb.Kernel.Eval.fundamental`, the evaluator's adequacy proved in Lean in the manner of
-{cite}`Tait1967`.
+{citeKey}`Tait1967`.
 
 The relation is the fold of the type tree into the predicates on values, and its conclusion is a
 stable convergence: from some level of fuel on, the evaluation has one value, which the relation
@@ -46,7 +46,7 @@ whose check by the internal language's checker ({name}`Geb.FreeTopos.Internal.ch
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation and its fundamental lemma.
+* {citeKey}`Tait1967`, for the logical relation and its fundamental lemma.
 
 ## Tags
 

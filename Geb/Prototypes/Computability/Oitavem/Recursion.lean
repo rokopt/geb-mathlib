@@ -14,7 +14,7 @@ set_option doc.verso true in
 /-!
 # Safe recursion with a logarithmic retained state
 
-The safe-input truncation lemma of {cite}`Oitavem2010` permits replacing a
+The safe-input truncation lemma of {citeKey}`Oitavem2010` permits replacing a
 recursive value by a bounded numerical state between steps. Its bound is
 polynomial in the normal input lengths, so its binary representation is
 logarithmic. Alternatively, the indexed loop can retain an output prefix directly.
@@ -50,7 +50,7 @@ full output of each subcall.
 
 ## References
 
-* {cite}`Oitavem2010`, Lemma 3.3 and Theorem 3.4.
+* {citeKey}`Oitavem2010`, Lemma 3.3 and Theorem 3.4.
 
 ## Tags
 

@@ -63,7 +63,7 @@ substitution ({lit}`Slice.evalS_bind`).
 
 ## References
 
-* {cite}`GambinoKock2013`, for polynomial functors between slices.
+* {citeKey}`GambinoKock2013`, for polynomial functors between slices.
 
 ## Tags
 

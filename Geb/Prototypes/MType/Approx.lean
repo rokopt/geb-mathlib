@@ -47,7 +47,7 @@ equality after truncation.
 
 ## References
 
-* {cite}`VanDenBergDeMarchi2007`, Section 2.
+* {citeKey}`VanDenBergDeMarchi2007`, Section 2.
 
 ## Tags
 

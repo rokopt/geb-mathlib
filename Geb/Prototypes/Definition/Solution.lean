@@ -31,7 +31,7 @@ exports.
 
 A guarded block, none of whose bodies is a bare reference to an export of the block, has
 exactly one solution in each completely iterative algebra, the M-type among them
-{cite}`MiliusMoss2009`; {name}`Geb.Definition.coalgebra_solution_unique` treats the flat case.
+{citeKey}`MiliusMoss2009`; {name}`Geb.Definition.coalgebra_solution_unique` treats the flat case.
 An unguarded block need not have one, or may have many
 ({lit}`x = x` holds of every value), and is a constraint on its models rather than a
 definition.
@@ -50,7 +50,7 @@ definition.
 
 ## References
 
-* {cite}`MiliusMoss2009`, Sections 3 and 6, for equation morphisms, their solutions and the
+* {citeKey}`MiliusMoss2009`, Sections 3 and 6, for equation morphisms, their solutions and the
   guardedness condition.
 
 ## Tags

@@ -12,7 +12,7 @@ set_option doc.verso true in
 /-!
 # The composition of hereditary substitutions
 
-Hereditary substitutions compose as ordinary ones do ({cite}`HarperLicata2007`, Lemma 2.10):
+Hereditary substitutions compose as ordinary ones do ({citeKey}`HarperLicata2007`, Lemma 2.10):
 substituting {lit}`M` for {lit}`y` and then {lit}`N` for {lit}`x` is substituting {lit}`N` for
 {lit}`x` in {lit}`M` and in the expression and then the first for {lit}`y`, and the outer two
 substitutions are defined whenever the inner three are. With de Bruijn indices, {lit}`y` is the
@@ -43,7 +43,7 @@ exchange the two simple types, as the measure allows.
 
 ## References
 
-* {cite}`HarperLicata2007`, Lemma 2.10.
+* {citeKey}`HarperLicata2007`, Lemma 2.10.
 
 ## Tags
 
@@ -327,7 +327,7 @@ theorem comp_step {α₀ α₂ : SimpleTy}
           split_ifs <;> omega
   · exact nonvar fun i h ↦ by cases h
 
-/-- Hereditary substitutions compose ({cite}`HarperLicata2007`, Lemma 2.10). -/
+/-- Hereditary substitutions compose ({citeKey}`HarperLicata2007`, Lemma 2.10). -/
 theorem comp (α₀ α₂ : SimpleTy) : CompStmt α₀ α₂ :=
   Nat.rec (motive := fun s ↦ ∀ α β : SimpleTy, α.size + β.size < s → CompStmt α β)
     (fun _ _ h ↦ absurd h (Nat.not_lt_zero _))

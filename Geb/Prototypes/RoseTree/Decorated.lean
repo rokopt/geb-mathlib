@@ -14,7 +14,7 @@ set_option doc.verso true in
 
 A decorated rose tree carries at each node a decoration beside its label: it is the rose tree
 over pairs of a decoration and a label. Over a fixed type of labels, decorated trees form the
-cofree recursive comonad on the rose functor {cite}`UustaluVene2011`: the counit
+cofree recursive comonad on the rose functor {citeKey}`UustaluVene2011`: the counit
 {lit}`extract` reads the decoration at the root, and redecoration {lit}`redecorate`
 replaces each node's decoration by a function of the subtree below the node, the
 comultiplication being redecoration by the identity. Every annotation of source is such a
@@ -41,7 +41,7 @@ therefore stated and proved concretely, by induction over nodes.
 
 ## References
 
-* {cite}`UustaluVene2011` — the cofree recursive comonad and its recursion scheme.
+* {citeKey}`UustaluVene2011` — the cofree recursive comonad and its recursion scheme.
 
 ## Tags
 

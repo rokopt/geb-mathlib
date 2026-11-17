@@ -25,7 +25,7 @@ its tapes hold at most the tape bound at the expression's constant, which is
 that constant plus the input's binary size plus one.
 
 {lit}`computableInTimeAndSpace_sem` is the soundness half of
-{cite}`Kristiansen2005` Theorem 4.1 for the algebra {lit}`[I, C_W; comp, simn]`:
+{citeKey}`Kristiansen2005` Theorem 4.1 for the algebra {lit}`[I, C_W; comp, simn]`:
 every function it defines is computable in logarithmic space, and so in
 polynomial time. The proof follows the paper's: a value is a bounded word
 before an end segment of the input, so a register holds the word and the end
@@ -46,7 +46,7 @@ depends on {lit}`Classical.choice` through Cslib's
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 
@@ -90,7 +90,7 @@ theorem isPolyBounded_time (e : LOf 1) : IsPolyBounded (time e) := by
 
 /-- The meaning of a unary expression of the subalgebra is computable by a
 multi-tape machine in polynomial time and logarithmic space: the soundness
-half of {cite}`Kristiansen2005` Theorem 4.1, by the compiled program of the
+half of {citeKey}`Kristiansen2005` Theorem 4.1, by the compiled program of the
 expression on the representation of its values. -/
 theorem computableInTimeAndSpace_sem (e : LOf 1) :
     ∃ c d : ℕ, ComputableInTimeAndSpaceOfLength (fun w ↦ e.sem ![w]) (.refl _) (.refl _)

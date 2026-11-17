@@ -43,7 +43,7 @@ These are size theorems. They do not establish a Turing-machine time or space bo
 
 ## References
 
-* {cite}`Mazzanti2016`, Section 2 and Lemma 2.1.
+* {citeKey}`Mazzanti2016`, Section 2 and Lemma 2.1.
 
 ## Tags
 

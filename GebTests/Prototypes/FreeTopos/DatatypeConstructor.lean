@@ -43,7 +43,7 @@ distinct. The soundness is stated at the expression's denotation rather than at 
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

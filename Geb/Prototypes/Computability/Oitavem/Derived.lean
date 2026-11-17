@@ -12,7 +12,7 @@ set_option doc.verso true in
 /-!
 # Derived bounded recursion and word functions
 
-The bounded-recursion construction in the proof of {cite}`Oitavem2010`
+The bounded-recursion construction in the proof of {citeKey}`Oitavem2010`
 Lemma 3.2 uses safe recursion, normal composition, and log-transition. It is
 derived here from exactly those constructors. The bound is an ordinary
 expression producing a word; no proof about that word's length is required.
@@ -34,7 +34,7 @@ expression producing a word; no proof about that word's length is required.
 
 ## References
 
-* {cite}`Oitavem2010`, Definition 2.1 and Lemma 3.2.
+* {citeKey}`Oitavem2010`, Definition 2.1 and Lemma 3.2.
 
 ## Tags
 

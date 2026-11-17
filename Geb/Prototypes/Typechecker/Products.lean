@@ -49,12 +49,12 @@ transducers, suffice. Encode a pair as {lit}`escape(x) ++ 11 ++ escape(y)`, wher
 validity are finite-state operations. Closure under pointwise output concatenation
 and composition supplies tupling; a test for the encoded pair of true values
 supplies conjunction. These closure results are proved in
-{cite}`AlurFreilichRaghothaman2014`, Section III. This is an application of those
+{citeKey}`AlurFreilichRaghothaman2014`, Section III. This is an application of those
 results to the criterion here, not a formal transducer instance.
 
 For bitstrings, all total logspace transducers, with output space excluded from
 the workspace bound, provide a sufficient standard benchmark. Composition closure
-and a pairing with logspace decoding appear in {cite}`CenzerDowneyRemmelUddin2008`,
+and a pairing with logspace decoding appear in {citeKey}`CenzerDowneyRemmelUddin2008`,
 Section 2 and page 12. From these algorithms, the conditions here follow by
 combining output computations and checking code validity and conjunction.
 This application is informal; no machine-class instance is constructed here.
@@ -66,8 +66,8 @@ class is claimed.
 
 ## References
 
-* {cite}`AlurFreilichRaghothaman2014`
-* {cite}`CenzerDowneyRemmelUddin2008`
+* {citeKey}`AlurFreilichRaghothaman2014`
+* {citeKey}`CenzerDowneyRemmelUddin2008`
 
 ## Tags
 

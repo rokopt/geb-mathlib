@@ -12,10 +12,10 @@ set_option doc.verso true in
 /-!
 # Kristiansen's logspace algebra as the successor-free subalgebra
 
-The function algebra {lit}`[I, C_W; comp, simn]` of {cite}`Kristiansen2005` § 4:
+The function algebra {lit}`[I, C_W; comp, simn]` of {citeKey}`Kristiansen2005` § 4:
 the projections and the word constants, closed under composition and
 simultaneous recursion on notation, with no successor of any kind. Its
-signature is that of {cite}`Mazzanti2016`'s algebra {name}`Geb.SizeBounded.S`
+signature is that of {citeKey}`Mazzanti2016`'s algebra {name}`Geb.SizeBounded.S`
 without the size-bounded successor, so its expressions are defined here as the
 expressions of that algebra in which no {name}`Geb.SizeBounded.Shape.sbs` node
 occurs, {lit}`sbsFree` folded over the tree, rather than as the admissible
@@ -48,8 +48,8 @@ rests on the paper's Lemma 4.5, stated in
 
 # References
 
-* {cite}`Kristiansen2005`
-* {cite}`Mazzanti2016`
+* {citeKey}`Kristiansen2005`
+* {citeKey}`Mazzanti2016`
 
 # Tags
 
@@ -98,7 +98,7 @@ theorem sbsFree_mk (a : Shape) (f : Direction a → sig.toPFunctor.W) :
     sbsFree (WType.mk a f) = sbsFreeValue a fun d ↦ sbsFree (f d) := rfl
 
 /-- The expressions of the subalgebra {lit}`[I, C_W; comp, simn]` of
-{cite}`Kristiansen2005` of a given arity: the successor-free expressions of
+{citeKey}`Kristiansen2005` of a given arity: the successor-free expressions of
 {name}`Geb.SizeBounded.S` of that arity. -/
 @[expose] def LOf (n : ℕ) : Type := { e : SOf n // sbsFree e.1.1 = true }
 

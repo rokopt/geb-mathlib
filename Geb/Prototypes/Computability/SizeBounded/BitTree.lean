@@ -19,7 +19,7 @@ pending-tree counter — as an expression of {name}`Geb.SizeBounded.S`. The
 expression is correct against the scan on every word, and it is
 non-size-increasing by {name}`Geb.SizeBounded.nsi_eval` with no argument specific
 to it: the polynomial-time, linear-space reading of its membership,
-{cite}`Mazzanti2016` Theorem 5.7, is
+{citeKey}`Mazzanti2016` Theorem 5.7, is
 {lit}`Geb.SizeBounded.Machine.computableInTimeAndSpace_sem`.
 
 The scan is a simultaneous recursion with three registers, run over the input
@@ -81,7 +81,7 @@ is zero in the two terminal modes, where the count is not read.
 
 # References
 
-* {cite}`Mazzanti2016`
+* {citeKey}`Mazzanti2016`
 
 # Tags
 

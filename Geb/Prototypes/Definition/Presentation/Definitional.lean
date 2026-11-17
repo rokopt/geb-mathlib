@@ -16,7 +16,7 @@ Derived operations {lit}`δ : Derived P Q` present, over the signature {lit}`sum
 equations {lit}`q(x⃗) = δ q (x⃗)`: each new operation, applied to its variables, equals its
 body ({lit}`Presentation.ofDerived`). The presentation changes nothing: its classes of terms are
 the terms of {lit}`P` ({lit}`Presentation.clsEquivBase`), which are the criteria for a
-definition {cite}`Suppes1957`:
+definition {citeKey}`Suppes1957`:
 
 * eliminability: every term over {lit}`sum P Q` has the class of a term of {lit}`P`, its
   unfolding ({lit}`Presentation.cls_inlTerm_unfoldOps`), a single witness replacing each new
@@ -52,8 +52,8 @@ and the inclusion of the terms of {lit}`P` is a section of it
 
 ## References
 
-* {cite}`Suppes1957`, pp. 153–154, for the criteria of eliminability and non-creativity.
-* {cite}`KellyPower1993`, for presentations as coequalizers of free monads.
+* {citeKey}`Suppes1957`, pp. 153–154, for the criteria of eliminability and non-creativity.
+* {citeKey}`KellyPower1993`, for presentations as coequalizers of free monads.
 
 ## Tags
 

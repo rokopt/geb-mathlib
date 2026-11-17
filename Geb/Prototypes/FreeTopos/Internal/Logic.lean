@@ -13,7 +13,7 @@ set_option doc.verso true in
 # The connectives of the internal language
 
 The connectives, definitions of the internal language in terms of equality, as in a local set
-theory ({cite}`RuizHernandezSolorzano2021`, Section 3.2): truth is the equality of the element of
+theory ({citeKey}`RuizHernandezSolorzano2021`, Section 3.2): truth is the equality of the element of
 the terminal object with itself; a conjunction the equality of the pair of its formulas with the
 pair of truths; an implication the equality of the conjunction with the antecedent; the
 universal quantifier over a type, applied to a predicate, the equality of the predicate with the
@@ -43,7 +43,7 @@ extensionality.
 
 ## References
 
-* {cite}`RuizHernandezSolorzano2021`
+* {citeKey}`RuizHernandezSolorzano2021`
 
 ## Tags
 

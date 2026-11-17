@@ -39,8 +39,8 @@ mechanical interface for writing local rules; the sequential calculus is in
 
 ## References
 
-* {cite}`MackiePintoVilaca2009`, for program-specific interaction systems.
-* {cite}`HassanMackieSato2015`, Section 3, for the textual interaction calculus.
+* {citeKey}`MackiePintoVilaca2009`, for program-specific interaction systems.
+* {citeKey}`HassanMackieSato2015`, Section 3, for the textual interaction calculus.
 
 ## Tags
 

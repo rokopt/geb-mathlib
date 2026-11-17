@@ -28,7 +28,7 @@ each checked after the theorems of those before it, in the order of their search
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

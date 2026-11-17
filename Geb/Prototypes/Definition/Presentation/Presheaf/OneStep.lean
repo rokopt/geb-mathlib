@@ -43,8 +43,8 @@ presentation over {lit}`termSig` with these equations ({lit}`Presheaf.QPRA.onest
 
 ## References
 
-* {cite}`FiorePittsSteenkamp2020`, for W-types with equations.
-* {cite}`Weber2007`, for parametric right adjoints on presheaf categories.
+* {citeKey}`FiorePittsSteenkamp2020`, for W-types with equations.
+* {citeKey}`Weber2007`, for parametric right adjoints on presheaf categories.
 
 ## Tags
 

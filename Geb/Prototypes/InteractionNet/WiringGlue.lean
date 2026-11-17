@@ -17,7 +17,7 @@ set_option doc.verso true in
 A family of disjoint endpoint pairs specifies a gluing. The pairs may be processed in
 any order: each operation reconnects incident wires and records a closed component when
 it closes a wire. The detached endpoints can then be removed. This gives an executable
-form of finite boundary gluing, including the loops in {cite}`DeFalco2010`, Definition 4.1.
+form of finite boundary gluing, including the loops in {citeKey}`DeFalco2010`, Definition 4.1.
 
 ## Main definitions
 
@@ -32,7 +32,7 @@ form of finite boundary gluing, including the loops in {cite}`DeFalco2010`, Defi
 
 ## References
 
-* {cite}`DeFalco2010`, Section 2 and Definition 4.1.
+* {citeKey}`DeFalco2010`, Section 2 and Definition 4.1.
 
 ## Tags
 

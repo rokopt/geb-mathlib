@@ -38,7 +38,7 @@ them ({lit}`Presentation.clsEquiv`, {lit}`Presentation.clsEquiv_op`).
 
 ## References
 
-* {cite}`FiorePittsSteenkamp2020`, for W-types with equations.
+* {citeKey}`FiorePittsSteenkamp2020`, for W-types with equations.
 
 ## Tags
 

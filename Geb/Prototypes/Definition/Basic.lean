@@ -60,8 +60,8 @@ into a monad applied to both.
 
 ## References
 
-* {cite}`GambinoKock2013`, Theorem 4.5, for free-polynomial shapes and directions.
-* {cite}`MiliusMoss2009`, Sections 3 and 6, for equation morphisms and their solutions.
+* {citeKey}`GambinoKock2013`, Theorem 4.5, for free-polynomial shapes and directions.
+* {citeKey}`MiliusMoss2009`, Sections 3 and 6, for equation morphisms and their solutions.
 
 ## Tags
 

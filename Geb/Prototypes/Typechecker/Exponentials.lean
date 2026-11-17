@@ -51,7 +51,7 @@ that interpretation as a morphism. If {lit}`eval(encode(x, c))` enumerates every
 admissible endomorphism, then for any admissible {lit}`a` the diagonal function
 {lit}`x ↦ a(eval(encode(x, x)))` is admissible. Applying its code to itself gives
 a fixed point of {lit}`a`. This is the restricted-function form of the diagonal
-argument of {cite}`Lawvere1969`, Section 1. The proof only needs existence of
+argument of {citeKey}`Lawvere1969`, Section 1. The proof only needs existence of
 codes, not their uniqueness or a decision procedure recognizing them.
 
 An exponential of an everywhere-accepting object {lit}`U` into itself would give
@@ -79,7 +79,7 @@ and the abstract criterion are formalized here.
 
 ## References
 
-* {cite}`Lawvere1969`
+* {citeKey}`Lawvere1969`
 
 ## Tags
 

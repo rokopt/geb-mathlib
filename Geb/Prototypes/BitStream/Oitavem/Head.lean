@@ -51,7 +51,7 @@ bound is not proved here.
 
 # References
 
-* {cite}`Oitavem2010`, Definition 3.1.
+* {citeKey}`Oitavem2010`, Definition 3.1.
 
 # Tags
 

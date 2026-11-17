@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.LargeIR.Code
-meta import GebMeta  -- shake: keep; supplies the cite docstring role
+meta import GebMeta  -- shake: keep; supplies the citeKey docstring role
 
 set_option doc.verso true in
 /-!
@@ -74,8 +74,8 @@ that argument is not formalized here.
 
 ## References
 
-* {cite}`GhaniNordvallForsbergMalatesta2015`
-* {cite}`Weber2007`
+* {citeKey}`GhaniNordvallForsbergMalatesta2015`
+* {citeKey}`Weber2007`
 
 ## Tags
 

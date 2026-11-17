@@ -52,8 +52,8 @@ comparisons of end segments require.
 
 # References
 
-* {cite}`Elias1975`
-* {cite}`Kristiansen2005`
+* {citeKey}`Elias1975`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

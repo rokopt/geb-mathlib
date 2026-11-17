@@ -59,9 +59,9 @@ in that universe.
 
 ## References
 
-* {cite}`Weber2007`
-* {cite}`GambinoKock2013`
-* {cite}`VanDenBergDeMarchi2007`, Section 2.
+* {citeKey}`Weber2007`
+* {citeKey}`GambinoKock2013`
+* {citeKey}`VanDenBergDeMarchi2007`, Section 2.
 
 ## Tags
 
