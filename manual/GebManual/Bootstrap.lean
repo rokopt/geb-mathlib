@@ -403,7 +403,8 @@ Extension:
   its prose, its notes holding examples and links. Comments are read as
   the recorded subset of Verso's markup, and every reference in them and
   in the notes' links resolves, as `geb-doc` checks. The forms `let*` and `cond`, expanded in module
-  elaboration, are complete, as is the `geb` editor language with Mike's
+  elaboration, are complete, the sources under `bootstrap/` being written in them, as is the `geb`
+  editor language with Mike's
   Paredit, built from a pinned commit and patch, and the checker of holes
   in programs with the display of their obligations. The syntax of
   statements and proof scripts is complete over the kernel's types and
@@ -3681,7 +3682,8 @@ tag := "authoring-compatibility"
     completion, and the development of the datatype language's soundness
     remains Lean deducers
 *
-  * `let*` and `cond`, expanded in the elaboration of modules
+  * `let*` and `cond`, expanded in the elaboration of modules, and the
+    sources written in them
   * Complete
 *
   * The syntax of holes, the suspending checker of holes in programs and
@@ -4133,8 +4135,9 @@ written files place a nested `let` or conditional at its parent's
 indentation, which parinfer's Indent Mode reads as closing the parent.
 The same cause produces the long lines: the kernel's binary conditional
 and single-binding `let` make chains nest, and nesting is indentation
-under any layout parinfer admits; the forms `let*` and `cond` remove
-both ({ref "improvements"}[Improvements]). Parinfer's Paren Mode, which
+under any layout parinfer admits; the forms `let*` and `cond`, in which
+the sources are written, remove both ({ref "modules"}[Modules]).
+Parinfer's Paren Mode, which
 never changes the tree, would also serve as a formatter, but without
 proofs for Geb's grammar; the formatter here has its proofs.
 
@@ -4645,6 +4648,25 @@ typing, even in the scope of a local function named by the keyword.
 The expansion in Lean and in Geb agrees on the module tests; the seed
 and both compilers check the same bundles as the nested forms. The
 typing and datatype expansion read neither form.
+
+The sources under `bootstrap/` are written in the two forms. The
+conversion {name}`Geb.Kernel.Document.Doc.chains` of a source document
+is the expansion's inverse: a `let` or a `let*` whose body is one of the
+two becomes one `let*` of the bindings of both, and a conditional, or
+the default of a `cond`, whose last branch is a conditional or a `cond`
+becomes one `cond` of the clauses of both. It converts a form where the
+elaboration gives it the role of a term, and leaves a single binding and
+a single test as they are written. A comment line stays before the
+binding or the clause that the form after it becomes.
+`geb-fmt --chains` applies the conversion to files and then formats
+them, and `scripts/bootstrap.sh check` requires every source to be its
+fixed point, so a sequence of bindings or of tests is written in the two
+forms alone. That a converted program elaborates to the declarations of
+the original is tested on examples of each role
+(`GebTests/Prototypes/Kernel/Chains.lean`) and not proved; for the
+sources it is the reproduction of the committed images, emitted Lean and
+mirrors. A binding between two tests and a test between two bindings
+still nest.
 
 Each source under `bootstrap/` is a module named after its file, with an
 export list of the definitions other sources and the tests use, and
@@ -6322,7 +6344,9 @@ datatypes by `data`.
   * The elaboration of modules, in Lean and in Geb, expands each to its
     nested `let` or `if`, so that the program whose soundness is proved
     reads neither; a program using them compiles to the bundle of the nested
-    forms, and a declaration taking either name is rejected
+    forms, and a declaration taking either name is rejected; `bootstrap/`
+    converted in one mechanical change with images and emitted Lean
+    unchanged, and `geb-fmt --check --chains` in continuous integration
 *
   * The syntax of holes, the suspending checker of holes in programs and
     the display of their obligations
@@ -6370,8 +6394,8 @@ datatypes by `data`.
     not bound
 :::
 
-When the completion is merged, the sources are converted to the forms the
-steps above add, in one mechanical change.
+The sources are converted to the forms a step adds in one mechanical
+change, as they are to `let*` and `cond` ({ref "modules"}[Modules]).
 
 Early in writing, alongside the first substantial module where it helps:
 holes in the datatype language, whose types the stage-1 typing reports, the
@@ -8292,19 +8316,6 @@ the change that removes it.
   column of the declaration, found from the sources as written, and not an
   occurrence inside the declaration, nor why the typing rejects it
   ({ref "editing"}[Editing]).
-* Chains of tests and bindings. The kernel's conditional and `let` are
-  binary, so chains of tests and of bindings nest, and under a layout
-  parinfer admits, nesting is indentation. The written files' flat chains
-  are what parinfer's Indent Mode restructures
-  ({ref "source-documents"}[Source documents and the formatter]). Forms
-  `let*`, of several bindings, and `cond`, of several guarded branches,
-  are expanded in the elaboration of modules
-  ({ref "modules"}[Modules]), before the expansion of the datatype
-  language. They remove both. The reader, the typing and the expansion, of which
-  the soundness of the typing is proved, then read neither, so that the
-  theorem has no case for them. The forms are complete; the sources whose
-  typing's soundness is proved are converted after the datatype language's
-  completion, with the other additions of the authoring sequence.
 * The equivalence of the word-level codec with
   {name}`Geb.RoseTree.wire`, tested and not proved, which is the first
   of the decision gates of the value-representation chapter.

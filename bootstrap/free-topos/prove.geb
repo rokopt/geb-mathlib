@@ -99,8 +99,8 @@
   ; roots are of one kind, of one index for a primitive or a definition
   (defn sameShape ((p T) (t T)) T
     (let l T (label p)
-      (if (eq l 0) 1
-        (if (eq (label t) l) (if (or (eq l 7) (eq l 11)) (eq (mD p 0) (mD t 0)) 1) 0))))
+      (cond ((eq l 0) 1) ((eq (label t) l) (if (or (eq l 7) (eq l 11)) (eq (mD p 0) (mD t 0)) 1))
+        (else 0))))
 
   ; a list with the element at a position replaced
   (defn setAt ((xs Ts) (i T) (x T)) Ts
@@ -121,11 +121,13 @@
       (let t1 T (if (eq d 0) t (rename t (lam ((j T)) (sub j d))))
         (if (or (eq d 0) (equal (rename t1 (lam ((j T)) (add j d))) t))
           (let e T (nth s (sub i d))
-            (if (isSome e)
-              (if (isSome (get e))
-                (if (equal (get (get e)) t1) (OAssign.just (assign s)) OAssign.nothing)
-                (OAssign.just (assign (setAt s (sub i d) (some t1)))))
-              (if (equal t1 (var (sub i d))) (OAssign.just (assign s)) OAssign.nothing)))
+            (cond
+              ((isSome e)
+               (if (isSome (get e))
+                 (if (equal (get (get e)) t1) (OAssign.just (assign s)) OAssign.nothing)
+                 (OAssign.just (assign (setAt s (sub i d) (some t1))))))
+              ((equal t1 (var (sub i d))) (OAssign.just (assign s)))
+              (else OAssign.nothing)))
           OAssign.nothing))))
   (deftype MA (Arrow T (Arrow T (Arrow Ts (Arrow OAssign.Maybe OAssign.Maybe)))))
   (defn matchAll ((nd T) (l T) (k T) (rs Mts)) MA
@@ -140,16 +142,15 @@
       (lam ((d T) (i T) (ts Ts) (acc OAssign.Maybe)) acc)
       (Mts.tail rs)))
   (defn matchStep ((nd T) (rs Mts)) Mt
-    (let l T (label nd)
-      (let h MA (matchAll nd l (length (mArgs nd)) rs)
-        (lam ((d T) (t T) (s Ts))
-          (if (eq l 0) (matchVar (mD nd 0) d t s)
-            (let us Ts (mArgs t)
-              (if
-                (and (and (eq l (label t)) (equal (child nd 0) (child t 0)))
-                  (eq (length (mArgs nd)) (length us)))
-                (h d 0 us (OAssign.just (assign s)))
-                OAssign.nothing)))))))
+    (let* ((l T (label nd)) (h MA (matchAll nd l (length (mArgs nd)) rs)))
+      (lam ((d T) (t T) (s Ts))
+        (if (eq l 0) (matchVar (mD nd 0) d t s)
+          (let us Ts (mArgs t)
+            (if
+              (and (and (eq l (label t)) (equal (child nd 0) (child t 0)))
+                (eq (length (mArgs nd)) (length us)))
+              (h d 0 us (OAssign.just (assign s)))
+              OAssign.nothing))))))
   (defn matchTerm ((p T)) Mt (para Mt matchStep p))
 
   ; the rules of the normalizer: a rule of the checker's position and data, the unfolding of one
@@ -236,15 +237,15 @@
   (defn prepareRule ((E (List Entry)) (r NormRule)) NormRule
     (case r
       ((nrThm j thN)
-       (let th Ts (objsOf thN)
-         (let a OThm.Maybe (thmAt E j)
-           (let lr OTPair.Maybe (bindHP a (lam ((a1 Thm)) (eqParts (thConcl a1))))
-             (if (OTPair.isJust lr)
-               (let p T
-                 (if (isEmpty th) (p1 (OTPair.fromMaybe pr0 lr))
-                   (osubst th (p1 (OTPair.fromMaybe pr0 lr))))
-                 (nrThmAt j thN p (length (thCtx (OThm.fromMaybe thm0 a)))))
-               r)))))
+       (let*
+         ((th Ts (objsOf thN)) (a OThm.Maybe (thmAt E j))
+          (lr OTPair.Maybe (bindHP a (lam ((a1 Thm)) (eqParts (thConcl a1))))))
+         (if (OTPair.isJust lr)
+           (let p T
+             (if (isEmpty th) (p1 (OTPair.fromMaybe pr0 lr))
+               (osubst th (p1 (OTPair.fromMaybe pr0 lr))))
+             (nrThmAt j thN p (length (thCtx (OThm.fromMaybe thm0 a)))))
+           r)))
       (else r)))
   (defn prepareRules ((E (List Entry)) (rs (List NormRule))) NRs
     (foldr NormRule NRs (lam ((r NormRule) (acc NRs)) (cons (prepareRule E r) acc)) (nil NormRule)
@@ -352,17 +353,16 @@
       ((nsKids j qs)
        (case (allSomeN xs)
          ((ONFRList.just csn)
-          (let cs (List NFR) (nfrsOf csn)
-            (let t1 T (rebuild (jobTerm j) cs)
-              (let d1 Marked
-                (if (marked cs)
-                  (mark (dNode 2 (nil T) (NFRTerm.map (lam ((c NFR)) (mDeriv (nfMarked c))) cs)) 1)
-                  dRefl)
-                (let rr OTPair.Maybe (rootRewrite G E n rs (jobCtx j) (jobHyps j) t1)
-                  (if (OTPair.isJust rr)
-                    (let r TPair (OTPair.fromMaybe pr0 rr)
-                      (nsTail d1 (mark (p2 r) 1) (jobAt j 0 (p1 r))))
-                    (nsDone (ONFR.just (nfr t1 d1)))))))))
+          (let*
+            ((cs (List NFR) (nfrsOf csn)) (t1 T (rebuild (jobTerm j) cs))
+             (d1 Marked
+               (if (marked cs)
+                 (mark (dNode 2 (nil T) (NFRTerm.map (lam ((c NFR)) (mDeriv (nfMarked c))) cs)) 1)
+                 dRefl))
+             (rr OTPair.Maybe (rootRewrite G E n rs (jobCtx j) (jobHyps j) t1)))
+            (if (OTPair.isJust rr)
+              (let r TPair (OTPair.fromMaybe pr0 rr) (nsTail d1 (mark (p2 r) 1) (jobAt j 0 (p1 r))))
+              (nsDone (ONFR.just (nfr t1 d1))))))
          ((ONFRList.nothing) (nsDone ONFR.nothing))))
       ((nsTail d1 d2 q)
        (case (firstR xs)
@@ -436,20 +436,17 @@
           (lam ((a T))
             (bindHT (lowerHyps G n g1 hs)
               (lam ((hn Terms))
-                (let h1 Ts (termsOf hn)
-                  (let g2 Ts (cons c (cons a g1))
-                    (let h2 Ts (mapT weaken2 h1)
+                (let* ((h1 Ts (termsOf hn)) (g2 Ts (cons c (cons a g1))) (h2 Ts (mapT weaken2 h1)))
+                  (bindO
+                    (byNorm G E n rs fuel g1 h1 (instAt kn (single a) t) (instAt kn (single a) u))
+                    (lam ((p0 T))
                       (bindO
-                        (byNorm G E n rs fuel g1 h1 (instAt kn (single a) t)
-                          (instAt kn (single a) u))
-                        (lam ((p0 T))
-                          (bindO
-                            (byNorm G E n rs fuel g2 h2 (listConsAt kc a t)
-                              (subst s (atVar0 (weakenElem t))))
-                            (lam ((p1d T))
-                              (mapO (lam ((p2d T)) (dNode 20 (l3 kn kc s) (l3 p0 p1d p2d)))
-                                (byNorm G E n rs fuel g2 h2 (listConsAt kc a u)
-                                  (subst s (atVar0 (weakenElem u)))))))))))))))))))
+                        (byNorm G E n rs fuel g2 h2 (listConsAt kc a t)
+                          (subst s (atVar0 (weakenElem t))))
+                        (lam ((p1d T))
+                          (mapO (lam ((p2d T)) (dNode 20 (l3 kn kc s) (l3 p0 p1d p2d)))
+                            (byNorm G E n rs fuel g2 h2 (listConsAt kc a u)
+                              (subst s (atVar0 (weakenElem u)))))))))))))))))
 
   ; induction with the induction hypothesis: the step's, normalized, cut in to rewrite by, the rules
   ; followed by the rewriting by the hypothesis of an index
@@ -495,36 +492,36 @@
                   (bindO
                     (byNorm G E n rs fuel g1 h1 (instAt kn (single a) t) (instAt kn (single a) u))
                     (lam ((p0 T))
-                      (let dl Ts (cons c (cons a g1))
-                        (let e T (weakenElem (mEq t u))
-                          (let f1 Ts (append (mapT weaken2 h1) (single e))
-                            (bindNT ((normalize G E n rs fuel) dl f1 e)
-                              (lam ((npsi NFR))
-                                (let psi T (nfTerm npsi)
-                                  (bindO
-                                    (byNorm G E n (withHyp rs (length f1)) fuel dl
-                                      (append f1 (single psi))
-                                      (listConsAt kc a t)
-                                      (listConsAt kc a u))
-                                    (lam ((q T))
-                                      (let ih T
-                                        (dNode 24 (single e)
-                                          (l2 (mDeriv (nfMarked npsi))
-                                            (dNode 21 (single (length h1)) (nil T))))
-                                        (some
-                                          (dNode 29 (l2 kn kc)
-                                            (l2 p0
-                                              (dNode 22 (single psi)
-                                                (l2 ih q))))))))))))))))))))))))
+                      (let*
+                        ((dl Ts (cons c (cons a g1))) (e T (weakenElem (mEq t u)))
+                         (f1 Ts (append (mapT weaken2 h1) (single e))))
+                        (bindNT ((normalize G E n rs fuel) dl f1 e)
+                          (lam ((npsi NFR))
+                            (let psi T (nfTerm npsi)
+                              (bindO
+                                (byNorm G E n (withHyp rs (length f1)) fuel dl
+                                  (append f1 (single psi))
+                                  (listConsAt kc a t)
+                                  (listConsAt kc a u))
+                                (lam ((q T))
+                                  (let ih T
+                                    (dNode 24 (single e)
+                                      (l2 (mDeriv (nfMarked npsi))
+                                        (dNode 21 (single (length h1)) (nil T))))
+                                    (some
+                                      (dNode 29 (l2 kn kc)
+                                        (l2 p0 (dNode 22 (single psi) (l2 ih q))))))))))))))))))))))
 
   ; the child whose normalization can enable a rule at a node's root other than an application: the
   ; pair's component a projection takes, and a fold's datum
   (defn headChild ((t T)) T
-    (if (or (mIs 3 1 t) (mIs 4 1 t)) (some 0)
-      (if (or (mIs 8 3 t) (mIs 9 3 t)) (some 2) (if (mIs 10 2 t) (some 1) none))))
+    (cond ((or (mIs 3 1 t) (mIs 4 1 t)) (some 0)) ((or (mIs 8 3 t) (mIs 9 3 t)) (some 2))
+      ((mIs 10 2 t) (some 1))
+      (else none)))
   ; whether the normal form but for folds' starts and steps, and the weak normal form, leave a
   ; node's child of an index in place
-  (defn keepsFold ((l T) (i T)) T (if (or (eq l 8) (eq l 9)) (lt i 2) (if (eq l 10) (eq i 0) 0)))
+  (defn keepsFold ((l T) (i T)) T
+    (cond ((or (eq l 8) (eq l 9)) (lt i 2)) ((eq l 10) (eq i 0)) (else 0)))
   (defn keepsWeak ((l T) (i T)) T (if (eq l 5) 1 (keepsFold l i)))
 
   ; the uses of the variable of an index in a term, each under an abstraction and in a fold's step
@@ -534,16 +531,16 @@
   (import (Lists UF) as UFs)
   (deftype UH (Arrow T (Arrow T T)))
   (defn usesStep ((nd T) (rs UFs)) UF
-    (let l T (label nd)
-      (let k T (length (mArgs nd))
-        (let h UH
-          (foldr UF UH
-            (lam ((r UF) (c UH) (d T) (i T))
-              (let b T (if (eq l 5) 1 (childBound l k i))
-                (add (mul (if (eq b 0) 1 2) (r (add d b))) (c d (add i 1)))))
-            (lam ((d T) (i T)) 0)
-            (UFs.tail rs))
-          (lam ((d T)) (if (eq l 0) (if (eq (mD nd 0) d) 1 0) (h d 0)))))))
+    (let*
+      ((l T (label nd)) (k T (length (mArgs nd)))
+       (h UH
+         (foldr UF UH
+           (lam ((r UF) (c UH) (d T) (i T))
+             (let b T (if (eq l 5) 1 (childBound l k i))
+               (add (mul (if (eq b 0) 1 2) (r (add d b))) (c d (add i 1)))))
+           (lam ((d T) (i T)) 0)
+           (UFs.tail rs))))
+      (lam ((d T)) (if (eq l 0) (if (eq (mD nd 0) d) 1 0) (h d 0)))))
   (defn uses ((t T) (d T)) T ((para UF usesStep t) d))
 
   ; the reduction of a term to a depth, 0 the weak head normal form, 1 the weak normal form, 2 the
@@ -558,17 +555,20 @@
   ; and one for each index of a primitive arrow and of a definition
   (defn rootKey ((t T)) T
     (let l T (label t)
-      (if (eq l 7) (add 11 (mul 2 (mD t 0)))
-        (if (eq l 11) (add 12 (mul 2 (mD t 0)))
-          (if (eq l 8) 7 (if (eq l 9) 8 (if (eq l 10) 9 (if (eq l 12) 10 l))))))))
+      (cond ((eq l 7) (add 11 (mul 2 (mD t 0)))) ((eq l 11) (add 12 (mul 2 (mD t 0)))) ((eq l 8) 7)
+        ((eq l 9) 8)
+        ((eq l 10) 9)
+        ((eq l 12) 10)
+        (else l))))
   (defn patternKey ((p T)) T (if (eq (label p) 0) none (some (rootKey p))))
   (defn ruleKey ((rl T)) T
-    (if (or (eq rl 3) (or (eq rl 14) (eq rl 15))) (some 6)
-      (if (eq rl 4) (some 3)
-        (if (eq rl 5) (some 4)
-          (if (eq rl 6) (some 2)
-            (if (or (eq rl 9) (eq rl 10)) (some 7)
-              (if (or (eq rl 11) (eq rl 12)) (some 8) (if (eq rl 13) (some 9) none))))))))
+    (cond ((or (eq rl 3) (or (eq rl 14) (eq rl 15))) (some 6)) ((eq rl 4) (some 3))
+      ((eq rl 5) (some 4))
+      ((eq rl 6) (some 2))
+      ((or (eq rl 9) (eq rl 10)) (some 7))
+      ((or (eq rl 11) (eq rl 12)) (some 8))
+      ((eq rl 13) (some 9))
+      (else none)))
   (defn nrKey ((E (List Entry)) (r NormRule)) T
     (case r ((nrRule rl rdN) (ruleKey rl)) ((nrDelta k) (some (add 12 (mul 2 k))))
       ((nrUnit) (some 0))
@@ -617,11 +617,11 @@
   (deftype RTs (List RT))
   (import (Lists RT) as RTs)
   (defn childRen ((l T) (m T) (f (Arrow T T)) (i T)) (Arrow T T)
-    (if (and (eq l 5) (eq m 1)) (lam ((j T)) (liftR f j))
-      (if (and (eq l 8) (eq m 3)) (if (eq i 1) (lam ((j T)) (liftR f j)) f)
-        (if (and (eq l 9) (eq m 3))
-          (if (eq i 1) (lam ((j T)) (liftR (lam ((x T)) (liftR f x)) j)) f)
-          (if (and (eq l 10) (eq m 2)) (if (eq i 0) (lam ((j T)) (liftR f j)) f) f)))))
+    (cond ((and (eq l 5) (eq m 1)) (lam ((j T)) (liftR f j)))
+      ((and (eq l 8) (eq m 3)) (if (eq i 1) (lam ((j T)) (liftR f j)) f))
+      ((and (eq l 9) (eq m 3)) (if (eq i 1) (lam ((j T)) (liftR (lam ((x T)) (liftR f x)) j)) f))
+      ((and (eq l 10) (eq m 2)) (if (eq i 0) (lam ((j T)) (liftR f j)) f))
+      (else f)))
   ; the children's tests composed into one, of the renaming, the position of the first child and the
   ; term's children from it
   (deftype HT (Arrow (Arrow T T) (Arrow T (Arrow Ts T))))
@@ -711,30 +711,28 @@
       ((stKids j w dw qs) (jobsOf qs))))
   ; the reduction past a weak head normal form, from its children's jobs
   (defn stDeep ((G Globals) (n T) (dp T) (j Job) (wr NFR)) St
-    (let w T (nfTerm wr)
-      (let l T (label w)
-        (let ws Ts (mArgs w)
-          (if (eq dp 1)
-            (stKids (jobAt j 1 w) w (nfMarked wr)
-              (jobs
-                (JobAt.map (lam ((i T)) (jobAt j (if (keepsWeak l i) 4 1) (at ws i)))
-                  (range (length ws)))))
-            (case (childBinders G n w (jobCtx j))
-              ((OBinders.just bxN)
-               (let bx (List Binder) (bindersOf bxN)
-                 (let m T (if (lt (BinderL.length bx) (length ws)) (BinderL.length bx) (length ws))
-                   (stKids (jobAt j dp w) w (nfMarked wr)
-                     (jobs
-                       (JobAt.map
-                         (lam ((i T))
-                           (let b Binder (BinderL.atOr binder0 bx i)
-                             (let u T (at ws i)
-                               (if (and (eq dp 2) (keepsFold l i)) (jobAt j 4 u)
-                                 (job dp (objs (binderCtx b)) (add (jobNum j) (binderNum b))
-                                   (terms (jobHyps j))
-                                   u)))))
-                         (range m)))))))
-              ((OBinders.nothing) (stDone ONFR.nothing))))))))
+    (let* ((w T (nfTerm wr)) (l T (label w)) (ws Ts (mArgs w)))
+      (if (eq dp 1)
+        (stKids (jobAt j 1 w) w (nfMarked wr)
+          (jobs
+            (JobAt.map (lam ((i T)) (jobAt j (if (keepsWeak l i) 4 1) (at ws i)))
+              (range (length ws)))))
+        (case (childBinders G n w (jobCtx j))
+          ((OBinders.just bxN)
+           (let*
+             ((bx (List Binder) (bindersOf bxN))
+              (m T (if (lt (BinderL.length bx) (length ws)) (BinderL.length bx) (length ws))))
+             (stKids (jobAt j dp w) w (nfMarked wr)
+               (jobs
+                 (JobAt.map
+                   (lam ((i T))
+                     (let* ((b Binder (BinderL.atOr binder0 bx i)) (u T (at ws i)))
+                       (if (and (eq dp 2) (keepsFold l i)) (jobAt j 4 u)
+                         (job dp (objs (binderCtx b)) (add (jobNum j) (binderNum b))
+                           (terms (jobHyps j))
+                           u))))
+                   (range m))))))
+          ((OBinders.nothing) (stDone ONFR.nothing))))))
   (defn stAfter ((G Globals) (n T) (c T) (j Job) (w NFR)) St
     (if (eq c 0) (stDone (ONFR.just w)) (stDeep G n c j w)))
   ; the rewriting at the root of a term, the rewritten term reduced to a depth and the result
@@ -746,19 +744,18 @@
           (stTail (jobAt j dp (p1 r)) dRefl d1 (mark (p2 r) 1) c))
         (stAfter G n c j (nfr t1 d1)))))
   (defn stStart ((G Globals) (n T) (rw RWK) (j Job)) St
-    (let dp T (jobDp j)
-      (let t T (jobTerm j)
-        (if (eq dp 4) (stDone (ONFR.just (nfr t dRefl)))
-          (if (mIs 6 2 t) (stFun j)
-            (let rr OTPair.Maybe (jobRw rw j t)
-              (if (OTPair.isJust rr)
-                (let r TPair (OTPair.fromMaybe pr0 rr)
-                  (stTail (jobAt j 0 (p1 r)) dRefl dRefl (mark (p2 r) 1) dp))
-                (let hc T (headChild t)
-                  (if (isSome hc)
-                    (let ct T (nth (mArgs t) (get hc))
-                      (if (isSome ct) (stChild j (get hc) (get ct)) (stDone ONFR.nothing)))
-                    (stAfter G n dp j (nfr t dRefl)))))))))))
+    (let* ((dp T (jobDp j)) (t T (jobTerm j)))
+      (cond ((eq dp 4) (stDone (ONFR.just (nfr t dRefl)))) ((mIs 6 2 t) (stFun j))
+        (else
+          (let rr OTPair.Maybe (jobRw rw j t)
+            (if (OTPair.isJust rr)
+              (let r TPair (OTPair.fromMaybe pr0 rr)
+                (stTail (jobAt j 0 (p1 r)) dRefl dRefl (mark (p2 r) 1) dp))
+              (let hc T (headChild t)
+                (if (isSome hc)
+                  (let ct T (nth (mArgs t) (get hc))
+                    (if (isSome ct) (stChild j (get hc) (get ct)) (stDone ONFR.nothing)))
+                  (stAfter G n dp j (nfr t dRefl))))))))))
   ; a state advanced by the results of the jobs it waits for
   (defn stAdv ((G Globals) (n T) (rw RWK) (s St) (rs (List ONFR.Maybe))) St
     (case s ((stDone m) (stDone m))
@@ -770,10 +767,9 @@
       ((stFun j)
        (case (firstR rs)
          ((ONFR.just rf)
-          (let f1 T (nfTerm rf)
-            (let u T (mArg (jobTerm j) 1)
-              (stArg j rf
-                (if (mIs 5 1 f1) (jobAt j (if (lt (uses (mArg f1 0) 0) 2) 4 1) u) (jobAt j 0 u))))))
+          (let* ((f1 T (nfTerm rf)) (u T (mArg (jobTerm j) 1)))
+            (stArg j rf
+              (if (mIs 5 1 f1) (jobAt j (if (lt (uses (mArg f1 0) 0) 2) 4 1) u) (jobAt j 0 u)))))
          ((ONFR.nothing) (stDone ONFR.nothing))))
       ((stArg j rf q)
        (case (firstR rs)
@@ -797,18 +793,17 @@
       ((stKids j w dw qs)
        (case (allSomeN rs)
          ((ONFRList.just csn)
-          (let cs (List NFR) (nfrsOf csn)
-            (let t1 T (rebuild w cs)
-              (if (eq (jobDp j) 3)
-                (let d1 Marked (dCong (NFRMarked.map nfMarked cs))
-                  (let rr OTPair.Maybe (jobRw rw j t1)
-                    (if (OTPair.isJust rr)
-                      (let r TPair (OTPair.fromMaybe pr0 rr)
-                        (stTail (jobAt j 3 (p1 r)) dw d1 (mark (p2 r) 1) 0))
-                      (stDone (ONFR.just (nfr t1 (dTrans dw d1)))))))
-                (let d1 Marked (dTrans dw (dCong (NFRMarked.map nfMarked cs)))
-                  (if (marked cs) (stRoot G n rw (jobDp j) 0 j t1 d1)
-                    (stDone (ONFR.just (nfr t1 d1)))))))))
+          (let* ((cs (List NFR) (nfrsOf csn)) (t1 T (rebuild w cs)))
+            (if (eq (jobDp j) 3)
+              (let*
+                ((d1 Marked (dCong (NFRMarked.map nfMarked cs))) (rr OTPair.Maybe (jobRw rw j t1)))
+                (if (OTPair.isJust rr)
+                  (let r TPair (OTPair.fromMaybe pr0 rr)
+                    (stTail (jobAt j 3 (p1 r)) dw d1 (mark (p2 r) 1) 0))
+                  (stDone (ONFR.just (nfr t1 (dTrans dw d1))))))
+              (let d1 Marked (dTrans dw (dCong (NFRMarked.map nfMarked cs)))
+                (if (marked cs) (stRoot G n rw (jobDp j) 0 j t1 d1)
+                  (stDone (ONFR.just (nfr t1 d1))))))))
          ((ONFRList.nothing) (stDone ONFR.nothing))))))
   ; a round: the level below applied once, to the jobs every state waits for, and each state
   ; advanced by its results
@@ -868,34 +863,30 @@
         (lam ((c T))
           (bindP (coprodParts c)
             (lam ((ab TPair))
-              (let a T (p1 ab)
-                (let b T (p2 ab)
-                  (let F T (abstractVar i c t)
-                    (let H T (abstractVar i c u)
-                      (let inj (Arrow T (Arrow T T))
-                        (lam ((k T) (s T)) (app (weaken1 s) (mArr k (l2 a b) (var 0))))
-                        (bindO (prove (cons a g) (mapT weaken1 hs) (inj kl F) (inj kl H))
-                          (lam ((q0 T))
-                            (bindO (prove (cons b g) (mapT weaken1 hs) (inj kr F) (inj kr H))
-                              (lam ((q1 T))
-                                (let pp T
-                                  (dNode 26 (nil T) (single (dNode 34 (l2 kl kr) (l2 q0 q1))))
-                                  (let dx T
-                                    (dNode 2 (nil T)
-                                      (l2 (dNode 3 (nil T) (nil T)) (dNode 3 (nil T) (nil T))))
-                                    (let px T
-                                      (dNode 18 (nil T)
-                                        (l2
-                                          (dNode 2 (nil T)
-                                            (l2 (dNode 17 (l2 (length hs) 0) (nil T))
-                                              (dNode 0 (nil T) (nil T))))
-                                          (dNode 0 (nil T) (nil T))))
-                                      (let chi T (mEq (app F (var i)) (app H (var i)))
-                                        (some
-                                          (dNode 22 (single (mEq F H))
-                                            (l2 pp
-                                              (dNode 24 (single chi)
-                                                (l2 dx px))))))))))))))))))))))))
+              (let*
+                ((a T (p1 ab)) (b T (p2 ab)) (F T (abstractVar i c t)) (H T (abstractVar i c u))
+                 (inj (Arrow T (Arrow T T))
+                   (lam ((k T) (s T)) (app (weaken1 s) (mArr k (l2 a b) (var 0))))))
+                (bindO (prove (cons a g) (mapT weaken1 hs) (inj kl F) (inj kl H))
+                  (lam ((q0 T))
+                    (bindO (prove (cons b g) (mapT weaken1 hs) (inj kr F) (inj kr H))
+                      (lam ((q1 T))
+                        (let*
+                          ((pp T (dNode 26 (nil T) (single (dNode 34 (l2 kl kr) (l2 q0 q1)))))
+                           (dx T
+                             (dNode 2 (nil T)
+                               (l2 (dNode 3 (nil T) (nil T)) (dNode 3 (nil T) (nil T)))))
+                           (px T
+                             (dNode 18 (nil T)
+                               (l2
+                                 (dNode 2 (nil T)
+                                   (l2 (dNode 17 (l2 (length hs) 0) (nil T))
+                                     (dNode 0 (nil T) (nil T))))
+                                 (dNode 0 (nil T) (nil T)))))
+                           (chi T (mEq (app F (var i)) (app H (var i)))))
+                          (some
+                            (dNode 22 (single (mEq F H))
+                              (l2 pp (dNode 24 (single chi) (l2 dx px)))))))))))))))))
   (defn byListIndWith ((G Globals) (n T) (kn T) (kc T) (p0 Pv) (p1v Pv)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (lcase T T g none

@@ -25,18 +25,19 @@
         (lam ((nd T) (rs Ts))
           (if (isAtom nd) (if (eq (at (children nd) 0) 37) 0 1)
             (let h T (at (children nd) 0)
-              (if (named h kwQuote) 1
-                (if (and (named h kwDatum) (eq (arity nd) 3)) (and (at rs 0) (at rs 1))
-                  (foldr T T (lam ((r T) (acc T)) (and r acc)) 1 rs))))))
+              (cond ((named h kwQuote) 1)
+                ((and (named h kwDatum) (eq (arity nd) 3)) (and (at rs 0) (at rs 1)))
+                (else (foldr T T (lam ((r T) (acc T)) (and r acc)) 1 rs))))))
         sx)))
   (def bundleOf
     (lam ((file T))
-      (let sx T (readSExps (children file))
-        (let mx T
-          (if (and (isSome sx) (userSource (get sx))) (expandModules (children (get sx))) none)
-          (let kx T (if (isSome mx) (expandProgram (children (get mx))) none)
-            (let rx T (if (isSome kx) (insertRecognizers (children (get kx))) none)
-              (if (isSome rx) (readProgram (children (get rx))) none)))))))
+      (let*
+        ((sx T (readSExps (children file)))
+         (mx T
+           (if (and (isSome sx) (userSource (get sx))) (expandModules (children (get sx))) none))
+         (kx T (if (isSome mx) (expandProgram (children (get mx))) none))
+         (rx T (if (isSome kx) (insertRecognizers (children (get kx))) none)))
+        (if (isSome rx) (readProgram (children (get rx))) none))))
   (def compileWith
     (lam ((back (Arrow T T)) (file T))
       (let b T (bundleOf file)

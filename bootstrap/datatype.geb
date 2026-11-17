@@ -204,14 +204,14 @@
       (snd
         (fold RT
           (lam ((l T) (rs RTs))
-            (let raw T (node l (rtTrees rs))
-              (let vs Ts (rtValues rs)
-                (pair raw
-                  (if (isAtom raw) (if (equal (nameOf raw) kwUnit) aUnitV aZero)
-                    (let h T (at (children raw) 0)
-                      (if (named h kwProd) (sx3 aPair (at vs 1) (at vs 2))
-                        (if (named h kwArrow) (sLam1 aD (at (children raw) 1) (at vs 2))
-                          (if (named h kwList) (sx2 aNil (at (children raw) 1)) aZero)))))))))
+            (let* ((raw T (node l (rtTrees rs))) (vs Ts (rtValues rs)))
+              (pair raw
+                (if (isAtom raw) (if (equal (nameOf raw) kwUnit) aUnitV aZero)
+                  (let h T (at (children raw) 0)
+                    (cond ((named h kwProd) (sx3 aPair (at vs 1) (at vs 2)))
+                      ((named h kwArrow) (sLam1 aD (at (children raw) 1) (at vs 2)))
+                      ((named h kwList) (sx2 aNil (at (children raw) 1)))
+                      (else aZero)))))))
           ty))))
 
   ; the bindings of a clause's variables, from the outermost in: fb binds each fixed field's
@@ -220,17 +220,16 @@
   (deftype Binder (Arrow T (Arrow T (Arrow T T))))
   (def bindWith
     (lam ((fb Binder) (rb Binder) (start (Arrow T T)) (ctor T) (vars Ts) (body T))
-      (let fields Ts (children (child ctor 3))
-        (let isVar T (child ctor 4)
-          (if
-            (and (eq (length vars) (add (length fields) isVar))
-              (allTrue (foldr T Ts (lam ((v T) (r Ts)) (cons (isAtom v) r)) (nil T) vars)))
-            (some
-              (start
-                (foldr T T (lam ((p T) (acc T)) (fb (child p 1) (child p 0) acc))
-                  (if isVar (rb (child ctor 5) (at vars (length fields)) body) body)
-                  (zipTs (if isVar (dropLast vars) vars) fields))))
-            none)))))
+      (let* ((fields Ts (children (child ctor 3))) (isVar T (child ctor 4)))
+        (if
+          (and (eq (length vars) (add (length fields) isVar))
+            (allTrue (foldr T Ts (lam ((v T) (r Ts)) (cons (isAtom v) r)) (nil T) vars)))
+          (some
+            (start
+              (foldr T T (lam ((p T) (acc T)) (fb (child p 1) (child p 0) acc))
+                (if isVar (rb (child ctor 5) (at vars (length fields)) body) body)
+                (zipTs (if isVar (dropLast vars) vars) fields))))
+          none))))
 
   ; the constructor a clause names, when it is declared
   (def clauseCtor
@@ -248,17 +247,17 @@
       (let r Chain
         (foldr T Chain
           (lam ((p T) (acc Chain))
-            (let c T (child p 0)
-              (let ctor T (child p 1)
-                (let b T (bind ctor (tail (children (child c 0))) (child (child p 2) 1))
-                  (if (and (fst acc) (isSome b))
-                    (pair 1
-                      (pair 1
-                        (if (fst (snd acc))
-                          (sIf (sx3 aEq (sx2 aLabel sv) (numAtom (child ctor 1))) (get b)
-                            (snd (snd acc)))
-                          (get b))))
-                    (pair 0 (pair 0 0)))))))
+            (let*
+              ((c T (child p 0)) (ctor T (child p 1))
+               (b T (bind ctor (tail (children (child c 0))) (child (child p 2) 1))))
+              (if (and (fst acc) (isSome b))
+                (pair 1
+                  (pair 1
+                    (if (fst (snd acc))
+                      (sIf (sx3 aEq (sx2 aLabel sv) (numAtom (child ctor 1))) (get b)
+                        (snd (snd acc)))
+                      (get b))))
+                (pair 0 (pair 0 0)))))
           (if (isSome base) (pair 1 (pair 1 (get base))) (pair 1 (pair 0 0)))
           pairs)
         (if (and (fst r) (fst (snd r))) (some (snd (snd r))) none))))
@@ -269,64 +268,50 @@
   (def clauseChain
     (lam ((env Ts) (d0 T) (cls Ts) (xo T) (sv T) (bind Bind))
       (if (and (isSome xo) (nonEmpty cls))
-        (let xs Ts (children (get xo))
-          (let n T (length cls)
-            (let lastC T (at cls (sub n 1))
-              (let hasElse T
-                (and (isList lastC) (and (eq (arity lastC) 2) (named (child lastC 0) kwElse)))
-                (let ncls Ts (if hasElse (dropLast cls) cls)
-                  (let nxs Ts (if hasElse (dropLast xs) xs)
-                    (let base T (if hasElse (some (child (at xs (sub n 1)) 1)) none)
-                      (let ctors Ts
-                        (foldr T Ts (lam ((c T) (acc Ts)) (cons (clauseCtor env c) acc)) (nil T)
-                          ncls)
-                        (let d T
-                          (if (isSome d0) (get d0)
-                            (if (nonEmpty ctors)
-                              (if (isSome (at ctors 0)) (child (get (at ctors 0)) 2) 0)
-                              0))
-                          (let valid T
-                            (allTrue
-                              (foldr T Ts
-                                (lam ((c T) (acc Ts))
-                                  (cons
-                                    (and (eq (arity c) 2)
-                                      (let e T (clauseCtor env c)
-                                        (and (isSome e) (equal (child (get e) 2) d))))
-                                    acc))
-                                (nil T)
-                                ncls))
-                            (let names Ts
-                              (foldr T Ts (lam ((c T) (acc Ts)) (cons (child (get c) 0) acc))
-                                (nil T)
-                                ctors)
-                              (let covered T
-                                (or hasElse
-                                  (allTrue
-                                    (foldr T Ts
-                                      (lam ((e T) (acc Ts))
-                                        (cons (isSome (indexOf (child e 0) names)) acc))
-                                      (nil T)
-                                      (ctorsOf d env))))
-                                (if (and valid covered)
-                                  (let m T (length ncls)
-                                    (testChain sv
-                                      (snd
-                                        (foldr T (Prod T Ts)
-                                          (lam ((c T) (acc (Prod T Ts)))
-                                            (let i T (sub (sub m 1) (fst acc))
-                                              (pair (add (fst acc) 1)
-                                                (cons
-                                                  (node 0
-                                                    (cons c
-                                                      (cons (get (at ctors i))
-                                                        (single (at nxs i)))))
-                                                  (snd acc)))))
-                                          (pair 0 (nil T))
-                                          ncls))
-                                      base
-                                      bind))
-                                  none)))))))))))))
+        (let*
+          ((xs Ts (children (get xo))) (n T (length cls)) (lastC T (at cls (sub n 1)))
+           (hasElse T
+             (and (isList lastC) (and (eq (arity lastC) 2) (named (child lastC 0) kwElse))))
+           (ncls Ts (if hasElse (dropLast cls) cls))
+           (nxs Ts (if hasElse (dropLast xs) xs))
+           (base T (if hasElse (some (child (at xs (sub n 1)) 1)) none))
+           (ctors Ts (foldr T Ts (lam ((c T) (acc Ts)) (cons (clauseCtor env c) acc)) (nil T) ncls))
+           (d T
+             (cond ((isSome d0) (get d0))
+               ((nonEmpty ctors) (if (isSome (at ctors 0)) (child (get (at ctors 0)) 2) 0))
+               (else 0)))
+           (valid T
+             (allTrue
+               (foldr T Ts
+                 (lam ((c T) (acc Ts))
+                   (cons
+                     (and (eq (arity c) 2)
+                       (let e T (clauseCtor env c) (and (isSome e) (equal (child (get e) 2) d))))
+                     acc))
+                 (nil T)
+                 ncls)))
+           (names Ts (foldr T Ts (lam ((c T) (acc Ts)) (cons (child (get c) 0) acc)) (nil T) ctors))
+           (covered T
+             (or hasElse
+               (allTrue
+                 (foldr T Ts (lam ((e T) (acc Ts)) (cons (isSome (indexOf (child e 0) names)) acc))
+                   (nil T)
+                   (ctorsOf d env))))))
+          (if (and valid covered)
+            (let m T (length ncls)
+              (testChain sv
+                (snd
+                  (foldr T (Prod T Ts)
+                    (lam ((c T) (acc (Prod T Ts)))
+                      (let i T (sub (sub m 1) (fst acc))
+                        (pair (add (fst acc) 1)
+                          (cons (node 0 (cons c (cons (get (at ctors i)) (single (at nxs i)))))
+                            (snd acc)))))
+                    (pair 0 (nil T))
+                    ncls))
+                base
+                bind))
+            none))
         none)))
 
   ; case analysis: the scrutinee bound once, its label tested, and in a clause its children, each
@@ -338,11 +323,12 @@
   (def caseStart (lam ((b T)) (sLet aC (sList aT) (sx2 aChildren aS) b)))
   (def expandCase
     (lam ((env Ts) (raw T) (rs RRs))
-      (let scr T (rrAt rs 1 env)
-        (let chain T
-          (clauseChain env none (drop 2 (children raw)) (argsOf rs 2 env) aS
-            (bindWith caseField caseRest caseStart))
-          (if (both scr chain) (some (sLet aS aT (get scr) (get chain))) none)))))
+      (let*
+        ((scr T (rrAt rs 1 env))
+         (chain T
+           (clauseChain env none (drop 2 (children raw)) (argsOf rs 2 env) aS
+             (bindWith caseField caseRest caseStart))))
+        (if (both scr chain) (some (sLet aS aT (get scr) (get chain))) none))))
 
   ; structural recursion: the kernel's fold of trees whose step sees the node itself, at the
   ; suspended result; in a clause the suspended results and the children, the fields taking the
@@ -376,36 +362,33 @@
         (sLet aC (sList aT) (sx2 aChildren aO) b))))
   (def expandCata
     (lam ((env Ts) (raw T) (rs RRs))
-      (let es Ts (children raw)
-        (let d T (nameOf (at es 1))
-          (let r T (at es 2)
-            (let dr T (defaultOf (expandAliases env r))
-              (let scr T (rrAt rs 3 env)
-                (let chain T
-                  (if (and (isAtom (at es 1)) (isData d env))
-                    (clauseChain env (some d) (drop 4 es) (argsOf rs 4 env) aO
-                      (bindWith (cataField d r dr) (cataRest d r) (cataStart r dr)))
-                    none)
-                  (if (both scr chain)
-                    (some
-                      (sx2
-                        (sx4 aPara (thTy r)
-                          (sLam2 aO aT aK (sList (thTy r)) (sLam1 aU aUnit (get chain)))
-                          (get scr))
-                        aUnitV))
-                    none)))))))))
+      (let*
+        ((es Ts (children raw)) (d T (nameOf (at es 1))) (r T (at es 2))
+         (dr T (defaultOf (expandAliases env r)))
+         (scr T (rrAt rs 3 env))
+         (chain T
+           (if (and (isAtom (at es 1)) (isData d env))
+             (clauseChain env (some d) (drop 4 es) (argsOf rs 4 env) aO
+               (bindWith (cataField d r dr) (cataRest d r) (cataStart r dr)))
+             none)))
+        (if (both scr chain)
+          (some
+            (sx2
+              (sx4 aPara (thTy r) (sLam2 aO aT aK (sList (thTy r)) (sLam1 aU aUnit (get chain)))
+                (get scr))
+              aUnitV))
+          none))))
 
   ; decoding: the tree bound once, tested by the datatype's recognizer, and given to the function
   ; when it is a member
   (def expandDecode
     (lam ((env Ts) (raw T) (rs RRs))
-      (let d T (at (children raw) 1)
-        (let e T (rrAt rs 2 env)
-          (let f T (rrAt rs 3 env)
-            (let c T (rrAt rs 4 env)
-              (if (and (isAtom d) (both e (both f c)))
-                (some (sLet aE aT (get e) (sIf (sx2 (memberName d) aE) (sx2 (get f) aE) (get c))))
-                none)))))))
+      (let*
+        ((d T (at (children raw) 1)) (e T (rrAt rs 2 env)) (f T (rrAt rs 3 env))
+         (c T (rrAt rs 4 env)))
+        (if (and (isAtom d) (both e (both f c)))
+          (some (sLet aE aT (get e) (sIf (sx2 (memberName d) aE) (sx2 (get f) aE) (get c))))
+          none))))
 
   ; an expression expanded, given the declarations before it
   (def expandExpr
@@ -417,17 +400,16 @@
                (pair raw
                  (lam ((env Ts))
                    (if (isList raw)
-                     (let h T (at (children raw) 0)
-                       (let k T (arity raw)
-                         (if (and (named h kwCase) (lt 2 k)) (expandCase env raw rs)
-                           (if (and (named h kwCata) (lt 4 k)) (expandCata env raw rs)
-                             (if (and (named h kwRep) (eq k 2)) (rrAt rs 1 env)
-                               (if (and (named h kwDecode) (eq k 5)) (expandDecode env raw rs)
-                                 (if (and (named h kwDatum) (eq k 3))
-                                   (some (sx2 aQuote (at (children raw) 2)))
-                                   (let xs T (allSome (rrApply rs env))
-                                     (if (isSome xs) (some (node 2 (children (get xs))))
-                                       none)))))))))
+                     (let* ((h T (at (children raw) 0)) (k T (arity raw)))
+                       (cond ((and (named h kwCase) (lt 2 k)) (expandCase env raw rs))
+                         ((and (named h kwCata) (lt 4 k)) (expandCata env raw rs))
+                         ((and (named h kwRep) (eq k 2)) (rrAt rs 1 env))
+                         ((and (named h kwDecode) (eq k 5)) (expandDecode env raw rs))
+                         ((and (named h kwDatum) (eq k 3))
+                          (some (sx2 aQuote (at (children raw) 2))))
+                         (else
+                           (let xs T (allSome (rrApply rs env))
+                             (if (isSome xs) (some (node 2 (children (get xs)))) none)))))
                      (some raw))))))
            e)) env)))
 
@@ -435,71 +417,65 @@
   ; abbreviation for trees and one definition for each constructor
   (def ctorDecl
     (lam ((d T) (j T) (c T))
-      (let es Ts (children c)
-        (let rest Ts (tail es)
-          (let nr T (length rest)
-            (let isVar T (and (lt 1 nr) (named (at rest (sub nr 2)) kwAmp))
-              (let fields Ts (if isVar (dropLast (dropLast rest)) rest)
-                (let nf T (length fields)
-                  (let ps Ts
-                    (snd
-                      (foldr T (Prod T Ts)
-                        (lam ((f T) (acc (Prod T Ts)))
-                          (pair (add (fst acc) 1)
-                            (cons (sx2 (fieldAtom (sub (sub nf 1) (fst acc))) aT) (snd acc))))
-                        (pair 0 (nil T))
-                        fields))
-                    (let tailE T (if isVar aRest (sx2 aNil aT))
-                      (let listE T
-                        (snd
-                          (foldr T (Prod T T)
-                            (lam ((f T) (acc (Prod T T)))
-                              (pair (add (fst acc) 1)
-                                (sx3 aCons (fieldAtom (sub (sub nf 1) (fst acc))) (snd acc))))
-                            (pair 0 tailE)
-                            fields))
-                        (let allPs Ts (if isVar (append ps (single (sx2 aRest (sList aT)))) ps)
-                          (let body T (sx3 aNode (numAtom j) listE)
-                            (if (and (isList c) (isAtom (at es 0)))
-                              (some
-                                (node2 0
-                                  (node 5
-                                    (cons (nameOf (at es 0))
-                                      (cons j
-                                        (cons d
-                                          (cons (node 0 fields)
-                                            (cons isVar
-                                              (single (if isVar (at rest (sub nr 1)) 0))))))))
-                                  (sx3 aDef (at es 0)
-                                    (if (nonEmpty allPs) (sx3 aLam (node 2 allPs) body) body))))
-                              none))))))))))))))
+      (let*
+        ((es Ts (children c)) (rest Ts (tail es)) (nr T (length rest))
+         (isVar T (and (lt 1 nr) (named (at rest (sub nr 2)) kwAmp)))
+         (fields Ts (if isVar (dropLast (dropLast rest)) rest))
+         (nf T (length fields))
+         (ps Ts
+           (snd
+             (foldr T (Prod T Ts)
+               (lam ((f T) (acc (Prod T Ts)))
+                 (pair (add (fst acc) 1)
+                   (cons (sx2 (fieldAtom (sub (sub nf 1) (fst acc))) aT) (snd acc))))
+               (pair 0 (nil T))
+               fields)))
+         (tailE T (if isVar aRest (sx2 aNil aT)))
+         (listE T
+           (snd
+             (foldr T (Prod T T)
+               (lam ((f T) (acc (Prod T T)))
+                 (pair (add (fst acc) 1)
+                   (sx3 aCons (fieldAtom (sub (sub nf 1) (fst acc))) (snd acc))))
+               (pair 0 tailE)
+               fields)))
+         (allPs Ts (if isVar (append ps (single (sx2 aRest (sList aT)))) ps))
+         (body T (sx3 aNode (numAtom j) listE)))
+        (if (and (isList c) (isAtom (at es 0)))
+          (some
+            (node2 0
+              (node 5
+                (cons (nameOf (at es 0))
+                  (cons j
+                    (cons d
+                      (cons (node 0 fields)
+                        (cons isVar (single (if isVar (at rest (sub nr 1)) 0))))))))
+              (sx3 aDef (at es 0) (if (nonEmpty allPs) (sx3 aLam (node 2 allPs) body) body))))
+          none))))
   (def dataDecl
     (lam ((e T))
-      (let es Ts (children e)
-        (let d T (nameOf (at es 1))
-          (let cs Ts (drop 2 es)
-            (let nc T (length cs)
-              (let decls T
-                (allSome
-                  (snd
-                    (foldr T (Prod T Ts)
-                      (lam ((c T) (acc (Prod T Ts)))
-                        (pair (add (fst acc) 1)
-                          (cons (ctorDecl d (sub (sub nc 1) (fst acc)) c) (snd acc))))
-                      (pair 0 (nil T))
-                      cs)))
-                (if (and (isAtom (at es 1)) (isSome decls))
-                  (let ds Ts (children (get decls))
-                    (some
-                      (node2 0
-                        (node 0
-                          (cons (node 6 (single d))
-                            (foldr T Ts (lam ((x T) (acc Ts)) (cons (child x 0) acc)) (nil T) ds)))
-                        (node 0
-                          (cons (sx3 aDeftype (at es 1) aT)
-                            (foldr T Ts (lam ((x T) (acc Ts)) (cons (child x 1) acc)) (nil T)
-                              ds))))))
-                  none))))))))
+      (let*
+        ((es Ts (children e)) (d T (nameOf (at es 1))) (cs Ts (drop 2 es)) (nc T (length cs))
+         (decls T
+           (allSome
+             (snd
+               (foldr T (Prod T Ts)
+                 (lam ((c T) (acc (Prod T Ts)))
+                   (pair (add (fst acc) 1)
+                     (cons (ctorDecl d (sub (sub nc 1) (fst acc)) c) (snd acc))))
+                 (pair 0 (nil T))
+                 cs)))))
+        (if (and (isAtom (at es 1)) (isSome decls))
+          (let ds Ts (children (get decls))
+            (some
+              (node2 0
+                (node 0
+                  (cons (node 6 (single d))
+                    (foldr T Ts (lam ((x T) (acc Ts)) (cons (child x 0) acc)) (nil T) ds)))
+                (node 0
+                  (cons (sx3 aDeftype (at es 1) aT)
+                    (foldr T Ts (lam ((x T) (acc Ts)) (cons (child x 1) acc)) (nil T) ds))))))
+          none))))
 
   ; the marker the recognizers read of a datatype the keyword data declares: the node of label 9
   ; over its atom and, for each constructor, the node over its position, its field types, whether
@@ -532,46 +508,44 @@
   (def xpStep
     (lam ((s XP) (e T))
       (if (and (fst s) (isList e))
-        (let env Ts (fst (snd s))
-          (let out Ts (snd (snd s))
-            (let es Ts (children e)
-              (let h T (at es 0)
-                (let k T (arity e)
-                  (if (named h kwData)
-                    (let dd T (dataDecl e)
-                      (if (isSome dd)
-                        (let ds Ts (children (child (get dd) 0))
-                          (pair 1
-                            (pair (append env ds)
-                              (append
-                                (reverse
-                                  (append (children (child (get dd) 1))
-                                    (single (marker env (at es 1) ds))))
-                                out))))
-                        xpFail))
-                    (if (and (named h kwDefn) (eq k 5))
-                      (let b T (expandExpr env (at es 4))
-                        (if (isSome b)
-                          (let body T (sLet aR (at es 3) (get b) aR)
-                            (pair 1
-                              (pair env
-                                (cons
-                                  (sx3 aDef (at es 1)
-                                    (if (eq (arity (at es 2)) 0) body (sx3 aLam (at es 2) body)))
-                                  out))))
-                          xpFail))
-                      (if (and (named h kwDef) (eq k 3))
-                        (let b T (expandExpr env (at es 2))
-                          (if (isSome b) (pair 1 (pair env (cons (sx3 aDef (at es 1) (get b)) out)))
-                            xpFail))
-                        (if (and (named h kwDeftype) (eq k 3))
-                          (pair 1
-                            (pair
-                              (append env
-                                (single (node2 7 (nameOf (at es 1)) (expandAliases env (at es 2)))))
-                              (cons e out)))
-                          (if (and (named h kwDefnum) (eq k 3)) (pair 1 (pair env (cons e out)))
-                            (if (named h kwGeneric) (pair 1 (pair env out)) xpFail)))))))))))
+        (let*
+          ((env Ts (fst (snd s))) (out Ts (snd (snd s))) (es Ts (children e)) (h T (at es 0))
+           (k T (arity e)))
+          (cond
+            ((named h kwData)
+             (let dd T (dataDecl e)
+               (if (isSome dd)
+                 (let ds Ts (children (child (get dd) 0))
+                   (pair 1
+                     (pair (append env ds)
+                       (append
+                         (reverse
+                           (append (children (child (get dd) 1))
+                             (single (marker env (at es 1) ds))))
+                         out))))
+                 xpFail)))
+            ((and (named h kwDefn) (eq k 5))
+             (let b T (expandExpr env (at es 4))
+               (if (isSome b)
+                 (let body T (sLet aR (at es 3) (get b) aR)
+                   (pair 1
+                     (pair env
+                       (cons
+                         (sx3 aDef (at es 1)
+                           (if (eq (arity (at es 2)) 0) body (sx3 aLam (at es 2) body)))
+                         out))))
+                 xpFail)))
+            ((and (named h kwDef) (eq k 3))
+             (let b T (expandExpr env (at es 2))
+               (if (isSome b) (pair 1 (pair env (cons (sx3 aDef (at es 1) (get b)) out))) xpFail)))
+            ((and (named h kwDeftype) (eq k 3))
+             (pair 1
+               (pair
+                 (append env (single (node2 7 (nameOf (at es 1)) (expandAliases env (at es 2)))))
+                 (cons e out))))
+            ((and (named h kwDefnum) (eq k 3)) (pair 1 (pair env (cons e out))))
+            ((named h kwGeneric) (pair 1 (pair env out)))
+            (else xpFail)))
         xpFail)))
   (def expandProgram
     (lam ((es Ts))

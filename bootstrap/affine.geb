@@ -88,11 +88,9 @@
         (lam ((p T) (e T) (i T)) 1)
         (CFs.tail rs))
       (lam ((p T) (acc T))
-        (let e T (add (dBang nd) acc)
-          (let direct T (countPath p paths)
-            (if (dData nd) 1
-              (if (or (lt 1 direct) (and (lt 0 direct) (belowPath p paths))) (lt 0 e)
-                (or (lt 0 direct) (h p e 0)))))))))
+        (let* ((e T (add (dBang nd) acc)) (direct T (countPath p paths)))
+          (cond ((dData nd) 1) ((or (lt 1 direct) (and (lt 0 direct) (belowPath p paths))) (lt 0 e))
+            (else (or (lt 0 direct) (h p e 0))))))))
   (defn contracts ((paths Ts) (d T)) T ((para CF (ctStep paths) d) (node 0 (nil T)) 0))
 
   ; the decorated type of a place: each projection pushes the pair's ! into its component
@@ -110,17 +108,17 @@
   (defn termPlace ((t T)) T
     (para T
       (lam ((nd T) (rs Ts))
-        (let l T (label nd)
-          (let one T (eq (length rs) 1)
-            (if (eq l Label.var)
-              (if one (some (plMk (label (at (children nd) 0)) (node 0 (nil T)))) none)
-              (if (eq l Label.fst)
-                (if one (mapO (lam ((pl T)) (plMk (plVar pl) (snocPath (plPath pl) 0))) (at rs 0))
-                  none)
-                (if (eq l Label.snd)
-                  (if one (mapO (lam ((pl T)) (plMk (plVar pl) (snocPath (plPath pl) 1))) (at rs 0))
-                    none)
-                  none))))))
+        (let* ((l T (label nd)) (one T (eq (length rs) 1)))
+          (cond
+            ((eq l Label.var)
+             (if one (some (plMk (label (at (children nd) 0)) (node 0 (nil T)))) none))
+            ((eq l Label.fst)
+             (if one (mapO (lam ((pl T)) (plMk (plVar pl) (snocPath (plPath pl) 0))) (at rs 0))
+               none))
+            ((eq l Label.snd)
+             (if one (mapO (lam ((pl T)) (plMk (plVar pl) (snocPath (plPath pl) 1))) (at rs 0))
+               none))
+            (else none))))
       t))
 
   ; the occurrences of two additive branches: each place as often as in either
@@ -146,10 +144,9 @@
         (let bound T (child e 1)
           (bindO (dPlace (child e 0) (children (plPath pl)))
             (lam ((d T))
-              (if (lt depth bound) none
-                (if (dData d) (res d (single pl))
-                  (if (lt (dBang d) (sub depth bound)) none
-                    (res (withBang d (sub (dBang d) (sub depth bound))) (single pl)))))))))))
+              (cond ((lt depth bound) none) ((dData d) (res d (single pl)))
+                ((lt (dBang d) (sub depth bound)) none)
+                (else (res (withBang d (sub (dBang d) (sub depth bound))) (single pl))))))))))
   (defn enter ((G Ts) (depth T) (c T) (r T)) T
     (if
       (allT
@@ -157,9 +154,8 @@
           (let m T (ctxAt G (plVar pl)) (if (isSome m) (not (lt c (child (get m) 1))) 0)))
         (rU r))
       (let d T (rD r)
-        (if (dData d) (some r)
-          (if (lt (add (dBang d) c) depth) none
-            (res (withBang d (sub (add (dBang d) c) depth)) (rU r)))))
+        (cond ((dData d) (some r)) ((lt (add (dBang d) c) depth) none)
+          (else (res (withBang d (sub (add (dBang d) c) depth)) (rU r)))))
       none))
   (defn subOf ((G Ts) (depth T) (m T) (d T)) T (bindO m (lam ((r T)) (enter G depth (label d) r))))
 
@@ -179,26 +175,22 @@
   ; case analysis of lists applied to all its arguments
   (defn noBang ((d T)) T (or (dData d) (eq (dBang d) 0)))
   (defn lcaseSat ((a T) (b T) (rl T) (rn T) (rc T)) T
-    (let dl T (rD rl)
-      (let dn T (rD rn)
-        (let dc T (rD rc)
-          (let ck Ts (dKids dc)
-            (if
-              (and (equal (dTy dl) (tyList a))
-                (and (equal (dTy dn) b)
-                  (and (equal (dTy dc) (tyArrow a (tyArrow (tyList a) b)))
-                    (and (noBang dl) (eq (length ck) 2)))))
-              (let cr T (at ck 1)
-                (let cs Ts (dKids cr)
-                  (if
-                    (and (eq (length cs) 2)
-                      (and (eq (dBang dc) 0)
-                        (and (eq (dBang cr) 0)
-                          (and (equal (some (at ck 0)) (nth (dKids dl) 0))
-                            (and (equal (at cs 0) dl) (equal (at cs 1) dn))))))
-                    (res dn (append (rU rl) (usageMax (rU rn) (rU rc))))
-                    none)))
-              none))))))
+    (let* ((dl T (rD rl)) (dn T (rD rn)) (dc T (rD rc)) (ck Ts (dKids dc)))
+      (if
+        (and (equal (dTy dl) (tyList a))
+          (and (equal (dTy dn) b)
+            (and (equal (dTy dc) (tyArrow a (tyArrow (tyList a) b)))
+              (and (noBang dl) (eq (length ck) 2)))))
+        (let* ((cr T (at ck 1)) (cs Ts (dKids cr)))
+          (if
+            (and (eq (length cs) 2)
+              (and (eq (dBang dc) 0)
+                (and (eq (dBang cr) 0)
+                  (and (equal (some (at ck 0)) (nth (dKids dl) 0))
+                    (and (equal (at cs 0) dl) (equal (at cs 1) dn))))))
+            (res dn (append (rU rl) (usageMax (rU rn) (rU rc))))
+            none))
+        none)))
   ; a projection of a term that is not a place, and an abstraction
   (defn project ((i T) (r T)) T
     (let d T (rD r)
@@ -250,9 +242,8 @@
           (let G1 Ts (cons (node 0 (cons a (single depth))) G)
             (bindO (subAt r1 E G1 depth (at ds 1)) (lam ((rb T)) (abstraction a rb))))))))
   (defn semSpine ((r0 Sem) (r1 Sem) (E Ts) (G Ts) (ds Ts)) T
-    (let n T (length ds)
-      (let fr T (r0 1 E G (node 0 (take (sub n 1) ds)))
-        (node 0 (append (children fr) (single (r1 0 E G (at ds (sub n 1)))))))))
+    (let* ((n T (length ds)) (fr T (r0 1 E G (node 0 (take (sub n 1) ds)))))
+      (node 0 (append (children fr) (single (r1 0 E G (at ds (sub n 1))))))))
   (defn semSat ((f T) (r0 Sem) (r1 Sem) (E Ts) (G Ts) (depth T) (ds Ts)) T
     (one (eq (length ds) 3)
       (let rs Ts (children (r0 1 E G (node 0 (cons (at ds 0) (single (at ds 1))))))
@@ -268,13 +259,12 @@
         (lam ((rf T))
           (bindO (subAt r1 E G depth (at ds 1))
             (lam ((rx T))
-              (let df T (rD rf)
-                (let ks Ts (dKids df)
-                  (one
-                    (and (eq (length ks) 2)
-                      (and (eq (label df) Label.tyArrow)
-                        (and (eq (dBang df) 0) (equal (at ks 0) (rD rx)))))
-                    (res (at ks 1) (append (rU rf) (rU rx))))))))))))
+              (let* ((df T (rD rf)) (ks Ts (dKids df)))
+                (one
+                  (and (eq (length ks) 2)
+                    (and (eq (label df) Label.tyArrow)
+                      (and (eq (dBang df) 0) (equal (at ks 0) (rD rx)))))
+                  (res (at ks 1) (append (rU rf) (rU rx)))))))))))
   (defn semPair ((r0 Sem) (r1 Sem) (E Ts) (G Ts) (depth T) (ds Ts)) T
     (one (eq (length ds) 2)
       (bindO (subAt r0 E G depth (at ds 0))
@@ -310,7 +300,7 @@
     (one (and (eq (length cs) 1) (and (eq (length ds) 1) (isTy (at cs 0))))
       (bindO (decorate (at cs 0) (at ds 0))
         (lam ((a T))
-          (res (if (eq l Label.nil) (dList a) (if (eq l Label.iter) (iterD a) (foldD a)))
+          (res (cond ((eq l Label.nil) (dList a)) ((eq l Label.iter) (iterD a)) (else (foldD a)))
             (nil T))))))
   (defn semTwo ((l T) (cs Ts) (ds Ts)) T
     (one (and (eq (length cs) 2) (and (eq (length ds) 2) (and (isTy (at cs 0)) (isTy (at cs 1)))))
@@ -326,50 +316,42 @@
         (nth primTypes (label (at cs 0))))))
   (defn semRef ((E Ts) (cs Ts) (ds Ts)) T
     (one (and (eq (length cs) 1) (eq (length ds) 2))
-      (let di T (at ds 0)
-        (let dk T (at ds 1)
-          (bindO (nth E (label di))
-            (lam ((e T))
-              (one
-                (and (eq (child e 0) (label (at cs 0)))
-                  (and (isEmpty (children di)) (isEmpty (children dk))))
-                (res (dShift (child e 1) (label dk)) (nil T)))))))))
+      (let* ((di T (at ds 0)) (dk T (at ds 1)))
+        (bindO (nth E (label di))
+          (lam ((e T))
+            (one
+              (and (eq (child e 0) (label (at cs 0)))
+                (and (isEmpty (children di)) (isEmpty (children dk))))
+              (res (dShift (child e 1) (label dk)) (nil T))))))))
   ; a node of the check that reads no check of a child
   (defn semLeaf ((l T) (E Ts) (cs Ts) (ds Ts)) T
-    (if (eq l Label.unit) (one (and (isEmpty cs) (isEmpty ds)) (res (dZero Label.tyUnit) (nil T)))
-      (if (eq l Label.quote)
-        (one (and (eq (length cs) 1) (isEmpty ds)) (res (dZero Label.tyTree) (nil T)))
-        (if (eq l Label.prim) (semPrim cs ds)
-          (if (eq l Label.ref) (semRef E cs ds)
-            (if (or (eq l Label.foldr) (eq l Label.lcase)) (semTwo l cs ds)
-              (if
-                (or (eq l Label.nil)
-                  (or (eq l Label.iter) (or (eq l Label.fold) (eq l Label.para))))
-                (semOne l cs ds)
-                none)))))))
+    (cond
+      ((eq l Label.unit) (one (and (isEmpty cs) (isEmpty ds)) (res (dZero Label.tyUnit) (nil T))))
+      ((eq l Label.quote)
+       (one (and (eq (length cs) 1) (isEmpty ds)) (res (dZero Label.tyTree) (nil T))))
+      ((eq l Label.prim) (semPrim cs ds))
+      ((eq l Label.ref) (semRef E cs ds))
+      ((or (eq l Label.foldr) (eq l Label.lcase)) (semTwo l cs ds))
+      ((or (eq l Label.nil) (or (eq l Label.iter) (or (eq l Label.fold) (eq l Label.para))))
+       (semOne l cs ds))
+      (else none)))
   ; one node of the check, from the checks of its first three children
   (defn semStep ((nd T) (r0 Sem) (r1 Sem) (r2 Sem) (m T) (E Ts) (G Ts) (D T)) T
-    (let l T (label nd)
-      (let cs Ts (children nd)
-        (let depth T (label D)
-          (let ds Ts (children D)
-            (if (lt l Label.lam) (if (eq l Label.var) (semVar G depth cs ds) none)
-              (if (eq l Label.lam) (semLam r1 E G depth cs ds)
-                (if (eq l Label.app)
-                  (one (eq (length cs) 2)
-                    (if (eq m 1) (semSpine r0 r1 E G ds)
-                      (if (isSpine2 (at cs 0)) (semSat (at cs 0) r0 r1 E G depth ds)
-                        (semApp r0 r1 E G depth ds))))
-                  (if (eq l Label.pair) (one (eq (length cs) 2) (semPair r0 r1 E G depth ds))
-                    (if (eq l Label.fst) (semProj 0 r0 E G depth cs ds)
-                      (if (eq l Label.snd) (semProj 1 r0 E G depth cs ds)
-                        (if (eq l Label.cond)
-                          (one (eq (length cs) 3) (semCond r0 r1 r2 E G depth ds))
-                          (if (eq l Label.cons)
-                            (one (eq (length cs) 2) (semCons r0 r1 E G depth ds))
-                            (if (and (eq m 1) (or (eq l Label.foldr) (eq l Label.lcase)))
-                              (node 0 (nil T))
-                              (semLeaf l E cs ds)))))))))))))))
+    (let* ((l T (label nd)) (cs Ts (children nd)) (depth T (label D)) (ds Ts (children D)))
+      (cond ((lt l Label.lam) (if (eq l Label.var) (semVar G depth cs ds) none))
+        ((eq l Label.lam) (semLam r1 E G depth cs ds))
+        ((eq l Label.app)
+         (one (eq (length cs) 2)
+           (cond ((eq m 1) (semSpine r0 r1 E G ds))
+             ((isSpine2 (at cs 0)) (semSat (at cs 0) r0 r1 E G depth ds))
+             (else (semApp r0 r1 E G depth ds)))))
+        ((eq l Label.pair) (one (eq (length cs) 2) (semPair r0 r1 E G depth ds)))
+        ((eq l Label.fst) (semProj 0 r0 E G depth cs ds))
+        ((eq l Label.snd) (semProj 1 r0 E G depth cs ds))
+        ((eq l Label.cond) (one (eq (length cs) 3) (semCond r0 r1 r2 E G depth ds)))
+        ((eq l Label.cons) (one (eq (length cs) 2) (semCons r0 r1 E G depth ds)))
+        ((and (eq m 1) (or (eq l Label.foldr) (eq l Label.lcase))) (node 0 (nil T)))
+        (else (semLeaf l E cs ds)))))
   (def sem0 (lam ((m T) (E Ts) (G Ts) (D T)) none))
   (defn semThree ((nd T) (rs (List Sem))) Sem
     (lcase Sem Sem rs (semStep nd sem0 sem0 sem0)

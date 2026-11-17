@@ -57,7 +57,7 @@
   (def bind2 (lam ((x T) (a T) (y T) (b T)) (sx (cons (s2 x a) (single (s2 y b))))))
 
   ; a conjunction, which a test that always holds leaves out
-  (def conj (lam ((a T) (b T)) (if (equal a one) b (if (equal b one) a (s4 rIf a b zero)))))
+  (def conj (lam ((a T) (b T)) (cond ((equal a one) b) ((equal b one) a) (else (s4 rIf a b zero)))))
   ; the bit of the position p in a tree's bits e
   (def bitOf (lam ((e T) (p T)) (s3 rChild e (num p))))
   ; the children after the first n
@@ -115,36 +115,35 @@
   ; the test of a node of a constructor: its arity and its fields
   (def ctorTest
     (lam ((cl Ts) (c T))
-      (let fts Ts (children (child c 1))
-        (let nf T (length fts)
-          (let ar T
-            (if (child c 2) (s3 rLt (num nf) (s3 rAdd (s2 rArity vN) one))
-              (s3 rEq (s2 rArity vN) (num nf)))
-            (let fs T
-              (allSome
-                (snd
-                  (foldr T (Prod T Ts)
-                    (lam ((ty T) (acc (Prod T Ts)))
-                      (pair (sub (fst acc) 1)
-                        (cons (fieldTest cl ty (s3 rChild vN (num (sub (fst acc) 1)))) (snd acc))))
-                    (pair nf (nil T))
-                    fts)))
-              (let vt T
-                (if (child c 2)
-                  (let t T (fieldTest cl (child c 3) vC)
-                    (if (isSome t)
-                      (if (equal (get t) one) t
-                        (some
-                          (sx
-                            (cons rFoldr
-                              (cons rT
-                                (cons rT
-                                  (cons (s3 rLam (bind2 vC rT vA rT) (s4 rIf (get t) vA zero))
-                                    (cons one (single (dropE nf))))))))))
-                      none))
-                  (some one))
-                (if (both fs vt) (some (conj ar (foldr T T conj (get vt) (children (get fs)))))
-                  none))))))))
+      (let*
+        ((fts Ts (children (child c 1))) (nf T (length fts))
+         (ar T
+           (if (child c 2) (s3 rLt (num nf) (s3 rAdd (s2 rArity vN) one))
+             (s3 rEq (s2 rArity vN) (num nf))))
+         (fs T
+           (allSome
+             (snd
+               (foldr T (Prod T Ts)
+                 (lam ((ty T) (acc (Prod T Ts)))
+                   (pair (sub (fst acc) 1)
+                     (cons (fieldTest cl ty (s3 rChild vN (num (sub (fst acc) 1)))) (snd acc))))
+                 (pair nf (nil T))
+                 fts))))
+         (vt T
+           (if (child c 2)
+             (let t T (fieldTest cl (child c 3) vC)
+               (if (isSome t)
+                 (if (equal (get t) one) t
+                   (some
+                     (sx
+                       (cons rFoldr
+                         (cons rT
+                           (cons rT
+                             (cons (s3 rLam (bind2 vC rT vA rT) (s4 rIf (get t) vA zero))
+                               (cons one (single (dropE nf))))))))))
+                 none))
+             (some one))))
+        (if (both fs vt) (some (conj ar (foldr T T conj (get vt) (children (get fs))))) none))))
   ; the bit of a node's membership in a datatype: the test of the constructor its label names
   (def dataTest
     (lam ((cl Ts) (m T))
@@ -158,36 +157,37 @@
   ; a datatype's recognizer, when each datatype it depends on has trees and datatypes as fields
   (def recognizer
     (lam ((ms Ts) (m T))
-      (let cl Ts (closure ms (child m 0))
-        (let bits T
-          (allSome
-            (foldr T Ts
-              (lam ((n T) (acc Ts))
-                (let mn T (markerOf ms n)
-                  (cons
-                    (if (isSome mn)
-                      (let t T (dataTest cl (get mn))
-                        (if (isSome t) (some (s4 rIf (get t) one zero)) none))
-                      none)
-                    acc)))
-              (nil T)
-              cl))
-          (if (isSome bits)
-            (let step T
-              (s3 rLam (bind2 vL rT vR tList)
-                (sx
-                  (cons rLet
-                    (cons vN
-                      (cons rT
-                        (cons (s3 rNode zero vR)
-                          (single
-                            (s3 rNode zero
-                              (foldr T T (lam ((b T) (acc T)) (s3 rCons b acc)) (s2 rNil rT)
-                                (children (get bits)))))))))))
-              (some
-                (s3 rDef (Datatype.memberName (child m 0))
-                  (s3 rLam (bind1 vT rT) (bitOf (s4 rFold rT step vT) 0)))))
-            none)))))
+      (let*
+        ((cl Ts (closure ms (child m 0)))
+         (bits T
+           (allSome
+             (foldr T Ts
+               (lam ((n T) (acc Ts))
+                 (let mn T (markerOf ms n)
+                   (cons
+                     (if (isSome mn)
+                       (let t T (dataTest cl (get mn))
+                         (if (isSome t) (some (s4 rIf (get t) one zero)) none))
+                       none)
+                     acc)))
+               (nil T)
+               cl))))
+        (if (isSome bits)
+          (let step T
+            (s3 rLam (bind2 vL rT vR tList)
+              (sx
+                (cons rLet
+                  (cons vN
+                    (cons rT
+                      (cons (s3 rNode zero vR)
+                        (single
+                          (s3 rNode zero
+                            (foldr T T (lam ((b T) (acc T)) (s3 rCons b acc)) (s2 rNil rT)
+                              (children (get bits)))))))))))
+            (some
+              (s3 rDef (Datatype.memberName (child m 0))
+                (s3 rLam (bind1 vT rT) (bitOf (s4 rFold rT step vT) 0)))))
+          none))))
 
   ; whether an atom occurs in a form
   (def occurs
@@ -206,13 +206,14 @@
   ; those can be written
   (def insertRecognizers
     (lam ((fs Ts))
-      (let ms Ts (markers fs)
-        (let r T
-          (allSome
-            (foldr T Ts (lam ((f T) (acc Ts)) (cons (recognizersAt ms fs f) acc)) (nil T) fs))
-          (if (isSome r)
-            (some
-              (node 0
-                (foldr T Ts (lam ((x T) (acc Ts)) (append (children x) acc)) (nil T)
-                  (children (get r)))))
-            none))))))
+      (let*
+        ((ms Ts (markers fs))
+         (r T
+           (allSome
+             (foldr T Ts (lam ((f T) (acc Ts)) (cons (recognizersAt ms fs f) acc)) (nil T) fs))))
+        (if (isSome r)
+          (some
+            (node 0
+              (foldr T Ts (lam ((x T) (acc Ts)) (append (children x) acc)) (nil T)
+                (children (get r)))))
+          none)))))

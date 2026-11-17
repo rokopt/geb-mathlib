@@ -24,7 +24,9 @@
 #          and the committed image each reproduce themselves; builds
 #          geb-compile, the committed Lean, and checks that it compiles S
 #          to the committed Lean and the committed image. Checks that every
-#          source under bootstrap/ is a fixed point of geb-fmt and, where
+#          source under bootstrap/ is a fixed point of geb-fmt --chains,
+#          formatted with each sequence of bindings a let* and each of
+#          tests a cond, and, where
 #          the parinfer release pinned in scripts/parinfer/ is installed
 #          (npm ci --prefix scripts/parinfer), of both of its modes, and so
 #          is every manifest, whose program the compiled compiler compiles
@@ -173,8 +175,8 @@ case "${1:-}" in
     done
     lake build geb-fmt
     mapfile -t sources < <(find "$b" -name '*.geb' -o -name '*.manifest' | sort)
-    .lake/build/bin/geb-fmt --check "${sources[@]}" \
-      || fail "a source is not formatted: run lake exe geb-fmt on it"
+    .lake/build/bin/geb-fmt --check --chains "${sources[@]}" \
+      || fail "a source is not formatted, or nests bindings or tests: run lake exe geb-fmt --chains on it"
     lake build Geb geb-doc
     lake env .lake/build/bin/geb-doc --check "$b"/*.manifest \
       || fail "a comment's prose is outside the markup of comments, or a reference resolves to nothing"

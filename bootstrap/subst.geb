@@ -29,19 +29,20 @@
     ((snd
        (fold TR
          (lam ((l T) (rs TRs))
-           (let cs Ts (trTrees rs)
-             (let n T (length cs)
-               (pair (node l cs)
-                 (lam ((k T))
-                   (if (and (eq l Label.var) (eq n 1)) (v k (label (at cs 0)))
-                     (if (and (eq l Label.lam) (eq n 2))
-                       (node2 Label.lam (at cs 0) (at (trAll rs (add k 1)) 1))
-                       (if (termNode l) (node l (trAll rs k)) (node l cs)))))))))
+           (let* ((cs Ts (trTrees rs)) (n T (length cs)))
+             (pair (node l cs)
+               (lam ((k T))
+                 (cond ((and (eq l Label.var) (eq n 1)) (v k (label (at cs 0))))
+                   ((and (eq l Label.lam) (eq n 2))
+                    (node2 Label.lam (at cs 0) (at (trAll rs (add k 1)) 1)))
+                   ((termNode l) (node l (trAll rs k)))
+                   (else (node l cs)))))))
          t)) k0))
 
   ; weakening by n variables below k bound ones, and substitution for the innermost variable
   (defn wkVar ((n T) (k T) (i T)) T (var (if (lt i k) i (add i n))))
   (defn wk ((n T) (t T)) T (trav (wkVar n) t 0))
   (defn wkAt ((k T) (n T) (t T)) T (trav (wkVar n) t k))
-  (defn substVar ((u T) (k T) (i T)) T (if (lt i k) (var i) (if (eq i k) (wk k u) (var (sub i 1)))))
+  (defn substVar ((u T) (k T) (i T)) T
+    (cond ((lt i k) (var i)) ((eq i k) (wk k u)) (else (var (sub i 1)))))
   (defn subst ((u T) (t T)) T (trav (substVar u) t 0)))

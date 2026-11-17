@@ -48,7 +48,7 @@
   (def hasDot (lam ((n T)) (foldr T T (lam ((c T) (r T)) (or (eq c 46) r)) 0 (children n))))
   (def flatName
     (lam ((vis Ts) (n T))
-      (let r T (lookupAbbrev n vis) (if (isSome r) (get r) (if (hasDot n) kwHole n)))))
+      (let r T (lookupAbbrev n vis) (cond ((isSome r) (get r)) ((hasDot n) kwHole) (else n)))))
 
   ; the names a binder or a list of binders binds, and the variables of a pattern (c x ...)
   (def boundBy
@@ -120,124 +120,107 @@
   ; roles 5, 6 and 7 are a let\* binding, its sequential list, and a cond clause
   (def renChainRole
     (lam ((u T) (rs RenKs) (role T) (bound Ts))
-      (if (eq role 5)
-        (if (and (isList u) (eq (arity u) 3))
-          (mkList (cons (child u 0) (cons (rkAt rs 1 1 (nil T)) (single (rkAt rs 2 0 bound)))))
-          emptyTerm)
-        (if (eq role 6)
-          (mkList
-            ((foldr RenK (Arrow Ts Ts)
-               (lam ((rb RenK) (k (Arrow Ts Ts)) (scope Ts))
-                 (let b T (rb 4 (nil T))
-                   (cons (rb 5 scope)
-                     (k
-                       (if (and (nonEmpty (children b)) (isAtom (child b 0)))
-                         (cons (nameOf (child b 0)) scope)
-                         scope)))))
-               (lam ((scope Ts)) (nil T))
-               rs) bound))
-          (if (and (isList u) (eq (arity u) 2))
-            (mkList
-              (cons (if (named (child u 0) kwElse) (child u 0) (rkAt rs 0 0 bound))
-                (single (rkAt rs 1 0 bound))))
-            emptyTerm)))))
+      (cond
+        ((eq role 5)
+         (if (and (isList u) (eq (arity u) 3))
+           (mkList (cons (child u 0) (cons (rkAt rs 1 1 (nil T)) (single (rkAt rs 2 0 bound)))))
+           emptyTerm))
+        ((eq role 6)
+         (mkList
+           ((foldr RenK (Arrow Ts Ts)
+              (lam ((rb RenK) (k (Arrow Ts Ts)) (scope Ts))
+                (let b T (rb 4 (nil T))
+                  (cons (rb 5 scope)
+                    (k
+                      (if (and (nonEmpty (children b)) (isAtom (child b 0)))
+                        (cons (nameOf (child b 0)) scope)
+                        scope)))))
+              (lam ((scope Ts)) (nil T))
+              rs) bound)))
+        ((and (isList u) (eq (arity u) 2))
+         (mkList
+           (cons (if (named (child u 0) kwElse) (child u 0) (rkAt rs 0 0 bound))
+             (single (rkAt rs 1 0 bound)))))
+        (else emptyTerm))))
   (def renTermList
     (lam ((vis Ts) (u T) (rs RenKs) (bound Ts))
-      (let es Ts (children u)
-        (let k T (arity u)
-          (let h T (at es 0)
-            (if (eq k 0) u
-              (if (named h kwLetStar)
-                (if (and (eq k 3) (isList (at es 1)))
-                  (letChain (children (rkAt rs 1 6 bound))
-                    (rkAt rs 2 0 (append (boundBy (at es 1)) bound)))
-                  emptyTerm)
-                (if (named h kwCond) (condChain (rkAll (rkDrop 1 rs) 7 bound))
-                  (if (or (named h kwQuote) (named h kwHole)) u
-                    (if (named h kwDatum)
-                      (if (eq k 3) (mkList (cons h (cons (rkAt rs 1 1 (nil T)) (single (at es 2)))))
-                        u)
-                      (if (named h kwDecode)
-                        (if (lt 1 k)
-                          (mkList
-                            (cons h (cons (rkAt rs 1 1 (nil T)) (rkAll (rkDrop 2 rs) 0 bound))))
-                          u)
-                        (if (named h kwLam)
-                          (if (eq k 3)
-                            (mkList
-                              (cons h
-                                (cons (rkAt rs 1 3 (nil T))
-                                  (single (rkAt rs 2 0 (append (boundBy (at es 1)) bound))))))
-                            u)
-                          (if (named h kwLet)
-                            (if (eq k 5)
-                              (let x T (at es 1)
-                                (mkList
-                                  (cons h
-                                    (cons x
-                                      (cons (rkAt rs 2 1 (nil T))
-                                        (cons (rkAt rs 3 0 bound)
-                                          (single
-                                            (rkAt rs 4 0
-                                              (if (isAtom x) (cons (nameOf x) bound) bound)))))))))
-                              u)
-                            (if (named h kwNil) (mkList (cons h (rkAll (rkDrop 1 rs) 1 (nil T))))
-                              (if (or (named h kwFold) (or (named h kwPara) (named h kwIter)))
-                                (if (lt 1 k)
-                                  (mkList
-                                    (cons h
-                                      (cons (rkAt rs 1 1 (nil T)) (rkAll (rkDrop 2 rs) 0 bound))))
-                                  u)
-                                (if (or (named h kwFoldr) (named h kwLcase))
-                                  (if (lt 2 k)
-                                    (mkList
-                                      (cons h
-                                        (cons (rkAt rs 1 1 (nil T))
-                                          (cons (rkAt rs 2 1 (nil T))
-                                            (rkAll (rkDrop 3 rs) 0 bound)))))
-                                    u)
-                                  (if (named h kwCase)
-                                    (if (lt 1 k)
-                                      (mkList
-                                        (cons h
-                                          (cons (rkAt rs 1 0 bound) (rkAll (rkDrop 2 rs) 2 bound))))
-                                      u)
-                                    (if (named h kwCata)
-                                      (if (lt 3 k)
-                                        (mkList
-                                          (cons h
-                                            (cons (rkAt rs 1 1 (nil T))
-                                              (cons (rkAt rs 2 1 (nil T))
-                                                (cons (rkAt rs 3 0 bound)
-                                                  (rkAll (rkDrop 4 rs) 2 bound))))))
-                                        u)
-                                      (mkList (rkAll rs 0 bound))))))))))))))))))))
+      (let* ((es Ts (children u)) (k T (arity u)) (h T (at es 0)))
+        (cond ((eq k 0) u)
+          ((named h kwLetStar)
+           (if (and (eq k 3) (isList (at es 1)))
+             (letChain (children (rkAt rs 1 6 bound))
+               (rkAt rs 2 0 (append (boundBy (at es 1)) bound)))
+             emptyTerm))
+          ((named h kwCond) (condChain (rkAll (rkDrop 1 rs) 7 bound)))
+          ((or (named h kwQuote) (named h kwHole)) u)
+          ((named h kwDatum)
+           (if (eq k 3) (mkList (cons h (cons (rkAt rs 1 1 (nil T)) (single (at es 2))))) u))
+          ((named h kwDecode)
+           (if (lt 1 k) (mkList (cons h (cons (rkAt rs 1 1 (nil T)) (rkAll (rkDrop 2 rs) 0 bound))))
+             u))
+          ((named h kwLam)
+           (if (eq k 3)
+             (mkList
+               (cons h
+                 (cons (rkAt rs 1 3 (nil T))
+                   (single (rkAt rs 2 0 (append (boundBy (at es 1)) bound))))))
+             u))
+          ((named h kwLet)
+           (if (eq k 5)
+             (let x T (at es 1)
+               (mkList
+                 (cons h
+                   (cons x
+                     (cons (rkAt rs 2 1 (nil T))
+                       (cons (rkAt rs 3 0 bound)
+                         (single (rkAt rs 4 0 (if (isAtom x) (cons (nameOf x) bound) bound)))))))))
+             u))
+          ((named h kwNil) (mkList (cons h (rkAll (rkDrop 1 rs) 1 (nil T)))))
+          ((or (named h kwFold) (or (named h kwPara) (named h kwIter)))
+           (if (lt 1 k) (mkList (cons h (cons (rkAt rs 1 1 (nil T)) (rkAll (rkDrop 2 rs) 0 bound))))
+             u))
+          ((or (named h kwFoldr) (named h kwLcase))
+           (if (lt 2 k)
+             (mkList
+               (cons h
+                 (cons (rkAt rs 1 1 (nil T))
+                   (cons (rkAt rs 2 1 (nil T)) (rkAll (rkDrop 3 rs) 0 bound)))))
+             u))
+          ((named h kwCase)
+           (if (lt 1 k) (mkList (cons h (cons (rkAt rs 1 0 bound) (rkAll (rkDrop 2 rs) 2 bound))))
+             u))
+          ((named h kwCata)
+           (if (lt 3 k)
+             (mkList
+               (cons h
+                 (cons (rkAt rs 1 1 (nil T))
+                   (cons (rkAt rs 2 1 (nil T))
+                     (cons (rkAt rs 3 0 bound) (rkAll (rkDrop 4 rs) 2 bound))))))
+             u))
+          (else (mkList (rkAll rs 0 bound)))))))
   (def renStep
     (lam ((vis Ts) (u T) (rs RenKs) (role T) (bound Ts))
-      (let es Ts (children u)
-        (let k T (arity u)
-          (if (lt 4 role) (renChainRole u rs role bound)
-            (if (eq role 4) u
-              (if (isAtom u)
-                (if (eq role 1) (atomOf (flatName vis (nameOf u)))
-                  (if (eq role 0)
-                    (if (isSome (indexOf (nameOf u) bound)) u (atomOf (flatName vis (nameOf u))))
-                    u))
-                (if (eq role 1) (mkList (rkAll rs 1 (nil T)))
-                  (if (eq role 3)
-                    (if (eq k 0) u
-                      (if (isAtom (at es 0))
-                        (mkList (cons (at es 0) (rkAll (rkDrop 1 rs) 1 (nil T))))
-                        (mkList (rkAll rs 3 (nil T)))))
-                    (if (eq role 2)
-                      (if (eq k 2)
-                        (let p T (at es 0)
-                          (if (isAtom p) (mkList (cons p (single (rkAt rs 1 0 bound))))
-                            (mkList
-                              (cons (renPattern vis p)
-                                (single (rkAt rs 1 0 (append (patternVars p) bound)))))))
-                        u)
-                      (renTermList vis u rs bound)))))))))))
+      (let* ((es Ts (children u)) (k T (arity u)))
+        (cond ((lt 4 role) (renChainRole u rs role bound)) ((eq role 4) u)
+          ((isAtom u)
+           (cond ((eq role 1) (atomOf (flatName vis (nameOf u))))
+             ((eq role 0)
+              (if (isSome (indexOf (nameOf u) bound)) u (atomOf (flatName vis (nameOf u)))))
+             (else u)))
+          ((eq role 1) (mkList (rkAll rs 1 (nil T))))
+          ((eq role 3)
+           (cond ((eq k 0) u)
+             ((isAtom (at es 0)) (mkList (cons (at es 0) (rkAll (rkDrop 1 rs) 1 (nil T)))))
+             (else (mkList (rkAll rs 3 (nil T))))))
+          ((eq role 2)
+           (if (eq k 2)
+             (let p T (at es 0)
+               (if (isAtom p) (mkList (cons p (single (rkAt rs 1 0 bound))))
+                 (mkList
+                   (cons (renPattern vis p)
+                     (single (rkAt rs 1 0 (append (patternVars p) bound)))))))
+             u))
+          (else (renTermList vis u rs bound))))))
   ; an S-expression renamed in a role, under the visible names and the names bound around it
   (def rename
     (lam ((vis Ts) (e T) (role T) (bound Ts))
@@ -284,10 +267,10 @@
   (def declare
     (lam ((s ModSt) (n T) (fl T))
       (if (fst s)
-        (if (isSome (lookupAbbrev n (stVis s))) stFail
-          (if (isSome (indexOf n reservedNames)) stFail
-            (if (isSome (indexOf n moduleKeywords)) stFail
-              (withVis s (append (stVis s) (single (node2 0 n fl)))))))
+        (cond ((isSome (lookupAbbrev n (stVis s))) stFail)
+          ((isSome (indexOf n reservedNames)) stFail)
+          ((isSome (indexOf n moduleKeywords)) stFail)
+          (else (withVis s (append (stVis s) (single (node2 0 n fl))))))
         s)))
   (def declareAll
     (lam ((s ModSt) (es Ts))
@@ -349,164 +332,147 @@
     (lam ((inst T) (importer Ts) (s ModSt) (p T) (arg T))
       (if (if (fst s) (eq (arity p) 2) 0)
         (let sig T (child p 1)
-          (if (isAtom sig)
-            (let fl T (qualify inst (nameOf sig))
-              (emitTo (declare s (nameOf sig) fl)
-                (mkList
-                  (cons aDeftypeM (cons (atomOf fl) (single (rename importer arg 1 (nil T))))))
-                (nil T)))
-            (if (if (eq (arity sig) 3) (isAtom (child sig 0)) 0)
-              (let n T (nameOf (child sig 0))
-                (let fl T (qualify inst n)
-                  (let args Ts (children (child sig 1))
-                    (let vars Ts (paramVars args)
-                      (let callee T (rename importer arg 0 (nil T))
-                        (let call T (if (nonEmpty vars) (mkList (cons callee vars)) callee)
-                          (let body T
-                            (mkList
-                              (cons aLetM
-                                (cons aResultM
-                                  (cons (rename (stVis s) (child sig 2) 1 (nil T))
-                                    (cons call (single aResultM))))))
-                            (let term T
-                              (if (nonEmpty vars)
-                                (mkList
-                                  (cons aLamM
-                                    (cons
-                                      (mkList
-                                        (zipWith2
-                                          (lam ((A T) (v T))
-                                            (mkList
-                                              (cons v (single (rename (stVis s) A 1 (nil T))))))
-                                          args
-                                          vars))
-                                      (single body))))
-                                body)
-                              (emitTo (declare s n fl)
-                                (mkList (cons aDefM (cons (atomOf fl) (single term))))
-                                (single (memberDecl fl)))))))))))
-              stFail)))
+          (cond
+            ((isAtom sig)
+             (let fl T (qualify inst (nameOf sig))
+               (emitTo (declare s (nameOf sig) fl)
+                 (mkList
+                   (cons aDeftypeM (cons (atomOf fl) (single (rename importer arg 1 (nil T))))))
+                 (nil T))))
+            ((if (eq (arity sig) 3) (isAtom (child sig 0)) 0)
+             (let*
+               ((n T (nameOf (child sig 0))) (fl T (qualify inst n))
+                (args Ts (children (child sig 1)))
+                (vars Ts (paramVars args))
+                (callee T (rename importer arg 0 (nil T)))
+                (call T (if (nonEmpty vars) (mkList (cons callee vars)) callee))
+                (body T
+                  (mkList
+                    (cons aLetM
+                      (cons aResultM
+                        (cons (rename (stVis s) (child sig 2) 1 (nil T))
+                          (cons call (single aResultM)))))))
+                (term T
+                  (if (nonEmpty vars)
+                    (mkList
+                      (cons aLamM
+                        (cons
+                          (mkList
+                            (zipWith2
+                              (lam ((A T) (v T))
+                                (mkList (cons v (single (rename (stVis s) A 1 (nil T))))))
+                              args
+                              vars))
+                          (single body))))
+                    body)))
+               (emitTo (declare s n fl) (mkList (cons aDefM (cons (atomOf fl) (single term))))
+                 (single (memberDecl fl)))))
+            (else stFail)))
         stFail)))
 
   ; one declaration elaborated in a block under a prefix: its name qualified and made visible, its
   ; body renamed
   (def elabDecl
     (lam ((pre T) (s ModSt) (e T))
-      (let es Ts (children e)
-        (let k T (arity e)
-          (let kw T (at es 0)
-            (let x T (at es 1)
-              (if (if (lt 1 k) (isAtom x) 0)
-                (let n T (nameOf x)
-                  (let fl T (qualify pre n)
-                    (let vis Ts (stVis s)
-                      (let out (Arrow Ts T)
-                        (lam ((body Ts)) (mkList (cons kw (cons (atomOf fl) body))))
-                        (if (named kw kwDef)
-                          (if (eq k 3)
-                            (emitTo (declare s n fl) (out (single (rename vis (at es 2) 0 (nil T))))
-                              (single (memberDecl fl)))
-                            stFail)
-                          (if (or (named kw kwDeftype) (named kw kwDefnum))
-                            (if (eq k 3)
-                              (emitTo (declare s n fl)
-                                (out (single (rename vis (at es 2) 1 (nil T))))
-                                (nil T))
-                              stFail)
-                            (if (named kw kwDefn)
-                              (if (eq k 5)
-                                (emitTo (declare s n fl)
-                                  (out
-                                    (cons (rename vis (at es 2) 3 (nil T))
-                                      (cons (rename vis (at es 3) 1 (nil T))
-                                        (single (rename vis (at es 4) 0 (boundBy (at es 2)))))))
-                                  (single (memberDecl fl)))
-                                stFail)
-                              (if (named kw kwData)
-                                (let ctors Ts (drop 2 es)
-                                  (if
-                                    (foldr T T
-                                      (lam ((c T) (r T))
-                                        (and
-                                          (if (isList c)
-                                            (if (nonEmpty (children c)) (isAtom (child c 0)) 0)
-                                            0)
-                                          r))
-                                      1
-                                      ctors)
-                                    (let s1 ModSt (declare s n fl)
-                                      (let s2 ModSt
-                                        (declareAll s1
-                                          (foldr T Ts
-                                            (lam ((c T) (acc Ts))
-                                              (cons
-                                                (node2 0 (nameOf (child c 0))
-                                                  (qualify pre (nameOf (child c 0))))
-                                                acc))
-                                            (nil T)
-                                            ctors))
-                                        (if (fst s2)
-                                          (mkSt (stVis s2)
-                                            (append (stOut s)
-                                              (single
-                                                (out
-                                                  (foldr T Ts
-                                                    (lam ((c T) (acc Ts))
-                                                      (cons
-                                                        (mkList
-                                                          (cons
-                                                            (atomOf
-                                                              (qualify pre (nameOf (child c 0))))
-                                                            (foldr T Ts
-                                                              (lam ((f T) (r Ts))
-                                                                (cons
-                                                                  (rename (stVis s1) f 1 (nil T))
-                                                                  r))
-                                                              (nil T)
-                                                              (drop 1 (children c)))))
-                                                        acc))
-                                                    (nil T)
-                                                    ctors))))
-                                            (stReg s2)
-                                            (stEx s2)
-                                            (append (stMem s)
-                                              (foldr T Ts
-                                                (lam ((c T) (acc Ts))
-                                                  (cons
-                                                    (memberDecl (qualify pre (nameOf (child c 0))))
-                                                    acc))
-                                                (nil T)
-                                                ctors))
-                                            (stMods s2))
-                                          stFail)))
-                                    stFail))
-                                stFail))))))))
-                stFail)))))))
+      (let* ((es Ts (children e)) (k T (arity e)) (kw T (at es 0)) (x T (at es 1)))
+        (if (if (lt 1 k) (isAtom x) 0)
+          (let*
+            ((n T (nameOf x)) (fl T (qualify pre n)) (vis Ts (stVis s))
+             (out (Arrow Ts T) (lam ((body Ts)) (mkList (cons kw (cons (atomOf fl) body))))))
+            (cond
+              ((named kw kwDef)
+               (if (eq k 3)
+                 (emitTo (declare s n fl) (out (single (rename vis (at es 2) 0 (nil T))))
+                   (single (memberDecl fl)))
+                 stFail))
+              ((or (named kw kwDeftype) (named kw kwDefnum))
+               (if (eq k 3)
+                 (emitTo (declare s n fl) (out (single (rename vis (at es 2) 1 (nil T)))) (nil T))
+                 stFail))
+              ((named kw kwDefn)
+               (if (eq k 5)
+                 (emitTo (declare s n fl)
+                   (out
+                     (cons (rename vis (at es 2) 3 (nil T))
+                       (cons (rename vis (at es 3) 1 (nil T))
+                         (single (rename vis (at es 4) 0 (boundBy (at es 2)))))))
+                   (single (memberDecl fl)))
+                 stFail))
+              ((named kw kwData)
+               (let ctors Ts (drop 2 es)
+                 (if
+                   (foldr T T
+                     (lam ((c T) (r T))
+                       (and (if (isList c) (if (nonEmpty (children c)) (isAtom (child c 0)) 0) 0)
+                         r))
+                     1
+                     ctors)
+                   (let*
+                     ((s1 ModSt (declare s n fl))
+                      (s2 ModSt
+                        (declareAll s1
+                          (foldr T Ts
+                            (lam ((c T) (acc Ts))
+                              (cons
+                                (node2 0 (nameOf (child c 0)) (qualify pre (nameOf (child c 0))))
+                                acc))
+                            (nil T)
+                            ctors))))
+                     (if (fst s2)
+                       (mkSt (stVis s2)
+                         (append (stOut s)
+                           (single
+                             (out
+                               (foldr T Ts
+                                 (lam ((c T) (acc Ts))
+                                   (cons
+                                     (mkList
+                                       (cons (atomOf (qualify pre (nameOf (child c 0))))
+                                         (foldr T Ts
+                                           (lam ((f T) (r Ts))
+                                             (cons (rename (stVis s1) f 1 (nil T)) r))
+                                           (nil T)
+                                           (drop 1 (children c)))))
+                                     acc))
+                                 (nil T)
+                                 ctors))))
+                         (stReg s2)
+                         (stEx s2)
+                         (append (stMem s)
+                           (foldr T Ts
+                             (lam ((c T) (acc Ts))
+                               (cons (memberDecl (qualify pre (nameOf (child c 0)))) acc))
+                             (nil T)
+                             ctors))
+                         (stMods s2))
+                       stFail))
+                   stFail)))
+              (else stFail)))
+          stFail))))
 
   ; an import's module path, arguments and the name it is imported as: (import P) or
   ; (import (P a ...)), each optionally followed by as N, as a node over the path, the node of the
   ; arguments and the optional name
   (def importSpec
     (lam ((e T))
-      (let es Ts (children e)
-        (let k T (arity e)
-          (let m T (at es 1)
-            (let spec T
-              (if (isAtom m) (some (node2 0 (nameOf m) (node 0 (nil T))))
-                (if (if (isList m) (if (nonEmpty (children m)) (isAtom (child m 0)) 0) 0)
-                  (some (node2 0 (nameOf (child m 0)) (node 0 (drop 1 (children m)))))
-                  none))
-              (if (isSome spec)
-                (if (eq k 2)
-                  (some
-                    (node 0 (cons (child (get spec) 0) (cons (child (get spec) 1) (single none)))))
-                  (if (if (eq k 4) (if (named (at es 2) kwAs) (isAtom (at es 3)) 0) 0)
-                    (some
-                      (node 0
-                        (cons (child (get spec) 0)
-                          (cons (child (get spec) 1) (single (some (nameOf (at es 3))))))))
-                    none))
-                none)))))))
+      (let*
+        ((es Ts (children e)) (k T (arity e)) (m T (at es 1))
+         (spec T
+           (cond ((isAtom m) (some (node2 0 (nameOf m) (node 0 (nil T)))))
+             ((if (isList m) (if (nonEmpty (children m)) (isAtom (child m 0)) 0) 0)
+              (some (node2 0 (nameOf (child m 0)) (node 0 (drop 1 (children m))))))
+             (else none))))
+        (if (isSome spec)
+          (cond
+            ((eq k 2)
+             (some (node 0 (cons (child (get spec) 0) (cons (child (get spec) 1) (single none))))))
+            ((if (eq k 4) (if (named (at es 2) kwAs) (isAtom (at es 3)) 0) 0)
+             (some
+               (node 0
+                 (cons (child (get spec) 0)
+                   (cons (child (get spec) 1) (single (some (nameOf (at es 3)))))))))
+            (else none))
+          none))))
   ; exports made visible in the importer, unqualified or under the name imported as
   (def importAs
     (lam ((as T) (exports Ts))
@@ -559,127 +525,121 @@
           ps))))
   (def genericOf
     (lam ((rec ElabK) (s ModSt) (d T) (path T))
-      (let ps Ts (children (child d 0))
-        (let args Ts (genericArgs ps)
-          (let sorts Ts
-            (foldr T Ts
-              (lam ((x T) (acc Ts))
-                (if (isAtom (child (child x 0) 1))
-                  (cons (node2 0 (nameOf (child (child x 0) 1)) (nameOf (child x 1))) acc)
-                  acc))
-              (nil T)
-              (zipWith2 (lam ((p T) (a T)) (node2 0 p a)) ps args))
-            (let vis Ts (append sorts (children (child d 3)))
-              (let decls Ts
-                (zipWith2
-                  (lam ((p T) (a T))
-                    (let sig T (child p 1)
-                      (if (isAtom sig) (mkList (cons aSort (single a)))
-                        (mkList
-                          (cons aPostulate
-                            (cons a
-                              (single
-                                (foldr T T
-                                  (lam ((A T) (r T))
-                                    (mkList
-                                      (cons aArrowM (cons (rename vis A 1 (nil T)) (single r)))))
-                                  (rename vis (child sig 2) 1 (nil T))
-                                  (children (child sig 1))))))))))
-                  ps
-                  args)
-                (let s2 ModSt
-                  (instantiate rec (mkSt (stVis s) (nil T) (stReg s) (stEx s) (stMem s) (stMods s))
-                    d
-                    (nameCat path 37 (quote (0 generic)))
-                    args)
-                  (if (fst s2) (some (mkList (cons aGeneric (append decls (stOut s2)))))
-                    none)))))))))
+      (let*
+        ((ps Ts (children (child d 0))) (args Ts (genericArgs ps))
+         (sorts Ts
+           (foldr T Ts
+             (lam ((x T) (acc Ts))
+               (if (isAtom (child (child x 0) 1))
+                 (cons (node2 0 (nameOf (child (child x 0) 1)) (nameOf (child x 1))) acc)
+                 acc))
+             (nil T)
+             (zipWith2 (lam ((p T) (a T)) (node2 0 p a)) ps args)))
+         (vis Ts (append sorts (children (child d 3))))
+         (decls Ts
+           (zipWith2
+             (lam ((p T) (a T))
+               (let sig T (child p 1)
+                 (if (isAtom sig) (mkList (cons aSort (single a)))
+                   (mkList
+                     (cons aPostulate
+                       (cons a
+                         (single
+                           (foldr T T
+                             (lam ((A T) (r T))
+                               (mkList (cons aArrowM (cons (rename vis A 1 (nil T)) (single r)))))
+                             (rename vis (child sig 2) 1 (nil T))
+                             (children (child sig 1))))))))))
+             ps
+             args))
+         (s2 ModSt
+           (instantiate rec (mkSt (stVis s) (nil T) (stReg s) (stEx s) (stMem s) (stMods s)) d
+             (nameCat path 37 (quote (0 generic)))
+             args)))
+        (if (fst s2) (some (mkList (cons aGeneric (append decls (stOut s2))))) none))))
   (def elabStep
     (lam ((rec ElabK) (pre T) (s ModSt) (e T))
       (if (if (fst s) (if (isList e) (nonEmpty (children e)) 0) 0)
-        (let es Ts (children e)
-          (let kw T (at es 0)
-            (if (named kw kwExport)
-              (mkSt (stVis s) (stOut s) (stReg s) (append (stEx s) (atomNames (drop 1 es)))
-                (stMem s)
-                (stMods s))
-              (if (named kw kwImport)
-                (let spec T (importSpec e)
-                  (if (isSome spec)
-                    (let p T (child (get spec) 0)
-                      (let args Ts (children (child (get spec) 1))
-                        (let as T (child (get spec) 2)
-                          (let md T (lookupAbbrev p (stReg s))
-                            (if (isSome md)
-                              (let d T (get md)
-                                (if (eq (label d) 0)
-                                  (if (nonEmpty args) stFail
-                                    (declareAll s (importAs as (children (child d 0)))))
-                                  (let params Ts (children (child d 0))
-                                    (if (eq (length params) (length args))
-                                      (let inst T (nameCat pre 47 (if (isSome as) (get as) p))
-                                        (let s2 ModSt (instantiate rec s d inst args)
-                                          (let ex T (if (fst s2) (exportsOf s2) none)
-                                            (if (isSome ex)
-                                              (declareAll
-                                                (mkSt (stVis s) (stOut s2) (stReg s2) (stEx s)
-                                                  (append (stMem s) (single (memberSub inst)))
-                                                  (append (stMods s2)
-                                                    (single
-                                                      (modNode inst (stMem s2)
-                                                        (children (get ex))))))
-                                                (importAs as (children (get ex))))
-                                              stFail))))
-                                      stFail))))
-                              stFail)))))
-                    stFail))
-                (if (named kw kwModule)
-                  (if (if (lt 1 (length es)) (isAtom (at es 1)) 0)
-                    (let n T (nameOf (at es 1))
-                      (let path T (qualify pre n)
-                        (let forms Ts (drop 2 es)
-                          (let params Ts (withHead kwParameter forms)
-                            (if (nonEmpty params)
-                              (let others Ts (withoutHead kwParameter forms)
-                                (let d T
-                                  (node 1
-                                    (cons (node 0 params)
-                                      (cons
-                                        (node 0
-                                          (concat
-                                            (foldr T (List Ts)
-                                              (lam ((x T) (r (List Ts)))
-                                                (cons (atomNames (drop 1 (children x))) r))
-                                              (nil Ts)
-                                              (withHead kwExport others))))
-                                        (cons (node 0 (withoutHead kwExport others))
-                                          (single (node 0 (stVis s)))))))
-                                  (let g T (genericOf rec s d path)
-                                    (if (isSome g)
-                                      (mkSt (stVis s) (append (stOut s) (single (get g)))
-                                        (append (stReg s) (single (node2 0 path d)))
-                                        (stEx s)
-                                        (stMem s)
-                                        (stMods s))
-                                      stFail))))
-                              (let s1 ModSt
-                                (elabForms rec path
-                                  (mkSt (stVis s) (stOut s) (stReg s) (nil T) (nil T) (stMods s))
-                                  forms)
-                                (let ex T (if (fst s1) (exportsOf s1) none)
-                                  (if (isSome ex)
-                                    (declareAll
-                                      (mkSt (stVis s) (stOut s1)
-                                        (append (stReg s1)
-                                          (single (node2 0 path (node 0 (single (get ex))))))
-                                        (stEx s)
-                                        (append (stMem s) (single (memberSub path)))
-                                        (append (stMods s1)
-                                          (single (modNode path (stMem s1) (children (get ex))))))
-                                      (importAs (some n) (children (get ex))))
-                                    stFail))))))))
-                    stFail)
-                  (elabDecl pre s e))))))
+        (let* ((es Ts (children e)) (kw T (at es 0)))
+          (cond
+            ((named kw kwExport)
+             (mkSt (stVis s) (stOut s) (stReg s) (append (stEx s) (atomNames (drop 1 es))) (stMem s)
+               (stMods s)))
+            ((named kw kwImport)
+             (let spec T (importSpec e)
+               (if (isSome spec)
+                 (let*
+                   ((p T (child (get spec) 0)) (args Ts (children (child (get spec) 1)))
+                    (as T (child (get spec) 2))
+                    (md T (lookupAbbrev p (stReg s))))
+                   (if (isSome md)
+                     (let d T (get md)
+                       (if (eq (label d) 0)
+                         (if (nonEmpty args) stFail
+                           (declareAll s (importAs as (children (child d 0)))))
+                         (let params Ts (children (child d 0))
+                           (if (eq (length params) (length args))
+                             (let*
+                               ((inst T (nameCat pre 47 (if (isSome as) (get as) p)))
+                                (s2 ModSt (instantiate rec s d inst args))
+                                (ex T (if (fst s2) (exportsOf s2) none)))
+                               (if (isSome ex)
+                                 (declareAll
+                                   (mkSt (stVis s) (stOut s2) (stReg s2) (stEx s)
+                                     (append (stMem s) (single (memberSub inst)))
+                                     (append (stMods s2)
+                                       (single (modNode inst (stMem s2) (children (get ex))))))
+                                   (importAs as (children (get ex))))
+                                 stFail))
+                             stFail))))
+                     stFail))
+                 stFail)))
+            ((named kw kwModule)
+             (if (if (lt 1 (length es)) (isAtom (at es 1)) 0)
+               (let*
+                 ((n T (nameOf (at es 1))) (path T (qualify pre n)) (forms Ts (drop 2 es))
+                  (params Ts (withHead kwParameter forms)))
+                 (if (nonEmpty params)
+                   (let*
+                     ((others Ts (withoutHead kwParameter forms))
+                      (d T
+                        (node 1
+                          (cons (node 0 params)
+                            (cons
+                              (node 0
+                                (concat
+                                  (foldr T (List Ts)
+                                    (lam ((x T) (r (List Ts)))
+                                      (cons (atomNames (drop 1 (children x))) r))
+                                    (nil Ts)
+                                    (withHead kwExport others))))
+                              (cons (node 0 (withoutHead kwExport others))
+                                (single (node 0 (stVis s))))))))
+                      (g T (genericOf rec s d path)))
+                     (if (isSome g)
+                       (mkSt (stVis s) (append (stOut s) (single (get g)))
+                         (append (stReg s) (single (node2 0 path d)))
+                         (stEx s)
+                         (stMem s)
+                         (stMods s))
+                       stFail))
+                   (let*
+                     ((s1 ModSt
+                        (elabForms rec path
+                          (mkSt (stVis s) (stOut s) (stReg s) (nil T) (nil T) (stMods s))
+                          forms)) (ex T (if (fst s1) (exportsOf s1) none)))
+                     (if (isSome ex)
+                       (declareAll
+                         (mkSt (stVis s) (stOut s1)
+                           (append (stReg s1) (single (node2 0 path (node 0 (single (get ex))))))
+                           (stEx s)
+                           (append (stMem s) (single (memberSub path)))
+                           (append (stMods s1)
+                             (single (modNode path (stMem s1) (children (get ex))))))
+                         (importAs (some n) (children (get ex))))
+                       stFail))))
+               stFail))
+            (else (elabDecl pre s e))))
         stFail)))
   ; the elaboration of a form at a depth of nesting and instantiation: none beyond it
   (def elabAt

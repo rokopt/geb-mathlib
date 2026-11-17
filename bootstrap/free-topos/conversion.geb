@@ -58,23 +58,23 @@
   ; terms for the application at an instance found, and transitivity for a step of conversion
   (defn toRule ((d T)) T
     (let l T (label d)
-      (if (lt l 37) (node l (single (child d 0)))
-        (if (eq l 39) (node 27 (single (node 0 (l3 (mD d 0) (mD d 1) (node 0 (nil T))))))
-          (node 1 (single (node 0 (nil T))))))))
+      (cond ((lt l 37) (node l (single (child d 0))))
+        ((eq l 39) (node 27 (single (node 0 (l3 (mD d 0) (mD d 1) (node 0 (nil T)))))))
+        (else (node 1 (single (node 0 (nil T))))))))
   ; the derivation of a rule of the language with its data over the rules a node's premises stand
   ; for
   (defn baseNode ((rl T) (dn T) (nd T)) T (node rl (cons dn (mapT toRule (tail (children nd))))))
 
   ; a rule of the normalizer read from the node of its constructor's position over its fields
   (defn ruleOf ((r T)) NormRule
-    (let l T (label r)
-      (let cs Ts (children r)
-        (if (eq l 0) (nrRule (at cs 0) (terms (children (at cs 1))))
-          (if (eq l 1) (nrDelta (at cs 0))
-            (if (eq l 2) (nrBelow (at cs 0) (terms (children (at cs 1))))
-              (if (eq l 4) (nrThm (at cs 0) (objs (children (at cs 1))))
-                (if (eq l 5) (nrThmAt (at cs 0) (objs (children (at cs 1))) (at cs 2) (at cs 3))
-                  (if (eq l 6) (nrHyp (at cs 0)) nrUnit)))))))))
+    (let* ((l T (label r)) (cs Ts (children r)))
+      (cond ((eq l 0) (nrRule (at cs 0) (terms (children (at cs 1)))))
+        ((eq l 1) (nrDelta (at cs 0)))
+        ((eq l 2) (nrBelow (at cs 0) (terms (children (at cs 1)))))
+        ((eq l 4) (nrThm (at cs 0) (objs (children (at cs 1)))))
+        ((eq l 5) (nrThmAt (at cs 0) (objs (children (at cs 1))) (at cs 2) (at cs 3)))
+        ((eq l 6) (nrHyp (at cs 0)))
+        (else nrUnit))))
   (defn rulesOf ((xs Ts)) NRs (RuleAt.map ruleOf xs))
 
   ; a step of conversion by the prover's normalization, and by its reduction to a depth: the
@@ -120,7 +120,7 @@
   ; the index of its equations is among those at which they were found
   (defn stepLit ((R Ts) (dt Ts)) CK
     (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
-      (if md 0 (if (anyT (lam ((x T)) (eq x (at dt 0))) R) (litEval t) none))))
+      (cond (md 0) ((anyT (lam ((x T)) (eq x (at dt 0))) R) (litEval t)) (else none))))
 
   ; the reduction of a term in a context under hypotheses by the machine, which rewrites its
   ; normal form by the prover's rules, prepared once for the reduction; where there is no rule,
@@ -143,44 +143,40 @@
   ; a step of the machine, unfolding the definitions of an index below a bound but those of a
   ; list, under the hypotheses weakened past k new innermost variables where it has rules
   (defn stepMachine ((G Globals) (E (List Entry)) (n T) (dt Ts)) CK
-    (let ex Ts (children (at dt 2))
-      (let rs NRs (rulesOf (children (at dt 5)))
-        (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
-          (if md 0
-            (machineReduceBy G E n
-              (lam ((j T)) (and (lt j (at dt 1)) (not (anyT (lam ((x T)) (eq x j)) ex))))
-              (at dt 3)
-              (at dt 4)
-              rs
-              (at dt 0)
-              g
-              (if (EachRule.isEmpty rs) (nil T) (mapT (lam ((h T)) (weakenBy k h)) hs))
-              t))))))
+    (let* ((ex Ts (children (at dt 2))) (rs NRs (rulesOf (children (at dt 5)))))
+      (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
+        (if md 0
+          (machineReduceBy G E n
+            (lam ((j T)) (and (lt j (at dt 1)) (not (anyT (lam ((x T)) (eq x j)) ex))))
+            (at dt 3)
+            (at dt 4)
+            rs
+            (at dt 0)
+            g
+            (if (EachRule.isEmpty rs) (nil T) (mapT (lam ((h T)) (weakenBy k h)) hs))
+            t)))))
 
   ; one step of the checker, at a node of a rule from its premises' results
   (defn convStep ((G Globals) (E (List Entry)) (R Ts) (n T) (nd T) (rs CKs)) CK
-    (let rl T (label nd)
-      (let dn T (child nd 0)
-        (let dt Ts (children dn)
-          (if (lt rl 37) (checkStep G E n (baseNode rl dn nd) rs)
-            (if (eq rl 37) (stepNorm G E n dt)
-              (if (eq rl 38) (stepEval G E n dt)
-                (if (eq rl 39) (stepApply G E n dt nd rs)
-                  (if (eq rl 40) (stepLit R dt)
-                    (if (eq rl 41) (stepMachine G E n dt) ckNone))))))))))
+    (let* ((rl T (label nd)) (dn T (child nd 0)) (dt Ts (children dn)))
+      (cond ((lt rl 37) (checkStep G E n (baseNode rl dn nd) rs)) ((eq rl 37) (stepNorm G E n dt))
+        ((eq rl 38) (stepEval G E n dt))
+        ((eq rl 39) (stepApply G E n dt nd rs))
+        ((eq rl 40) (stepLit R dt))
+        ((eq rl 41) (stepMachine G E n dt))
+        (else ckNone))))
   ; the checker: the paramorphism of a certificate
   (defn convCheck ((G Globals) (E (List Entry)) (R Ts) (n T) (d T)) CK
     (para CK (convStep G E R n) d))
 
   ; whether a certificate proves a theorem
   (defn thmConvChecks ((G Globals) (E (List Entry)) (R Ts) (a Thm) (d T)) T
-    (let n T (thArity a)
-      (let g Ts (thCtx a)
-        (if
-          (and (allT (isTy G n) g)
-            (and (allT (isFormula G n g) (thHyps a)) (isFormula G n g (thConcl a))))
-          ((convCheck G E R n d) 1 g 0 (thHyps a) (thConcl a))
-          0))))
+    (let* ((n T (thArity a)) (g Ts (thCtx a)))
+      (if
+        (and (allT (isTy G n) g)
+          (and (allT (isFormula G n g) (thHyps a)) (isFormula G n g (thConcl a))))
+        ((convCheck G E R n d) 1 g 0 (thHyps a) (thConcl a))
+        0)))
 
   ; the state of the check of a development with certificates: the constants, the entries, and
   ; the indices at which the evaluation at literals is ready
