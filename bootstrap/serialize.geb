@@ -29,11 +29,8 @@
   ; n + 1 below their leading ones, most significant first
   (def deltaBits
     (lam ((n T))
-      (let m T (add n 1)
-        (let s T (add (log2 m) 1)
-          (let z T (log2 s)
-            (append (replicate z 0)
-              (cons 1 (append (digitsMsb 2 s z) (digitsMsb 2 m (sub s 1))))))))))
+      (let* ((m T (add n 1)) (s T (add (log2 m) 1)) (z T (log2 s)))
+        (append (replicate z 0) (cons 1 (append (digitsMsb 2 s z) (digitsMsb 2 m (sub s 1))))))))
 
   ; one node's header
   (def nodeBits

@@ -89,7 +89,7 @@ jobs:
         run: npm ci --prefix scripts/parinfer
       # The bootstrap's committed image and emitted Lean regenerate
       # byte for byte, the compiled compiler reproduces both, and the
-      # sources are fixed points of geb-fmt and of parinfer.
+      # sources are fixed points of geb-fmt --chains and of parinfer.
       - name: bootstrap fixed points
         run: bash scripts/bootstrap.sh check
       - name: recorded Geb development and authoring tests

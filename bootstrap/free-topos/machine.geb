@@ -62,43 +62,36 @@
   ; of its children
   (defn readStep ((D T) (v T) (cs Ts)) T
     (let l T (label v)
-      (if (eq l 0) (var (sub (sub D 1) (mD v 0)))
-        (if (eq l 1) (var (add D (mD v 0)))
-          (if (eq l 3) (mNode 2 (nil T) cs)
-            (if (eq l 4)
-              (mLam (mD v 0)
-                (subst (mD v 1) (lam ((i T)) (liftS (envSubst cs (sub D (mD v 2))) i))))
-              (if (eq l 5) (mNode 7 (children (child v 0)) cs)
-                (if (eq l 6) (mNode 6 (nil T) cs)
-                  (if (eq l 7) (mNode 3 (nil T) cs)
-                    (if (eq l 8) (mNode 4 (nil T) cs)
-                      (if (eq l 9)
-                        (if (lt (length cs) 2) (mNode 8 (nil T) cs)
-                          (mNatRec (at cs 0)
-                            (subst (mD v 0)
-                              (lam ((i T)) (liftS (envSubst (drop 2 cs) (sub D (mD v 1))) i)))
-                            (at cs 1)))
-                        (if (eq l 10)
-                          (if (lt (length cs) 2) (mNode 9 (nil T) cs)
-                            (mListRec (at cs 0)
-                              (subst (mD v 0)
-                                (lam ((i T))
-                                  (liftS
-                                    (lam ((j T)) (liftS (envSubst (drop 2 cs) (sub D (mD v 1))) j))
-                                    i)))
-                              (at cs 1)))
-                          (if (eq l 11)
-                            (if (isEmpty cs) (mNode 10 (single (mD v 0)) cs)
-                              (mRoseRec (mD v 0)
-                                (subst (mD v 1)
-                                  (lam ((i T)) (liftS (envSubst (tail cs) (sub D (mD v 2))) i)))
-                                (at cs 0)))
-                            (if (eq l 12) (mNode 11 (children (child v 0)) cs)
-                              (if (eq l 13) (mNode 12 (nil T) cs)
-                                (if (eq l 14)
-                                  (subst (mD v 0) (lam ((i T)) (envSubst cs (sub D (mD v 1)) i)))
-                                  (if (and (eq l 15) (eq (length cs) 2)) (at cs 1)
-                                    mStar)))))))))))))))))
+      (cond ((eq l 0) (var (sub (sub D 1) (mD v 0)))) ((eq l 1) (var (add D (mD v 0))))
+        ((eq l 3) (mNode 2 (nil T) cs))
+        ((eq l 4)
+         (mLam (mD v 0) (subst (mD v 1) (lam ((i T)) (liftS (envSubst cs (sub D (mD v 2))) i)))))
+        ((eq l 5) (mNode 7 (children (child v 0)) cs))
+        ((eq l 6) (mNode 6 (nil T) cs))
+        ((eq l 7) (mNode 3 (nil T) cs))
+        ((eq l 8) (mNode 4 (nil T) cs))
+        ((eq l 9)
+         (if (lt (length cs) 2) (mNode 8 (nil T) cs)
+           (mNatRec (at cs 0)
+             (subst (mD v 0) (lam ((i T)) (liftS (envSubst (drop 2 cs) (sub D (mD v 1))) i)))
+             (at cs 1))))
+        ((eq l 10)
+         (if (lt (length cs) 2) (mNode 9 (nil T) cs)
+           (mListRec (at cs 0)
+             (subst (mD v 0)
+               (lam ((i T))
+                 (liftS (lam ((j T)) (liftS (envSubst (drop 2 cs) (sub D (mD v 1))) j)) i)))
+             (at cs 1))))
+        ((eq l 11)
+         (if (isEmpty cs) (mNode 10 (single (mD v 0)) cs)
+           (mRoseRec (mD v 0)
+             (subst (mD v 1) (lam ((i T)) (liftS (envSubst (tail cs) (sub D (mD v 2))) i)))
+             (at cs 0))))
+        ((eq l 12) (mNode 11 (children (child v 0)) cs))
+        ((eq l 13) (mNode 12 (nil T) cs))
+        ((eq l 14) (subst (mD v 0) (lam ((i T)) (envSubst cs (sub D (mD v 1)) i))))
+        ((and (eq l 15) (eq (length cs) 2)) (at cs 1))
+        (else mStar))))
   ; the term a value reads back to under D binders
   (defn readBack ((D T) (v T)) T (para T (lam ((nd T) (rs Ts)) (readStep D nd (tail rs))) v))
 
@@ -133,29 +126,27 @@
   ; component's pair, the application's function, a fold's number, list or tree; the subterms it
   ; evaluates, that one first; and those it delays, the others
   (defn eHasStrict ((t T)) T
-    (let l T (label t)
-      (let ts Ts (mArgs t)
-        (or (and (or (eq l 3) (eq l 4)) (eq (length ts) 1))
-          (or (mIs 6 2 t) (or (and (or (eq l 8) (eq l 9)) (eq (length ts) 3)) (mIs 10 2 t)))))))
+    (let* ((l T (label t)) (ts Ts (mArgs t)))
+      (or (and (or (eq l 3) (eq l 4)) (eq (length ts) 1))
+        (or (mIs 6 2 t) (or (and (or (eq l 8) (eq l 9)) (eq (length ts) 3)) (mIs 10 2 t))))))
   (defn eKids ((t T)) Ts
-    (let l T (label t)
-      (let ts Ts (mArgs t)
-        (if (and (or (eq l 8) (eq l 9)) (eq (length ts) 3)) (l2 (at ts 2) (at ts 0))
-          (if (mIs 10 2 t) (single (at ts 1)) ts)))))
+    (let* ((l T (label t)) (ts Ts (mArgs t)))
+      (cond ((and (or (eq l 8) (eq l 9)) (eq (length ts) 3)) (l2 (at ts 2) (at ts 0)))
+        ((mIs 10 2 t) (single (at ts 1)))
+        (else ts))))
   (defn eDelayed ((t T)) Ts (if (eHasStrict t) (tail (eKids t)) (eKids t)))
   ; the state a job of evaluation starts in: a variable's value, or past the environment the free
   ; variable of its level, and an abstraction's closure, finished; any other term waiting for the
   ; values of the subterms it evaluates
   (defn eStart ((j T)) T
-    (let t T (mD j 0)
-      (let k T (mD j 1)
-        (let vs Ts (mArgs j)
-          (if (eq (label t) 0)
-            (let i T (mD t 0)
-              (msDone (some (if (lt i (length vs)) (at vs i) (freeVar k (sub i (length vs)))))))
-            (if (mIs 1 0 t) (msDone (some (mNode 2 (nil T) (nil T))))
-              (if (mIs 5 1 t) (msDone (some (mNode 4 (l3 (mD t 0) (mArg t 0) k) vs)))
-                (mNode 3 (single j) (mapT (lam ((u T)) (jobE u vs k)) (eKids t))))))))))
+    (let* ((t T (mD j 0)) (k T (mD j 1)) (vs Ts (mArgs j)))
+      (cond
+        ((eq (label t) 0)
+         (let i T (mD t 0)
+           (msDone (some (if (lt i (length vs)) (at vs i) (freeVar k (sub i (length vs))))))))
+        ((mIs 1 0 t) (msDone (some (mNode 2 (nil T) (nil T)))))
+        ((mIs 5 1 t) (msDone (some (mNode 4 (l3 (mD t 0) (mArg t 0) k) vs))))
+        (else (mNode 3 (single j) (mapT (lam ((u T)) (jobE u vs k)) (eKids t)))))))
   ; the subterms' values found, the state waiting for the weak head normal forms of those of the
   ; subterms delayed, beside the optional value of the subterm the node reduces by
   (defn eArgs ((j T) (rs Ts)) T
@@ -170,64 +161,55 @@
   ; a definition the predicate selects, applied to one argument per parameter, waiting for its
   ; body's value in the environment of its arguments; any other is its node over them
   (defn evalDefn ((G Globals) (unf (Arrow T T)) (us Ts) (t T) (k T)) T
-    (let j T (mD t 0)
-      (let th Ts (children (mD t 1))
-        (let stuck T (msDone (some (mNode 12 (children (child t 0)) us)))
-          (case (if (unf j) (bindDL (ODefinition.nthOf (gDefs G) j) defLanguage) OLDefn.nothing)
-            ((OLDefn.just d)
-             (if (eq (length us) (length (ldParams d)))
-               (msTail (jobE (if (isEmpty th) (ldBody d) (osubst th (ldBody d))) us k))
-               stuck))
-            ((OLDefn.nothing) stuck))))))
+    (let*
+      ((j T (mD t 0)) (th Ts (children (mD t 1)))
+       (stuck T (msDone (some (mNode 12 (children (child t 0)) us)))))
+      (case (if (unf j) (bindDL (ODefinition.nthOf (gDefs G) j) defLanguage) OLDefn.nothing)
+        ((OLDefn.just d)
+         (if (eq (length us) (length (ldParams d)))
+           (msTail (jobE (if (isEmpty th) (ldBody d) (osubst th (ldBody d))) us k))
+           stuck))
+        ((OLDefn.nothing) stuck))))
   ; the delayed values built, the state of a term's node: a component, an application and a fold
   ; waiting for the weak head normal form of the node over the value r of the subterm it reduces
   ; by; a definition; and a pair, a primitive arrow's application and an equality, the node over
   ; its delayed subterms
   (defn eFinal ((G Globals) (unf (Arrow T T)) (j T) (r T) (us Ts)) T
-    (let t T (mD j 0)
-      (let k T (mD j 1)
-        (let vs Ts (mArgs j)
-          (let l T (label t)
-            (let ts Ts (mArgs t)
-              (if (and (or (eq l 3) (eq l 4)) (eq (length ts) 1))
-                (msTail (jobW (mapO (lam ((p T)) (mNode (if (eq l 3) 7 8) (nil T) (single p))) r)))
-                (if (mIs 6 2 t)
-                  (msTail (jobW (mapO (lam ((f T)) (mNode 6 (nil T) (l2 f (at us 0)))) r)))
-                  (if (and (or (eq l 8) (eq l 9)) (eq (length ts) 3))
-                    (msTail
-                      (jobW
-                        (mapO
-                          (lam ((m T))
-                            (mNode (if (eq l 8) 9 10) (l2 (mArg t 1) k)
-                              (cons (at us 0) (cons m vs))))
-                          r)))
-                    (if (mIs 10 2 t)
-                      (msTail
-                        (jobW
-                          (mapO (lam ((m T)) (mNode 11 (l3 (mD t 0) (mArg t 0) k) (cons m vs))) r)))
-                      (if (eq l 11) (evalDefn G unf us t k)
-                        (if (eq l 2) (msDone (some (mNode 3 (nil T) us)))
-                          (if (eq l 3) (msDone (some (mNode 7 (nil T) us)))
-                            (if (eq l 4) (msDone (some (mNode 8 (nil T) us)))
-                              (if (eq l 6) (msDone (some (mNode 6 (nil T) us)))
-                                (if (eq l 7) (msDone (some (mNode 5 (children (child t 0)) us)))
-                                  (if (eq l 12) (msDone (some (mNode 13 (nil T) us)))
-                                    (msDone none))))))))))))))))))
+    (let* ((t T (mD j 0)) (k T (mD j 1)) (vs Ts (mArgs j)) (l T (label t)) (ts Ts (mArgs t)))
+      (cond
+        ((and (or (eq l 3) (eq l 4)) (eq (length ts) 1))
+         (msTail (jobW (mapO (lam ((p T)) (mNode (if (eq l 3) 7 8) (nil T) (single p))) r))))
+        ((mIs 6 2 t) (msTail (jobW (mapO (lam ((f T)) (mNode 6 (nil T) (l2 f (at us 0)))) r))))
+        ((and (or (eq l 8) (eq l 9)) (eq (length ts) 3))
+         (msTail
+           (jobW
+             (mapO
+               (lam ((m T))
+                 (mNode (if (eq l 8) 9 10) (l2 (mArg t 1) k) (cons (at us 0) (cons m vs))))
+               r))))
+        ((mIs 10 2 t)
+         (msTail (jobW (mapO (lam ((m T)) (mNode 11 (l3 (mD t 0) (mArg t 0) k) (cons m vs))) r))))
+        ((eq l 11) (evalDefn G unf us t k))
+        ((eq l 2) (msDone (some (mNode 3 (nil T) us))))
+        ((eq l 3) (msDone (some (mNode 7 (nil T) us))))
+        ((eq l 4) (msDone (some (mNode 8 (nil T) us))))
+        ((eq l 6) (msDone (some (mNode 6 (nil T) us))))
+        ((eq l 7) (msDone (some (mNode 5 (children (child t 0)) us))))
+        ((eq l 12) (msDone (some (mNode 13 (nil T) us))))
+        (else (msDone none)))))
 
   ; the weak head normal form of a value. The state a value starts in: a delayed value's value,
   ; finished; a component, an application and a fold waiting for the weak head normal form of the
   ; child it reduces by; every other value its own
   (defn wStart ((v T)) T
-    (let l T (label v)
-      (let cs Ts (mArgs v)
-        (if (mIs 15 2 v) (let r T (mArg v 0) (msDone (if (eq (label r) 16) none (some r))))
-          (if
-            (or (and (or (eq l 7) (eq l 8)) (eq (length cs) 1))
-              (or (mIs 6 2 v) (and (eq l 11) (not (isEmpty cs)))))
-            (mNode 5 (single v) (single (jobW (some (at cs 0)))))
-            (if (and (or (eq l 9) (eq l 10)) (not (lt (length cs) 2)))
-              (mNode 5 (single v) (single (jobW (some (at cs 1)))))
-              (msDone (some v))))))))
+    (let* ((l T (label v)) (cs Ts (mArgs v)))
+      (cond ((mIs 15 2 v) (let r T (mArg v 0) (msDone (if (eq (label r) 16) none (some r)))))
+        ((or (and (or (eq l 7) (eq l 8)) (eq (length cs) 1))
+           (or (mIs 6 2 v) (and (eq l 11) (not (isEmpty cs)))))
+         (mNode 5 (single v) (single (jobW (some (at cs 0))))))
+        ((and (or (eq l 9) (eq l 10)) (not (lt (length cs) 2)))
+         (mNode 5 (single v) (single (jobW (some (at cs 1))))))
+        (else (msDone (some v))))))
   ; a component of a pair waits for the weak head normal form of the pair's component
   (defn wProj ((v T) (p T)) T
     (if (mIs 3 2 p) (msTail (jobW (some (mArg p (if (eq (label v) 7) 0 1)))))
@@ -236,10 +218,10 @@
   ; argument; a case analysis waits for the weak head normal form of its argument
   (defn wApp ((G Globals) (v T) (f1 T)) T
     (let u T (mArg v 1)
-      (if (eq (label f1) 4) (msWhnf (jobE (mD f1 1) (cons u (mArgs f1)) (mD f1 2)))
-        (if (and (mIs 5 1 f1) (primIs G (mD f1 0) casePrim))
-          (mNode 6 (single f1) (single (jobW (some u))))
-          (msDone (some (mNode 6 (nil T) (l2 f1 u))))))))
+      (cond ((eq (label f1) 4) (msWhnf (jobE (mD f1 1) (cons u (mArgs f1)) (mD f1 2))))
+        ((and (mIs 5 1 f1) (primIs G (mD f1 0) casePrim))
+         (mNode 6 (single f1) (single (jobW (some u)))))
+        (else (msDone (some (mNode 6 (nil T) (l2 f1 u))))))))
   ; a case analysis at an injection waits for the weak head normal form of its pair of functions,
   ; and at that pair for the weak head normal form of the function's application to the datum
   (defn wCase ((G Globals) (f1 T) (u1 T)) T
@@ -267,12 +249,11 @@
   (defn wRecOf ((s T) (k T) (src T) (lo T) (env Ts)) T
     (mNode 11 (l5 s k src lo (node 0 env)) (single (jobW (some src)))))
   (defn wRec ((d Ts) (r T)) T
-    (let dl T (delayed r (at d 2))
-      (let lo T (at d 3)
-        (msWhnf
-          (jobE (at d 0)
-            (cons (if (isSome lo) (mNode 3 (nil T) (l2 (get lo) dl)) dl) (children (at d 4)))
-            (at d 1))))))
+    (let* ((dl T (delayed r (at d 2))) (lo T (at d 3)))
+      (msWhnf
+        (jobE (at d 0)
+          (cons (if (isSome lo) (mNode 3 (nil T) (l2 (get lo) dl)) dl) (children (at d 4)))
+          (at d 1)))))
   ; a fold of a natural number at zero, and of a list at the empty list, waits for the weak head
   ; normal form of the constructor's datum, and at the element of the terminal type for that of
   ; its start
@@ -281,20 +262,20 @@
   (defn wNat ((G Globals) (v T) (m1 T)) T
     (if (and (mIs 5 1 m1) (isEmpty (children (mD m1 1))))
       (let c T (mArg m1 0)
-        (if (primIs G (mD m1 0) zeroPrim) (mNode 8 (l2 v m1) (single (jobW (some c))))
-          (if (primIs G (mD m1 0) succPrim)
-            (wRecOf (mD v 0) (mD v 1)
-              (mNode 9 (children (child v 0)) (cons (mArg v 0) (cons c (drop 2 (mArgs v)))))
-              none
-              (drop 2 (mArgs v)))
-            (foldStuck v m1))))
+        (cond ((primIs G (mD m1 0) zeroPrim) (mNode 8 (l2 v m1) (single (jobW (some c)))))
+          ((primIs G (mD m1 0) succPrim)
+           (wRecOf (mD v 0) (mD v 1)
+             (mNode 9 (children (child v 0)) (cons (mArg v 0) (cons c (drop 2 (mArgs v)))))
+             none
+             (drop 2 (mArgs v))))
+          (else (foldStuck v m1))))
       (foldStuck v m1)))
   (defn wList ((G Globals) (v T) (m1 T)) T
     (if (and (mIs 5 1 m1) (eq (length (children (mD m1 1))) 1))
       (let c T (mArg m1 0)
-        (if (primIs G (mD m1 0) nilPrim) (mNode 8 (l2 v m1) (single (jobW (some c))))
-          (if (primIs G (mD m1 0) consPrim) (mNode 9 (l2 v m1) (single (jobW (some c))))
-            (foldStuck v m1))))
+        (cond ((primIs G (mD m1 0) nilPrim) (mNode 8 (l2 v m1) (single (jobW (some c)))))
+          ((primIs G (mD m1 0) consPrim) (mNode 9 (l2 v m1) (single (jobW (some c)))))
+          (else (foldStuck v m1))))
       (foldStuck v m1)))
   ; a fold of a list at a pair of an element and a list
   (defn wCons ((v T) (m1 T) (c1 T)) T
@@ -316,24 +297,20 @@
       (roseStuck v m1)))
   (defn wRose2 ((kl T) (kc T) (v T) (m1 T) (p1 T)) T
     (if (mIs 3 2 p1)
-      (let c T (mD v 0)
-        (let s T (mD v 1)
-          (let k T (mD v 2)
-            (let env Ts (tail (mArgs v))
-              (wRecOf s k
-                (mNode 10
-                  (l2 (mArr kc (single c) (mPair (mRoseRec c (weakenStep2 s) (var 1)) (var 0))) k)
-                  (cons (mNode 5 (l2 kl (node 0 (single c))) (single (mNode 2 (nil T) (nil T))))
-                    (cons (mArg p1 1) env)))
-                (some (mArg p1 0))
-                env)))))
+      (let* ((c T (mD v 0)) (s T (mD v 1)) (k T (mD v 2)) (env Ts (tail (mArgs v))))
+        (wRecOf s k
+          (mNode 10 (l2 (mArr kc (single c) (mPair (mRoseRec c (weakenStep2 s) (var 1)) (var 0))) k)
+            (cons (mNode 5 (l2 kl (node 0 (single c))) (single (mNode 2 (nil T) (nil T))))
+              (cons (mArg p1 1) env)))
+          (some (mArg p1 0))
+          env))
       (roseStuck v m1)))
   ; the state of a value at the weak head normal form of the child it reduces by
   (defn wHead ((G Globals) (kl T) (kc T) (v T) (h T)) T
     (let l T (label v)
-      (if (or (eq l 7) (eq l 8)) (wProj v h)
-        (if (eq l 6) (wApp G v h)
-          (if (eq l 9) (wNat G v h) (if (eq l 10) (wList G v h) (wRose G kl kc v h)))))))
+      (cond ((or (eq l 7) (eq l 8)) (wProj v h)) ((eq l 6) (wApp G v h)) ((eq l 9) (wNat G v h))
+        ((eq l 10) (wList G v h))
+        (else (wRose G kl kc v h)))))
 
   ; the normal form of a value's term in a context g under k binders. The state waiting for the
   ; value of a term in the empty environment, the normal form of which, marked as changed by a
@@ -352,18 +329,18 @@
   ; the free variable of the next level; a node whose children are in the term's context for
   ; their normal forms; an unevaluated term read back unreduced
   (defn nNode ((rw MRw) (g Ts) (k T) (w T)) T
-    (let l T (label w)
-      (let cs Ts (mArgs w)
-        (let d Ts (l3 (node 0 g) k w)
-          (if (and (or (eq l 9) (eq l 10)) (not (lt (length cs) 2)))
-            (mNode 13 d (l2 (jobN g k (some (at cs 0))) (jobN g k (some (at cs 1)))))
-            (if (and (eq l 11) (not (isEmpty cs))) (mNode 13 d (single (jobN g k (some (at cs 0)))))
-              (if (eq l 4)
-                (mNode 14 (l6 (node 0 g) k w (node 0 (cons (mD w 0) g)) (add k 1) (node 0 (nil T)))
-                  (single (jobE (mD w 1) (cons (level k) cs) (mD w 2))))
-                (if (or (lt l 4) (or (and (lt 4 l) (lt l 9)) (or (eq l 12) (eq l 13))))
-                  (mNode 16 d (mapT (lam ((c T)) (jobN g k (some c))) cs))
-                  (if (eq l 16) (msDone none) (nPost rw g k w (readBack k w) 0))))))))))
+    (let* ((l T (label w)) (cs Ts (mArgs w)) (d Ts (l3 (node 0 g) k w)))
+      (cond
+        ((and (or (eq l 9) (eq l 10)) (not (lt (length cs) 2)))
+         (mNode 13 d (l2 (jobN g k (some (at cs 0))) (jobN g k (some (at cs 1))))))
+        ((and (eq l 11) (not (isEmpty cs))) (mNode 13 d (single (jobN g k (some (at cs 0))))))
+        ((eq l 4)
+         (mNode 14 (l6 (node 0 g) k w (node 0 (cons (mD w 0) g)) (add k 1) (node 0 (nil T)))
+           (single (jobE (mD w 1) (cons (level k) cs) (mD w 2)))))
+        ((or (lt l 4) (or (and (lt 4 l) (lt l 9)) (or (eq l 12) (eq l 13))))
+         (mNode 16 d (mapT (lam ((c T)) (jobN g k (some c))) cs)))
+        ((eq l 16) (msDone none))
+        (else (nPost rw g k w (readBack k w) 0)))))
   ; a fold at the normal forms of its start and of its number, list or tree: the state waiting
   ; for its step's value in its environment extended by the free variables of the next levels,
   ; to be normalized in the context those variables extend, beside those normal forms and their
@@ -404,16 +381,16 @@
   ; that of its body, with its mark
   (defn nBuildT ((w T) (pre Ts) (x T)) T
     (let l T (label w)
-      (if (eq l 9) (mNatRec (at pre 0) (nfTerm x) (at pre 1))
-        (if (eq l 10) (mListRec (at pre 0) (nfTerm x) (at pre 1))
-          (if (eq l 11) (mRoseRec (mD w 0) (nfTerm x) (at pre 0)) (mLam (mD w 0) (nfTerm x)))))))
+      (cond ((eq l 9) (mNatRec (at pre 0) (nfTerm x) (at pre 1)))
+        ((eq l 10) (mListRec (at pre 0) (nfTerm x) (at pre 1)))
+        ((eq l 11) (mRoseRec (mD w 0) (nfTerm x) (at pre 0)))
+        (else (mLam (mD w 0) (nfTerm x))))))
   (defn nBuildB ((w T) (pre Ts) (x T)) T
     (let l T (label w)
-      (if (or (eq l 9) (eq l 10)) (at pre 2) (if (eq l 11) (at pre 1) (nfMark x)))))
+      (cond ((or (eq l 9) (eq l 10)) (at pre 2)) ((eq l 11) (at pre 1)) (else (nfMark x)))))
   (defn nDone ((rw MRw) (d Ts) (x T)) T
-    (let w T (at d 2)
-      (let pre Ts (children (at d 3))
-        (nPost rw (children (at d 0)) (at d 1) w (nBuildT w pre x) (nBuildB w pre x)))))
+    (let* ((w T (at d 2)) (pre Ts (children (at d 3))))
+      (nPost rw (children (at d 0)) (at d 1) w (nBuildT w pre x) (nBuildB w pre x))))
   ; a node at the normal forms of its children, where each is found
   (defn nKids ((rw MRw) (g Ts) (k T) (w T) (rs Ts)) T
     (if (allT isSome rs)
@@ -424,43 +401,30 @@
   ; the state a job starts in: a normal form waits for the weak head normal form of its value
   (defn msStart ((j T)) T
     (let l T (label j)
-      (if (eq l 0) (eStart j)
-        (if (eq l 1) (bindS (mD j 0) wStart)
-          (mNode 12 (l2 (node 0 (mArgs j)) (mD j 0)) (single (jobW (mD j 1))))))))
+      (cond ((eq l 0) (eStart j)) ((eq l 1) (bindS (mD j 0) wStart))
+        (else (mNode 12 (l2 (node 0 (mArgs j)) (mD j 0)) (single (jobW (mD j 1))))))))
   ; a state's result, where it is finished
   (defn msResult ((s T)) T (if (eq (label s) 0) (mD s 0) none))
   ; a state advanced by the results of the jobs it waits for
   (defn msAdv ((G Globals) (n T) (unf (Arrow T T)) (kl T) (kc T) (rw MRw) (s T) (rs Ts)) T
-    (let l T (label s)
-      (let r T (at rs 0)
-        (if (eq l 0) s
-          (if (eq l 1) (msDone r)
-            (if (eq l 2) (msTail (jobW r))
-              (if (eq l 3) (eArgs (mD s 0) rs)
-                (if (eq l 4) (eFinal G unf (mD s 0) (mD s 1) (eDelays (mD s 0) rs))
-                  (if (eq l 5) (bindS r (lam ((h T)) (wHead G kl kc (mD s 0) h)))
-                    (if (eq l 6) (bindS r (lam ((u1 T)) (wCase G (mD s 0) u1)))
-                      (if (eq l 7) (bindS r (lam ((p1 T)) (wCase2 G (mD s 0) (mD s 1) p1)))
-                        (if (eq l 8) (bindS r (lam ((c1 T)) (wBase (mD s 0) (mD s 1) c1)))
-                          (if (eq l 9) (bindS r (lam ((c1 T)) (wCons (mD s 0) (mD s 1) c1)))
-                            (if (eq l 10)
-                              (bindS r (lam ((p1 T)) (wRose2 kl kc (mD s 0) (mD s 1) p1)))
-                              (if (eq l 11) (wRec (children (child s 0)) r)
-                                (if (eq l 12)
-                                  (bindS r (lam ((w T)) (nNode rw (children (mD s 0)) (mD s 1) w)))
-                                  (if (eq l 13) (nFold G n (children (mD s 0)) (mD s 1) (mD s 2) rs)
-                                    (if (eq l 14) (nBody (children (child s 0)) r)
-                                      (if (eq l 15)
-                                        (bindS r (lam ((x T)) (nDone rw (children (child s 0)) x)))
-                                        (if (eq l 16)
-                                          (nKids rw (children (mD s 0)) (mD s 1) (mD s 2) rs)
-                                          (if (eq l 17)
-                                            (mNode 18 (nil T)
-                                              (single (jobN (children (mD s 0)) (mD s 1) r)))
-                                            (msDone
-                                              (bindO r
-                                                (lam ((x T))
-                                                  (marked (nfTerm x) 1)))))))))))))))))))))))))
+    (let* ((l T (label s)) (r T (at rs 0)))
+      (cond ((eq l 0) s) ((eq l 1) (msDone r)) ((eq l 2) (msTail (jobW r)))
+        ((eq l 3) (eArgs (mD s 0) rs))
+        ((eq l 4) (eFinal G unf (mD s 0) (mD s 1) (eDelays (mD s 0) rs)))
+        ((eq l 5) (bindS r (lam ((h T)) (wHead G kl kc (mD s 0) h))))
+        ((eq l 6) (bindS r (lam ((u1 T)) (wCase G (mD s 0) u1))))
+        ((eq l 7) (bindS r (lam ((p1 T)) (wCase2 G (mD s 0) (mD s 1) p1))))
+        ((eq l 8) (bindS r (lam ((c1 T)) (wBase (mD s 0) (mD s 1) c1))))
+        ((eq l 9) (bindS r (lam ((c1 T)) (wCons (mD s 0) (mD s 1) c1))))
+        ((eq l 10) (bindS r (lam ((p1 T)) (wRose2 kl kc (mD s 0) (mD s 1) p1))))
+        ((eq l 11) (wRec (children (child s 0)) r))
+        ((eq l 12) (bindS r (lam ((w T)) (nNode rw (children (mD s 0)) (mD s 1) w))))
+        ((eq l 13) (nFold G n (children (mD s 0)) (mD s 1) (mD s 2) rs))
+        ((eq l 14) (nBody (children (child s 0)) r))
+        ((eq l 15) (bindS r (lam ((x T)) (nDone rw (children (child s 0)) x))))
+        ((eq l 16) (nKids rw (children (mD s 0)) (mD s 1) (mD s 2) rs))
+        ((eq l 17) (mNode 18 (nil T) (single (jobN (children (mD s 0)) (mD s 1) r))))
+        (else (msDone (bindO r (lam ((x T)) (marked (nfTerm x) 1))))))))
 
   ; the first results, as many as the jobs, and the results after them
   (defn splitRs ((qs Ts) (rs Ts)) (Prod Ts Ts)

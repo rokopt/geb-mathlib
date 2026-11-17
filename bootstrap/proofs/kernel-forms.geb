@@ -26,9 +26,10 @@
           (and (kAll ps)
             (if (isList raw)
               (let h T (at (children raw) 0)
-                (if (named h kwCase) 0
-                  (if (named h kwCata) 0
-                    (if (named h kwRep) 0 (if (named h kwDecode) 0 (if (named h kwDatum) 0 1))))))
+                (cond ((named h kwCase) 0) ((named h kwCata) 0) ((named h kwRep) 0)
+                  ((named h kwDecode) 0)
+                  ((named h kwDatum) 0)
+                  (else 1)))
               1))))))
   ; whether a tree is a kernel expression
   (def ke (lam ((e T)) (snd (fold KP kstep e))))
@@ -72,9 +73,9 @@
       (if (isList e)
         (if (eq (arity e) 3)
           (let h T (at (children e) 0)
-            (if (named h kwData) 0
-              (if (named h kwDef) (ke (at (children e) 2))
-                (if (named h kwDeftype) 1 (named h kwDefnum)))))
+            (cond ((named h kwData) 0) ((named h kwDef) (ke (at (children e) 2)))
+              ((named h kwDeftype) 1)
+              (else (named h kwDefnum))))
           0)
         0)))
   ; the environment after a form: with the alias of a type's abbreviation added

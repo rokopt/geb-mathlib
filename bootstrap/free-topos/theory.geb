@@ -227,9 +227,8 @@
         (cFst p t))))
   (defn diag ((a T)) T (cPair (idt a) (idt a)))
   (defn monoCond ((m T)) Eqn
-    (let a T (dom m)
-      (let k T (eqIncl (comp m (cFst a a)) (comp m (cSnd a a)))
-        (eqn (comp (cFst a a) k) (comp (cSnd a a) k)))))
+    (let* ((a T (dom m)) (k T (eqIncl (comp m (cFst a a)) (comp m (cSnd a a)))))
+      (eqn (comp (cFst a a) k) (comp (cSnd a a) k))))
   (defn truthEq ((p T)) T (eqz p (comp tru (bang (dom p)))))
   (defn truthIncl ((p T)) T (eqIncl p (comp tru (bang (dom p)))))
   (defn truthLift ((p T) (m T)) T (eqLift p (comp tru (bang (dom p))) m))

@@ -53,11 +53,10 @@
   ; retrying a whole elimination's continuation would duplicate a failed search at every step.
   (defn equateExact ((o T) (p Deducer)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
-      (let scope Ts (append hs (single (ttL o)))
-        (let direct T (p g scope (mEq t u))
-          (if (isSome direct) (mapO (lam ((d T)) (dNode 22 (single (ttL o)) (l2 trueI d))) direct)
-            (if (equal u (ttL o)) (mapO (lam ((d T)) (dNode 25 (nil T) (l2 trueI d))) (p g scope t))
-              none))))))
+      (let* ((scope Ts (append hs (single (ttL o)))) (direct T (p g scope (mEq t u))))
+        (cond ((isSome direct) (mapO (lam ((d T)) (dNode 22 (single (ttL o)) (l2 trueI d))) direct))
+          ((equal u (ttL o)) (mapO (lam ((d T)) (dNode 25 (nil T) (l2 trueI d))) (p g scope t)))
+          (else none)))))
   (defn truth ((o T)) Deducer
     (lam ((g Ts) (hs Ts) (phi T)) (if (equal phi (ttL o)) (some trueI) none)))
   (defn hypothesis ((i T)) Deducer
@@ -68,19 +67,18 @@
   (defn assume ((o T) (p Deducer)) Deducer
     (lam ((g Ts) (hs Ts) (phi T))
       (if (and (mIs 11 2 phi) (eq (mD phi 0) (add o 2)))
-        (let a T (mArg phi 1)
-          (let b T (mArg phi 0)
-            (mapO
-              (lam ((d T))
-                (dNode 23 (nil T)
-                  (l2 (dNode 8 (nil T) (nil T))
-                    (dNode 25 (nil T)
-                      (l2
-                        (dNode 27 (l3 2 (node 0 (nil T)) (node 0 (l2 b a)))
-                          (single (dNode 21 (single (length hs)) (nil T))))
-                        (dNode 27 (l3 1 (node 0 (nil T)) (node 0 (l2 b a)))
-                          (l2 (dNode 21 (single (length hs)) (nil T)) d)))))))
-              (p g (append hs (single a)) b))))
+        (let* ((a T (mArg phi 1)) (b T (mArg phi 0)))
+          (mapO
+            (lam ((d T))
+              (dNode 23 (nil T)
+                (l2 (dNode 8 (nil T) (nil T))
+                  (dNode 25 (nil T)
+                    (l2
+                      (dNode 27 (l3 2 (node 0 (nil T)) (node 0 (l2 b a)))
+                        (single (dNode 21 (single (length hs)) (nil T))))
+                      (dNode 27 (l3 1 (node 0 (nil T)) (node 0 (l2 b a)))
+                        (l2 (dNode 21 (single (length hs)) (nil T)) d)))))))
+            (p g (append hs (single a)) b)))
         none)))
   ; Instances of the declared rules, and cuts adding their consequences to the hypotheses.
   (defn rule ((j T) (th Ts) (sg Ts) (ds Ts)) T (dNode 27 (l3 j (node 0 th) (node 0 sg)) ds))
@@ -101,13 +99,12 @@
     (lam ((g Ts) (hs Ts) (phi T))
       (let h T (at hs i)
         (if (and (lt i (length hs)) (connective o 1 2 h))
-          (let a T (mArg h 1)
-            (let b T (mArg h 0)
-              (mapO
-                (lam ((d T))
-                  (cut a (rule 2 (nil T) (mArgs h) (single (hyp i)))
-                    (cut b (rule 3 (nil T) (mArgs h) (single (hyp i))) d)))
-                (p g (append hs (l2 a b)) phi))))
+          (let* ((a T (mArg h 1)) (b T (mArg h 0)))
+            (mapO
+              (lam ((d T))
+                (cut a (rule 2 (nil T) (mArgs h) (single (hyp i)))
+                  (cut b (rule 3 (nil T) (mArgs h) (single (hyp i))) d)))
+              (p g (append hs (l2 a b)) phi)))
           none))))
   (defn implication ((o T) (i T) (p Deducer) (q Deducer)) Deducer
     (lam ((g Ts) (hs Ts) (phi T))
@@ -156,15 +153,14 @@
     (lam ((g Ts) (hs Ts) (phi T))
       (let h T (at hs i)
         (if (and (lt i (length hs)) (quantified o 3 h))
-          (let pred T (mArg h 0)
-            (let psi T (instanceOf pred w)
-              (mapO
-                (lam ((d T))
-                  (cut psi
-                    (from (app pred w) (instanceRule pred)
-                      (rule 5 (children (mD h 1)) (l2 w pred) (single (hyp i))))
-                    d))
-                (p g (append hs (single psi)) phi))))
+          (let* ((pred T (mArg h 0)) (psi T (instanceOf pred w)))
+            (mapO
+              (lam ((d T))
+                (cut psi
+                  (from (app pred w) (instanceRule pred)
+                    (rule 5 (children (mD h 1)) (l2 w pred) (single (hyp i))))
+                  d))
+              (p g (append hs (single psi)) phi)))
           none))))
   (defn existsIntro ((o T) (w T) (p Deducer)) Deducer
     (lam ((g Ts) (hs Ts) (phi T))
@@ -179,20 +175,18 @@
     (lam ((g Ts) (hs Ts) (phi T))
       (let h T (at hs i)
         (if (and (lt i (length hs)) (quantified o 7 h))
-          (let a T (child (mD h 1) 0)
-            (let pred T (mArg h 0)
-              (let instance T (app (weaken1 pred) (var 0))
-                (let body T (instanceOf (weaken1 pred) (var 0))
-                  (let under Deducer
-                    (lam ((g1 Ts) (hs1 Ts) (phi1 T))
-                      (mapO
-                        (lam ((d T))
-                          (cut body (from instance (instanceRule pred) (hyp (sub (length hs1) 1)))
-                            d))
-                        (p g1 (append hs1 (single body)) phi1)))
-                    (mapO (lam ((d T)) (rule 11 (single a) (l2 phi pred) (l2 (hyp i) d)))
-                      (allIntro o (assume o under) g hs
-                        (allL o a (mLam a (impL o instance (weaken1 phi)))))))))))
+          (let*
+            ((a T (child (mD h 1) 0)) (pred T (mArg h 0)) (instance T (app (weaken1 pred) (var 0)))
+             (body T (instanceOf (weaken1 pred) (var 0)))
+             (under Deducer
+               (lam ((g1 Ts) (hs1 Ts) (phi1 T))
+                 (mapO
+                   (lam ((d T))
+                     (cut body (from instance (instanceRule pred) (hyp (sub (length hs1) 1))) d))
+                   (p g1 (append hs1 (single body)) phi1)))))
+            (mapO (lam ((d T)) (rule 11 (single a) (l2 phi pred) (l2 (hyp i) d)))
+              (allIntro o (assume o under) g hs
+                (allL o a (mLam a (impL o instance (weaken1 phi)))))))
           none))))
   (defn falseElim ((o T) (p Deducer)) Deducer
     (lam ((g Ts) (hs Ts) (phi T))

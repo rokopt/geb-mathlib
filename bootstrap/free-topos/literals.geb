@@ -65,14 +65,13 @@
   ; evaluated: the position of the first of them of that index and those objects
   (defn symOf ((t T)) T
     (if (eq (label t) 11)
-      (let k T (mD t 0)
-        (let th Ts (children (mD t 1))
-          ((foldr T (Arrow T T)
-             (lam ((row T) (rest (Arrow T T)) (i T))
-               (if (and (eq (child row 0) k) (equalTs (children (child row 1)) th)) (some i)
-                 (rest (add i 1))))
-             (lam ((i T)) none)
-             syms) 0)))
+      (let* ((k T (mD t 0)) (th Ts (children (mD t 1))))
+        ((foldr T (Arrow T T)
+           (lam ((row T) (rest (Arrow T T)) (i T))
+             (if (and (eq (child row 0) k) (equalTs (children (child row 1)) th)) (some i)
+               (rest (add i 1))))
+           (lam ((i T)) none)
+           syms) 0))
       none))
 
   ; the number of a list of one bitstring, and the numbers of a list of two
@@ -117,34 +116,35 @@
   ; arithmetic of the labels; nothing at literals of other types, and for the difference of a
   ; number greater than the first
   (defn host ((s T) (vs (List Lit))) OLit.Maybe
-    (if (eq s 0) (if (EachLit.isEmpty vs) (OLit.just (litBits 0)) OLit.nothing)
-      (if (or (eq s 7) (eq s 8)) (hostCond s vs)
-        (if (or (lt s 7) (eq s 17))
-          (let m T (bits1 vs)
-            (if (isSome m)
-              (let w T (get m)
-                (OLit.just
-                  (litBits
-                    (if (eq s 1) (add (mul 2 w) 1)
-                      (if (eq s 2) (add (mul 2 w) 2)
-                        (if (eq s 3) (truth (eq w 0))
-                          (if (eq s 4) (add w 1)
-                            (if (eq s 5) (mul 2 w) (if (eq s 6) (sub w 1) (log2 w))))))))))
-              OLit.nothing))
-          (case (bits2 vs)
-            ((OTPair.just ab)
-             (let a T (p1 ab)
-               (let b T (p2 ab)
-                 (if (eq s 9) (OLit.just (litBits (add a b)))
-                   (if (eq s 10) (OLit.just (litBits (mul a b)))
-                     (if (eq s 11) (OLit.just (litBits (truth (eq a b))))
-                       (if (eq s 12) (OLit.just (litOrd (if (lt a b) 0 (if (eq a b) 1 2))))
-                         (if (eq s 13) (OLit.just (litBits (truth (lt a b))))
-                           (if (eq s 14) (if (lt a b) OLit.nothing (OLit.just (litBits (sub a b))))
-                             (if (eq s 15) (OLit.just (litBits (sub a b)))
-                               (if (eq s 16) (OLit.just (litPair (div a b) (mod a b)))
-                                 OLit.nothing)))))))))))
-            ((OTPair.nothing) OLit.nothing))))))
+    (cond ((eq s 0) (if (EachLit.isEmpty vs) (OLit.just (litBits 0)) OLit.nothing))
+      ((or (eq s 7) (eq s 8)) (hostCond s vs))
+      ((or (lt s 7) (eq s 17))
+       (let m T (bits1 vs)
+         (if (isSome m)
+           (let w T (get m)
+             (OLit.just
+               (litBits
+                 (cond ((eq s 1) (add (mul 2 w) 1)) ((eq s 2) (add (mul 2 w) 2))
+                   ((eq s 3) (truth (eq w 0)))
+                   ((eq s 4) (add w 1))
+                   ((eq s 5) (mul 2 w))
+                   ((eq s 6) (sub w 1))
+                   (else (log2 w))))))
+           OLit.nothing)))
+      (else
+        (case (bits2 vs)
+          ((OTPair.just ab)
+           (let* ((a T (p1 ab)) (b T (p2 ab)))
+             (cond ((eq s 9) (OLit.just (litBits (add a b))))
+               ((eq s 10) (OLit.just (litBits (mul a b))))
+               ((eq s 11) (OLit.just (litBits (truth (eq a b)))))
+               ((eq s 12) (OLit.just (litOrd (cond ((lt a b) 0) ((eq a b) 1) (else 2)))))
+               ((eq s 13) (OLit.just (litBits (truth (lt a b)))))
+               ((eq s 14) (if (lt a b) OLit.nothing (OLit.just (litBits (sub a b)))))
+               ((eq s 15) (OLit.just (litBits (sub a b))))
+               ((eq s 16) (OLit.just (litPair (div a b) (mod a b))))
+               (else OLit.nothing))))
+          ((OTPair.nothing) OLit.nothing)))))
 
   ; the pair of two bitstrings, or a component of a pair of bitstrings, at a node of a label from
   ; its children's values
@@ -157,8 +157,8 @@
           (if (EachLit.isEmpty r)
             (case v
               ((litPair a b)
-               (if (eq l 3) (OLit.just (litBits a))
-                 (if (eq l 4) (OLit.just (litBits b)) OLit.nothing)))
+               (cond ((eq l 3) (OLit.just (litBits a))) ((eq l 4) (OLit.just (litBits b)))
+                 (else OLit.nothing)))
               (else OLit.nothing))
             OLit.nothing)))))
 
@@ -166,21 +166,21 @@
   ; definition evaluated at its arguments' values, the children being the arguments last first, or
   ; a pair or its component
   (defn evalStep ((nd T) (rs (List OLit.Maybe))) OLit.Maybe
-    (if (equal nd ltO) (OLit.just (litOrd 0))
-      (if (equal nd eqO) (OLit.just (litOrd 1))
-        (if (equal nd gtO) (OLit.just (litOrd 2))
-          (let r (Prod T (List Lit)) (OLit.allJust (OLits.tail rs))
-            (if (fst r)
-              (let s T (symOf nd)
-                (if (isSome s) (host (get s) (Lits.reverse (snd r))) (pairStep (label nd) (snd r))))
-              OLit.nothing))))))
+    (cond ((equal nd ltO) (OLit.just (litOrd 0))) ((equal nd eqO) (OLit.just (litOrd 1)))
+      ((equal nd gtO) (OLit.just (litOrd 2)))
+      (else
+        (let r (Prod T (List Lit)) (OLit.allJust (OLits.tail rs))
+          (if (fst r)
+            (let s T (symOf nd)
+              (if (isSome s) (host (get s) (Lits.reverse (snd r))) (pairStep (label nd) (snd r))))
+            OLit.nothing)))))
   ; the value of a term built of the definitions evaluated over literals
   (defn valueOf ((t T)) OLit.Maybe (para OLit.Maybe evalStep t))
 
   ; the term of a literal: the numeral of a bitstring's number, the term of a comparison's result,
   ; and the pair of two numerals
   (defn litTerm ((v Lit)) T
-    (case v ((litBits k) (trNumeral k)) ((litOrd o) (if (eq o 0) ltO (if (eq o 1) eqO gtO)))
+    (case v ((litBits k) (trNumeral k)) ((litOrd o) (cond ((eq o 0) ltO) ((eq o 1) eqO) (else gtO)))
       ((litPair a b) (mPair (trNumeral a) (trNumeral b)))))
   ; the term of the value of a term, where it has one
   (defn litEval ((t T)) T

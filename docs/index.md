@@ -4069,6 +4069,12 @@ import-direction rules above are enforced by
   (`let*`) and guarded clauses ending in `else` (`cond`) to nested `let`
   and `if` forms, preserving each binding's scope and leaving quoted data
   unchanged (`Geb.Kernel.letChain`, `Geb.Kernel.condChain`).
+  `Chains.lean` converts a source document the other way
+  (`Geb.Kernel.Document.Doc.chains`): where the elaboration gives a term,
+  a sequence of nested `let` forms becomes one `let*` and a sequence of
+  nested conditionals one `cond`, each comment line kept before the binding
+  or the clause that the form after it becomes; `geb-fmt --chains` applies
+  it to files.
   `ModuleIdentity.lean` identifies each module by
   the CID of its members' and exports' identifiers
   (`Geb.Kernel.Identity.moduleCids`). `Printer.lean` writes a bundle in the
@@ -4080,6 +4086,7 @@ import-direction rules above are enforced by
   Tested in
   `GebTests/Prototypes/Kernel.lean`,
   `GebTests/Prototypes/Kernel/Document.lean`,
+  `GebTests/Prototypes/Kernel/Chains.lean`,
   `GebTests/Prototypes/Kernel/Strict.lean`,
   `GebTests/Prototypes/Kernel/Identity.lean`,
   `GebTests/Prototypes/Kernel/Modules.lean` and

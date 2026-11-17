@@ -91,10 +91,12 @@ own requires a prior `lake build`.
   emitted Lean regenerate byte for byte, and the compiler built from
   the emitted Lean reproduces both (the manual's Bootstrap chapter,
   § Speed and a second host); every source under `bootstrap/` is a
-  fixed point of `geb-fmt` and, where the release pinned in
-  `scripts/parinfer/` is installed, of both of parinfer's modes (§ Source
-  documents and the formatter); and `geb-doc --check` accepts the comments
-  of every manifest and of its program's sources (§ Documentation).
+  fixed point of `geb-fmt --chains`, formatted with each sequence of
+  bindings a `let*` and each of tests a `cond` (§ Modules), and, where
+  the release pinned in `scripts/parinfer/` is installed, of both of
+  parinfer's modes (§ Source documents and the formatter); and
+  `geb-doc --check` accepts the comments of every manifest and of its
+  program's sources (§ Documentation).
 - `lake build GebTests`, then `scripts/certificates.sh check` (the
   searches, in parallel; § Certificates), skipped while its inputs are
   those recorded at its last passing run

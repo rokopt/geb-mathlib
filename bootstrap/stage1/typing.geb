@@ -156,7 +156,7 @@
   ; numeral, so that the erasure and the reader leave it as the typing reads it; 0 at any other
   ; form, 2 at a numeral and 1 at any other datum
   (defn datumAtom ((E Env) (cs Ts)) T
-    (if (hasName (name cs) (envNums E)) 0 (if (isSome (numeral cs)) 2 1)))
+    (cond ((hasName (name cs) (envNums E)) 0) ((isSome (numeral cs)) 2) (else 1)))
   (defn datumKids ((rs Ts)) T (foldr T T (lam ((r T) (a T)) (and r a)) 1 rs))
   (defn datumList ((rs Ts)) T (if (and (eq (at rs 0) 2) (datumKids rs)) 1 0))
   (defn plainDatum ((E Env) (x Tx)) T
@@ -198,34 +198,33 @@
         ((tAtom cs)
          (pair (tAtom cs)
            (let n Name (name cs)
-             (if (namedTx (tAtom cs) kwT) (OTy.just tyT)
-               (if (namedTx (tAtom cs) kwUnit) (OTy.just tyUnit)
+             (cond ((namedTx (tAtom cs) kwT) (OTy.just tyT))
+               ((namedTx (tAtom cs) kwUnit) (OTy.just tyUnit))
+               (else
                  (case (lookupName n (envAl E)) ((OTy.just ty) (OTy.just ty))
                    ((OTy.nothing)
-                    (if (hasName n (envNoms E)) (OTy.just (tyData n))
-                      (if (hasName n (envSorts E)) (OTy.just (tySort n)) OTy.nothing)))))))))
+                    (cond ((hasName n (envNoms E)) (OTy.just (tyData n)))
+                      ((hasName n (envSorts E)) (OTy.just (tySort n)))
+                      (else OTy.nothing)))))))))
         ((tList rs)
-         (let fs (List Tx) (rtForms rs)
-           (let k T (RT1s.length rs)
-             (let h Tx (Txs.atOr tx0 fs 0)
-               (let v (Arrow T MTy) (lam ((i T)) (snd (RT1s.atOr (pair tx0 OTy.nothing) rs i)))
-                 (pair (tList fs)
-                   (if (and (namedTx h kwProd) (eq k 3))
-                     (case (v 1)
-                       ((OTy.just a)
-                        (case (v 2) ((OTy.just b) (OTy.just (tyProd a b)))
-                          ((OTy.nothing) OTy.nothing)))
-                       ((OTy.nothing) OTy.nothing))
-                     (if (and (namedTx h kwArrow) (eq k 3))
-                       (case (v 1)
-                         ((OTy.just a)
-                          (case (v 2) ((OTy.just b) (OTy.just (tyArrow a b)))
-                            ((OTy.nothing) OTy.nothing)))
-                         ((OTy.nothing) OTy.nothing))
-                       (if (and (namedTx h kwList) (eq k 2))
-                         (case (v 1) ((OTy.just a) (OTy.just (tyList a)))
-                           ((OTy.nothing) OTy.nothing))
-                         OTy.nothing)))))))))
+         (let*
+           ((fs (List Tx) (rtForms rs)) (k T (RT1s.length rs)) (h Tx (Txs.atOr tx0 fs 0))
+            (v (Arrow T MTy) (lam ((i T)) (snd (RT1s.atOr (pair tx0 OTy.nothing) rs i)))))
+           (pair (tList fs)
+             (cond
+               ((and (namedTx h kwProd) (eq k 3))
+                (case (v 1)
+                  ((OTy.just a)
+                   (case (v 2) ((OTy.just b) (OTy.just (tyProd a b))) ((OTy.nothing) OTy.nothing)))
+                  ((OTy.nothing) OTy.nothing)))
+               ((and (namedTx h kwArrow) (eq k 3))
+                (case (v 1)
+                  ((OTy.just a)
+                   (case (v 2) ((OTy.just b) (OTy.just (tyArrow a b))) ((OTy.nothing) OTy.nothing)))
+                  ((OTy.nothing) OTy.nothing)))
+               ((and (namedTx h kwList) (eq k 2))
+                (case (v 1) ((OTy.just a) (OTy.just (tyList a))) ((OTy.nothing) OTy.nothing)))
+               (else OTy.nothing)))))
         (else (pair tx0 OTy.nothing)))))
 
   ; membership of a tree in each datatype a marker declares, as the recognizers decide it: a
@@ -367,16 +366,18 @@
   ; name
   (defn synAtom ((E Env) (cs Ts) (cx Cx)) MTy
     (let n Name (name cs)
-      (if (or (keywordTx (tAtom cs)) (isSome (indexOf (rep n) boundNames))) OTy.nothing
-        (if (isSome (numeral cs)) (OTy.just tyT)
-          (if (hasName n (envNums E)) (OTy.just tyT)
-            (case (lookupName n cx) ((OTy.just ty) (OTy.just ty))
-              ((OTy.nothing)
-               (case (lookupName n (envDefs E)) ((OTy.just ty) (OTy.just ty))
-                 ((OTy.nothing)
-                  (let k T (indexOf (rep n) primNames)
-                    (if (isSome k) (OTy.just (Tys.atOr tyT primTys (get k)))
-                      (if (namedTx (tAtom cs) kwUnitValue) (OTy.just tyUnit) OTy.nothing))))))))))))
+      (cond ((or (keywordTx (tAtom cs)) (isSome (indexOf (rep n) boundNames))) OTy.nothing)
+        ((isSome (numeral cs)) (OTy.just tyT))
+        ((hasName n (envNums E)) (OTy.just tyT))
+        (else
+          (case (lookupName n cx) ((OTy.just ty) (OTy.just ty))
+            ((OTy.nothing)
+             (case (lookupName n (envDefs E)) ((OTy.just ty) (OTy.just ty))
+               ((OTy.nothing)
+                (let k T (indexOf (rep n) primNames)
+                  (cond ((isSome k) (OTy.just (Tys.atOr tyT primTys (get k))))
+                    ((namedTx (tAtom cs) kwUnitValue) (OTy.just tyUnit))
+                    (else OTy.nothing)))))))))))
 
   ; the type of a pair of optional types, by a function of the two types
   (defn both2 ((a MTy) (b MTy) (f (Arrow Ty (Arrow Ty MTy)))) MTy
@@ -388,92 +389,72 @@
 
   ; a list's type, from its elements' types as functions of the context
   (defn synList ((E Env) (fs (List Tx)) (rs (List SR)) (cx Cx)) MTy
-    (let k T (SRs.length rs)
-      (let h Tx (Txs.atOr tx0 fs 0)
-        (let f (Arrow T Tx) (lam ((i T)) (Txs.atOr tx0 fs i))
-          (let s (Arrow T MTy) (lam ((i T)) (srAt rs i cx))
-            (if (eq k 0) OTy.nothing
-              (if (and (namedTx h kwLam) (eq k 3))
-                (let ps (Prod T (List Abbr)) (bindersOf E (f 1))
-                  (if (and (fst ps) (lt 0 (Abbrs.length (snd ps))))
-                    (then1 (srAt rs 2 (Abbrs.append (Abbrs.reverse (snd ps)) cx))
-                      (lam ((u Ty))
-                        (OTy.just
-                          (foldr Abbr Ty (lam ((p Abbr) (w Ty)) (case p ((abbr m A) (tyArrow A w))))
-                            u
-                            (snd ps)))))
-                    OTy.nothing))
-                (if (and (namedTx h kwLet) (eq k 5))
-                  (both2 (readTy E (f 2)) (s 3)
-                    (lam ((A Ty) (B Ty))
-                      (if (and (binderName E (f 1)) (sameTy A B))
-                        (srAt rs 4 (cons (abbr (atomName (f 1)) A) cx))
-                        OTy.nothing)))
-                  (if (and (namedTx h kwPair) (eq k 3))
-                    (both2 (s 1) (s 2) (lam ((a Ty) (b Ty)) (OTy.just (tyProd a b))))
-                    (if (and (or (namedTx h kwFst) (namedTx h kwSnd)) (eq k 2))
-                      (then1 (s 1)
-                        (lam ((p Ty))
-                          (case p ((tyProd a b) (OTy.just (if (namedTx h kwFst) a b)))
-                            (else OTy.nothing))))
-                      (if (and (namedTx h kwIf) (eq k 4))
-                        (then1 (s 1)
-                          (lam ((c Ty))
-                            (both2 (s 2) (s 3)
-                              (lam ((a Ty) (b Ty)) (when (and (sameTy c tyT) (sameTy a b)) a)))))
-                        (if (and (namedTx h kwCons) (eq k 3))
-                          (both2 (s 1) (s 2)
-                            (lam ((x Ty) (xs Ty)) (when (sameTy (tyList x) xs) xs)))
-                          (if (and (namedTx h kwNil) (eq k 2))
-                            (then1 (readTy E (f 1)) (lam ((A Ty)) (OTy.just (tyList A))))
-                            (if (and (namedTx h kwQuote) (eq k 2)) (OTy.just tyT)
-                              (if (and (namedTx h kwDatum) (eq k 3))
-                                (then1 (readTy E (f 1))
-                                  (lam ((D Ty))
-                                    (let d T (readDatum (rep (f 2)))
-                                      (when
-                                        (and (namesData E D (f 1))
-                                          (and (isSome d)
-                                            (and (plainDatum E (f 2))
-                                              (memberOf (envMs E) (f 1) (get d)))))
-                                        D))))
-                                (if (and (namedTx h kwRep) (eq k 2))
-                                  (then1 (s 1) (lam ((a Ty)) (when (isData a) tyT)))
-                                  (if (and (namedTx h kwDecode) (eq k 5))
-                                    (then1 (readTy E (f 1))
-                                      (lam ((D Ty))
-                                        (then1 (s 2)
-                                          (lam ((e Ty))
-                                            (both2
-                                              (srAt rs 3 (cons (abbr (boundName kwDecoded) tyT) cx))
-                                              (srAt rs 4 (cons (abbr (boundName kwDecoded) tyT) cx))
-                                              (lam ((g Ty) (c Ty))
-                                                (when
-                                                  (and (namesData E D (f 1))
-                                                    (and (sameTy e tyT) (sameTy g (tyArrow D c))))
-                                                  c)))))))
-                                    (if
-                                      (and
-                                        (or (namedTx h kwFold)
-                                          (or (namedTx h kwPara) (namedTx h kwIter)))
-                                        (lt 1 k))
-                                      (then1 (readTy E (f 1))
-                                        (lam ((A Ty))
-                                          (applyTy
-                                            (OTy.just
-                                              (if (namedTx h kwIter) (iterTyOf A) (foldTyOf A)))
-                                            (srFrom rs 2 cx))))
-                                      (if
-                                        (and (or (namedTx h kwFoldr) (namedTx h kwLcase)) (lt 2 k))
-                                        (both2 (readTy E (f 1)) (readTy E (f 2))
-                                          (lam ((A Ty) (B Ty))
-                                            (applyTy
-                                              (OTy.just
-                                                (if (namedTx h kwFoldr) (foldrTyOf A B)
-                                                  (lcaseTyOf A B)))
-                                              (srFrom rs 3 cx))))
-                                        (if (keywordTx h) OTy.nothing
-                                          (applyTy (s 0) (srFrom rs 1 cx))))))))))))))))))))))
+    (let*
+      ((k T (SRs.length rs)) (h Tx (Txs.atOr tx0 fs 0))
+       (f (Arrow T Tx) (lam ((i T)) (Txs.atOr tx0 fs i)))
+       (s (Arrow T MTy) (lam ((i T)) (srAt rs i cx))))
+      (cond ((eq k 0) OTy.nothing)
+        ((and (namedTx h kwLam) (eq k 3))
+         (let ps (Prod T (List Abbr)) (bindersOf E (f 1))
+           (if (and (fst ps) (lt 0 (Abbrs.length (snd ps))))
+             (then1 (srAt rs 2 (Abbrs.append (Abbrs.reverse (snd ps)) cx))
+               (lam ((u Ty))
+                 (OTy.just
+                   (foldr Abbr Ty (lam ((p Abbr) (w Ty)) (case p ((abbr m A) (tyArrow A w)))) u
+                     (snd ps)))))
+             OTy.nothing)))
+        ((and (namedTx h kwLet) (eq k 5))
+         (both2 (readTy E (f 2)) (s 3)
+           (lam ((A Ty) (B Ty))
+             (if (and (binderName E (f 1)) (sameTy A B))
+               (srAt rs 4 (cons (abbr (atomName (f 1)) A) cx))
+               OTy.nothing))))
+        ((and (namedTx h kwPair) (eq k 3))
+         (both2 (s 1) (s 2) (lam ((a Ty) (b Ty)) (OTy.just (tyProd a b)))))
+        ((and (or (namedTx h kwFst) (namedTx h kwSnd)) (eq k 2))
+         (then1 (s 1)
+           (lam ((p Ty))
+             (case p ((tyProd a b) (OTy.just (if (namedTx h kwFst) a b))) (else OTy.nothing)))))
+        ((and (namedTx h kwIf) (eq k 4))
+         (then1 (s 1)
+           (lam ((c Ty))
+             (both2 (s 2) (s 3) (lam ((a Ty) (b Ty)) (when (and (sameTy c tyT) (sameTy a b)) a))))))
+        ((and (namedTx h kwCons) (eq k 3))
+         (both2 (s 1) (s 2) (lam ((x Ty) (xs Ty)) (when (sameTy (tyList x) xs) xs))))
+        ((and (namedTx h kwNil) (eq k 2))
+         (then1 (readTy E (f 1)) (lam ((A Ty)) (OTy.just (tyList A)))))
+        ((and (namedTx h kwQuote) (eq k 2)) (OTy.just tyT))
+        ((and (namedTx h kwDatum) (eq k 3))
+         (then1 (readTy E (f 1))
+           (lam ((D Ty))
+             (let d T (readDatum (rep (f 2)))
+               (when
+                 (and (namesData E D (f 1))
+                   (and (isSome d) (and (plainDatum E (f 2)) (memberOf (envMs E) (f 1) (get d)))))
+                 D)))))
+        ((and (namedTx h kwRep) (eq k 2)) (then1 (s 1) (lam ((a Ty)) (when (isData a) tyT))))
+        ((and (namedTx h kwDecode) (eq k 5))
+         (then1 (readTy E (f 1))
+           (lam ((D Ty))
+             (then1 (s 2)
+               (lam ((e Ty))
+                 (both2 (srAt rs 3 (cons (abbr (boundName kwDecoded) tyT) cx))
+                   (srAt rs 4 (cons (abbr (boundName kwDecoded) tyT) cx))
+                   (lam ((g Ty) (c Ty))
+                     (when (and (namesData E D (f 1)) (and (sameTy e tyT) (sameTy g (tyArrow D c))))
+                       c))))))))
+        ((and (or (namedTx h kwFold) (or (namedTx h kwPara) (namedTx h kwIter))) (lt 1 k))
+         (then1 (readTy E (f 1))
+           (lam ((A Ty))
+             (applyTy (OTy.just (if (namedTx h kwIter) (iterTyOf A) (foldTyOf A)))
+               (srFrom rs 2 cx)))))
+        ((and (or (namedTx h kwFoldr) (namedTx h kwLcase)) (lt 2 k))
+         (both2 (readTy E (f 1)) (readTy E (f 2))
+           (lam ((A Ty) (B Ty))
+             (applyTy (OTy.just (if (namedTx h kwFoldr) (foldrTyOf A B) (lcaseTyOf A B)))
+               (srFrom rs 3 cx)))))
+        ((keywordTx h) OTy.nothing)
+        (else (applyTy (s 0) (srFrom rs 1 cx))))))
 
   ; the clauses of a case analysis and of a structural recursion, checked against the marker of
   ; the scrutinee's datatype, so that a clause's variables have the types its constructor gives
@@ -530,23 +511,22 @@
   ; remaining, and at each fixed field its variable, of the field's type, then the children
   ; remaining after it; then the remaining children's variable, of the list of their type
   (defn caseFields ((E Env) (c T) (meta Tx) (body Syn) (cx Cx)) MTy
-    (let ms (List Tx) (elemsTx meta)
-      (let ac Abbr (abbr (boundName kwFields) (tyList tyT))
-        ((foldr Tx (Arrow Ts (Arrow Cx MTy))
-           (lam ((v Tx) (k (Arrow Ts (Arrow Cx MTy))) (fts Ts) (cx Cx))
-             (lcase T MTy fts OTy.nothing
-               (lam ((ft T) (rest Ts))
-                 (bindVar E v (fieldTy E ft) (lam ((a Abbr)) (k rest (cons ac (cons a cx))))))))
-           (lam ((fts Ts) (cx Cx))
-             (lcase T MTy fts
-               (bindRest c (elemsTx (Txs.atOr tx0 ms 2))
-                 (lam ((r Tx) (raw T))
-                   (bindVar E r (then1 (fieldTy E raw) (lam ((A Ty)) (OTy.just (tyList A))))
-                     (lam ((a Abbr)) (body (cons a cx)))))
-                 body
-                 cx)
-               (lam ((ft T) (rest Ts)) OTy.nothing)))
-           (elemsTx (Txs.atOr tx0 ms 1))) (children (child c 1)) (cons ac cx)))))
+    (let* ((ms (List Tx) (elemsTx meta)) (ac Abbr (abbr (boundName kwFields) (tyList tyT))))
+      ((foldr Tx (Arrow Ts (Arrow Cx MTy))
+         (lam ((v Tx) (k (Arrow Ts (Arrow Cx MTy))) (fts Ts) (cx Cx))
+           (lcase T MTy fts OTy.nothing
+             (lam ((ft T) (rest Ts))
+               (bindVar E v (fieldTy E ft) (lam ((a Abbr)) (k rest (cons ac (cons a cx))))))))
+         (lam ((fts Ts) (cx Cx))
+           (lcase T MTy fts
+             (bindRest c (elemsTx (Txs.atOr tx0 ms 2))
+               (lam ((r Tx) (raw T))
+                 (bindVar E r (then1 (fieldTy E raw) (lam ((A Ty)) (OTy.just (tyList A))))
+                   (lam ((a Abbr)) (body (cons a cx)))))
+               body
+               cx)
+             (lam ((ft T) (rest Ts)) OTy.nothing)))
+         (elemsTx (Txs.atOr tx0 ms 1))) (children (child c 1)) (cons ac cx))))
   ; a structural recursion's clause's body typed in the scope the erasure binds around it: the
   ; suspended results and the children remaining, and at each fixed field the suspended results
   ; remaining split at the field's, its variable, the recursion's result at a field of the
@@ -554,37 +534,35 @@
   ; remaining children's variable, of the list of their results or trees; each variable's flag
   ; whether it binds results
   (defn cataFields ((E Env) (d Tx) (R Ty) (c T) (meta Tx) (body Syn) (cx Cx)) MTy
-    (let ms (List Tx) (elemsTx meta)
-      (let th Ty (tyArrow tyUnit R)
-        (let aq Abbr (abbr (boundName kwSplit) (tyProd th (tyList th)))
-          (let ac Abbr (abbr (boundName kwFields) (tyList tyT))
-            (let entry (Arrow Tx (Arrow T (Arrow (Arrow Ty Ty) (Arrow (Arrow Abbr MTy) MTy))))
-              (lam ((e Tx) (raw T) (wrap (Arrow Ty Ty)) (k (Arrow Abbr MTy)))
-                (let es (List Tx) (elemsTx e)
-                  (let rec T (equal raw (rep d))
-                    (let f T (numTx (Txs.atOr tx0 es 1))
-                      (if (and (isSome f) (eq (get f) rec))
-                        (bindVar E (Txs.atOr tx0 es 0)
-                          (then1 (if rec (OTy.just R) (fieldTy E raw))
-                            (lam ((A Ty)) (OTy.just (wrap A))))
-                          k)
-                        OTy.nothing)))))
-              ((foldr Tx (Arrow Ts (Arrow Cx MTy))
-                 (lam ((e Tx) (k (Arrow Ts (Arrow Cx MTy))) (fts Ts) (cx Cx))
-                   (lcase T MTy fts OTy.nothing
-                     (lam ((ft T) (rest Ts))
-                       (entry e ft (lam ((A Ty)) A)
-                         (lam ((a Abbr)) (k rest (cons ac (cons a (cons aq cx)))))))))
-                 (lam ((fts Ts) (cx Cx))
-                   (lcase T MTy fts
-                     (bindRest c (elemsTx (Txs.atOr tx0 ms 2))
-                       (lam ((e Tx) (raw T))
-                         (entry e raw (lam ((A Ty)) (tyList A))
-                           (lam ((a Abbr)) (body (cons a cx)))))
-                       body
-                       cx)
-                     (lam ((ft T) (rest Ts)) OTy.nothing)))
-                 (elemsTx (Txs.atOr tx0 ms 1))) (children (child c 1)) (cons ac (cons aq cx)))))))))
+    (let*
+      ((ms (List Tx) (elemsTx meta)) (th Ty (tyArrow tyUnit R))
+       (aq Abbr (abbr (boundName kwSplit) (tyProd th (tyList th))))
+       (ac Abbr (abbr (boundName kwFields) (tyList tyT)))
+       (entry (Arrow Tx (Arrow T (Arrow (Arrow Ty Ty) (Arrow (Arrow Abbr MTy) MTy))))
+         (lam ((e Tx) (raw T) (wrap (Arrow Ty Ty)) (k (Arrow Abbr MTy)))
+           (let*
+             ((es (List Tx) (elemsTx e)) (rec T (equal raw (rep d)))
+              (f T (numTx (Txs.atOr tx0 es 1))))
+             (if (and (isSome f) (eq (get f) rec))
+               (bindVar E (Txs.atOr tx0 es 0)
+                 (then1 (if rec (OTy.just R) (fieldTy E raw)) (lam ((A Ty)) (OTy.just (wrap A))))
+                 k)
+               OTy.nothing)))))
+      ((foldr Tx (Arrow Ts (Arrow Cx MTy))
+         (lam ((e Tx) (k (Arrow Ts (Arrow Cx MTy))) (fts Ts) (cx Cx))
+           (lcase T MTy fts OTy.nothing
+             (lam ((ft T) (rest Ts))
+               (entry e ft (lam ((A Ty)) A)
+                 (lam ((a Abbr)) (k rest (cons ac (cons a (cons aq cx)))))))))
+         (lam ((fts Ts) (cx Cx))
+           (lcase T MTy fts
+             (bindRest c (elemsTx (Txs.atOr tx0 ms 2))
+               (lam ((e Tx) (raw T))
+                 (entry e raw (lam ((A Ty)) (tyList A)) (lam ((a Abbr)) (body (cons a cx)))))
+               body
+               cx)
+             (lam ((ft T) (rest Ts)) OTy.nothing)))
+         (elemsTx (Txs.atOr tx0 ms 1))) (children (child c 1)) (cons ac (cons aq cx)))))
   ; a clause's type: its body's, in the scope its variables give it inside the scope inner, where
   ; its label is that of exactly one of the constructors and its variables are those of that
   ; constructor's fields, as fields binds them
@@ -602,67 +580,64 @@
   (defn clausesTy
     ((specs Ts) (metas (List Tx)) (bodies (List SR)) (cx Cx) (base (List Abbr)) (fields Fields))
     MTy
-    (let m T (Txs.length metas)
-      (let hasElse T (lt m (SRs.length bodies))
-        (let inner Cx (Abbrs.append base cx)
-          (let labels Ts
-            (foldr Tx Ts
-              (lam ((c Tx) (a Ts))
-                (let j T (numTx (Txs.atOr tx0 (elemsTx c) 0)) (cons (if (isSome j) (get j) 0) a)))
-              (nil T)
-              metas)
-            (let covered T
-              (or hasElse
-                (foldr T T
-                  (lam ((s T) (r T))
-                    (and (foldr T T (lam ((l T) (q T)) (or (eq l (child s 0)) q)) 0 labels) r))
-                  1
-                  specs))
-              (let none0 SR (pair tx0 (lam ((c Cx)) OTy.nothing))
-                (let tys (List MTy)
-                  ((foldr Tx (Arrow (List SR) (List MTy))
-                     (lam ((c Tx) (k (Arrow (List SR) (List MTy))) (bs (List SR)))
-                       (cons (clauseTy specs c fields (SRs.atOr none0 bs 0) inner)
-                         (k (SRs.tail bs))))
-                     (lam ((bs (List SR))) (if hasElse (MTys.single (srAt bs 0 inner)) (nil MTy)))
-                     metas) bodies)
-                  (if covered (sameAll tys) OTy.nothing)))))))))
+    (let*
+      ((m T (Txs.length metas)) (hasElse T (lt m (SRs.length bodies)))
+       (inner Cx (Abbrs.append base cx))
+       (labels Ts
+         (foldr Tx Ts
+           (lam ((c Tx) (a Ts))
+             (let j T (numTx (Txs.atOr tx0 (elemsTx c) 0)) (cons (if (isSome j) (get j) 0) a)))
+           (nil T)
+           metas))
+       (covered T
+         (or hasElse
+           (foldr T T
+             (lam ((s T) (r T))
+               (and (foldr T T (lam ((l T) (q T)) (or (eq l (child s 0)) q)) 0 labels) r))
+             1
+             specs)))
+       (none0 SR (pair tx0 (lam ((c Cx)) OTy.nothing)))
+       (tys (List MTy)
+         ((foldr Tx (Arrow (List SR) (List MTy))
+            (lam ((c Tx) (k (Arrow (List SR) (List MTy))) (bs (List SR)))
+              (cons (clauseTy specs c fields (SRs.atOr none0 bs 0) inner) (k (SRs.tail bs))))
+            (lam ((bs (List SR))) (if hasElse (MTys.single (srAt bs 0 inner)) (nil MTy)))
+            metas) bodies)))
+      (if covered (sameAll tys) OTy.nothing)))
   ; a case analysis's type: its datatype's atom, the scrutinee of that datatype, its clauses'
   ; parts and their bodies, the scrutinee bound in the clauses' scope
   (defn synCase ((E Env) (fs (List Tx)) (rs (List SR)) (cx Cx)) MTy
-    (let D Tx (Txs.atOr tx0 fs 0)
-      (let mc (Prod T Ts) (markerCtors (envMs E) D)
-        (then1 (readTy E D)
-          (lam ((A Ty))
-            (then1 (srAt rs 1 cx)
-              (lam ((B Ty))
-                (if (and (fst mc) (and (namesData E A D) (sameTy A B)))
-                  (clausesTy (snd mc) (elemsTx (Txs.atOr tx0 fs 2)) (SRs.drop 3 rs) cx
-                    (Abbrs.single (abbr (boundName kwScrutinee) tyT))
-                    (lam ((c T) (meta Tx) (b Syn) (cx Cx)) (caseFields E c meta b cx)))
-                  OTy.nothing))))))))
+    (let* ((D Tx (Txs.atOr tx0 fs 0)) (mc (Prod T Ts) (markerCtors (envMs E) D)))
+      (then1 (readTy E D)
+        (lam ((A Ty))
+          (then1 (srAt rs 1 cx)
+            (lam ((B Ty))
+              (if (and (fst mc) (and (namesData E A D) (sameTy A B)))
+                (clausesTy (snd mc) (elemsTx (Txs.atOr tx0 fs 2)) (SRs.drop 3 rs) cx
+                  (Abbrs.single (abbr (boundName kwScrutinee) tyT))
+                  (lam ((c T) (meta Tx) (b Syn) (cx Cx)) (caseFields E c meta b cx)))
+                OTy.nothing)))))))
   ; a structural recursion's type: its datatype's atom, its result type, the scrutinee of that
   ; datatype, the default result the erasure gives at a node with fewer children than its
   ; constructor has fields, its clauses' parts and their bodies, each of the result type; the
   ; recursion's node, its children's suspended results and the unit bound in the clauses' scope
   (defn synCata ((E Env) (fs (List Tx)) (rs (List SR)) (cx Cx)) MTy
-    (let D Tx (Txs.atOr tx0 fs 0)
-      (let mc (Prod T Ts) (markerCtors (envMs E) D)
-        (then1 (readTy E D)
-          (lam ((A Ty))
-            (then1 (readTy E (Txs.atOr tx0 fs 1))
-              (lam ((R Ty))
-                (then1 (srAt rs 2 cx)
-                  (lam ((B Ty))
-                    (if (and (fst mc) (and (namesData E A D) (sameTy A B)))
-                      (then1
-                        (clausesTy (snd mc) (elemsTx (Txs.atOr tx0 fs 4)) (SRs.drop 5 rs) cx
-                          (cons (abbr (boundName kwUnitArg) tyUnit)
-                            (cons (abbr (boundName kwResults) (tyList (tyArrow tyUnit R)))
-                              (Abbrs.single (abbr (boundName kwNode) tyT))))
-                          (lam ((c T) (meta Tx) (b Syn) (cx Cx)) (cataFields E D R c meta b cx)))
-                        (lam ((U Ty)) (when (sameTy U R) R)))
-                      OTy.nothing))))))))))
+    (let* ((D Tx (Txs.atOr tx0 fs 0)) (mc (Prod T Ts) (markerCtors (envMs E) D)))
+      (then1 (readTy E D)
+        (lam ((A Ty))
+          (then1 (readTy E (Txs.atOr tx0 fs 1))
+            (lam ((R Ty))
+              (then1 (srAt rs 2 cx)
+                (lam ((B Ty))
+                  (if (and (fst mc) (and (namesData E A D) (sameTy A B)))
+                    (then1
+                      (clausesTy (snd mc) (elemsTx (Txs.atOr tx0 fs 4)) (SRs.drop 5 rs) cx
+                        (cons (abbr (boundName kwUnitArg) tyUnit)
+                          (cons (abbr (boundName kwResults) (tyList (tyArrow tyUnit R)))
+                            (Abbrs.single (abbr (boundName kwNode) tyT))))
+                        (lam ((c T) (meta Tx) (b Syn) (cx Cx)) (cataFields E D R c meta b cx)))
+                      (lam ((U Ty)) (when (sameTy U R) R)))
+                    OTy.nothing)))))))))
 
   ; a term's type in a context: atoms and lists as above; the coercion of a term of a type's
   ; erasure, that type; the coercion of a term of a type, its erasure; a case analysis and a
@@ -710,49 +685,43 @@
   (defn checkStep ((s CS) (f Tx)) CS
     (case (snd s) ((OName.just n) s)
       ((OName.nothing)
-       (let E Env (fst s)
-         (let ok (Arrow Env CS) (lam ((E2 Env)) (pair E2 OName.nothing))
-           (let bad CS
-             (pair E
-               (OName.just
-                 (case f
-                   ((tList xs)
-                    (if (lt 1 (Txs.length xs)) (atomName (Txs.atOr tx0 xs 1)) (name (nil T))))
-                   (else (name (nil T))))))
-             (case f
-               ((tData d) (ok (withNoms E (Names.append (envNoms E) (Names.single (atomName d))))))
-               ((tMarker xs) (ok (withMs E (Txs.append (envMs E) (Txs.single f)))))
-               ((tList xs)
-                (let h Tx (Txs.atOr tx0 xs 0)
-                  (let x Tx (Txs.atOr tx0 xs 1)
-                    (let k T (Txs.length xs)
-                      (if (and (namedTx h kwSort) (eq k 2))
-                        (ok (withSorts E (Names.append (envSorts E) (Names.single (atomName x)))))
-                        (if (eq k 3)
-                          (let n Name (atomName x)
-                            (let v Tx (Txs.atOr tx0 xs 2)
-                              (let declare (Arrow MTy CS)
-                                (lam ((m MTy))
-                                  (case m
-                                    ((OTy.just A)
-                                     (ok
-                                       (withDefs E
-                                         (Abbrs.append (envDefs E) (Abbrs.single (abbr n A))))))
-                                    ((OTy.nothing) bad)))
-                                (if (namedTx h kwDef) (declare (synIn E (nil Abbr) v))
-                                  (if (namedTx h kwPostulate) (declare (readTy E v))
-                                    (if (namedTx h kwDeftype)
-                                      (case (readTy E v)
-                                        ((OTy.just A) (ok (withAl E (cons (abbr n A) (envAl E)))))
-                                        ((OTy.nothing) bad))
-                                      (if (namedTx h kwDefnum)
-                                        (if (isSome (numeral (children (rep n)))) bad
-                                          (ok
-                                            (withNums E
-                                              (Names.append (envNums E) (Names.single n)))))
-                                        bad)))))))
-                          bad))))))
-               (else bad))))))))
+       (let*
+         ((E Env (fst s)) (ok (Arrow Env CS) (lam ((E2 Env)) (pair E2 OName.nothing)))
+          (bad CS
+            (pair E
+              (OName.just
+                (case f
+                  ((tList xs)
+                   (if (lt 1 (Txs.length xs)) (atomName (Txs.atOr tx0 xs 1)) (name (nil T))))
+                  (else (name (nil T))))))))
+         (case f
+           ((tData d) (ok (withNoms E (Names.append (envNoms E) (Names.single (atomName d))))))
+           ((tMarker xs) (ok (withMs E (Txs.append (envMs E) (Txs.single f)))))
+           ((tList xs)
+            (let* ((h Tx (Txs.atOr tx0 xs 0)) (x Tx (Txs.atOr tx0 xs 1)) (k T (Txs.length xs)))
+              (cond
+                ((and (namedTx h kwSort) (eq k 2))
+                 (ok (withSorts E (Names.append (envSorts E) (Names.single (atomName x))))))
+                ((eq k 3)
+                 (let*
+                   ((n Name (atomName x)) (v Tx (Txs.atOr tx0 xs 2))
+                    (declare (Arrow MTy CS)
+                      (lam ((m MTy))
+                        (case m
+                          ((OTy.just A)
+                           (ok (withDefs E (Abbrs.append (envDefs E) (Abbrs.single (abbr n A))))))
+                          ((OTy.nothing) bad)))))
+                   (cond ((namedTx h kwDef) (declare (synIn E (nil Abbr) v)))
+                     ((namedTx h kwPostulate) (declare (readTy E v)))
+                     ((namedTx h kwDeftype)
+                      (case (readTy E v) ((OTy.just A) (ok (withAl E (cons (abbr n A) (envAl E)))))
+                        ((OTy.nothing) bad)))
+                     ((namedTx h kwDefnum)
+                      (if (isSome (numeral (children (rep n)))) bad
+                        (ok (withNums E (Names.append (envNums E) (Names.single n))))))
+                     (else bad))))
+                (else bad))))
+           (else bad))))))
   ; the forms in order, a template's instance checked after the declarations before it and
   ; leaving them unchanged
   (defn checkRun ((s CS) (fs (List Tx))) CS
