@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.Kernel.Annotation
 public import Geb.Prototypes.Kernel.Basic
 public import Geb.Prototypes.Kernel.Blake3
+public import Geb.Prototypes.Kernel.Chains
 public import Geb.Prototypes.Kernel.Command
 public import Geb.Prototypes.Kernel.Hole
 public import Geb.Prototypes.Kernel.Holes
