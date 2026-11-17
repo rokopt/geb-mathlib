@@ -220,7 +220,7 @@ def moduleTexts : List String :=
       " (def q (lam ((x T)) (quote (0 tail)))))",
     "(module D (export Maybe nothing just get) (data Maybe (nothing) (just T))" ++
       " (defn get ((d T) (m Maybe)) T (case m ((nothing) d) ((just x) x))))",
-    "(module N (export Nat isNat two) (data Nat (zero) (succ Nat)) (tree-data Old (old T))" ++
+    "(module N (export Nat isNat two) (data Nat (zero) (succ Nat))" ++
       " (def tail 0) (def two (datum Nat (1 (1 (0)))))" ++
       " (def isNat (lam ((t T)) (decode Nat t (lam ((n Nat)) (rep n)) (datum Nat (0 tail))))))",
     "(module Box (parameter A) (parameter (f (A A) A)) (export box) (data Box (box A))" ++

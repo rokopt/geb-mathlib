@@ -121,9 +121,8 @@ def statement : String := "
     (if (eq (arity e) 3)
       (let h T (at (children e) 0)
         (if (named h kwData) 0
-          (if (named h kwTreeData) 0
-            (if (named h kwDef) (ke (at (children e) 2))
-              (if (named h kwDeftype) 1 (named h kwDefnum))))))
+          (if (named h kwDef) (ke (at (children e) 2))
+            (if (named h kwDeftype) 1 (named h kwDefnum)))))
       0)
     0)))
 (def envAfter (lam ((e T) (env Ts))
@@ -466,8 +465,8 @@ def formLemmas (P : Prog) (rs : (String → ℕ) → List NormRule) : List Step 
           [RoseTree.node (.thm (ix "headDef") [] [v 0] false) [], RoseTree.node .refl []]]))]
 
 /-- The step of the expansion at a form of the kernel's, under the mask of the predicate of forms:
-a node whose label is split to decide a list and whose children are split to three; the tests of
-the atoms {lit}`data` and {lit}`tree-data` generalized and split; the test of {lit}`def` moved to
+a node whose label is split to decide a list and whose children are split to three; the test of
+the atom {lit}`data` generalized and split; the test of {lit}`def` moved to
 the outer mask, under which the head is that atom, both sides rewritten; that test generalized and
 split, a definition's body's expansion rewritten under the mask of its predicate by the
 expression's identity; and the tests of {lit}`deftype` and {lit}`defnum` generalized and split. -/
@@ -475,8 +474,7 @@ def formSteps (P : Prog) : List Step :=
   let XP := prod treeTy (prod (list treeTy) (list treeTy))
   let foldedF := ["ke", "Datatype.expandExpr", "Datatype.expandCase", "Datatype.expandCata",
     "Datatype.expandDecode", "Datatype.expandAliases", "Datatype.dataDecl", "Datatype.marker",
-    "Reader.named", "Datatype.kwData", "Datatype.kwTreeData", "Reader.kwDef", "Reader.kwDeftype",
-    "Reader.kwDefnum"]
+    "Reader.named", "Datatype.kwData", "Reader.kwDef", "Reader.kwDeftype", "Reader.kwDefnum"]
   let rsF (ix : String → ℕ) : List NormRule := rsC P ix foldedF
   let rsFS (ix : String → ℕ) : List NormRule :=
     .thm (ix "maskSplit") [XP] :: .thm (ix "long") [] :: rsF ix
@@ -514,9 +512,9 @@ def formSteps (P : Prog) : List Step :=
       let ψ := Internal.instTerm [] [hv] hd.concl
       let dψ := RoseTree.node .join [RoseTree.node (.thm (ix "headDefN") [] [hv] false) [], refl]
       let k ← withWeakHyps P.G E 0 (rsU ix) [Φ.length] (fun _ ↦
-          byKw "Datatype.kwData" w (byKw "Datatype.kwTreeData" w (byNF P.G E 0 (rsFS ix) .weak
+          byKw "Datatype.kwData" w (byNF P.G E 0 (rsFS ix) .weak
             (byMaskSubs P.G E (ix "absorb") (ix "condSame") (rsFS ix) 6 fun _ ↦
-              byKw "Reader.kwDef" defCase tyCase)))) (m := .weak) Γ (Φ ++ [χ, ψ]) t u
+              byKw "Reader.kwDef" defCase tyCase))) (m := .weak) Γ (Φ ++ [χ, ψ]) t u
       pure (RoseTree.node (.cut χ) [dχ, RoseTree.node (.cut ψ) [dψ, k]])
     let listCase : Internal.Prover := fun Γ Φ t u ↦
       byLength3 P.G (Γ.length - 5) three (byWeak P.G E 0 (rsFS ix)) Γ Φ t u

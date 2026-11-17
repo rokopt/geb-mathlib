@@ -76,6 +76,13 @@ def subst : String := include_str "../../bootstrap/subst.geb"
 /-- The recognizers' source. -/
 def recognize : String := include_str "../../bootstrap/recognize.geb"
 
+/-- The definitions the proof of weakening adds to its program, the two sides of its statements:
+the type of a term weakened past a list of types inserted below a context's first part, and its
+type in the context without it; the two sides of the lookup at a variable, at its index moved past
+the inserted types and at its index; and the two sides of the lookup past the inserted types below
+no part. -/
+def weakeningStatement : String := include_str "../../bootstrap/proofs/weakening.geb"
+
 /-- The prelude and the serializer, applying the serializer to the input tree. -/
 def serializer : String :=
   include_manifest "bootstrap/serializer.manifest" ++
@@ -218,9 +225,6 @@ def samples : List Tree :=
     (mk 0 [mk 1 [leaf 0], mk 0 [leaf 3]], [0, 1, 1]), (leaf 0, [1, 0, 0])].all fun (t, bs) ↦
   runDatatype compiler.toList decoding.toList t ==
     some (mk 0 (bs.map leaf ++ [mk 1 [mk 1 [leaf 0]]]))
--- a datatype tree-data declares compiles as one data declares, which no program decodes
-#guard runMain compiler.toList (nameTree naturals.toList) ==
-  runMain compiler.toList (nameTree (naturals.replace "(data " "(tree-data ").toList)
 #guard ["(data Nat (zero) (succ Nat)) (defn f ((n Nat)) T (case n ((zero) 1))) (def main f)",
     "(data A (a)) (data B (b)) (defn f ((n A)) T (case n ((a) 1) ((b) 0))) (def main f)",
     "(data A (a)) (defn f ((n A)) T (case n ((c) 1) (else 0))) (def main f)",

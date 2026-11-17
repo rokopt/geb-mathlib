@@ -195,6 +195,19 @@ name = "evalSource"
 path = "bootstrap/eval.geb"
 text = true
 
+# The statements that the proof of weakening and the datatype language's soundness add to their
+# programs. The modules of the soundness read the second through the program's manifest, and
+# import the stage-1 tests, whose library needs it.
+[[input_file]]
+name = "weakeningStatement"
+path = "bootstrap/proofs/weakening.geb"
+text = true
+
+[[input_file]]
+name = "datatypeSoundnessStatement"
+path = "bootstrap/proofs/datatype-soundness.geb"
+text = true
+
 # The manifests of the programs, which tests read at elaboration and through which they read
 # sources. Every module reading one imports the stage-0 tests, whose library needs them.
 [[input_dir]]
@@ -235,7 +248,7 @@ name = "GebTestsStage0"
 globs = ["GebTests.Prototypes.Stage0"]
 needs = ["@/preludeSource", "@/serializeSource", "@/readerSource", "@/checkSource",
   "@/datatypeSource", "@/modulesSource", "@/recognizeSource", "@/compileSource",
-  "@/substSource", "@/manifests"]
+  "@/substSource", "@/weakeningStatement", "@/manifests"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]
@@ -245,7 +258,7 @@ weak.linter.hashCommand = false
 [[lean_lib]]
 name = "GebTestsStage1"
 globs = ["GebTests.Prototypes.Stage1"]
-needs = ["@/compilerImage", "@/stage1Sources", "@/seqSource"]
+needs = ["@/compilerImage", "@/stage1Sources", "@/seqSource", "@/datatypeSoundnessStatement"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]
@@ -260,18 +273,6 @@ moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]
 weak.linter.hashCommand = false
-
-# The statements that the proof of weakening and the datatype language's soundness add to their
-# programs.
-[[input_file]]
-name = "weakeningStatement"
-path = "bootstrap/proofs/weakening.geb"
-text = true
-
-[[input_file]]
-name = "datatypeSoundnessStatement"
-path = "bootstrap/proofs/datatype-soundness.geb"
-text = true
 
 # The benchmarks, run by `lake exe geb-bench` and by slow-checks.yml, and built by neither
 # `lake build` nor `lake test`.

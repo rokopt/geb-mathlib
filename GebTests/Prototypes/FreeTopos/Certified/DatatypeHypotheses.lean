@@ -14,17 +14,16 @@ set_option doc.verso true in
 /-!
 # The remaining hypotheses of the datatype language's soundness, in Lean
 
-Besides the successes of the compiler's passes, the soundness of a whole program of the
-datatype language's stage-1 compiler assumes of the program: that each body the expansion
-writes for a definition is a source form at the numeral abbreviations before it, which a run
-over the program's forms tests; that each marker among the kernel forms is the one its
-datatype's atom finds among the markers; that the markers' datatypes are named by atoms other
-than the trees' type's and the unit type's, with at most one constructor of each label, and
-that the digits of a label read as the label and are fixed by the expansion of numeral
-abbreviations; and, of each form, that it is no declaration of a tree datatype and declares no
-name of the implementation's. Each is a formula of the internal language over references to
-the compilers' definitions, and represents the statement of Lean built the same way from the
-values of the globals the kernel loads.
+Besides the successes of the compiler's passes, the soundness of a whole program of the datatype
+language's stage-1 compiler assumes of the program: that each body the expansion writes for a
+definition is a source form at the numeral abbreviations before it, which a run over the
+program's forms tests; that each marker among the kernel forms is the one its datatype's atom
+finds among the markers; that the markers' datatypes are named by atoms other than the trees'
+type's and the unit type's, with at most one constructor of each label, and that the digits of a
+label read as the label and are fixed by the expansion of numeral abbreviations; and, of each
+form, that it declares no name of the implementation's. Each is a formula of the internal
+language over references to the compilers' definitions, and represents the statement of Lean
+built the same way from the values of the globals the kernel loads.
 
 ## Main definitions
 
@@ -83,8 +82,6 @@ structure HypFns where
   xpStep : XpSt → Kernel.Tree → XpSt
   /-- The conjunction of two truth values. -/
   and : Kernel.Tree → Kernel.Tree → Kernel.Tree
-  /-- The disjunction of two truth values. -/
-  or : Kernel.Tree → Kernel.Tree → Kernel.Tree
   /-- Whether a form is a list. -/
   isListTx : Kernel.Tree → Kernel.Tree
   /-- Whether a form is the atom of a name. -/
@@ -97,8 +94,6 @@ structure HypFns where
   kwGeneric : Kernel.Tree
   /-- The datatypes' keyword. -/
   kwData : Kernel.Tree
-  /-- The tree datatypes' keyword. -/
-  kwTreeData : Kernel.Tree
   /-- The functions' keyword. -/
   kwDefn : Kernel.Tree
   /-- The definitions' keyword. -/
@@ -167,8 +162,6 @@ structure HypFns.Loaded (f : HypFns) (Gk : List Kernel.Glob) (idx : String → �
   xpStep : DatatypeTranslated.Loaded Gk idx "Datatype.xpStep" (tArrow xpK (tArrow tT xpK)) f.xpStep
   /-- The value of {lit}`Prelude.and`. -/
   and : DatatypeTranslated.Loaded Gk idx "Prelude.and" (tArrow tT (tArrow tT tT)) f.and
-  /-- The value of {lit}`Prelude.or`. -/
-  or : DatatypeTranslated.Loaded Gk idx "Prelude.or" (tArrow tT (tArrow tT tT)) f.or
   /-- The value of {lit}`Datatype.isListTx`. -/
   isListTx : DatatypeTranslated.Loaded Gk idx "Datatype.isListTx" (tArrow tT tT) f.isListTx
   /-- The value of {lit}`Datatype.namedTx`. -/
@@ -182,8 +175,6 @@ structure HypFns.Loaded (f : HypFns) (Gk : List Kernel.Glob) (idx : String → �
   kwGeneric : DatatypeTranslated.Loaded Gk idx "Datatype.kwGeneric" tT f.kwGeneric
   /-- The value of {lit}`Datatype.kwData`. -/
   kwData : DatatypeTranslated.Loaded Gk idx "Datatype.kwData" tT f.kwData
-  /-- The value of {lit}`Datatype.kwTreeData`. -/
-  kwTreeData : DatatypeTranslated.Loaded Gk idx "Datatype.kwTreeData" tT f.kwTreeData
   /-- The value of {lit}`Datatype.kwDefn`. -/
   kwDefn : DatatypeTranslated.Loaded Gk idx "Datatype.kwDefn" tT f.kwDefn
   /-- The value of {lit}`Reader.kwDef`. -/
@@ -290,7 +281,7 @@ def plainStepK (s : XpSt) (e : Kernel.Tree) : XpSt :=
   let keep : XpSt := (Kernel.leaf 1, x.2.1, s.2.2)
   if s.1.label ≠ 0 then
     if (f.and (f.isListTx e) (f.namedTx he f.kwGeneric)).label ≠ 0 then keep
-    else if (f.or (f.namedTx he f.kwData) (f.namedTx he f.kwTreeData)).label ≠ 0 then keep
+    else if (f.namedTx he f.kwData).label ≠ 0 then keep
     else if (f.namedTx hf f.kwDef).label ≠ 0 then
       if (f.srcForm (fun y ↦ f.expandNums s.2.2 y) (f.nthTx fs (Kernel.leaf 2))).label ≠ 0
       then keep else (Kernel.leaf 0, x.2.1, s.2.2)
@@ -350,7 +341,7 @@ def StaticOk (ms : List Kernel.Tree) : Prop :=
   f.NamesOk ms ∧ f.CtorsOk ms ∧ f.DigitsRead ∧ f.DigitsFixed
 
 /-- What the soundness assumes of a form: where it declares a datatype, no constructor's name
-and not the recognizer's is one of the implementation's; it does not declare a tree datatype;
+and not the recognizer's is one of the implementation's;
 and where it is a numeral abbreviation's, a definition's or a function's, the name it declares
 is not one of the implementation's. -/
 def FormOk (e : Kernel.Tree) : Prop :=
@@ -359,7 +350,6 @@ def FormOk (e : Kernel.Tree) : Prop :=
       (f.implName (f.nameOf (f.nthTx (f.elems c) (Kernel.leaf 0)))).label ≠ 0 → False) ∧
     ((f.implName (f.nameOf (f.memberName (f.nthTx (f.elems e) (Kernel.leaf 1))))).label ≠ 0 →
       False)) ∧
-  ((f.namedTx (f.nthTx (f.elems e) (Kernel.leaf 0)) f.kwTreeData).label ≠ 0 → False) ∧
   ((f.namedTx (f.nthTx (f.elems e) (Kernel.leaf 0)) f.kwDefnum).label ≠ 0 →
     (f.implName (f.nameOf (f.nthTx (f.elems e) (Kernel.leaf 1)))).label ≠ 0 → False) ∧
   ((f.namedTx (f.nthTx (f.elems e) (Kernel.leaf 0)) f.kwDef).label ≠ 0 →
@@ -419,14 +409,10 @@ theorem exists_hypFns (L : Translated PST) : ∃ f : HypFns, f.Loaded L.Gk PST.1
   obtain ⟨f35, h35⟩ := m 35 rfl
   obtain ⟨f36, h36⟩ := m 36 rfl
   obtain ⟨f37, h37⟩ := m 37 rfl
-  obtain ⟨f38, h38⟩ := m 38 rfl
-  obtain ⟨f39, h39⟩ := m 39 rfl
-  exact ⟨⟨f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18,
-    f19, f20, f21, f22, f23, f24, f25, f26, f27, f28, f29, f30, f31, f32, f33, f34, f35, f36,
-    f37, f38, f39⟩,
-    ⟨h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17, h18, h19,
-      h20, h21, h22, h23, h24, h25, h26, h27, h28, h29, h30, h31, h32, h33, h34, h35, h36, h37,
-      h38, h39⟩⟩
+  exact ⟨⟨f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19,
+    f20, f21, f22, f23, f24, f25, f26, f27, f28, f29, f30, f31, f32, f33, f34, f35, f36, f37⟩,
+    ⟨h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17, h18, h19, h20,
+      h21, h22, h23, h24, h25, h26, h27, h28, h29, h30, h31, h32, h33, h34, h35, h36, h37⟩⟩
 
 /-- The kernel forms of a program's forms, as a term of the forms. -/
 def fsT (P : Prog) (es : Term) : Term :=
@@ -591,10 +577,7 @@ theorem repC_plainStep :
         (repC_pc₂ L hf.namedTx rfl rfl rfl c₃.val hhe (repC_pc₀ L hf.kwGeneric rfl c₃.val _)))
       hkeep
       (repC_stateTest L
-        (repC_pc₂ L hf.or rfl rfl rfl c₃.val
-          (repC_pc₂ L hf.namedTx rfl rfl rfl c₃.val hhe (repC_pc₀ L hf.kwData rfl c₃.val _))
-          (repC_pc₂ L hf.namedTx rfl rfl rfl c₃.val hhe
-            (repC_pc₀ L hf.kwTreeData rfl c₃.val _)))
+        (repC_pc₂ L hf.namedTx rfl rfl rfl c₃.val hhe (repC_pc₀ L hf.kwData rfl c₃.val _))
         hkeep
         (repC_stateTest L
           (repC_pc₂ L hf.namedTx rfl rfl rfl c₃.val hhf (repC_pc₀ L hf.kwDef rfl c₃.val _))
@@ -829,10 +812,6 @@ theorem forms_rep :
     (repC_truth L.ctx hlog c₁.val
       (repC_pc₂ L hf.namedTx rfl rfl rfl c₁.val hhead (repC_pc₀ L hf.kwData rfl c₁.val _)))
     (hC.conj hctors hrec)
-  have htree := hC.imp
-    (repC_truth L.ctx hlog c₁.val
-      (repC_pc₂ L hf.namedTx rfl rfl rfl c₁.val hhead (repC_pc₀ L hf.kwTreeData rfl c₁.val _)))
-    (hC.ff c₁.val _)
   have hnum := hC.imp
     (repC_truth L.ctx hlog c₁.val
       (repC_pc₂ L hf.namedTx rfl rfl rfl c₁.val hhead (repC_pc₀ L hf.kwDefnum rfl c₁.val _)))
@@ -847,7 +826,7 @@ theorem forms_rep :
     huser
   exact .cons (repC_allL h L
     (repC_lam (G := PST.1.G) (n := 0) (isTy_tree _) c.val hT
-      (hC.conj hdata (hC.conj htree (hC.conj hnum (hC.conj hdef hdefn)))))
+      (hC.conj hdata (hC.conj hnum (hC.conj hdef hdefn))))
     (c.var (i := 0) rfl)) .nil
 
 end Hypotheses

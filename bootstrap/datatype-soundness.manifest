@@ -13,7 +13,7 @@
     eval.geb
     proofs/weakening.geb
     proofs/datatype-soundness.geb)
-  (entries Prelude.length Prelude.some Prelude.isSome Prelude.get Prelude.and Prelude.or Prelude.nth
+  (entries Prelude.length Prelude.some Prelude.isSome Prelude.get Prelude.and Prelude.nth
     Reader.isAtom
     Reader.nameOf
     Reader.named
@@ -49,7 +49,6 @@
     Datatype.elems
     Datatype.nthTx
     Datatype.kwData
-    Datatype.kwTreeData
     Datatype.kwDefn
     Datatype.kwGeneric
     Datatype.memberName

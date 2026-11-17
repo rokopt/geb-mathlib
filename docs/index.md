@@ -4723,7 +4723,10 @@ import-direction rules above are enforced by
   the soundness of the datatype language's stage-1 compiler, the typing
   of `bootstrap/stage1/typing.geb` and the expansion and erasure of
   `bootstrap/stage1/datatype.geb` composed with the reader and the
-  evaluator, by a relation extending that one at the datatypes, and
+  evaluator, in the program of `bootstrap/datatype-soundness.manifest`,
+  whose last sources, `bootstrap/proofs/weakening.geb` and
+  `bootstrap/proofs/datatype-soundness.geb`, hold the definitions the
+  statements add, by a relation extending that one at the datatypes, and
   proves it at atoms, `DatatypeList.lean` at the keywords' forms, one
   keyword at a time, given it at their elements, `DatatypeCaseSound.lean`
   at the case analyses, `DatatypeCataSrc.lean` at the structural

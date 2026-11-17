@@ -72,21 +72,9 @@ open scoped FinEnum
 
 /-! The program. -/
 
-/-- The two sides of the statement, as definitions of the program: the type of a term weakened
-past a list of types inserted below a context's first part, and its type in the context without
-it; the two sides of the lookup at a variable, at its index moved past the inserted types and at
-its index; and the two sides of the lookup past the inserted types below no part. -/
-def statement : String := "
-(import Prelude) (import Check) (import Subst)
-(def wkL (lam ((t T) (G Ts) (c1 Ts) (c0 Ts) (c2 Ts))
-  (typeIn G (append c1 (append c0 c2)) (wkAt (length c1) (length c0) t))))
-(def wkR (lam ((t T) (G Ts) (c1 Ts) (c0 Ts) (c2 Ts)) (typeIn G (append c1 c2) t)))
-(def nthL (lam ((c1 Ts) (c0 Ts) (c2 Ts) (t T))
-  (nth (append c1 (append c0 c2))
-    (if (lt (label t) (length c1)) (label t) (add (label t) (length c0))))))
-(def nthR (lam ((c1 Ts) (c0 Ts) (c2 Ts) (t T)) (nth (append c1 c2) (label t))))
-(def nthS (lam ((c0 Ts) (c2 Ts) (t T)) (nth (append c0 c2) (add (label t) (length c0)))))
-(def nthT (lam ((c0 Ts) (c2 Ts) (t T)) (nth c2 (label t))))"
+/-- The two sides of the statement, as definitions of the program
+({name}`Geb.Kernel.Stage0Tests.weakeningStatement`). -/
+def statement : String := Kernel.Stage0Tests.weakeningStatement
 
 /-- The program: the prelude, the reader, the type checker, the traversal of kernel terms, whose
 weakening the statement cites, and the statement. -/

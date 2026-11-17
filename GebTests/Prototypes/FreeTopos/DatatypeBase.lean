@@ -77,52 +77,14 @@ open scoped FinEnum
 open Internal (Term)
 open GebTests.Prototypes.FreeTopos.Normalization
 
-/-- The source forms the reader gives and the expansion writes, at a function on trees: atoms,
-whose characters the function fixes, lists of source forms, and the expansion's checked nodes of
-case analysis and of structural recursion over source forms, labelled as the typing's forms
-{lit}`tCase` and {lit}`tCata`. The statement takes the function to be the expansion of numeral
-abbreviations, which fixes the reader's characters, leaves not labelled as atoms, at any
-abbreviations. One fold gives, at each tree and function, the tree rebuilt and whether it is a
-source form. The weakening proof's statement before it imports the prelude. -/
-def sourceForms : String := "
-(deftype SF (Prod T T))
-(def charsFixed (lam ((f (Arrow T T)) (cs Ts))
-  (equal (node 0 (foldr T Ts (lam ((c T) (a Ts)) (cons (f c) a)) (nil T) cs)) (node 0 cs))))
-(def srcForm (lam ((f (Arrow T T)) (e T))
-  (snd ((fold (Arrow (Arrow T T) SF)
-    (lam ((l T) (rs (List (Arrow (Arrow T T) SF))))
-      (lam ((g (Arrow T T)))
-        (let ps (List SF)
-          (foldr (Arrow (Arrow T T) SF) (List SF)
-            (lam ((r (Arrow (Arrow T T) SF)) (a (List SF))) (cons (r g) a)) (nil SF) rs)
-          (let cs Ts (foldr SF Ts (lam ((p SF) (a Ts)) (cons (fst p) a)) (nil T) ps)
-            (pair (node l cs)
-              (if (eq l 1) (charsFixed g cs)
-                (if (or (eq l 2) (or (eq l 13) (eq l 14)))
-                  (foldr SF T (lam ((p SF) (a T)) (and (snd p) a)) 1 ps) 0)))))))
-    e) f))))"
-
-/-- The reader's name of a named context's variable: a name the numeral abbreviations abbreviate is
-the name of its numeral's atom, as the reader reads a binder once the abbreviations are expanded;
-any other is itself. And whether a name is one of the implementation's, beginning with %, as the
-names the erasure binds do. -/
-def scopeNames : String := "
-(import Reader)
-(def expName (lam ((nums Ts) (n T))
-  (let a T (lookupAbbrev n nums) (if (isSome a) (nameOf (get a)) n))))
-(def implName (lam ((n T)) (eq (at (children n) 0) 37)))"
-
-/-- The program: the prelude, the reader, the kernel's type checker, the lists of the datatype
-language, the stage-1 typing and expansion, the recognizers, the traversal of kernel terms, the
-evaluator, and the weakening proof's statement, whose development the base of the fundamental lemma
-proves. -/
-def programText : String :=
-  Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage1Tests.seq ++ "\n" ++
-    Kernel.Stage1Tests.typing ++ "\n" ++ Kernel.Stage1Tests.datatype ++ "\n" ++
-    Kernel.Stage0Tests.recognize ++ "\n" ++ Kernel.Stage0Tests.subst ++ "\n" ++
-    Kernel.EvalTests.evalGeb ++ "\n" ++ Weakening.statement ++ "\n" ++ sourceForms ++ "\n" ++
-    scopeNames
+/-- The program, of the manifest {lit}`bootstrap/datatype-soundness.manifest`: the prelude, the
+reader, the kernel's type checker, the lists of the datatype language, the stage-1 typing and
+expansion, the recognizers, the traversal of kernel terms, the evaluator, the weakening proof's
+statement, whose development the base of the fundamental lemma proves, and the definitions the
+soundness's statement adds: the source forms the reader gives and the expansion writes, at a
+function on trees, the reader's name of a named context's variable, and whether a name is one of
+the implementation's. -/
+def programText : String := include_manifest "bootstrap/datatype-soundness.manifest"
 
 /-- The number of folds the statement composes, each defined by its argument and its fold. -/
 def nFolds : ℕ := 6

@@ -108,10 +108,10 @@ order of dependence.
 * Extension. A program is extended by definitions whose identity
   survives edits, and the datatype language is complete enough to write
   the rest of Geb in, with diagnostics that name what fails. In
-  progress: closed bundles, the datatype language as it stands, content
-  identity and modules are complete; the datatype language's completion
-  is in progress, and the steps of the authoring sequence independent of
-  it are ready beside it.
+  progress: closed bundles, the datatype language and its completion,
+  content identity and modules are complete, and the steps of the
+  authoring sequence that waited on the completion are ready with those
+  independent of it.
 
 ## The bootstrap
 
@@ -135,16 +135,16 @@ Computation:
   second host]):
   `bootstrap/stage1/lean.geb`, the committed `bootstrap/compiler.img`
   and `bootstrap/lean/GebBoot.lean`, and the executable `geb-compile`.
-* In progress. The datatype language's completion
+* Complete. The datatype language's completion
   ({ref "datatype-completion"}[The datatype language's completion]),
-  before substantial authoring, its typing in the stage-1 compiler, the
-  representation, decoding and data, the recognizers and the opaque check
-  of type parameters complete:
+  before substantial authoring:
   datatype names as types distinct from the type of trees, checked at
   every use, a datatype reaching the trees only through its
   representation and its decoding by its generated recognizer, both
   written explicitly; type parameters checked opaquely; and the soundness
-  of the typing, proved with the prover in Geb.
+  of the typing, proved with the prover in Geb and transferred to Lean
+  under conditions on what the expansion writes and on the names a form
+  declares, whose proofs follow the bootstrap.
 * Complete. The first stage of the interaction-net arm of
   {ref "choice-of-machine"}[the choice of machine]: a kernel program's
   interaction system, duplicating no λ-value, with a sequential reducer
@@ -193,7 +193,8 @@ Computation:
   verdicts agree with those of the search with z3, are constructed, and the
   definitions the searches rejected in the sources proper to the metalogic
   are rewritten, but for the conversion checker's step at the application
-  of a theorem, which is ready. Waiting on the datatype language's completion: the rewriting
+  of a theorem, which is ready. Ready, the datatype language's completion
+  being complete: the rewriting
   of the definitions they reject in the compilers' sources, among them
   `resolve`, `typeIn` and `expandExpr`, which the metalogic's program
   includes, so that no program is typable as a whole before it. Waiting on
@@ -1721,7 +1722,7 @@ section below opens with a table of the states of its parts.
   * Complete
   * The datatype language's completion
     ({ref "datatype-completion"}[The datatype language's completion]):
-    in progress
+    complete
 *
   * {ref "speed-and-second-host"}[Speed and a second host]
   * In progress
@@ -2550,10 +2551,10 @@ complete:
      the formula is to be written, and the agreement
      (`GebTests/Prototypes/FreeTopos/Agreement/Conversion.lean`) proved
      of it.
-   * Waiting on the datatype language's completion
-     ({ref "datatype-completion"}[The datatype language's completion]),
-     whose soundness of the typing is proved of the stage-1 compiler and
-     which removes `tree-data` from the expansions: the compilers'
+   * Ready, the datatype language's completion
+     ({ref "datatype-completion"}[The datatype language's completion])
+     being complete, whose soundness of the typing is proved of the
+     stage-1 compiler: the compilers'
      sources, `resolve` in `bootstrap/reader.geb`, `typeIn` in
      `bootstrap/check.geb`, `rename` and `elabAt` in
      `bootstrap/modules.geb`, `expandExpr` in `bootstrap/datatype.geb`
@@ -2730,7 +2731,7 @@ tag := "geb-grows-in-itself"
 *
   * The libraries and serializer, the reader, the type checker, the
     elaborator, and its self-compilation
-  * Complete; the datatype language's completion is in progress
+  * Complete, with the datatype language's completion
 *
   * Acceptance
   * Met
@@ -2825,10 +2826,12 @@ the independent route from the seed.
 tag := "datatype-completion"
 %%%
 
-State: in progress.
+State: complete, under the conditions that the transfer of the typing's
+soundness to Lean keeps as hypotheses, whose proofs follow the bootstrap
+(the road map).
 
 A source whose types are trees annotates every value of a declared
-datatype as `T`, declaring `(tree-data Eqn (eqn T T))` and taking optional
+datatype as `T`, taking an equation's sides as `(eqn T T)` and optional
 trees as `(m T)`, and an expansion that ignores the types of fields
 accepts it. Which datatype a value is meant to belong to is then recorded
 nowhere, and it is information no tool recovers later. The layers of the decisions make the datatype
@@ -2931,10 +2934,7 @@ application to no arguments, so that the erasure of a list is a list; the
 reader resolves each to the same term, so the two compilers agree on every
 program the typing accepts and the fixed points hold. The keyword `data`
 declares a datatype distinct from the trees and from every other
-datatype, and `tree-data` one standing for the trees, which the sources
-keep until they are retyped and which is then removed; no case analysis or
-structural recursion reads a value of it, as no marker gives its
-constructors. Three forms cross between a datatype
+datatype. Three forms cross between a datatype
 and the trees:
 
 :::table +header
@@ -3112,16 +3112,16 @@ refers to it and decides membership
 (`GebTests/Prototypes/FreeTopos/DatatypeProgramData.lean`). The result
 assumes of a program that each body the expansion writes for a
 definition is a source form at the numeral abbreviations before it,
-which a run over the program's forms tests; that no form is a
-`tree-data` declaration; that no name a form declares, a constructor's
+which a run over the program's forms tests; that no name a form
+declares, a constructor's
 and a recognizer's among them, is one of the implementation's; that
 each marker is the one its datatype's atom finds among the markers,
 names its datatype by an atom other than the trees' type and the unit
 type, and has at most one constructor of each label; and that the
 digits of a label read as the label and are fixed by the expansion of
-numeral abbreviations. Remaining after it: the transfer of the result
-to Lean, which the paragraphs below describe with what becomes of those
-assumptions; `tree-data` removed. The developments of the soundness
+numeral abbreviations. The paragraphs below describe the transfer of
+the result to Lean and what becomes of those assumptions. The
+developments of the soundness
 continue from one another in no one order, each citing the statements
 of those it continues from, so the modules of
 `GebTests/Prototypes/FreeTopos/Certified/` check each after those
@@ -3253,7 +3253,7 @@ for it converges to such a quotation
 (`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramMembers.lean`).
 
 The rewriting of the definitions the elementary-affine search rejects in
-the compilers' sources waits on this completion, whose soundness of the
+the compilers' sources follows this completion, whose soundness of the
 typing is proved of the stage-1 compiler
 ({ref "interaction-net-affine-certificates"}[Elementary-affine
 certificates], the second step).
@@ -3636,9 +3636,9 @@ tag := "authoring-compatibility"
   * Complete
 *
   * Manifests with editions
-  * Complete, but for the program whose typing's soundness is proved: its
-    list and the dependencies stated in the comments of its stage-1 sources
-    are converted when the datatype language's completion is merged
+  * Complete, but for the dependencies stated in the comments of the
+    stage-1 sources of the program whose typing's soundness is proved,
+    whose list is its manifest, `bootstrap/datatype-soundness.manifest`
 *
   * A durable document with versioned profiles
   * Complete, but for the sources a test reads by `include_str` rather
@@ -3730,10 +3730,10 @@ tag := "authoring-compatibility"
 *
   * The datatype language's completion
     ({ref "datatype-completion"}[The datatype language's completion])
-  * In progress
+  * Complete
 *
   * Hygienic elaboration, explicit assembly and patterns
-  * Waiting on the datatype language's completion
+  * Ready
 *
   * Early in writing: holes in the datatype language, located diagnostics
     and the typed enumerator
@@ -3741,8 +3741,8 @@ tag := "authoring-compatibility"
     in the editors through `geb-author check`: complete; kernel typing
     failures inside expressions, with expected and actual types: complete
     for kernel program prefixes, including modules and `defn`. Holes in the datatype language
-    and located diagnostics of its typing: waiting on the datatype
-    language's completion; the typed enumerator: ready
+    and located diagnostics of its typing: ready; the typed enumerator:
+    ready
 *
   * When their consumers exist: digests and the store, the attachment of
     annotations and hover text, a language server, tree-sitter, the export
@@ -4973,7 +4973,7 @@ decisions to the compiled checker. The separate, untrusted pass maps that
 vertex through the source correspondence to the original expression,
 including under binders, `let`, `defn` and modules. Prefixes containing
 datatype declarations retain declaration diagnostics; locating their
-typing failures waits on the completion. A language service then needs
+typing failures follows the completion. A language service then needs
 the services the survey lists,
 of which the existing checker serves behind it; the server tracks
 versions of buffers, cancels stale checks, and translates offsets of
@@ -6026,8 +6026,8 @@ remains.
     ({ref "editing"}[Editing], {ref "proof-holes"}[Holes and goals]).
     Remaining: the occurrence inside a declaration and the reason its
     typing gives, by a checker that reports the failing vertex, ready
-    for the kernel's typing and waiting on the datatype language's
-    completion for the datatype language's; and the report as a value
+    for the kernel's typing and for the datatype language's; and the
+    report as a value
     that an entry point of the compiler returns, the entry points
     giving a program they reject the empty tree
     ({ref "improvements"}[Improvements]), ready.
@@ -6168,8 +6168,8 @@ is proved, which the row of the emitted Lean states.
   * Expansion and typing of the datatype language
   * Not defined: the programs written in Geb are their definition
   * Proved in the metalogic, of the programs' translations: the
-    expansion's identity on kernel forms and, in progress, the
-    soundness of the typing
+    expansion's identity on kernel forms and the soundness of the
+    typing
     ({ref "datatype-completion"}[The datatype language's completion]),
     the check of each development decided by Lean's evaluator. Tested:
     the agreement of the two compilers
@@ -6255,8 +6255,8 @@ sources, a change of which changes what the soundness states. A step that
 changes a source of a compiler regenerates the committed images, so such
 steps are merged one at a time.
 
-Substantial authoring follows the completion. A program written before it
-declares its datatypes by `data`, `tree-data` being removed.
+Substantial authoring follows the completion. A program declares its
+datatypes by `data`.
 
 :::table +header
 *
@@ -8483,16 +8483,15 @@ What is ready, each item independent of the others except as stated:
   with a step of conversion].
 * The datatype language's completion
   ({ref "datatype-completion"}[The datatype language's completion]),
-  in progress, a step of the authoring sequence
+  complete, a step of the authoring sequence
   ({ref "authoring-sequence"}[The sequence and its acceptance]), which
   precedes substantial authoring in Geb; the soundness of its typing is
   proved with the prover written in Geb. Its searches take from seconds
-  to about eight minutes each, compiled, so its developments wait on no
-  change to the prover's speed; a search that takes much longer is
-  measured as {ref "searches-remaining"}[The searches' remaining time]
-  states. The steps of the sequence before it in the sequence's order,
-  which change no source of the program whose soundness is proved, are
-  ready beside it; those after it wait on it.
+  to about eight minutes each, compiled; a search that takes much longer
+  is measured as {ref "searches-remaining"}[The searches' remaining time]
+  states. The steps of the sequence after it in the sequence's order,
+  which change sources of the program whose soundness is proved, are
+  ready with those before it.
 * The elementary-affine decorations, in progress, wait on
   rewriting the folds that read their children's results twice
   ({ref "improvements"}[Improvements]).
@@ -8856,7 +8855,7 @@ the constraints each of them carries.
 
 1. The datatype language's completion
    ({ref "datatype-completion"}[The datatype language's completion]),
-   which precedes substantial authoring in Geb.
+   which precedes substantial authoring in Geb: complete.
 2. The acceleration of the environment machine. The machine written in
    Geb does not keep the time of the machine in Lean: the library's
    conditional takes its branches as arguments

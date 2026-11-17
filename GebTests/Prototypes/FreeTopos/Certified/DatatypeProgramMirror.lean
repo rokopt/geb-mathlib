@@ -60,8 +60,8 @@ compilers' mirror: at every list of forms on which the passes the mirror defines
 ({name}`PassFns.passes`), whose definitions' bodies are source forms ({name}`HypFns.PlainOk`),
 whose markers are those their datatypes' atoms find ({name}`HypFns.MarkersOk`), are named by
 atoms other than the trees' type's and the unit type's ({name}`HypFns.NamesOk`) and have at
-most one constructor of each label ({name}`HypFns.CtorsOk`), and whose forms declare no tree
-datatype and no name of the implementation's ({name}`HypFns.FormsOk`), the definitions are
+most one constructor of each label ({name}`HypFns.CtorsOk`), and whose forms declare no name
+of the implementation's ({name}`HypFns.FormsOk`), the definitions are
 related to the typing environment's and the recognizers decide membership, as the mirror's
 evaluator computes them ({name}`Concl`). -/
 theorem program_sound_mirror (ks : List Kernel.Tree) (hpass : ∀ p ∈ passFns.passes, p ks)
