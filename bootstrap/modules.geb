@@ -61,13 +61,27 @@
         (binders b))))
   (def patternVars
     (lam ((p T))
-      (foldr T Ts (lam ((x T) (acc Ts)) (if (isAtom x) (cons (nameOf x) acc) acc)) (nil T)
+      (foldr T Ts
+        (lam ((x T) (acc Ts))
+          (if (and (isAtom x) (if (or (named x (quote (0 &))) (named x (quote (0 _)))) 0 1))
+            (cons (nameOf x) acc)
+            acc))
+        (nil T)
         (drop 1 (children p)))))
+  ; source binders are private: %% differs from every name the datatype expansion introduces
+  (def localAtom (lam ((x T)) (if (isAtom x) (node 1 (cons 37 (cons 37 (children x)))) x)))
   (def renPattern
     (lam ((vis Ts) (p T))
       (lcase T T (children p) p
         (lam ((c T) (xs Ts))
-          (mkList (cons (if (isAtom c) (atomOf (flatName vis (nameOf c))) (node 1 (nil T))) xs))))))
+          (mkList
+            (cons (if (isAtom c) (atomOf (flatName vis (nameOf c))) (node 1 (nil T)))
+              (foldr T Ts
+                (lam ((x T) (r Ts))
+                  (cons (if (or (named x (quote (0 &))) (named x (quote (0 _)))) x (localAtom x))
+                    r))
+                (nil T)
+                xs)))))))
 
   ; a node renamed in each role, from its children renamed in each; a role is 0 for a term, 1 for
   ; a type, 2 for a clause of a case analysis, 3 for binders and 4 for a quoted datum, and a
@@ -123,7 +137,9 @@
       (cond
         ((eq role 5)
          (if (and (isList u) (eq (arity u) 3))
-           (mkList (cons (child u 0) (cons (rkAt rs 1 1 (nil T)) (single (rkAt rs 2 0 bound)))))
+           (mkList
+             (cons (localAtom (child u 0))
+               (cons (rkAt rs 1 1 (nil T)) (single (rkAt rs 2 0 bound)))))
            emptyTerm))
         ((eq role 6)
          (mkList
@@ -170,7 +186,7 @@
              (let x T (at es 1)
                (mkList
                  (cons h
-                   (cons x
+                   (cons (localAtom x)
                      (cons (rkAt rs 2 1 (nil T))
                        (cons (rkAt rs 3 0 bound)
                          (single (rkAt rs 4 0 (if (isAtom x) (cons (nameOf x) bound) bound)))))))))
@@ -205,12 +221,15 @@
           ((isAtom u)
            (cond ((eq role 1) (atomOf (flatName vis (nameOf u))))
              ((eq role 0)
-              (if (isSome (indexOf (nameOf u) bound)) u (atomOf (flatName vis (nameOf u)))))
+              (if (and (isSome (indexOf (nameOf u) bound)) (if (isSome (numeral (children u))) 0 1))
+                (localAtom u)
+                (atomOf (flatName vis (nameOf u)))))
              (else u)))
           ((eq role 1) (mkList (rkAll rs 1 (nil T))))
           ((eq role 3)
            (cond ((eq k 0) u)
-             ((isAtom (at es 0)) (mkList (cons (at es 0) (rkAll (rkDrop 1 rs) 1 (nil T)))))
+             ((isAtom (at es 0))
+              (mkList (cons (localAtom (at es 0)) (rkAll (rkDrop 1 rs) 1 (nil T)))))
              (else (mkList (rkAll rs 3 (nil T))))))
           ((eq role 2)
            (if (eq k 2)

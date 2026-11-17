@@ -260,8 +260,15 @@ def cataVarProg (P : Prog) : Prog :=
   { cataWalkProg P with
     folded := ((cataWalkProg P).folded.filter (· ≠ "Reader.numeral")) ++ ["Check.typeIn"] }
 
+/-- The spelling test for a clause's variable: an initial percent sign must be followed by
+another, distinguishing private source binders from the erasure's single-percent names. -/
+def clauseNameT (P : Prog) (cs : Term) : Term :=
+  condT treeTy (call D.lab [] [pc P "implName" [nodeT (Term.pair (numeral 0) cs)]])
+    (apps ((primT Kernel.Prim.eq).getD Term.star)
+      [pc P "Prelude.at" [cs, leafT (numeral 1)], leafT (numeral 37)]) (leafT (numeral 1))
+
 /-- A clause's variable ({lit}`Typing.clauseVar`) is an atom of some characters, the name of which
-the typing admits as a binder's and which is not the implementation's, beginning with no {lit}`%`.
+the typing admits as a binder's and which is not one of the erasure's single-{lit}`%` names.
 In the context of the variable and the environment. Proved by the node of the variable, its label's
 bits refuting the test at any label but an atom's. -/
 def clauseVarAtom (P : Prog) (S : Defs) (T : Defs3) : Step :=
@@ -278,14 +285,13 @@ def clauseVarAtom (P : Prog) (S : Defs) (T : Defs3) : Step :=
       Internal.Logic.ex o (list treeTy) (Term.lam (list treeTy) (conj
         (Term.eq (v 1) (nodeT (Term.pair (numeral 1) (v 0)))) (conj
         (truth o (pc P "Typing.nameOk" [v 2, name (v 0)]))
-        (Term.eq (call D.lab [] [pc P "implName" [name (v 0)]]) (nilT bitTy)))))⟩
+        (truth o (clauseNameT P (v 0))))))⟩
     let atomBranch (pC : ℕ) : Deducer :=
       let cs := atPos pC
       decideIn K (fun Γ ↦ pc P "Typing.nameOk" [atPos 0 Γ, name (cs Γ)]) (K.hypFalse 1) <|
-      decideIn K (fun Γ ↦ pc P "implName" [name (cs Γ)])
+      decideIn K (fun Γ ↦ clauseNameT P (cs Γ)) (K.hypFalse 1)
         (fun Γ Φ ψ ↦ dExI L K.G K.E (cs Γ) (dConjI L (K.solve 3) <| dConjI L (K.solve 3)
           (K.solve 3)) Γ Φ ψ)
-        (K.hypFalse 1)
     let some d := (K.treeNode (v 0) fun Γ Φ ψ ↦
         let pC := Γ.length - 1
         dBits L K.G K.E (ix "listCases") (ix "bitCases") (fun bs ↦
@@ -502,8 +508,8 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let decided (t : List Tree → Term) (kF kT : Deducer) : Deducer := fun Γ Φ ψ ↦
       if (K.solve 3 Γ Φ (truth P.o (t Γ))).isSome then kT Γ Φ ψ else decideIn K t kF kT Γ Φ ψ
     -- a clause's variable x, refuted otherwise by the hypothesis h, an atom whose name is admitted
-    -- and begins with no % ({name}`clauseVarAtom`): k given the position of its characters and
-    -- the index of the last fact
+    -- and passes the private-name test ({name}`clauseVarAtom`): k given its characters' position
+    -- and the index of the last fact
     let varAtom (h : ℕ) (x : List Tree → Term) (msg : String) (k : ℕ → ℕ → Deducer) : Deducer :=
       decideIn K (fun Γ ↦ pc P "Typing.clauseVar" [wp 5 Γ, x Γ]) (refute msg h) <|
       applyThm K "clauseVarAtom" (fun Γ ↦ [x Γ, wp 5 Γ]) [K.solve 3, K.solve 3] <|
@@ -556,11 +562,11 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
       let env (Γ : List Tree) : Term := consT treeTy (pc P "Eval.ofList"
         [leafT (numeral Kernel.Label.tyTree), quotesT P (ts Γ)]) (wp 16 Γ)
       let kc (Γ : List Tree) : Term := consT treeTy (listTK P (wp 3 Γ)) (wp 18 Γ)
-      let body : Deducer := linkK K "cataWalk: the body" <|
-        dAllE L K.G K.E 6 (cx Γ₀) <| K.allEΓ env <| K.allEΓ kc <|
+      let body : Deducer := linkK K "cataWalk: the body" fun Γ Φ ψ ↦
+        (dAllE L K.G K.E 6 (cx Γ) <| K.allEΓ env <| K.allEΓ kc <|
         K.impE (K.byHyp hEnv) <| K.impE (byStep hTy) <| K.impE (K.byHyp hRes) <|
         K.impE (K.byHyp hKer) <| K.impE (K.byHyp hCx) <| fun Γ Φ ψ ↦
-          dRwBy (evalRw K.G K.E (K.rules Φ ++ steps) .full) byLast Γ Φ ψ
+          dRwBy (evalRw K.G K.E (K.rules Φ ++ steps) .full) byLast Γ Φ ψ) Γ Φ ψ
       let noRest : Deducer := fun Γ Φ ψ ↦ K.listCase treeTy (rvs Γ)
         (fun Γ Φ ψ ↦ K.listCase treeTy (ts Γ) body (refute "children remaining" hOk) Γ Φ ψ)
         (refute "a remaining variable" hTy) Γ Φ ψ
@@ -761,7 +767,14 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
         -- unflagged, the raw field type present, absent refuting the typing
         (if flag then id else decideIn K (fun Γ ↦ pc P "Prelude.isSome"
             [pc P "Typing.fieldTy" [E' Γ, raw Γ]]) (refute "the raw field type absent" hTy)) <|
-        varAtom hTy r "the remaining variable no clause's" atomCase
+        decided (fun Γ ↦ pc P "Typing.clauseVar" [E' Γ, r Γ])
+          (refute "the remaining wildcard no clause's" hTy) <|
+        decideIn K (fun Γ ↦ ignoredField P (r Γ))
+          (fun Γ Φ ψ ↦
+            let hIgnored := Φ.length - 1
+            varAtom hTy r "the remaining variable no clause's"
+              (fun pC iI ↦ normHyps K [hIgnored] (atomCase pC iI)) Γ Φ ψ)
+          (linkK K "cataWalk: the remaining wildcard" (K.norm body))
       -- the remaining children's entry, of position pE: a list of the variable and its flag, an
       -- atom of a numeral's characters equal to the test that the raw field type is the
       -- datatype's, else the typing's walk absent
@@ -818,13 +831,13 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
     -- the field of the entry's variable of position pX, flagged or not, the field type of
     -- position pF, the child of position pT and the result of position pR, each before the
     -- rest of its list
-    let consField (flag : Bool) (pX pF pT pR : ℕ) : Deducer :=
+    let consField (flag discard : Bool) (pX pF pT pR hIgnored : ℕ) : Deducer :=
       let (x, ft, t) := (atPos pX, atPos pF, atPos pT)
       -- the forms of the fragments, in the current context
       let frags (Γ : List Tree) : Term × Term × Term := cataFrags P (rForm Γ) (drForm Γ)
       let tailB (Γ : List Tree) : Term := pc P "Datatype.sLet" [aC, pc P "Datatype.sList" [aT],
         pc P "Datatype.sTailOf" [aC], erRest Γ]
-      let inner (Γ : List Tree) : Term := if flag
+      let inner (Γ : List Tree) : Term := if discard then tailB Γ else if flag
         then pc P "Datatype.sLet" [x Γ, rForm Γ, (frags Γ).2.1, tailB Γ]
         else pc P "Datatype.sLet" [x Γ, aT, pc P "Datatype.sHeadOf" [aC], tailB Γ]
       -- the rest resolved, the binder an atom of the characters cs and the rest's characters
@@ -841,8 +854,10 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
           let [Aq, b1] ← nodeKidsT f1 | none
           let [f2, eX] ← nodeKidsT b1 | none
           let [Ax, b2] ← nodeKidsT f2 | none
-          let [f3, eT] ← nodeKidsT b2 | none
-          let [Ac, rK] ← nodeKidsT f3 | none
+          let (eT, Ac, rK) ← if discard then pure (eX, Ax, b2) else do
+            let [f3, eT] ← nodeKidsT b2 | none
+            let [Ac, rK] ← nodeKidsT f3 | none
+            pure (eT, Ac, rK)
           -- the goal's predicate, relation's context and environment, the latter two lowered
           -- past the level's binder
           let [Pg, F] := ψ.children | none
@@ -902,15 +917,21 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
               byLast
           -- the tail's convergence
           let tV : Deducer := linkK K "cataWalk: the tail's value" <|
-            K.cutThm "tailConvQ" (fun Γ ↦ [cq 6 Γ, quotesT P (tsR Γ), t Γ, qv Γ, xv Γ, w R Γ])
-              byLast
+            if discard then
+              K.cutThm "tailConv" (fun Γ ↦ [qv Γ, cq 6 Γ, quotesT P (tsR Γ), t Γ, w R Γ]) byLast
+            else K.cutThm "tailConvQ"
+              (fun Γ ↦ [cq 6 Γ, quotesT P (tsR Γ), t Γ, qv Γ, xv Γ, w R Γ]) byLast
+          let env' (Γ : List Tree) : Term :=
+            let base := consT treeTy (qv Γ) (w env Γ)
+            if discard then base else consT treeTy (xv Γ) base
+          let cx' (Γ : List Tree) : Term :=
+            let base := consT treeTy (qEntry Γ) (cx Γ)
+            if discard then base else consT treeTy (xEntry Γ) base
+          let kc' (Γ : List Tree) : Term :=
+            let base := consT treeTy (w Aq Γ) (w kc0 Γ)
+            if discard then base else consT treeTy (w Ax Γ) base
           -- the induction hypothesis at the rests
           let ih (iTr : ℕ) : Deducer :=
-            let env' (Γ : List Tree) : Term := consT treeTy (xv Γ) (consT treeTy (qv Γ) (w env Γ))
-            let cx' (Γ : List Tree) : Term := consT treeTy (xEntry Γ) (consT treeTy (qEntry Γ)
-              (cx Γ))
-            let kc' (Γ : List Tree) : Term := consT treeTy (w Ax Γ) (consT treeTy (w Aq Γ)
-              (w kc0 Γ))
             let KN2 : Kit :=
               { K with more := K.more ++ ["nthTwo3", "nthTwo4", "nthOne2", "nthOne3"] }
             let fieldsNm : Term := pc P "Typing.boundName" [pc P "Typing.kwFields" []]
@@ -923,33 +944,38 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
                   Deducer :=
                 applyThm K "cxTCons" (fun Γ ↦ [ty Γ, n Γ, E' Γ, cxT Γ])
                   [decided (fun Γ ↦ implOk Γ (n Γ)) impl (K.solve 3), prev] byLast
-              (consAt (fun _ ↦ pc P "Typing.tyList" [pc P "Typing.tyT" []]) (fun _ ↦ fieldsNm)
-                (fun Γ ↦ consT treeTy (xEntry Γ) (consT treeTy (qEntry Γ) (cx Γ)))
-                (consAt fieldA (fun Γ ↦ pc P "Typing.atomName" [x Γ])
-                  (fun Γ ↦ consT treeTy (qEntry Γ) (cx Γ))
-                  (consAt (fun Γ ↦ pc P "Typing.tyProd" [thunkTy P (Rty Γ),
-                      pc P "Typing.tyList" [thunkTy P (Rty Γ)]])
-                    (fun _ ↦ pc P "Typing.boundName" [pc P "Typing.kwSplit" []]) cx
-                    (hypOr (hCx + o))))) Γ Φ ψ
+              let splitCx := consAt (fun Γ ↦ pc P "Typing.tyProd" [thunkTy P (Rty Γ),
+                  pc P "Typing.tyList" [thunkTy P (Rty Γ)]])
+                (fun _ ↦ pc P "Typing.boundName" [pc P "Typing.kwSplit" []]) cx (hypOr (hCx + o))
+              let fieldCx := if discard then splitCx else
+                consAt fieldA (fun Γ ↦ pc P "Typing.atomName" [x Γ])
+                  (fun Γ ↦ consT treeTy (qEntry Γ) (cx Γ)) splitCx
+              consAt (fun _ ↦ pc P "Typing.tyList" [pc P "Typing.tyT" []])
+                (fun _ ↦ fieldsNm) cx' fieldCx Γ Φ ψ
             -- an entry's name one the erasure binds, by the index's equations
             let implName (msg : String) : Deducer := linkK K s!"cataWalk: {msg} bound" fun Γ Φ ψ ↦
               (K.solve 3 Γ Φ ψ).orElse fun _ ↦ KL.solve 3 Γ Φ ψ
-            let envOk : Deducer :=
-              applyThm K "envTConsImpl" (fun Γ ↦ [qT Γ, fieldsEntry P, env' Γ, cx' Γ, w R Γ])
-                [linkK K "cataWalk: the variable's entry related" <|
+            let splitEnv : Deducer := linkK K "cataWalk: the split's entry related" <|
+              applyThm K "envTConsImpl" (fun Γ ↦ [qv Γ, qEntry Γ, w env Γ, cx Γ, w R Γ])
+                [hypOr (hEnv + o), implName "the split's name"] byLast
+            let fieldEnv : Deducer := if discard then splitEnv else
+                linkK K "cataWalk: the variable's entry related" <|
                   applyThm K "envTCons" (fun Γ ↦ [xv Γ, xEntry Γ, consT treeTy (qv Γ) (w env Γ),
                     consT treeTy (qEntry Γ) (cx Γ), w R Γ])
-                  [linkK K "cataWalk: the split's entry related" <|
-                    applyThm K "envTConsImpl" (fun Γ ↦ [qv Γ, qEntry Γ, w env Γ, cx Γ, w R Γ])
-                    [hypOr (hEnv + o), implName "the split's name"] byLast,
+                  [splitEnv,
                     linkK K "cataWalk: the variable related" (if flag then
                       fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ
                     else applyThm K "fieldRel" (fun Γ ↦ [t Γ, ft Γ, E' Γ, w R Γ])
-                      [K.byNorm, K.solve 3, K.solve 3] byLast)] byLast,
-                  implName "the children's name"] byLast
+                      [K.byNorm, K.solve 3, K.solve 3] byLast)] byLast
+            let envOk : Deducer :=
+              applyThm K "envTConsImpl" (fun Γ ↦ [qT Γ, fieldsEntry P, env' Γ, cx' Γ, w R Γ])
+                [fieldEnv, implName "the children's name"] byLast
             -- the walk's typing at the rest, the field's binding by its equation
             -- ({lit}`bindVarEq`)
-            let bound (h : Deducer → Deducer) : Deducer := fun Γ Φ ψ ↦ do
+            let bound (h : Deducer → Deducer) : Deducer :=
+              -- Decide the variable's test at its decomposed node, as in the case walk.
+              decideIn K (fun Γ ↦ pc P "Typing.clauseVar" [E' Γ, x Γ])
+                (refute "the field's variable at its node" cTy) fun Γ Φ ψ ↦ do
               let (hN, _) ← evalRw K.G K.E (K.rules Φ) .full Γ Φ (← Φ[cTy]?)
               let some [env'', x'', ty'', k''] := (appsOf K.G (P.idx "Typing.bindVar")
                   hN).head?.map spineArgs
@@ -969,7 +995,8 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
             K.impE (linkK K "cataWalk: the abbreviations" (hypOr (7 + o))) <|
             K.impE (linkK K "cataWalk: the names" (hypOr (8 + o))) <|
             K.allEΓ ftsR <| K.allEΓ tsR <| K.allEΓ rsR <| K.allEΓ r <| K.allEΓ (cq 4) <|
-            K.allEΓ (fun _ ↦ numeral 2) <| K.allEΓ env' <| K.allEΓ cx' <| K.allEΓ kc' <|
+            K.allEΓ (fun _ ↦ numeral (if discard then 1 else 2)) <|
+            K.allEΓ env' <| K.allEΓ cx' <| K.allEΓ kc' <|
             K.impE (linkK K "cataWalk: the rest's typing" (bound fun _ ↦ K.byHyp cTy)) <|
             K.impE (linkK K "cataWalk: the rest's test" (K.byHyp cOk)) <|
             K.impE (linkK K "cataWalk: the rests' lengths" (KN.byHyp cLen)) <|
@@ -985,7 +1012,8 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
             K.impE (linkK K "cataWalk: the rest's kernel typing" (K.byHyp iTr)) <|
             linkK K "cataWalk: the rest's soundness" fun Γ Φ ψ ↦
               let iC := Φ.length - 1
-              (fun Γ Φ ψ ↦ do
+              (decideIn K (fun Γ ↦ pc P "Typing.clauseVar" [E' Γ, x Γ])
+                (refute "the field's variable at its node" cTy) fun Γ Φ ψ ↦ do
                 let (gN, _) ← evalRw K.G K.E (K.rules Φ) .full Γ Φ ψ
                 let some [env'', x'', ty'', k''] := (appsOf K.G (P.idx "Typing.bindVar")
                     gN).head?.map spineArgs
@@ -994,33 +1022,39 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
                   [K.solve 3, K.solve 3] <| normLastK K fun Γ Φ ψ ↦
                   dRwHyp (evalRw K.G K.E (K.rulesEx Φ iC) .full) iC
                     (dRwBy (evalRw K.G K.E (K.rules Φ) .full) dHyp) Γ Φ ψ) Γ Φ ψ) Γ Φ ψ
-          -- the three bindings' convergence, each value its predicate's
+          -- the bindings' convergence, omitting the field's value when discarded
           let inner3 (iTr : ℕ) : Deducer :=
-            applyThm K "letConv" (fun Γ ↦ [consT treeTy (xv Γ) (consT treeTy (qv Γ) (w env Γ)),
+            applyThm K "letConv" (fun Γ ↦ [env' Γ,
                 w eT Γ, w rK Γ, w Ac Γ, isQ qT Γ, w Pg Γ, w R Γ])
               [tV, linkK K "cataWalk: the rest's binding" <| dAllI L <| dImpI L <| normLastK K <|
                 ih iTr] byLast
           let inner2 (iTr : ℕ) : Deducer :=
+            if discard then inner3 iTr else
             applyThm K "letConv" (fun Γ ↦ [consT treeTy (qv Γ) (w env Γ), w eX Γ, w b2 Γ,
                 w Ax Γ, qX Γ, w Pg Γ, w R Γ])
               [xV, linkK K "cataWalk: the tail's binding" <| dAllI L <| dImpI L <| normLastK K <|
                 inner3 iTr] byLast
           (applyThm K "letTyped" (fun _ ↦ [eQ, b1, Aq, kc0, g]) [K.byHyp cKer] <| K.conjE <|
             fun Γ Φ ψ ↦
-            applyThm K "letTyped" (fun _ ↦ [eX, b2, Ax, consT treeTy Aq kc0, g])
-              [K.byHyp (Φ.length - 2)] (K.conjE fun Γ Φ ψ ↦
-              applyThm K "letTyped" (fun _ ↦ [eT, rK, Ac, consT treeTy Ax (consT treeTy Aq kc0),
-                  g]) [K.byHyp (Φ.length - 2)] (K.conjE fun Γ Φ ψ ↦
+            let finish : Deducer := fun Γ Φ ψ ↦
+              applyThm K "letTyped" (fun _ ↦ [eT, rK, Ac,
+                if discard then consT treeTy Aq kc0 else consT treeTy Ax (consT treeTy Aq kc0), g])
+                [K.byHyp (Φ.length - 2)] (K.conjE fun Γ Φ ψ ↦
                 let iTr := Φ.length - 2
                 applyThm K "letConv" (fun Γ ↦ [w env Γ, w eQ Γ, w b1 Γ, w Aq Γ, isQ splitVal Γ,
                     w Pg Γ, w R Γ])
                   [splitV, linkK K "cataWalk: the variable's binding" <| dAllI L <| dImpI L <|
-                    normLastK K <| inner2 iTr] byLast Γ Φ ψ) Γ Φ ψ) Γ Φ ψ) Γ₀ Φ ψ) Γ Φ ψ
+                    normLastK K <| inner2 iTr] byLast Γ Φ ψ) Γ Φ ψ
+            if discard then finish Γ Φ ψ else
+              applyThm K "letTyped" (fun _ ↦ [eX, b2, Ax, consT treeTy Aq kc0, g])
+                [K.byHyp (Φ.length - 2)] (K.conjE finish) Γ Φ ψ) Γ₀ Φ ψ) Γ Φ ψ
       -- the binding at the binder's expansion, an atom of the characters cs
       let binderFlow (cs : List Tree → Term) (iR iOk : ℕ) : Deducer :=
         let restRes (Γ : List Tree) : Term := pc P "Reader.resolve" [tys Γ, names Γ, restEx Γ,
-          consT treeTy (fieldsName P) (consT treeTy (nodeT (Term.pair (numeral 0) (cs Γ)))
-            (consT treeTy (splitName P) (fSc Γ)))]
+          consT treeTy (fieldsName P)
+            (if discard then consT treeTy (splitName P) (fSc Γ)
+              else consT treeTy (nodeT (Term.pair (numeral 0) (cs Γ)))
+                (consT treeTy (splitName P) (fSc Γ)))]
         let nums3 (nm : String) (k : Deducer) : Deducer :=
           applyThm K nm (fun Γ ↦ [rForm Γ, drForm Γ, nums Γ])
             ((cataAtoms P).map fun _ ↦ negated) <| normLastK K k
@@ -1033,7 +1067,7 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
           pc P "Datatype.splitTy" [rForm Γ], pc P "Datatype.aQ" [], nums Γ]) [negated] <|
           normLastK K <|
         nums3 "aQNums" <| nums3 "splitTyNums" <| nums3 "splitNums" <|
-        (if flag then fun k ↦
+        (if discard then id else if flag then fun k ↦
             applyThm K "letNums" (fun Γ ↦ [tailB Γ, (frags Γ).2.1, rForm Γ, x Γ, nums Γ])
               [negated] <| normLastK K <| nums3 "forceNums" k
           else fun k ↦
@@ -1044,7 +1078,8 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
         decideIn K (fun Γ ↦ pc P "Prelude.isSome" [pc P "Reader.readType" [tys Γ, rF Γ]])
           (refuteRes "the result type unread") <|
         linkK K "cataWalk: the field's resolution" <|
-        applyThm K s!"cataStepRes{if flag then 1 else 0}" (fun Γ ↦ [restEx Γ, cs Γ, scope0 Γ,
+        applyThm K s!"cataStepRes{if discard then 2 else if flag then 1 else 0}"
+          (fun Γ ↦ [restEx Γ, cs Γ, scope0 Γ,
             tys Γ, names Γ, cq 5 Γ, rF Γ, drF Γ])
           ([K.solve 3, linkK K "cataWalk: the field's split's index" (eqHyp cIdx)] ++
             absentAt (hNums + o) (hNames + o) (hCx + o) scope0 cx "aUnitV" ++
@@ -1077,7 +1112,17 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
         -- unflagged, the field type's reading present, absent refuting the typing
         ((if flag then id else decideIn K (fun Γ ↦ pc P "Prelude.isSome"
             [pc P "Typing.fieldTy" [E' Γ, ft Γ]]) (refute "the field's type absent" cTy)) <|
-          varAtom cTy x "the field's variable" (atomCase iOk)) Γ Φ ψ
+          if discard then
+            decided (fun Γ ↦ pc P "Typing.clauseVar" [E' Γ, x Γ])
+              (refute "the wildcard no clause's variable" cTy) <| fun Γ Φ ψ ↦
+            dRwHyp (evalRw K.G K.E (K.rulesEx Φ (2 + o)) .full) (2 + o)
+              (fun Γ Φ ψ ↦ dConjE L (Φ.length - 1) (fun Γ Φ ψ ↦
+                -- The omitted name is never expanded or resolved. In particular, a numeral
+                -- abbreviation named _ cannot introduce a binding at this field.
+                binderFlow (fun _ ↦ consT treeTy (leafT (numeral 95)) (nilT treeTy))
+                  (Φ.length - 1) iOk Γ Φ ψ) Γ Φ ψ) Γ Φ ψ
+          else varAtom cTy x "the field's variable"
+            (fun pC iI ↦ normHyps K [hIgnored] (atomCase iOk pC iI))) Γ Φ ψ
     let consBody : Deducer := fun Γ₀ Φ₀ ψ₀ ↦
       K.listCase treeTy (cq 0 Γ₀) (refute "no field type for the entry" cTy) (fun Γ₁ Φ₁ ψ₁ ↦
         let pF := Γ₁.length - 2
@@ -1085,7 +1130,11 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
           K.listCase treeTy (cq 1 Γ) (refute "no child for the field" cOk) (fun Γ Φ ψ ↦
             let pT := Γ.length - 2
             K.listCase treeTy (cq 2 Γ) (lenFalse cLen) (fun Γ Φ ψ ↦
-              consField flag pX pF pT (Γ.length - 2) Γ Φ ψ) Γ Φ ψ) Γ Φ ψ) Γ₁ Φ₁ ψ₁) Γ₀ Φ₀ ψ₀
+              let pR := Γ.length - 2
+              decideIn K (fun Γ ↦ ignoredField P (atPos pX Γ))
+                (fun Γ Φ ψ ↦ consField flag false pX pF pT pR (Φ.length - 1) Γ Φ ψ)
+                (fun Γ Φ ψ ↦ consField flag true pX pF pT pR (Φ.length - 1) Γ Φ ψ)
+                Γ Φ ψ) Γ Φ ψ) Γ Φ ψ) Γ₁ Φ₁ ψ₁) Γ₀ Φ₀ ψ₀
     let r₁ : Option Internal.Deriv := linkK K "cataWalk: a field" (introsAt o consBody)
       (list treeTy :: treeTy :: (cataWalkCtx T).tail) [Internal.weakenElem φ]
       (Internal.listConsAt 1 treeTy φ)
@@ -1591,15 +1640,16 @@ def cataConvs (P : Prog) (S : Defs) : List Step :=
 of the variable {lit}`x`, around a rest {lit}`rest`, at the result type's form {lit}`r` and the
 default's form {lit}`dr`: the split of the suspended results ({name}`cataFrags`), then, flagged,
 the variable bound to the forcing of the split's first, else to the head of the children
-remaining, and the children remaining to their tail. -/
-def entryStep (P : Prog) (flag : Bool) (x r dr rest : Term) : Term :=
+remaining, and the children remaining to their tail. A discarded field omits the variable's
+binding and the forcing of its result. -/
+def entryStep (P : Prog) (flag : Bool) (x r dr rest : Term) (discard : Bool := false) : Term :=
   let d (n : String) : Term := pc P s!"Datatype.{n}" []
   let (split, force, _) := cataFrags P r dr
   let aC := d "aC"
   let tailB := pc P "Datatype.sLet" [aC, pc P "Datatype.sList" [d "aT"],
     pc P "Datatype.sTailOf" [aC], rest]
   pc P "Datatype.sLet" [d "aQ", pc P "Datatype.splitTy" [r], split,
-    if flag then pc P "Datatype.sLet" [x, r, force, tailB]
+    if discard then tailB else if flag then pc P "Datatype.sLet" [x, r, force, tailB]
     else pc P "Datatype.sLet" [x, d "aT", pc P "Datatype.sHeadOf" [aC], tailB]]
 
 /-- The resolution of a structural recursion's fixed field's binding ({name}`entryStep`) of an
@@ -1608,14 +1658,15 @@ index there, the unit value's name no scope's and no definition's and the result
 reading, and the binder is neither
 the children remaining's name nor the split's: its normal form with the resolution lemmas'
 equations ({name}`splitRes`, {lit}`forceRes`, {name}`cataBindEqs`) and the reader's case of
-bindings ({lit}`letRes`), the rest's resolution, in the scope extended by the three bindings,
-folded. In the context of the rest, the binder's characters, the scope's tail, the type
+bindings ({lit}`letRes`), the rest's resolution, in the scope extended by the split, an optional
+field binding and the remaining children, folded. In the context of the rest, the binder's
+characters, the scope's tail, the type
 abbreviations, the definitions' names, the split's index's bitstring, the result type's form and
 the default's form, its left side in the normal form of the walk's rules. Proved by deciding the
 binder's comparisons, true refuting the hypotheses,
 then the sides by normalization with the lemmas' instances cut in. -/
-def cataStepRes (P : Prog) (S : Defs) (flag : Bool) : Step :=
-  (s!"cataStepRes{if flag then 1 else 0}", fun ix E ↦ do
+def cataStepRes (P : Prog) (S : Defs) (flag : Bool) (discard : Bool := false) : Step :=
+  (s!"cataStepRes{if discard then 2 else if flag then 1 else 0}", fun ix E ↦ do
     let P := walkProg P
     let K : Kit := ⟨P, S, E, ix, walkMore ix E⟩
     let L := list treeTy
@@ -1630,7 +1681,7 @@ def cataStepRes (P : Prog) (S : Defs) (flag : Bool) : Step :=
     let x (Δ : List Tree) : Term := nodeT (Term.pair (numeral 1) (cs Δ))
     let fSc (Δ : List Tree) : Term := consT treeTy (fieldsName P) (sc0 Δ)
     let lhs := pc P "Reader.resolve" [tys Γ, names Γ,
-      entryStep P flag (x Γ) (rF Γ) (drF Γ) (rest Γ), fSc Γ]
+      entryStep P flag (x Γ) (rF Γ) (drF Γ) (rest Γ) discard, fSc Γ]
     -- the binder's comparisons with the two names
     let tests := [namedFields P (cs Γ),
       apps equalT [splitName P, nodeT (Term.pair (numeral 0) (cs Γ))]]
@@ -1651,9 +1702,10 @@ def cataStepRes (P : Prog) (S : Defs) (flag : Bool) : Step :=
     let KL : Kit := { K with more := K.more ++ lookupEqNames }
     let instances : List (String × List Term) :=
       [("splitRes", [sc0 Γ, tys Γ, names Γ, b Γ, rF Γ, drF Γ])] ++
-      (if flag then [("forceRes", [fSc Γ, tys Γ, names Γ])]
-        else [("headResQ", [sc0 Γ, tys Γ, names Γ])]) ++
-      [("tailResQ", [sc0 Γ, cs Γ, tys Γ, names Γ])]
+      (if discard then [("tailRes", [sc0 Γ, call D.children [] [splitName P], tys Γ, names Γ])]
+        else (if flag then [("forceRes", [fSc Γ, tys Γ, names Γ])]
+          else [("headResQ", [sc0 Γ, tys Γ, names Γ])]) ++
+          [("tailResQ", [sc0 Γ, cs Γ, tys Γ, names Γ])])
     let Φ ← instances.foldlM (fun Φ (nm, σ) ↦ do
       let some (Internal.Entry.language th) := E[ix nm]? | none
       let (l, r) ← Internal.eqParts (Internal.instTerm [] σ th.concl)
@@ -2059,10 +2111,10 @@ def cataDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
     fragNone P S T ++ cataBindEqs P S T ++ [nthOne P S 4, nthTwo P S 3, nthTwo P S 4] ++
     cataConvs P S ++
     [indexNone P S, foldRes P S, splitRes P S, cataStepRes P S false, cataStepRes P S true,
+      cataStepRes P S false true,
       relatedTail P S T, resultsRel P S T, splitConv P S,
       forceConv P S T, consCompat P S T, lamCompatC P S T, foldConv P S T, clauseVarAtom P S T,
-      unnamedAt "unnamedVar" (fun P c ↦ Term.eq (call D.lab []
-        [pc P "implName" [nodeT (Term.pair (numeral 0) c)]]) (nilT bitTy)) P S,
+      unnamedAt "unnamedVar" (fun P c ↦ truth P.o (clauseNameT P c)) P S,
       unnamedAt "unnamedNum"
         (fun P c ↦ truth P.o (pc P "Prelude.isSome" [pc P "Reader.numeral" [c]])) P S,
       cataWalk P S T]

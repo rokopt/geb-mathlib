@@ -125,7 +125,7 @@ theorem rrTrees_eq (rs : List (Tree × (List Tree → Tree))) :
 
 /-- Dropping the head of a list as many times as a label. -/
 theorem repeat_tail (rs : List (Tree × (List Tree → Tree))) :
-    ∀ i : ℕ, Nat.repeat «Reader/RRs.tail» i rs = rs.drop i :=
+    ∀ i : ℕ, Nat.repeat «$5265616465722f5252732e7461696c» i rs = rs.drop i :=
   Nat.rec rfl fun i ih ↦ by
     rw [Nat.repeat, ih, ← List.tail_drop]
     cases rs.drop i <;> rfl

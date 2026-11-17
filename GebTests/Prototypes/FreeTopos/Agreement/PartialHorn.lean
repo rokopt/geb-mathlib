@@ -241,7 +241,7 @@ def ChkRel (v : List Tree → List Tree → Tree) (w : PartialHorn.Chk) : Prop :
 
 /-- A list of premises' results without its head. -/
 @[simp] theorem pcTail_eq (rs : List (List Tree → List Tree → Tree)) :
-    «PartialHorn/PCs.tail» rs = rs.tail := by
+    «$5061727469616c486f726e2f5043732e7461696c» rs = rs.tail := by
   cases rs <;> rfl
 
 /-- The results of a list of premises, at a context and hypotheses. -/

@@ -218,7 +218,7 @@ def cataMetaStep (P : Prog) (S : Defs) (T : Defs3) : Step :=
       | some (i, _, _) => if i = P.o + 1 then dConjI L rec rec Γ Φ ψ else byEntries Γ Φ ψ
       | none => (K.byNorm Γ Φ ψ).orElse fun _ ↦ byEntries Γ Φ ψ
     let some d := (dAllI L <| dImpI L <| fun Γ Φ ψ ↦
-        K.splitHyp (Φ.length - 1) (linkK K "cataMetaStep: a case" (goal 8)) 14 Γ Φ ψ)
+        metaPresentCases K f (Φ.length - 1) (linkK K "cataMetaStep: a case" (goal 8)) Γ Φ ψ)
         a.ctx a.hyps a.concl
       | dbgTrace "cataMetaStep: not proved" fun _ ↦ none
     pure (a, d))

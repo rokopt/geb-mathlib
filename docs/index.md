@@ -4106,7 +4106,13 @@ import-direction rules above are enforced by
   `check.geb` is the kernel's type checker, `datatype.geb` expands the
   forms of the datatype language (datatypes, case analysis, structural
   recursion, functions with result types, representation, decoding and
-  data) into kernel forms, `recognize.geb` writes the recognizers of the
+  data) into kernel forms. Patterns repeat `&` at a remaining-children
+  field; `_` contributes no binding or forced recursive result, while named
+  fields retain their bindings even when unused. Module elaboration renames
+  source binders with a private `%%` prefix, distinct from generated
+  temporaries, primitives and recognizers;
+  the seed and both compilers reject `%` names in source outside quotations
+  and datums. `recognize.geb` writes the recognizers of the
   datatypes a program decodes, and `compile.geb`
   composes them into the stage-0 compiler from source to image, rejecting
   ill-typed programs. `GebTests/Prototypes/Stage0.lean` compares the
@@ -4152,7 +4158,9 @@ import-direction rules above are enforced by
   from the trees, by the typing of `bootstrap/stage1/typing.geb` before
   erasing them, the typing written with exact datatypes and the lists and
   optional values of `bootstrap/seq.geb`, and `bootstrap/stage1/lean.geb` is a
-  backend emitting a Lean module in place of an image; the stage-1 compiler
+  backend emitting a Lean module in place of an image. It qualifies runtime
+  and definition references from the root and escapes names injectively,
+  preventing both capture and quoted-identifier injection. The stage-1 compiler
   they make, built by the stage-0 compiler, is committed as
   `bootstrap/compiler.img`, and the Lean it emits from its own source as
   `bootstrap/lean/GebBoot.lean`, the library `GebBoot` under the executable

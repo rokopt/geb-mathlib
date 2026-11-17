@@ -11,195 +11,303 @@ open Geb.Kernel renaming Tree → T
 
 namespace GebMirror.Metalogic
 
-def «Tactics/LDefnL.single» :=
-  fun (x0 : T) => let x1 : List T := (x0 :: ([] : List T)); x1
+def «$546163746963732f4c4465666e4c2e73696e676c65» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      ([] : _root_.List _root_.Geb.Kernel.Tree));
+    x1
 
-def «Tactics/LDefnL.length» :=
-  fun (x0 : List T) =>
-    let x1 : T := Const.foldr
-      (α := T)
-      (β := T)
-      (fun (_ : T) (x2 : T) => Const.add x2 (leaf 1))
-      (leaf 0)
+def «$546163746963732f4c4465666e4c2e6c656e677468» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+      (_root_.Geb.Kernel.leaf 0)
       x0;
     x1
 
-def «Tactics/LDefnL.append» :=
-  fun (x0 : List T) (x1 : List T) =>
-    let x2 : List
-      T := Const.foldr
-      (α := T)
-      (β := List T)
-      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+def «$546163746963732f4c4465666e4c2e617070656e64» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        (x2 :: x3))
       x1
       x0;
     x2
 
-def «Tactics/LDefnL.reverse» :=
-  fun (x0 : List T) =>
-    let x1 : List
-      T := Const.foldr
-      (α := T)
-      (β := List T → List T)
-      (fun (x1 : T) (x2 : List T → List T) (x3 : List T) => x2 (x1 :: x3))
-      (fun (x1 : List T) => x1)
+def «$546163746963732f4c4465666e4c2e72657665727365» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        x2 (x1 :: x3))
+      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
       x0
-      ([] : List T);
+      ([] : _root_.List _root_.Geb.Kernel.Tree);
     x1
 
-def «Tactics/LDefnL.tail» :=
-  fun (x0 : List T) =>
-    let x1 : List
-      T := Const.lcase
-      (α := T)
-      (β := List T)
+def «$546163746963732f4c4465666e4c2e7461696c» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
       x0
-      ([] : List T)
-      (fun (_ : T) (x2 : List T) => x2);
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+        x2);
     x1
 
-def «Tactics/LDefnL.drop» :=
-  fun (x0 : T) (x1 : List T) =>
-    let x2 : List
-      T := Const.iter (α := List T) «Tactics/LDefnL.tail» x1 x0;
+def «$546163746963732f4c4465666e4c2e64726f70» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      _root_.GebMirror.Metalogic.«$546163746963732f4c4465666e4c2e7461696c»
+      x1
+      x0;
     x2
 
-def «Tactics/LDefnL.atOr» :=
-  fun (x0 : T) (x1 : List T) (x2 : T) =>
-    let x3 : T := Const.lcase
-      (α := T)
-      (β := T)
-      («Tactics/LDefnL.drop» x2 x1)
+def «$546163746963732f4c4465666e4c2e61744f72» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«$546163746963732f4c4465666e4c2e64726f70» x2 x1)
       x0
-      (fun (x3 : T) (_ : List T) => x3);
+      (fun (x3 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        x3);
     x3
 
 def «Tactics.bindTh» :=
-  fun (x0 : T) (x1 : T → T) =>
-    let x2 : T := (let x2 : T := x0;
-                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : List T := Const.children x2;
-                     let x4 : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x3
-                       (leaf 0)
-                       (fun (x4 : T) (_ : List T) => x4);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x3
-                       ([] : List T)
-                       (fun (_ : T) (x6 : List T) => x6);
-                     x1 x4
-                   else
-                     let _ : List T := Const.children x2; «Prelude.none»);
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x1 x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          _root_.GebMirror.Metalogic.«Prelude.none»);
     x2
 
 def «Tactics.bindAT» :=
-  fun (x0 : T) (x1 : T → T) =>
-    let x2 : T := (let x2 : T := x0;
-                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : List T := Const.children x2;
-                     let x4 : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x3
-                       (leaf 0)
-                       (fun (x4 : T) (_ : List T) => x4);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x3
-                       ([] : List T)
-                       (fun (_ : T) (x6 : List T) => x6);
-                     x1 x4
-                   else
-                     let _ : List T := Const.children x2; «Prelude.none»);
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x1 x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          _root_.GebMirror.Metalogic.«Prelude.none»);
     x2
 
-def «Tactics.pr0» := «Language.pr» (leaf 0) (leaf 0)
+def «Tactics.pr0» :=
+  _root_.GebMirror.Metalogic.«Language.pr»
+    (_root_.Geb.Kernel.leaf 0)
+    (_root_.Geb.Kernel.leaf 0)
 
 def «Tactics.nfr0» :=
-  «Prover.nfr» (leaf 0) («Prover.mark» (leaf 0) (leaf 0))
+  _root_.GebMirror.Metalogic.«Prover.nfr»
+    (_root_.Geb.Kernel.leaf 0)
+    (_root_.GebMirror.Metalogic.«Prover.mark»
+      (_root_.Geb.Kernel.leaf 0)
+      (_root_.Geb.Kernel.leaf 0))
 
 def «Tactics.ttL» :=
-  fun (x0 : T) =>
-    let x1 : T := «Language.mDefn» x0 ([] : List T) ([] : List T); x1
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mDefn»
+      x0
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      ([] : _root_.List _root_.Geb.Kernel.Tree);
+    x1
 
 def «Tactics.impL» :=
-  fun (x0 : T) (x1 : T) (x2 : T) =>
-    let x3 : T := «Language.mDefn»
-      (Const.add x0 (leaf 2))
-      ([] : List T)
-      («Theory.l2» x2 x1);
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mDefn»
+      (_root_.Geb.Kernel.Const.add x0 (_root_.Geb.Kernel.leaf 2))
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«Theory.l2» x2 x1);
     x3
 
 def «Tactics.trueI» :=
-  «Prover.dNode»
-    (leaf 23)
-    ([] : List T)
-    («Theory.l2»
-      («Prover.dNode» (leaf 8) ([] : List T) ([] : List T))
-      («Prover.dNode»
-        (leaf 18)
-        ([] : List T)
-        («Theory.l2»
-          («Prover.dNode» (leaf 0) ([] : List T) ([] : List T))
-          («Prover.dNode» (leaf 0) ([] : List T) ([] : List T)))))
+  _root_.GebMirror.Metalogic.«Prover.dNode»
+    (_root_.Geb.Kernel.leaf 23)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+    (_root_.GebMirror.Metalogic.«Theory.l2»
+      (_root_.GebMirror.Metalogic.«Prover.dNode»
+        (_root_.Geb.Kernel.leaf 8)
+        ([] : _root_.List _root_.Geb.Kernel.Tree)
+        ([] : _root_.List _root_.Geb.Kernel.Tree))
+      (_root_.GebMirror.Metalogic.«Prover.dNode»
+        (_root_.Geb.Kernel.leaf 18)
+        ([] : _root_.List _root_.Geb.Kernel.Tree)
+        (_root_.GebMirror.Metalogic.«Theory.l2»
+          (_root_.GebMirror.Metalogic.«Prover.dNode»
+            (_root_.Geb.Kernel.leaf 0)
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            ([] : _root_.List _root_.Geb.Kernel.Tree))
+          (_root_.GebMirror.Metalogic.«Prover.dNode»
+            (_root_.Geb.Kernel.leaf 0)
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            ([] : _root_.List _root_.Geb.Kernel.Tree)))))
 
 def «Tactics.impI» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
-    let x5 : T := «Prover.dNode»
-      (leaf 23)
-      ([] : List T)
-      («Theory.l2»
-        («Prover.dNode» (leaf 8) ([] : List T) ([] : List T))
-        («Prover.dNode»
-          (leaf 25)
-          ([] : List T)
-          («Theory.l2»
-            («Prover.dNode»
-              (leaf 27)
-              («Theory.l3»
-                (Const.add x0 (leaf 2))
-                (Const.node (leaf 0) ([] : List T))
-                (Const.node (leaf 0) («Theory.l2» x3 x2)))
-              («Prelude.single»
-                («Prover.dNode» (leaf 21) («Prelude.single» x1) ([] : List T))))
-            («Prover.dNode»
-              (leaf 27)
-              («Theory.l3»
-                (Const.add x0 (leaf 1))
-                (Const.node (leaf 0) ([] : List T))
-                (Const.node (leaf 0) («Theory.l2» x3 x2)))
-              («Theory.l2»
-                («Prover.dNode» (leaf 21) («Prelude.single» x1) ([] : List T))
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+      (_root_.Geb.Kernel.leaf 23)
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«Theory.l2»
+        (_root_.GebMirror.Metalogic.«Prover.dNode»
+          (_root_.Geb.Kernel.leaf 8)
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+          ([] : _root_.List _root_.Geb.Kernel.Tree))
+        (_root_.GebMirror.Metalogic.«Prover.dNode»
+          (_root_.Geb.Kernel.leaf 25)
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+          (_root_.GebMirror.Metalogic.«Theory.l2»
+            (_root_.GebMirror.Metalogic.«Prover.dNode»
+              (_root_.Geb.Kernel.leaf 27)
+              (_root_.GebMirror.Metalogic.«Theory.l3»
+                (_root_.Geb.Kernel.Const.add x0 (_root_.Geb.Kernel.leaf 2))
+                (_root_.Geb.Kernel.Const.node
+                  (_root_.Geb.Kernel.leaf 0)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree))
+                (_root_.Geb.Kernel.Const.node
+                  (_root_.Geb.Kernel.leaf 0)
+                  (_root_.GebMirror.Metalogic.«Theory.l2» x3 x2)))
+              (_root_.GebMirror.Metalogic.«Prelude.single»
+                (_root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 21)
+                  (_root_.GebMirror.Metalogic.«Prelude.single» x1)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree))))
+            (_root_.GebMirror.Metalogic.«Prover.dNode»
+              (_root_.Geb.Kernel.leaf 27)
+              (_root_.GebMirror.Metalogic.«Theory.l3»
+                (_root_.Geb.Kernel.Const.add x0 (_root_.Geb.Kernel.leaf 1))
+                (_root_.Geb.Kernel.Const.node
+                  (_root_.Geb.Kernel.leaf 0)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree))
+                (_root_.Geb.Kernel.Const.node
+                  (_root_.Geb.Kernel.leaf 0)
+                  (_root_.GebMirror.Metalogic.«Theory.l2» x3 x2)))
+              (_root_.GebMirror.Metalogic.«Theory.l2»
+                (_root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 21)
+                  (_root_.GebMirror.Metalogic.«Prelude.single» x1)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree))
                 x4)))));
     x5
 
 def «Tactics.apps» :=
-  fun (x0 : T) (x1 : List T) =>
-    let x2 : T := Const.foldr
-      (α := T)
-      (β := T → T)
-      (fun (x2 : T) (x3 : T → T) (x4 : T) => x3 («Language.app» x4 x2))
-      (fun (x2 : T) => x2)
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x4 : _root_.Geb.Kernel.Tree) =>
+        x3 (_root_.GebMirror.Metalogic.«Language.app» x4 x2))
+      (fun (x2 : _root_.Geb.Kernel.Tree) => x2)
       x1
       x0;
     x2
 
 def «Tactics.byMode» :=
-  fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) (x4 : List T) =>
-    let x5 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x5 : List T) (x6 : List T) (x7 : T) (x8 : T) =>
-      «Prover.joinBy»
-        («Prover.eval» x1 x2 x3 x4 (leaf 4096) x0)
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x5 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x6 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x7 : _root_.Geb.Kernel.Tree)
+                                         (x8 : _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Prover.joinBy»
+        (_root_.GebMirror.Metalogic.«Prover.eval»
+          x1
+          x2
+          x3
+          x4
+          (_root_.Geb.Kernel.leaf 4096)
+          x0)
         x5
         x6
         x7
@@ -207,83 +315,139 @@ def «Tactics.byMode» :=
     x5
 
 def «Tactics.byWeak» :=
-  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : List T) =>
-    let x4 : List T →
-      List T → T → T → T := «Tactics.byMode» (leaf 1) x0 x1 x2 x3;
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.byMode»
+      (_root_.Geb.Kernel.leaf 1)
+      x0
+      x1
+      x2
+      x3;
     x4
 
 def «Tactics.byNF» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List T)
-    (x4 : T)
-    (x5 : List T → List T → T → T → T) =>
-    let x6 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x6 : List T) (x7 : List T) (x8 : T) (x9 : T) =>
-      «Prover.bindNT»
-        («Prover.eval» x0 x1 x2 x3 (leaf 4096) x4 x6 x7 x8)
-        (fun (x10 : T) =>
-          «Prover.bindNT»
-            («Prover.eval» x0 x1 x2 x3 (leaf 4096) x4 x6 x7 x9)
-            (fun (x11 : T) =>
-              «Base.mapO»
-                (fun (x12 : T) =>
-                  «Prover.dNode»
-                    (leaf 23)
-                    ([] : List T)
-                    («Theory.l2»
-                      («Prover.dNode»
-                        (leaf 2)
-                        ([] : List T)
-                        («Theory.l2»
-                          («Prover.mDeriv» («Prover.nfMarked» x10))
-                          («Prover.mDeriv» («Prover.nfMarked» x11))))
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x6 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x6 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x7 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x8 : _root_.Geb.Kernel.Tree)
+                                         (x9 : _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Prover.bindNT»
+        (_root_.GebMirror.Metalogic.«Prover.eval»
+          x0
+          x1
+          x2
+          x3
+          (_root_.Geb.Kernel.leaf 4096)
+          x4
+          x6
+          x7
+          x8)
+        (fun (x10 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Prover.bindNT»
+            (_root_.GebMirror.Metalogic.«Prover.eval»
+              x0
+              x1
+              x2
+              x3
+              (_root_.Geb.Kernel.leaf 4096)
+              x4
+              x6
+              x7
+              x9)
+            (fun (x11 : _root_.Geb.Kernel.Tree) =>
+              _root_.GebMirror.Metalogic.«Base.mapO»
+                (fun (x12 : _root_.Geb.Kernel.Tree) =>
+                  _root_.GebMirror.Metalogic.«Prover.dNode»
+                    (_root_.Geb.Kernel.leaf 23)
+                    ([] : _root_.List _root_.Geb.Kernel.Tree)
+                    (_root_.GebMirror.Metalogic.«Theory.l2»
+                      (_root_.GebMirror.Metalogic.«Prover.dNode»
+                        (_root_.Geb.Kernel.leaf 2)
+                        ([] : _root_.List _root_.Geb.Kernel.Tree)
+                        (_root_.GebMirror.Metalogic.«Theory.l2»
+                          (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                            (_root_.GebMirror.Metalogic.«Prover.nfMarked» x10))
+                          (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                            (_root_.GebMirror.Metalogic.«Prover.nfMarked» x11))))
                       x12))
-                (x5 x6 x7 («Prover.nfTerm» x10) («Prover.nfTerm» x11)))));
+                (x5
+                  x6
+                  x7
+                  (_root_.GebMirror.Metalogic.«Prover.nfTerm» x10)
+                  (_root_.GebMirror.Metalogic.«Prover.nfTerm» x11)))));
     x6
 
 def «Tactics.appendNR» :=
-  fun (x0 : List T) (x1 : List T) =>
-    let x2 : List
-      T := Const.foldr
-      (α := T)
-      (β := List T)
-      (fun (x2 : T) (x3 : List T) => (x2 :: x3))
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        (x2 :: x3))
       x1
       x0;
     x2
 
 def «Tactics.hypRule» :=
-  fun (x0 : T) => let x1 : T := «Prover.nrHyp» x0; x1
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.nrHyp» x0;
+    x1
 
 def «Tactics.hypRules» :=
-  fun (x0 : T) =>
-    let x1 : List
-      T := Const.foldr
-      (α := T)
-      (β := List T)
-      (fun (x1 : T) (x2 : List T) => ((«Tactics.hypRule» x1) :: x2))
-      ([] : List T)
-      («Base.range» x0);
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+        ((_root_.GebMirror.Metalogic.«Tactics.hypRule» x1) :: x2))
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«Base.range» x0);
     x1
 
 def «Tactics.normH» :=
-  fun (x0 : T) (x1 : List T) (x2 : List T) =>
-    let x3 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x3 : List T) (x4 : List T) (x5 : T) (x6 : T) =>
-      «Prover.byNormW»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x3 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x4 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x5 : _root_.Geb.Kernel.Tree)
+                                         (x6 : _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Prover.byNormW»
         x0
         x1
-        (leaf 0)
-        («Tactics.appendNR» («Tactics.hypRules» («Prelude.length» x4)) x2)
-        (leaf 1024)
+        (_root_.Geb.Kernel.leaf 0)
+        (_root_.GebMirror.Metalogic.«Tactics.appendNR»
+          (_root_.GebMirror.Metalogic.«Tactics.hypRules»
+            (_root_.GebMirror.Metalogic.«Prelude.length» x4))
+          x2)
+        (_root_.Geb.Kernel.leaf 1024)
         x3
         x4
         x5
@@ -291,738 +455,1117 @@ def «Tactics.normH» :=
     x3
 
 def «Tactics.funExts» :=
-  fun (x0 : T) (x1 : T) (x2 : List T → List T → T → T → T) =>
-    let x3 : List T →
-      List T →
-        T →
-          T →
-            T := Const.iter
-      (α := List T → List T → T → T → T)
-      (fun (x3 : List T → List T → T → T → T) =>
-        «Prover.byFunExt» x1 (leaf 0) x3)
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (fun (x3 : _root_.List _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree →
+             _root_.Geb.Kernel.Tree →
+               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Prover.byFunExt» x1 (_root_.Geb.Kernel.leaf 0) x3)
       x2
       x0;
     x3
 
 def «Tactics.byListIndWeak» :=
-  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) (x4 : List T) =>
-    let x5 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x5 : List T) (x6 : List T) (x7 : T) (x8 : T) =>
-      Const.lcase
-        (α := T)
-        (β := T)
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x5 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x6 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x7 : _root_.Geb.Kernel.Tree)
+                                         (x8 : _root_.Geb.Kernel.Tree) =>
+      _root_.Geb.Kernel.Const.lcase
+        (α := _root_.Geb.Kernel.Tree)
+        (β := _root_.Geb.Kernel.Tree)
         x5
-        «Prelude.none»
-        (fun (x9 : T) (x10 : List T) =>
-          «Base.bindO»
-            («Language.listPart» x9)
-            (fun (x11 : T) =>
-              «Prover.bindHT»
-                («Derivation.lowerHyps» x0 x2 x10 x6)
-                (fun (x12 : T) =>
-                  let x13 : List T := «Prover.termsOf» x12;
-                  let x14 : List T := (x9 :: (x11 :: x10));
-                  let x15 : List T := «Base.mapT» «Derivation.weaken2» x13;
-                  «Base.bindO»
-                    («Tactics.byWeak»
+        _root_.GebMirror.Metalogic.«Prelude.none»
+        (fun (x9 : _root_.Geb.Kernel.Tree)
+           (x10 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Base.bindO»
+            (_root_.GebMirror.Metalogic.«Language.listPart» x9)
+            (fun (x11 : _root_.Geb.Kernel.Tree) =>
+              _root_.GebMirror.Metalogic.«Prover.bindHT»
+                (_root_.GebMirror.Metalogic.«Derivation.lowerHyps» x0 x2 x10 x6)
+                (fun (x12 : _root_.Geb.Kernel.Tree) =>
+                  let x13 : _root_.List
+                    _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.termsOf» x12;
+                  let x14 : _root_.List _root_.Geb.Kernel.Tree := (x9 :: (x11 :: x10));
+                  let x15 : _root_.List
+                    _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Base.mapT»
+                    _root_.GebMirror.Metalogic.«Derivation.weaken2»
+                    x13;
+                  _root_.GebMirror.Metalogic.«Base.bindO»
+                    (_root_.GebMirror.Metalogic.«Tactics.byWeak»
                       x0
                       x1
                       x2
                       x4
                       x10
                       x13
-                      («Prover.instAt» (leaf 0) («Prelude.single» x11) x7)
-                      («Prover.instAt» (leaf 0) («Prelude.single» x11) x8))
-                    (fun (x16 : T) =>
-                      «Base.bindO»
-                        («Tactics.byWeak»
+                      (_root_.GebMirror.Metalogic.«Prover.instAt»
+                        (_root_.Geb.Kernel.leaf 0)
+                        (_root_.GebMirror.Metalogic.«Prelude.single» x11)
+                        x7)
+                      (_root_.GebMirror.Metalogic.«Prover.instAt»
+                        (_root_.Geb.Kernel.leaf 0)
+                        (_root_.GebMirror.Metalogic.«Prelude.single» x11)
+                        x8))
+                    (fun (x16 : _root_.Geb.Kernel.Tree) =>
+                      _root_.GebMirror.Metalogic.«Base.bindO»
+                        (_root_.GebMirror.Metalogic.«Tactics.byWeak»
                           x0
                           x1
                           x2
                           x4
                           x14
                           x15
-                          («Derivation.listConsAt» (leaf 1) x11 x7)
-                          («Language.subst»
+                          (_root_.GebMirror.Metalogic.«Derivation.listConsAt»
+                            (_root_.Geb.Kernel.leaf 1)
+                            x11
+                            x7)
+                          (_root_.GebMirror.Metalogic.«Language.subst»
                             x3
-                            («Derivation.atVar0» («Derivation.weakenElem» x7))))
-                        (fun (x17 : T) =>
-                          «Base.mapO»
-                            (fun (x18 : T) =>
-                              «Prover.dNode»
-                                (leaf 20)
-                                («Theory.l3» (leaf 0) (leaf 1) x3)
-                                («Theory.l3» x16 x17 x18))
-                            («Tactics.byWeak»
+                            (_root_.GebMirror.Metalogic.«Derivation.atVar0»
+                              (_root_.GebMirror.Metalogic.«Derivation.weakenElem» x7))))
+                        (fun (x17 : _root_.Geb.Kernel.Tree) =>
+                          _root_.GebMirror.Metalogic.«Base.mapO»
+                            (fun (x18 : _root_.Geb.Kernel.Tree) =>
+                              _root_.GebMirror.Metalogic.«Prover.dNode»
+                                (_root_.Geb.Kernel.leaf 20)
+                                (_root_.GebMirror.Metalogic.«Theory.l3»
+                                  (_root_.Geb.Kernel.leaf 0)
+                                  (_root_.Geb.Kernel.leaf 1)
+                                  x3)
+                                (_root_.GebMirror.Metalogic.«Theory.l3» x16 x17 x18))
+                            (_root_.GebMirror.Metalogic.«Tactics.byWeak»
                               x0
                               x1
                               x2
                               x4
                               x14
                               x15
-                              («Derivation.listConsAt» (leaf 1) x11 x8)
-                              («Language.subst»
+                              (_root_.GebMirror.Metalogic.«Derivation.listConsAt»
+                                (_root_.Geb.Kernel.leaf 1)
+                                x11
+                                x8)
+                              (_root_.GebMirror.Metalogic.«Language.subst»
                                 x3
-                                («Derivation.atVar0» («Derivation.weakenElem» x8))))))))));
+                                (_root_.GebMirror.Metalogic.«Derivation.atVar0»
+                                  (_root_.GebMirror.Metalogic.«Derivation.weakenElem» x8))))))))));
     x5
 
 def «Tactics.byRoseIndWith» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : List T → List T → T → T → T) =>
-    let x4 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x4 : List T) (_ : List T) (x6 : T) (x7 : T) =>
-      if (Const.eq («Prelude.length» x4) (leaf 1)).label ≠ 0 then
-        let x8 : T := «Prelude.at» x4 (leaf 0);
-        «Base.bindO»
-          («Language.roseLabel» x8)
-          (fun (x9 : T) =>
-            «Base.bindO»
-              («Derivation.typeIn» x0 x1 x4 x6)
-              (fun (x10 : T) =>
-                let x11 : List T := «Theory.l2» («Theory.list» x8) x9;
-                «Base.bindO»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x4 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (_ : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x6 : _root_.Geb.Kernel.Tree)
+                                         (x7 : _root_.Geb.Kernel.Tree) =>
+      if (_root_.Geb.Kernel.Const.eq
+        (_root_.GebMirror.Metalogic.«Prelude.length» x4)
+        (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+        let x8 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.at»
+          x4
+          (_root_.Geb.Kernel.leaf 0);
+        _root_.GebMirror.Metalogic.«Base.bindO»
+          (_root_.GebMirror.Metalogic.«Language.roseLabel» x8)
+          (fun (x9 : _root_.Geb.Kernel.Tree) =>
+            _root_.GebMirror.Metalogic.«Base.bindO»
+              (_root_.GebMirror.Metalogic.«Derivation.typeIn» x0 x1 x4 x6)
+              (fun (x10 : _root_.Geb.Kernel.Tree) =>
+                let x11 : _root_.List
+                  _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Theory.l2»
+                  (_root_.GebMirror.Metalogic.«Theory.list» x8)
+                  x9;
+                _root_.GebMirror.Metalogic.«Base.bindO»
                   (x3
                     x11
-                    ([] : List T)
-                    («Derivation.roseNodeAt» (leaf 2) x8 x9 x6)
-                    («Language.subst»
+                    ([] : _root_.List _root_.Geb.Kernel.Tree)
+                    (_root_.GebMirror.Metalogic.«Derivation.roseNodeAt»
+                      (_root_.Geb.Kernel.leaf 2)
+                      x8
+                      x9
+                      x6)
+                    (_root_.GebMirror.Metalogic.«Language.subst»
                       x2
-                      («Derivation.atVar0»
-                        («Derivation.roseMapAt» (leaf 0) (leaf 1) x10 x6))))
-                  (fun (x12 : T) =>
-                    «Base.mapO»
-                      (fun (x13 : T) =>
-                        «Prover.dNode»
-                          (leaf 32)
-                          («Theory.l4» (leaf 2) (leaf 0) (leaf 1) x2)
-                          («Theory.l2» x12 x13))
+                      (_root_.GebMirror.Metalogic.«Derivation.atVar0»
+                        (_root_.GebMirror.Metalogic.«Derivation.roseMapAt»
+                          (_root_.Geb.Kernel.leaf 0)
+                          (_root_.Geb.Kernel.leaf 1)
+                          x10
+                          x6))))
+                  (fun (x12 : _root_.Geb.Kernel.Tree) =>
+                    _root_.GebMirror.Metalogic.«Base.mapO»
+                      (fun (x13 : _root_.Geb.Kernel.Tree) =>
+                        _root_.GebMirror.Metalogic.«Prover.dNode»
+                          (_root_.Geb.Kernel.leaf 32)
+                          (_root_.GebMirror.Metalogic.«Theory.l4»
+                            (_root_.Geb.Kernel.leaf 2)
+                            (_root_.Geb.Kernel.leaf 0)
+                            (_root_.Geb.Kernel.leaf 1)
+                            x2)
+                          (_root_.GebMirror.Metalogic.«Theory.l2» x12 x13))
                       (x3
                         x11
-                        ([] : List T)
-                        («Derivation.roseNodeAt» (leaf 2) x8 x9 x7)
-                        («Language.subst»
+                        ([] : _root_.List _root_.Geb.Kernel.Tree)
+                        (_root_.GebMirror.Metalogic.«Derivation.roseNodeAt»
+                          (_root_.Geb.Kernel.leaf 2)
+                          x8
+                          x9
+                          x7)
+                        (_root_.GebMirror.Metalogic.«Language.subst»
                           x2
-                          («Derivation.atVar0»
-                            («Derivation.roseMapAt» (leaf 0) (leaf 1) x10 x7)))))))
+                          (_root_.GebMirror.Metalogic.«Derivation.atVar0»
+                            (_root_.GebMirror.Metalogic.«Derivation.roseMapAt»
+                              (_root_.Geb.Kernel.leaf 0)
+                              (_root_.Geb.Kernel.leaf 1)
+                              x10
+                              x7)))))))
       else
-        «Prelude.none»);
+        _root_.GebMirror.Metalogic.«Prelude.none»);
     x4
 
 def «Tactics.applyAbs» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) =>
-    let x5 : T := «Prover.dNode»
-      (leaf 22)
-      («Prelude.single» («Language.mEq» x2 x3))
-      («Theory.l2»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+      (_root_.Geb.Kernel.leaf 22)
+      (_root_.GebMirror.Metalogic.«Prelude.single»
+        (_root_.GebMirror.Metalogic.«Language.mEq» x2 x3))
+      (_root_.GebMirror.Metalogic.«Theory.l2»
         x4
-        («Prover.dNode»
-          (leaf 24)
-          («Prelude.single»
-            («Language.mEq» («Language.app» x2 x0) («Language.app» x3 x0)))
-          («Theory.l2»
-            («Prover.dNode»
-              (leaf 2)
-              ([] : List T)
-              («Theory.l2»
-                («Prover.dNode» (leaf 3) ([] : List T) ([] : List T))
-                («Prover.dNode» (leaf 3) ([] : List T) ([] : List T))))
-            («Prover.dNode»
-              (leaf 18)
-              ([] : List T)
-              («Theory.l2»
-                («Prover.dNode»
-                  (leaf 2)
-                  ([] : List T)
-                  («Theory.l2»
-                    («Prover.dNode» (leaf 17) («Theory.l2» x1 (leaf 0)) ([] : List T))
-                    («Prover.dNode» (leaf 0) ([] : List T) ([] : List T))))
-                («Prover.dNode» (leaf 0) ([] : List T) ([] : List T)))))));
+        (_root_.GebMirror.Metalogic.«Prover.dNode»
+          (_root_.Geb.Kernel.leaf 24)
+          (_root_.GebMirror.Metalogic.«Prelude.single»
+            (_root_.GebMirror.Metalogic.«Language.mEq»
+              (_root_.GebMirror.Metalogic.«Language.app» x2 x0)
+              (_root_.GebMirror.Metalogic.«Language.app» x3 x0)))
+          (_root_.GebMirror.Metalogic.«Theory.l2»
+            (_root_.GebMirror.Metalogic.«Prover.dNode»
+              (_root_.Geb.Kernel.leaf 2)
+              ([] : _root_.List _root_.Geb.Kernel.Tree)
+              (_root_.GebMirror.Metalogic.«Theory.l2»
+                (_root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 3)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree))
+                (_root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 3)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree))))
+            (_root_.GebMirror.Metalogic.«Prover.dNode»
+              (_root_.Geb.Kernel.leaf 18)
+              ([] : _root_.List _root_.Geb.Kernel.Tree)
+              (_root_.GebMirror.Metalogic.«Theory.l2»
+                (_root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 2)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)
+                  (_root_.GebMirror.Metalogic.«Theory.l2»
+                    (_root_.GebMirror.Metalogic.«Prover.dNode»
+                      (_root_.Geb.Kernel.leaf 17)
+                      (_root_.GebMirror.Metalogic.«Theory.l2» x1 (_root_.Geb.Kernel.leaf 0))
+                      ([] : _root_.List _root_.Geb.Kernel.Tree))
+                    (_root_.GebMirror.Metalogic.«Prover.dNode»
+                      (_root_.Geb.Kernel.leaf 0)
+                      ([] : _root_.List _root_.Geb.Kernel.Tree)
+                      ([] : _root_.List _root_.Geb.Kernel.Tree))))
+                (_root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 0)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)))))));
     x5
 
 def «Tactics.byListSplit» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : T)
-    (x3 : List T → List T → T → T → T)
-    (x4 : List T → List T → T → T → T) =>
-    let x5 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x5 : List T) (x6 : List T) (x7 : T) (x8 : T) =>
-      «Base.bindO»
-        («Prelude.nth» x5 x2)
-        (fun (x9 : T) =>
-          let x10 : T := «Prover.abstractVar» x2 x9 x7;
-          let x11 : T := «Prover.abstractVar» x2 x9 x8;
-          «Base.mapO»
-            (fun (x12 : T) =>
-              «Tactics.applyAbs»
-                («Language.var» x2)
-                («Prelude.length» x6)
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x5 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x6 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x7 : _root_.Geb.Kernel.Tree)
+                                         (x8 : _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Base.bindO»
+        (_root_.GebMirror.Metalogic.«Prelude.nth» x5 x2)
+        (fun (x9 : _root_.Geb.Kernel.Tree) =>
+          let x10 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.abstractVar»
+            x2
+            x9
+            x7;
+          let x11 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.abstractVar»
+            x2
+            x9
+            x8;
+          _root_.GebMirror.Metalogic.«Base.mapO»
+            (fun (x12 : _root_.Geb.Kernel.Tree) =>
+              _root_.GebMirror.Metalogic.«Tactics.applyAbs»
+                (_root_.GebMirror.Metalogic.«Language.var» x2)
+                (_root_.GebMirror.Metalogic.«Prelude.length» x6)
                 x10
                 x11
-                («Prover.dNode» (leaf 26) ([] : List T) («Prelude.single» x12)))
-            («Prover.byListIndWith»
+                (_root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 26)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)
+                  (_root_.GebMirror.Metalogic.«Prelude.single» x12)))
+            (_root_.GebMirror.Metalogic.«Prover.byListIndWith»
               x0
               x1
-              (leaf 0)
-              (leaf 1)
+              (_root_.Geb.Kernel.leaf 0)
+              (_root_.Geb.Kernel.leaf 1)
               x3
               x4
               (x9 :: x5)
-              («Base.mapT» «Derivation.weaken1» x6)
-              («Language.app» («Derivation.weaken1» x10) («Language.var» (leaf 0)))
-              («Language.app»
-                («Derivation.weaken1» x11)
-                («Language.var» (leaf 0))))));
+              (_root_.GebMirror.Metalogic.«Base.mapT» _root_.GebMirror.Metalogic.«Derivation.weaken1» x6)
+              (_root_.GebMirror.Metalogic.«Language.app»
+                (_root_.GebMirror.Metalogic.«Derivation.weaken1» x10)
+                (_root_.GebMirror.Metalogic.«Language.var» (_root_.Geb.Kernel.leaf 0)))
+              (_root_.GebMirror.Metalogic.«Language.app»
+                (_root_.GebMirror.Metalogic.«Derivation.weaken1» x11)
+                (_root_.GebMirror.Metalogic.«Language.var» (_root_.Geb.Kernel.leaf 0))))));
     x5
 
 def «Tactics.bySplit2» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : T)
-    (x3 : List T → List T → T → T → T)
-    (x4 : List T → List T → T → T → T) =>
-    let x5 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x5 : List T) (x6 : List T) (x7 : T) (x8 : T) =>
-      «Base.bindO»
-        («Prelude.nth» x5 x2)
-        (fun (x9 : T) =>
-          «Derivation.bindPT»
-            («Language.coprodParts» x9)
-            (fun (x10 : T) =>
-              let x11 : T := «Language.p1» x10;
-              let x12 : T := «Language.p2» x10;
-              let x13 : T := «Prover.abstractVar» x2 x9 x7;
-              let x14 : T := «Prover.abstractVar» x2 x9 x8;
-              let x15 : T →
-                T →
-                  T := (fun (x15 : T) (x16 : T) =>
-                «Language.app»
-                  («Derivation.weaken1» x16)
-                  («Language.mArr»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x5 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x6 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x7 : _root_.Geb.Kernel.Tree)
+                                         (x8 : _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Base.bindO»
+        (_root_.GebMirror.Metalogic.«Prelude.nth» x5 x2)
+        (fun (x9 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Derivation.bindPT»
+            (_root_.GebMirror.Metalogic.«Language.coprodParts» x9)
+            (fun (x10 : _root_.Geb.Kernel.Tree) =>
+              let x11 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.p1» x10;
+              let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.p2» x10;
+              let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.abstractVar»
+                x2
+                x9
+                x7;
+              let x14 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.abstractVar»
+                x2
+                x9
+                x8;
+              let x15 : _root_.Geb.Kernel.Tree →
+                _root_.Geb.Kernel.Tree →
+                  _root_.Geb.Kernel.Tree := (fun (x15 : _root_.Geb.Kernel.Tree)
+                                               (x16 : _root_.Geb.Kernel.Tree) =>
+                _root_.GebMirror.Metalogic.«Language.app»
+                  (_root_.GebMirror.Metalogic.«Derivation.weaken1» x16)
+                  (_root_.GebMirror.Metalogic.«Language.mArr»
                     x15
-                    («Theory.l2» x11 x12)
-                    («Language.var» (leaf 0))));
-              «Base.bindO»
+                    (_root_.GebMirror.Metalogic.«Theory.l2» x11 x12)
+                    (_root_.GebMirror.Metalogic.«Language.var» (_root_.Geb.Kernel.leaf 0))));
+              _root_.GebMirror.Metalogic.«Base.bindO»
                 (x3
                   (x11 :: x5)
-                  («Base.mapT» «Derivation.weaken1» x6)
+                  (_root_.GebMirror.Metalogic.«Base.mapT» _root_.GebMirror.Metalogic.«Derivation.weaken1» x6)
                   (x15 x0 x13)
                   (x15 x0 x14))
-                (fun (x16 : T) =>
-                  «Base.mapO»
-                    (fun (x17 : T) =>
-                      «Tactics.applyAbs»
-                        («Language.var» x2)
-                        («Prelude.length» x6)
+                (fun (x16 : _root_.Geb.Kernel.Tree) =>
+                  _root_.GebMirror.Metalogic.«Base.mapO»
+                    (fun (x17 : _root_.Geb.Kernel.Tree) =>
+                      _root_.GebMirror.Metalogic.«Tactics.applyAbs»
+                        (_root_.GebMirror.Metalogic.«Language.var» x2)
+                        (_root_.GebMirror.Metalogic.«Prelude.length» x6)
                         x13
                         x14
-                        («Prover.dNode»
-                          (leaf 26)
-                          ([] : List T)
-                          («Prelude.single»
-                            («Prover.dNode»
-                              (leaf 34)
-                              («Theory.l2» x0 x1)
-                              («Theory.l2» x16 x17)))))
+                        (_root_.GebMirror.Metalogic.«Prover.dNode»
+                          (_root_.Geb.Kernel.leaf 26)
+                          ([] : _root_.List _root_.Geb.Kernel.Tree)
+                          (_root_.GebMirror.Metalogic.«Prelude.single»
+                            (_root_.GebMirror.Metalogic.«Prover.dNode»
+                              (_root_.Geb.Kernel.leaf 34)
+                              (_root_.GebMirror.Metalogic.«Theory.l2» x0 x1)
+                              (_root_.GebMirror.Metalogic.«Theory.l2» x16 x17)))))
                     (x4
                       (x12 :: x5)
-                      («Base.mapT» «Derivation.weaken1» x6)
+                      (_root_.GebMirror.Metalogic.«Base.mapT» _root_.GebMirror.Metalogic.«Derivation.weaken1» x6)
                       (x15 x1 x13)
                       (x15 x1 x14))))));
     x5
 
 def «Tactics.byListCases» :=
-  fun (x0 : T) (x1 : T) (x2 : List T → List T → T → T → T) =>
-    let x3 : List T →
-      List T →
-        T → T → T := «Prover.byListIndWith» x0 x1 (leaf 0) (leaf 1) x2 x2;
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.byListIndWith»
+      x0
+      x1
+      (_root_.Geb.Kernel.leaf 0)
+      (_root_.Geb.Kernel.leaf 1)
+      x2
+      x2;
     x3
 
 def «Tactics.bitsInd» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : List T → List T → T → T → T)
-    (x3 : List T → List T → T → T → T) =>
-    let x4 : List T →
-      List T →
-        T →
-          T →
-            T := «Prover.byListIndWith»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.byListIndWith»
       x0
       x1
-      (leaf 0)
-      (leaf 1)
+      (_root_.Geb.Kernel.leaf 0)
+      (_root_.Geb.Kernel.leaf 1)
       x2
-      («Prover.bySplit» (leaf 3) (leaf 4) (leaf 1) x3);
+      (_root_.GebMirror.Metalogic.«Prover.bySplit»
+        (_root_.Geb.Kernel.leaf 3)
+        (_root_.Geb.Kernel.leaf 4)
+        (_root_.Geb.Kernel.leaf 1)
+        x3);
     x4
 
 def «Tactics.bitsCases» :=
-  fun (x0 : T) (x1 : T) (x2 : List T → List T → T → T → T) =>
-    let x3 : List T → List T → T → T → T := «Tactics.bitsInd» x0 x1 x2 x2;
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.bitsInd»
+      x0
+      x1
+      x2
+      x2;
     x3
 
 def «Tactics.byBits» :=
-  fun (x0 : T) (x1 : List T → List T → T → T → T) (x2 : T) =>
-    let x3 : T →
-      List T →
-        List T →
-          T →
-            T →
-              T := Const.iter
-      (α := T → List T → List T → T → T → T)
-      (fun (x3 : T → List T → List T → T → T → T) (x4 : T) =>
-        «Tactics.byListSplit»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
+      (α := _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (fun (x3 : _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x4 : _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Tactics.byListSplit»
           x0
-          (leaf 0)
+          (_root_.Geb.Kernel.leaf 0)
           x4
           x1
-          («Tactics.bySplit2»
-            (leaf 3)
-            (leaf 4)
-            (leaf 1)
-            (x3 (leaf 1))
-            (x3 (leaf 1))))
-      (fun (_ : T) => x1)
+          (_root_.GebMirror.Metalogic.«Tactics.bySplit2»
+            (_root_.Geb.Kernel.leaf 3)
+            (_root_.Geb.Kernel.leaf 4)
+            (_root_.Geb.Kernel.leaf 1)
+            (x3 (_root_.Geb.Kernel.leaf 1))
+            (x3 (_root_.Geb.Kernel.leaf 1))))
+      (fun (_ : _root_.Geb.Kernel.Tree) => x1)
       x2;
     x3
 
 def «Tactics.byLength3» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : List T → List T → T → T → T)
-    (x3 : List T → List T → T → T → T) =>
-    let x4 : List T →
-      List T →
-        T →
-          T →
-            T := «Tactics.byListSplit»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.byListSplit»
       x0
-      (leaf 0)
+      (_root_.Geb.Kernel.leaf 0)
       x1
       x3
-      («Tactics.byListSplit»
+      (_root_.GebMirror.Metalogic.«Tactics.byListSplit»
         x0
-        (leaf 0)
-        (leaf 0)
+        (_root_.Geb.Kernel.leaf 0)
+        (_root_.Geb.Kernel.leaf 0)
         x3
-        («Tactics.byListSplit»
+        (_root_.GebMirror.Metalogic.«Tactics.byListSplit»
           x0
-          (leaf 0)
-          (leaf 0)
+          (_root_.Geb.Kernel.leaf 0)
+          (_root_.Geb.Kernel.leaf 0)
           x3
-          («Tactics.byListSplit» x0 (leaf 0) (leaf 0) x2 x3)));
+          (_root_.GebMirror.Metalogic.«Tactics.byListSplit»
+            x0
+            (_root_.Geb.Kernel.leaf 0)
+            (_root_.Geb.Kernel.leaf 0)
+            x2
+            x3)));
     x4
 
-def «Tactics.rules» := fun (x0 : List T) => Const.node (leaf 0) x0
+def «Tactics.rules» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x0
 
-def «Tactics.frames» := fun (x0 : List T) => Const.node (leaf 0) x0
+def «Tactics.frames» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x0
 
 def «Tactics.wh» :=
-  fun (x0 : T) (x1 : T) (x2 : T) =>
-    Const.node (leaf 0) (x0 :: (x1 :: (x2 :: ([] : List T))))
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 0)
+      (x0 :: (x1 :: (x2 :: ([] : _root_.List _root_.Geb.Kernel.Tree))))
 
-def «Tactics/OWH.nothing» := Const.node (leaf 0) ([] : List T)
+def «$546163746963732f4f57482e6e6f7468696e67» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «Tactics/OWH.just» :=
-  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+def «$546163746963732f4f57482e6a757374» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
-def «Tactics/OWH.isJust» :=
-  fun (x0 : T) =>
-    let x1 : T := (let x1 : T := x0;
-                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let x2 : List T := Const.children x1;
-                     let _ : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x2
-                       (leaf 0)
-                       (fun (x3 : T) (_ : List T) => x3);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x2
-                       ([] : List T)
-                       (fun (_ : T) (x5 : List T) => x5);
-                     leaf 1
-                   else
-                     let _ : List T := Const.children x1; leaf 0);
+def «$546163746963732f4f57482e69734a757374» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
     x1
 
-def «Tactics/OWH.fromMaybe» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := (let x2 : T := x1;
-                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : List T := Const.children x2;
-                     let x4 : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x3
-                       (leaf 0)
-                       (fun (x4 : T) (_ : List T) => x4);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x3
-                       ([] : List T)
-                       (fun (_ : T) (x6 : List T) => x6);
-                     x4
-                   else
-                     let _ : List T := Const.children x2; x0);
+def «$546163746963732f4f57482e66726f6d4d61796265» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
     x2
 
-def «Tactics/OWH.nthOf» :=
-  fun (x0 : List T) (x1 : T) =>
-    let x2 : T := Const.lcase
-      (α := T)
-      (β := T)
-      (Const.iter
-        (α := List T)
-        (fun (x2 : List T) =>
-          Const.lcase
-            (α := T)
-            (β := List T)
+def «$546163746963732f4f57482e6e74684f66» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
             x2
-            ([] : List T)
-            (fun (_ : T) (x4 : List T) => x4))
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
         x0
         x1)
-      «Tactics/OWH.nothing»
-      (fun (x2 : T) (_ : List T) => «Tactics/OWH.just» x2);
+      _root_.GebMirror.Metalogic.«$546163746963732f4f57482e6e6f7468696e67»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$546163746963732f4f57482e6a757374» x2);
     x2
 
-def «Tactics/OWH.allJust» :=
-  fun (x0 : List T) =>
-    let x1 : T ×
-      List
-        T := Const.foldr
-      (α := T)
-      (β := T × List T)
-      (fun (x1 : T) (x2 : T × List T) =>
-        let x3 : T := x1;
-        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : List T := Const.children x3;
-          let x5 : T := Const.lcase
-            (α := T)
-            (β := T)
+def «$546163746963732f4f57482e616c6c4a757374» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree ×
+      _root_.List
+        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
+        let x3 : _root_.Geb.Kernel.Tree := x1;
+        if (_root_.Geb.Kernel.Const.eq
+          (_root_.Geb.Kernel.Const.label x3)
+          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+          let x4 : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
+          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.Geb.Kernel.Tree)
             x4
-            (leaf 0)
-            (fun (x5 : T) (_ : List T) => x5);
-          let _ : List
-            T := Const.lcase
-            (α := T)
-            (β := List T)
+            (_root_.Geb.Kernel.leaf 0)
+            (fun (x5 : _root_.Geb.Kernel.Tree)
+               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+              x5);
+          let _ : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
             x4
-            ([] : List T)
-            (fun (_ : T) (x7 : List T) => x7);
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x7);
           ((x2).1, (x5 :: (x2).2))
         else
-          let _ : List T := Const.children x3; (leaf 0, (x2).2))
-      (leaf 1, ([] : List T))
+          let _ : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
+          (_root_.Geb.Kernel.leaf 0, (x2).2))
+      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
       x0;
     x1
 
 def «Tactics.bindPW» :=
-  fun (x0 : T) (x1 : T → T) =>
-    let x2 : T := (let x2 : T := x0;
-                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : List T := Const.children x2;
-                     let x4 : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x3
-                       (leaf 0)
-                       (fun (x4 : T) (_ : List T) => x4);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x3
-                       ([] : List T)
-                       (fun (_ : T) (x6 : List T) => x6);
-                     x1 x4
-                   else
-                     let _ : List T := Const.children x2; «Tactics/OWH.nothing»);
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x1 x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          _root_.GebMirror.Metalogic.«$546163746963732f4f57482e6e6f7468696e67»);
     x2
 
 def «Tactics.bindNW» :=
-  fun (x0 : T) (x1 : T → T) =>
-    let x2 : T := (let x2 : T := x0;
-                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : List T := Const.children x2;
-                     let x4 : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x3
-                       (leaf 0)
-                       (fun (x4 : T) (_ : List T) => x4);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x3
-                       ([] : List T)
-                       (fun (_ : T) (x6 : List T) => x6);
-                     x1 x4
-                   else
-                     let _ : List T := Const.children x2; «Tactics/OWH.nothing»);
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x1 x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          _root_.GebMirror.Metalogic.«$546163746963732f4f57482e6e6f7468696e67»);
     x2
 
 def «Tactics.weakHyps» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List T)
-    (x4 : List T)
-    (x5 : T)
-    (x6 : List T)
-    (x7 : List T) =>
-    let x8 : T := Const.foldr
-      (α := T)
-      (β := List T → List T → T)
-      (fun (x8 : T)
-         (x9 : List T → List T → T)
-         (x10 : List T)
-         (x11 : List T) =>
-        «Tactics.bindPW»
-          («Language.bindTP» («Prelude.nth» x10 x8) «Derivation.eqParts»)
-          (fun (x12 : T) =>
-            «Tactics.bindNW»
-              («Prover.eval» x0 x1 x2 x3 (leaf 4096) x5 x6 x10 («Language.p1» x12))
-              (fun (x13 : T) =>
-                «Tactics.bindNW»
-                  («Prover.eval» x0 x1 x2 x3 (leaf 4096) x5 x6 x10 («Language.p2» x12))
-                  (fun (x14 : T) =>
-                    let x15 : T := «Language.mEq»
-                      («Prover.nfTerm» x13)
-                      («Prover.nfTerm» x14);
-                    let x16 : T := x9
-                      («Prelude.append» x10 («Prelude.single» x15))
-                      («Tactics.appendNR»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree)
+    (x6 : _root_.List _root_.Geb.Kernel.Tree)
+    (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x8 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (fun (x8 : _root_.Geb.Kernel.Tree)
+         (x9 : _root_.List _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x10 : _root_.List _root_.Geb.Kernel.Tree)
+         (x11 : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Tactics.bindPW»
+          (_root_.GebMirror.Metalogic.«Language.bindTP»
+            (_root_.GebMirror.Metalogic.«Prelude.nth» x10 x8)
+            _root_.GebMirror.Metalogic.«Derivation.eqParts»)
+          (fun (x12 : _root_.Geb.Kernel.Tree) =>
+            _root_.GebMirror.Metalogic.«Tactics.bindNW»
+              (_root_.GebMirror.Metalogic.«Prover.eval»
+                x0
+                x1
+                x2
+                x3
+                (_root_.Geb.Kernel.leaf 4096)
+                x5
+                x6
+                x10
+                (_root_.GebMirror.Metalogic.«Language.p1» x12))
+              (fun (x13 : _root_.Geb.Kernel.Tree) =>
+                _root_.GebMirror.Metalogic.«Tactics.bindNW»
+                  (_root_.GebMirror.Metalogic.«Prover.eval»
+                    x0
+                    x1
+                    x2
+                    x3
+                    (_root_.Geb.Kernel.leaf 4096)
+                    x5
+                    x6
+                    x10
+                    (_root_.GebMirror.Metalogic.«Language.p2» x12))
+                  (fun (x14 : _root_.Geb.Kernel.Tree) =>
+                    let x15 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mEq»
+                      (_root_.GebMirror.Metalogic.«Prover.nfTerm» x13)
+                      (_root_.GebMirror.Metalogic.«Prover.nfTerm» x14);
+                    let x16 : _root_.Geb.Kernel.Tree := x9
+                      (_root_.GebMirror.Metalogic.«Prelude.append»
+                        x10
+                        (_root_.GebMirror.Metalogic.«Prelude.single» x15))
+                      (_root_.GebMirror.Metalogic.«Tactics.appendNR»
                         x11
-                        ((«Tactics.hypRule» («Prelude.length» x10)) :: ([] : List T)));
-                    if (Const.eq (Const.label x16) (leaf 1)).label ≠ 0 then
-                      let x17 : List T := Const.children x16;
-                      let x18 : T := Const.lcase
-                        (α := T)
-                        (β := T)
+                        ((_root_.GebMirror.Metalogic.«Tactics.hypRule»
+                          (_root_.GebMirror.Metalogic.«Prelude.length» x10)) ::
+                          ([] : _root_.List _root_.Geb.Kernel.Tree)));
+                    if (_root_.Geb.Kernel.Const.eq
+                      (_root_.Geb.Kernel.Const.label x16)
+                      (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                      let x17 : _root_.List
+                        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x16;
+                      let x18 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                        (α := _root_.Geb.Kernel.Tree)
+                        (β := _root_.Geb.Kernel.Tree)
                         x17
-                        (leaf 0)
-                        (fun (x18 : T) (_ : List T) => x18);
-                      let _ : List
-                        T := Const.lcase
-                        (α := T)
-                        (β := List T)
+                        (_root_.Geb.Kernel.leaf 0)
+                        (fun (x18 : _root_.Geb.Kernel.Tree)
+                           (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                          x18);
+                      let _ : _root_.List
+                        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                        (α := _root_.Geb.Kernel.Tree)
+                        (β := _root_.List _root_.Geb.Kernel.Tree)
                         x17
-                        ([] : List T)
-                        (fun (_ : T) (x20 : List T) => x20);
-                      let x20 : T := x18;
-                      let x21 : List T := Const.children x20;
-                      let x22 : T := Const.lcase
-                        (α := T)
-                        (β := T)
+                        ([] : _root_.List _root_.Geb.Kernel.Tree)
+                        (fun (_ : _root_.Geb.Kernel.Tree)
+                           (x20 : _root_.List _root_.Geb.Kernel.Tree) =>
+                          x20);
+                      let x20 : _root_.Geb.Kernel.Tree := x18;
+                      let x21 : _root_.List
+                        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x20;
+                      let x22 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                        (α := _root_.Geb.Kernel.Tree)
+                        (β := _root_.Geb.Kernel.Tree)
                         x21
-                        (leaf 0)
-                        (fun (x22 : T) (_ : List T) => x22);
-                      let x23 : List
-                        T := Const.lcase
-                        (α := T)
-                        (β := List T)
+                        (_root_.Geb.Kernel.leaf 0)
+                        (fun (x22 : _root_.Geb.Kernel.Tree)
+                           (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                          x22);
+                      let x23 : _root_.List
+                        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                        (α := _root_.Geb.Kernel.Tree)
+                        (β := _root_.List _root_.Geb.Kernel.Tree)
                         x21
-                        ([] : List T)
-                        (fun (_ : T) (x24 : List T) => x24);
-                      let x24 : T := Const.lcase
-                        (α := T)
-                        (β := T)
+                        ([] : _root_.List _root_.Geb.Kernel.Tree)
+                        (fun (_ : _root_.Geb.Kernel.Tree)
+                           (x24 : _root_.List _root_.Geb.Kernel.Tree) =>
+                          x24);
+                      let x24 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                        (α := _root_.Geb.Kernel.Tree)
+                        (β := _root_.Geb.Kernel.Tree)
                         x23
-                        (leaf 0)
-                        (fun (x24 : T) (_ : List T) => x24);
-                      let x25 : List
-                        T := Const.lcase
-                        (α := T)
-                        (β := List T)
+                        (_root_.Geb.Kernel.leaf 0)
+                        (fun (x24 : _root_.Geb.Kernel.Tree)
+                           (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                          x24);
+                      let x25 : _root_.List
+                        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                        (α := _root_.Geb.Kernel.Tree)
+                        (β := _root_.List _root_.Geb.Kernel.Tree)
                         x23
-                        ([] : List T)
-                        (fun (_ : T) (x26 : List T) => x26);
-                      let x26 : T := Const.lcase
-                        (α := T)
-                        (β := T)
+                        ([] : _root_.List _root_.Geb.Kernel.Tree)
+                        (fun (_ : _root_.Geb.Kernel.Tree)
+                           (x26 : _root_.List _root_.Geb.Kernel.Tree) =>
+                          x26);
+                      let x26 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                        (α := _root_.Geb.Kernel.Tree)
+                        (β := _root_.Geb.Kernel.Tree)
                         x25
-                        (leaf 0)
-                        (fun (x26 : T) (_ : List T) => x26);
-                      let _ : List
-                        T := Const.lcase
-                        (α := T)
-                        (β := List T)
+                        (_root_.Geb.Kernel.leaf 0)
+                        (fun (x26 : _root_.Geb.Kernel.Tree)
+                           (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                          x26);
+                      let _ : _root_.List
+                        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                        (α := _root_.Geb.Kernel.Tree)
+                        (β := _root_.List _root_.Geb.Kernel.Tree)
                         x25
-                        ([] : List T)
-                        (fun (_ : T) (x28 : List T) => x28);
-                      «Tactics/OWH.just»
-                        («Tactics.wh»
+                        ([] : _root_.List _root_.Geb.Kernel.Tree)
+                        (fun (_ : _root_.Geb.Kernel.Tree)
+                           (x28 : _root_.List _root_.Geb.Kernel.Tree) =>
+                          x28);
+                      _root_.GebMirror.Metalogic.«$546163746963732f4f57482e6a757374»
+                        (_root_.GebMirror.Metalogic.«Tactics.wh»
                           x22
                           x24
-                          («Tactics.frames»
-                            ((«Language.pr»
+                          (_root_.GebMirror.Metalogic.«Tactics.frames»
+                            ((_root_.GebMirror.Metalogic.«Language.pr»
                               x15
-                              («Prover.dNode»
-                                (leaf 24)
-                                («Prelude.single»
-                                  («Language.mEq» («Language.p1» x12) («Language.p2» x12)))
-                                («Theory.l2»
-                                  («Prover.dNode»
-                                    (leaf 2)
-                                    ([] : List T)
-                                    («Theory.l2»
-                                      («Prover.mDeriv» («Prover.nfMarked» x13))
-                                      («Prover.mDeriv» («Prover.nfMarked» x14))))
-                                  («Prover.dNode»
-                                    (leaf 21)
-                                    («Prelude.single» x8)
-                                    ([] : List T))))) ::
-                              (let x28 : T := x26;
-                               let x29 : List T := Const.children x28;
-                               let x30 : List T := x29; x30))))
+                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                (_root_.Geb.Kernel.leaf 24)
+                                (_root_.GebMirror.Metalogic.«Prelude.single»
+                                  (_root_.GebMirror.Metalogic.«Language.mEq»
+                                    (_root_.GebMirror.Metalogic.«Language.p1» x12)
+                                    (_root_.GebMirror.Metalogic.«Language.p2» x12)))
+                                (_root_.GebMirror.Metalogic.«Theory.l2»
+                                  (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                    (_root_.Geb.Kernel.leaf 2)
+                                    ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                    (_root_.GebMirror.Metalogic.«Theory.l2»
+                                      (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                                        (_root_.GebMirror.Metalogic.«Prover.nfMarked» x13))
+                                      (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                                        (_root_.GebMirror.Metalogic.«Prover.nfMarked» x14))))
+                                  (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                    (_root_.Geb.Kernel.leaf 21)
+                                    (_root_.GebMirror.Metalogic.«Prelude.single» x8)
+                                    ([] : _root_.List _root_.Geb.Kernel.Tree))))) ::
+                              (let x28 : _root_.Geb.Kernel.Tree := x26;
+                               let x29 : _root_.List
+                                 _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x28;
+                               let x30 : _root_.List _root_.Geb.Kernel.Tree := x29; x30))))
                     else
-                      let _ : List T := Const.children x16; «Tactics/OWH.nothing»))))
-      (fun (x8 : List T) (x9 : List T) =>
-        «Tactics/OWH.just»
-          («Tactics.wh»
-            («Derivation.terms» x8)
-            («Tactics.rules» x9)
-            («Tactics.frames» ([] : List T))))
+                      let _ : _root_.List
+                        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x16;
+                      _root_.GebMirror.Metalogic.«$546163746963732f4f57482e6e6f7468696e67»))))
+      (fun (x8 : _root_.List _root_.Geb.Kernel.Tree)
+         (x9 : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$546163746963732f4f57482e6a757374»
+          (_root_.GebMirror.Metalogic.«Tactics.wh»
+            (_root_.GebMirror.Metalogic.«Derivation.terms» x8)
+            (_root_.GebMirror.Metalogic.«Tactics.rules» x9)
+            (_root_.GebMirror.Metalogic.«Tactics.frames»
+              ([] : _root_.List _root_.Geb.Kernel.Tree))))
       x4
       x7
-      ([] : List T);
+      ([] : _root_.List _root_.Geb.Kernel.Tree);
     x8
 
 def «Tactics.withWeakHyps» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List T)
-    (x4 : List T)
-    (x5 : List T → List T → List T → T → T → T)
-    (x6 : T) =>
-    let x7 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x7 : List T) (x8 : List T) (x9 : T) (x10 : T) =>
-      let x11 : T := «Tactics.weakHyps» x0 x1 x2 x3 x4 x6 x7 x8;
-      if (Const.eq (Const.label x11) (leaf 1)).label ≠ 0 then
-        let x12 : List T := Const.children x11;
-        let x13 : T := Const.lcase
-          (α := T)
-          (β := T)
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x6 : _root_.Geb.Kernel.Tree) =>
+    let x7 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x7 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x8 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x9 : _root_.Geb.Kernel.Tree)
+                                         (x10 : _root_.Geb.Kernel.Tree) =>
+      let x11 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.weakHyps»
+        x0
+        x1
+        x2
+        x3
+        x4
+        x6
+        x7
+        x8;
+      if (_root_.Geb.Kernel.Const.eq
+        (_root_.Geb.Kernel.Const.label x11)
+        (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+        let x12 : _root_.List
+          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x11;
+        let x13 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+          (α := _root_.Geb.Kernel.Tree)
+          (β := _root_.Geb.Kernel.Tree)
           x12
-          (leaf 0)
-          (fun (x13 : T) (_ : List T) => x13);
-        let _ : List
-          T := Const.lcase
-          (α := T)
-          (β := List T)
+          (_root_.Geb.Kernel.leaf 0)
+          (fun (x13 : _root_.Geb.Kernel.Tree)
+             (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+            x13);
+        let _ : _root_.List
+          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+          (α := _root_.Geb.Kernel.Tree)
+          (β := _root_.List _root_.Geb.Kernel.Tree)
           x12
-          ([] : List T)
-          (fun (_ : T) (x15 : List T) => x15);
-        let x15 : T := x13;
-        let x16 : List T := Const.children x15;
-        let x17 : T := Const.lcase
-          (α := T)
-          (β := T)
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+          (fun (_ : _root_.Geb.Kernel.Tree)
+             (x15 : _root_.List _root_.Geb.Kernel.Tree) =>
+            x15);
+        let x15 : _root_.Geb.Kernel.Tree := x13;
+        let x16 : _root_.List
+          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x15;
+        let x17 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+          (α := _root_.Geb.Kernel.Tree)
+          (β := _root_.Geb.Kernel.Tree)
           x16
-          (leaf 0)
-          (fun (x17 : T) (_ : List T) => x17);
-        let x18 : List
-          T := Const.lcase
-          (α := T)
-          (β := List T)
+          (_root_.Geb.Kernel.leaf 0)
+          (fun (x17 : _root_.Geb.Kernel.Tree)
+             (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+            x17);
+        let x18 : _root_.List
+          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+          (α := _root_.Geb.Kernel.Tree)
+          (β := _root_.List _root_.Geb.Kernel.Tree)
           x16
-          ([] : List T)
-          (fun (_ : T) (x19 : List T) => x19);
-        let x19 : T := Const.lcase
-          (α := T)
-          (β := T)
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+          (fun (_ : _root_.Geb.Kernel.Tree)
+             (x19 : _root_.List _root_.Geb.Kernel.Tree) =>
+            x19);
+        let x19 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+          (α := _root_.Geb.Kernel.Tree)
+          (β := _root_.Geb.Kernel.Tree)
           x18
-          (leaf 0)
-          (fun (x19 : T) (_ : List T) => x19);
-        let x20 : List
-          T := Const.lcase
-          (α := T)
-          (β := List T)
+          (_root_.Geb.Kernel.leaf 0)
+          (fun (x19 : _root_.Geb.Kernel.Tree)
+             (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+            x19);
+        let x20 : _root_.List
+          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+          (α := _root_.Geb.Kernel.Tree)
+          (β := _root_.List _root_.Geb.Kernel.Tree)
           x18
-          ([] : List T)
-          (fun (_ : T) (x21 : List T) => x21);
-        let x21 : T := Const.lcase
-          (α := T)
-          (β := T)
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+          (fun (_ : _root_.Geb.Kernel.Tree)
+             (x21 : _root_.List _root_.Geb.Kernel.Tree) =>
+            x21);
+        let x21 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+          (α := _root_.Geb.Kernel.Tree)
+          (β := _root_.Geb.Kernel.Tree)
           x20
-          (leaf 0)
-          (fun (x21 : T) (_ : List T) => x21);
-        let _ : List
-          T := Const.lcase
-          (α := T)
-          (β := List T)
+          (_root_.Geb.Kernel.leaf 0)
+          (fun (x21 : _root_.Geb.Kernel.Tree)
+             (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+            x21);
+        let _ : _root_.List
+          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+          (α := _root_.Geb.Kernel.Tree)
+          (β := _root_.List _root_.Geb.Kernel.Tree)
           x20
-          ([] : List T)
-          (fun (_ : T) (x23 : List T) => x23);
-        «Base.mapO»
-          (fun (x23 : T) =>
-            Const.foldr
-              (α := T)
-              (β := T)
-              (fun (x24 : T) (x25 : T) =>
-                «Prover.dNode»
-                  (leaf 22)
-                  («Prelude.single» («Language.p1» x24))
-                  («Theory.l2» («Language.p2» x24) x25))
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+          (fun (_ : _root_.Geb.Kernel.Tree)
+             (x23 : _root_.List _root_.Geb.Kernel.Tree) =>
+            x23);
+        _root_.GebMirror.Metalogic.«Base.mapO»
+          (fun (x23 : _root_.Geb.Kernel.Tree) =>
+            _root_.Geb.Kernel.Const.foldr
+              (α := _root_.Geb.Kernel.Tree)
+              (β := _root_.Geb.Kernel.Tree)
+              (fun (x24 : _root_.Geb.Kernel.Tree) (x25 : _root_.Geb.Kernel.Tree) =>
+                _root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 22)
+                  (_root_.GebMirror.Metalogic.«Prelude.single» (_root_.GebMirror.Metalogic.«Language.p1» x24))
+                  (_root_.GebMirror.Metalogic.«Theory.l2» (_root_.GebMirror.Metalogic.«Language.p2» x24) x25))
               x23
-              (let x24 : T := x21;
-               let x25 : List T := Const.children x24; let x26 : List T := x25; x26))
+              (let x24 : _root_.Geb.Kernel.Tree := x21;
+               let x25 : _root_.List
+                 _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x24;
+               let x26 : _root_.List _root_.Geb.Kernel.Tree := x25; x26))
           (x5
-            (let x23 : T := x19;
-             let x24 : List T := Const.children x23; let x25 : List T := x24; x25)
+            (let x23 : _root_.Geb.Kernel.Tree := x19;
+             let x24 : _root_.List
+               _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x23;
+             let x25 : _root_.List _root_.Geb.Kernel.Tree := x24; x25)
             x7
-            («Prover.termsOf» x17)
+            (_root_.GebMirror.Metalogic.«Prover.termsOf» x17)
             x9
             x10)
       else
-        let _ : List T := Const.children x11; «Prelude.none»);
+        let _ : _root_.List
+          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x11;
+        _root_.GebMirror.Metalogic.«Prelude.none»);
     x7
 
 def «Tactics.byListIndHypWeak» :=
-  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : List T) =>
-    let x4 : List T →
-      List T →
-        T →
-          T →
-            T := «Prover.byListIndWith»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.byListIndWith»
       x0
       x2
-      (leaf 0)
-      (leaf 1)
-      («Tactics.byWeak» x0 x1 x2 x3)
-      (fun (x4 : List T) (x5 : List T) (x6 : T) (x7 : T) =>
-        «Tactics.withWeakHyps»
+      (_root_.Geb.Kernel.leaf 0)
+      (_root_.Geb.Kernel.leaf 1)
+      (_root_.GebMirror.Metalogic.«Tactics.byWeak» x0 x1 x2 x3)
+      (fun (x4 : _root_.List _root_.Geb.Kernel.Tree)
+         (x5 : _root_.List _root_.Geb.Kernel.Tree)
+         (x6 : _root_.Geb.Kernel.Tree)
+         (x7 : _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Tactics.withWeakHyps»
           x0
           x1
           x2
           x3
-          («Prelude.single» (Const.sub («Prelude.length» x5) (leaf 1)))
-          (fun (x8 : List T) =>
-            «Tactics.byWeak» x0 x1 x2 («Tactics.appendNR» x8 x3))
-          (leaf 1)
+          (_root_.GebMirror.Metalogic.«Prelude.single»
+            (_root_.Geb.Kernel.Const.sub
+              (_root_.GebMirror.Metalogic.«Prelude.length» x5)
+              (_root_.Geb.Kernel.leaf 1)))
+          (fun (x8 : _root_.List _root_.Geb.Kernel.Tree) =>
+            _root_.GebMirror.Metalogic.«Tactics.byWeak»
+              x0
+              x1
+              x2
+              (_root_.GebMirror.Metalogic.«Tactics.appendNR» x8 x3))
+          (_root_.Geb.Kernel.leaf 1)
           x4
           x5
           x6
@@ -1030,30 +1573,49 @@ def «Tactics.byListIndHypWeak» :=
     x4
 
 def «Tactics.byBitsIndHyp» :=
-  fun (x0 : T) (x1 : List T) (x2 : List T) (x3 : T) =>
-    let x4 : List T →
-      List T →
-        T →
-          T →
-            T := «Prover.byListIndWith»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.byListIndWith»
       x0
-      (leaf 0)
-      (leaf 0)
-      (leaf 1)
-      («Tactics.byMode» x3 x0 x1 (leaf 0) x2)
-      («Prover.bySplit»
-        (leaf 3)
-        (leaf 4)
-        (leaf 1)
-        (fun (x4 : List T) (x5 : List T) (x6 : T) (x7 : T) =>
-          «Tactics.withWeakHyps»
+      (_root_.Geb.Kernel.leaf 0)
+      (_root_.Geb.Kernel.leaf 0)
+      (_root_.Geb.Kernel.leaf 1)
+      (_root_.GebMirror.Metalogic.«Tactics.byMode»
+        x3
+        x0
+        x1
+        (_root_.Geb.Kernel.leaf 0)
+        x2)
+      (_root_.GebMirror.Metalogic.«Prover.bySplit»
+        (_root_.Geb.Kernel.leaf 3)
+        (_root_.Geb.Kernel.leaf 4)
+        (_root_.Geb.Kernel.leaf 1)
+        (fun (x4 : _root_.List _root_.Geb.Kernel.Tree)
+           (x5 : _root_.List _root_.Geb.Kernel.Tree)
+           (x6 : _root_.Geb.Kernel.Tree)
+           (x7 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Tactics.withWeakHyps»
             x0
             x1
-            (leaf 0)
+            (_root_.Geb.Kernel.leaf 0)
             x2
-            («Prelude.single» (Const.sub («Prelude.length» x5) (leaf 1)))
-            (fun (x8 : List T) =>
-              «Tactics.byMode» x3 x0 x1 (leaf 0) («Tactics.appendNR» x8 x2))
+            (_root_.GebMirror.Metalogic.«Prelude.single»
+              (_root_.Geb.Kernel.Const.sub
+                (_root_.GebMirror.Metalogic.«Prelude.length» x5)
+                (_root_.Geb.Kernel.leaf 1)))
+            (fun (x8 : _root_.List _root_.Geb.Kernel.Tree) =>
+              _root_.GebMirror.Metalogic.«Tactics.byMode»
+                x3
+                x0
+                x1
+                (_root_.Geb.Kernel.leaf 0)
+                (_root_.GebMirror.Metalogic.«Tactics.appendNR» x8 x2))
             x3
             x4
             x5
@@ -1062,945 +1624,1408 @@ def «Tactics.byBitsIndHyp» :=
     x4
 
 def «Tactics.rwFun» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := Const.iter
-      (α := T)
-      (fun (x2 : T) =>
-        «Prover.dNode»
-          (leaf 2)
-          ([] : List T)
-          («Theory.l2»
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
+      (α := _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Prover.dNode»
+          (_root_.Geb.Kernel.leaf 2)
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+          (_root_.GebMirror.Metalogic.«Theory.l2»
             x2
-            («Prover.dNode» (leaf 0) ([] : List T) ([] : List T))))
-      («Prover.dNode» (leaf 17) («Theory.l2» x0 (leaf 0)) ([] : List T))
+            (_root_.GebMirror.Metalogic.«Prover.dNode»
+              (_root_.Geb.Kernel.leaf 0)
+              ([] : _root_.List _root_.Geb.Kernel.Tree)
+              ([] : _root_.List _root_.Geb.Kernel.Tree))))
+      (_root_.GebMirror.Metalogic.«Prover.dNode»
+        (_root_.Geb.Kernel.leaf 17)
+        (_root_.GebMirror.Metalogic.«Theory.l2» x0 (_root_.Geb.Kernel.leaf 0))
+        ([] : _root_.List _root_.Geb.Kernel.Tree))
       x1;
     x2
 
 def «Tactics.instEqs» :=
-  fun (x0 : T) (x1 : T) (x2 : List (List T)) =>
-    let x3 : List
-      T := Const.foldr
-      (α := List T)
-      (β := List T)
-      (fun (x3 : List T) (x4 : List T) =>
-        ((«Language.mEq» («Tactics.apps» x0 x3) («Tactics.apps» x1 x3)) ::
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+    let x3 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x3 : _root_.List _root_.Geb.Kernel.Tree)
+         (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+        ((_root_.GebMirror.Metalogic.«Language.mEq»
+          (_root_.GebMirror.Metalogic.«Tactics.apps» x0 x3)
+          (_root_.GebMirror.Metalogic.«Tactics.apps» x1 x3)) ::
           x4))
-      ([] : List T)
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
       x2;
     x3
 
 def «Tactics.cutInsts» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : List (List T)) (x4 : T) =>
-    let x5 : T := Const.foldr
-      (α := List T)
-      (β := T)
-      (fun (x5 : List T) (x6 : T) =>
-        «Prover.dNode»
-          (leaf 22)
-          («Prelude.single»
-            («Language.mEq» («Tactics.apps» x0 x5) («Tactics.apps» x1 x5)))
-          («Theory.l2»
-            («Prover.dNode»
-              (leaf 18)
-              ([] : List T)
-              («Theory.l2»
-                («Tactics.rwFun» x2 («Prelude.length» x5))
-                («Prover.dNode» (leaf 0) ([] : List T) ([] : List T))))
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+    (x4 : _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (x5 : _root_.List _root_.Geb.Kernel.Tree)
+         (x6 : _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Prover.dNode»
+          (_root_.Geb.Kernel.leaf 22)
+          (_root_.GebMirror.Metalogic.«Prelude.single»
+            (_root_.GebMirror.Metalogic.«Language.mEq»
+              (_root_.GebMirror.Metalogic.«Tactics.apps» x0 x5)
+              (_root_.GebMirror.Metalogic.«Tactics.apps» x1 x5)))
+          (_root_.GebMirror.Metalogic.«Theory.l2»
+            (_root_.GebMirror.Metalogic.«Prover.dNode»
+              (_root_.Geb.Kernel.leaf 18)
+              ([] : _root_.List _root_.Geb.Kernel.Tree)
+              (_root_.GebMirror.Metalogic.«Theory.l2»
+                (_root_.GebMirror.Metalogic.«Tactics.rwFun»
+                  x2
+                  (_root_.GebMirror.Metalogic.«Prelude.length» x5))
+                (_root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 0)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree))))
             x6))
       x4
       x3;
     x5
 
 def «Tactics.withInsts» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List T)
-    (x4 : T)
-    (x5 : List (List T))
-    (x6 : List T → List T → List T → T → T → T)
-    (x7 : T) =>
-    let x8 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x8 : List T) (x9 : List T) (x10 : T) (x11 : T) =>
-      «Derivation.bindPT»
-        («Language.bindTP» («Prelude.nth» x9 x4) «Derivation.eqParts»)
-        (fun (x12 : T) =>
-          let x13 : List
-            T := «Tactics.instEqs» («Language.p1» x12) («Language.p2» x12) x5;
-          «Base.mapO»
-            (fun (x14 : T) =>
-              «Tactics.cutInsts» («Language.p1» x12) («Language.p2» x12) x4 x5 x14)
-            («Tactics.withWeakHyps»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+    (x6 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x7 : _root_.Geb.Kernel.Tree) =>
+    let x8 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x8 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x9 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x10 : _root_.Geb.Kernel.Tree)
+                                         (x11 : _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Derivation.bindPT»
+        (_root_.GebMirror.Metalogic.«Language.bindTP»
+          (_root_.GebMirror.Metalogic.«Prelude.nth» x9 x4)
+          _root_.GebMirror.Metalogic.«Derivation.eqParts»)
+        (fun (x12 : _root_.Geb.Kernel.Tree) =>
+          let x13 : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.instEqs»
+            (_root_.GebMirror.Metalogic.«Language.p1» x12)
+            (_root_.GebMirror.Metalogic.«Language.p2» x12)
+            x5;
+          _root_.GebMirror.Metalogic.«Base.mapO»
+            (fun (x14 : _root_.Geb.Kernel.Tree) =>
+              _root_.GebMirror.Metalogic.«Tactics.cutInsts»
+                (_root_.GebMirror.Metalogic.«Language.p1» x12)
+                (_root_.GebMirror.Metalogic.«Language.p2» x12)
+                x4
+                x5
+                x14)
+            (_root_.GebMirror.Metalogic.«Tactics.withWeakHyps»
               x0
               x1
               x2
               x3
-              («Base.mapT»
-                (fun (x14 : T) => Const.add («Prelude.length» x9) x14)
-                («Base.range» («Prelude.length» x13)))
+              (_root_.GebMirror.Metalogic.«Base.mapT»
+                (fun (x14 : _root_.Geb.Kernel.Tree) =>
+                  _root_.Geb.Kernel.Const.add (_root_.GebMirror.Metalogic.«Prelude.length» x9) x14)
+                (_root_.GebMirror.Metalogic.«Base.range» (_root_.GebMirror.Metalogic.«Prelude.length» x13)))
               x6
               x7
               x8
-              («Prelude.append» x9 x13)
+              (_root_.GebMirror.Metalogic.«Prelude.append» x9 x13)
               x10
               x11)));
     x8
 
 def «Tactics.nthOf» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := «Translation.call»
-      (leaf 8)
-      («Prelude.single» «Theory.omega»)
-      («Theory.l2»
-        («Language.mEq» «Language.mStar» «Language.mStar»)
-        (Const.iter
-          (α := T)
-          (fun (x2 : T) =>
-            «Translation.call»
-              (leaf 7)
-              («Prelude.single» «Theory.omega»)
-              («Prelude.single» x2))
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Translation.call»
+      (_root_.Geb.Kernel.leaf 8)
+      (_root_.GebMirror.Metalogic.«Prelude.single» _root_.GebMirror.Metalogic.«Theory.omega»)
+      (_root_.GebMirror.Metalogic.«Theory.l2»
+        (_root_.GebMirror.Metalogic.«Language.mEq»
+          _root_.GebMirror.Metalogic.«Language.mStar»
+          _root_.GebMirror.Metalogic.«Language.mStar»)
+        (_root_.Geb.Kernel.Const.iter
+          (α := _root_.Geb.Kernel.Tree)
+          (fun (x2 : _root_.Geb.Kernel.Tree) =>
+            _root_.GebMirror.Metalogic.«Translation.call»
+              (_root_.Geb.Kernel.leaf 7)
+              (_root_.GebMirror.Metalogic.«Prelude.single» _root_.GebMirror.Metalogic.«Theory.omega»)
+              (_root_.GebMirror.Metalogic.«Prelude.single» x2))
           x0
           x1));
     x2
 
 def «Tactics.withChildHyps» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : List T)
-    (x4 : T)
-    (x5 : List T)
-    (x6 : T → List (List T))
-    (x7 : List T → List T → List T → T → T → T) =>
-    let x8 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x8 : List T) (x9 : List T) (x10 : T) (x11 : T) =>
-      «Derivation.bindPT»
-        («Language.bindTP» («Prelude.nth» x9 x4) «Derivation.eqParts»)
-        (fun (x12 : T) =>
-          Const.foldr
-            (α := T)
-            (β := List T → List T → T)
-            (fun (x13 : T)
-               (x14 : List T → List T → T)
-               (x15 : List T)
-               (x16 : List T) =>
-              let x17 : T := «Tactics.nthOf» («Language.p1» x12) x13;
-              let x18 : T := «Tactics.nthOf» («Language.p2» x12) x13;
-              «Prover.bindNT»
-                («Prover.eval» x0 x1 x2 x3 (leaf 4096) (leaf 1) x8 x15 x17)
-                (fun (x19 : T) =>
-                  «Prover.bindNT»
-                    («Prover.eval» x0 x1 x2 x3 (leaf 4096) (leaf 1) x8 x15 x18)
-                    (fun (x20 : T) =>
-                      «Prover.bindNT»
-                        («Prover.eval»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.List _root_.Geb.Kernel.Tree)
+    (x6 : _root_.Geb.Kernel.Tree →
+      _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+    (x7 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x8 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x8 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x9 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x10 : _root_.Geb.Kernel.Tree)
+                                         (x11 : _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Derivation.bindPT»
+        (_root_.GebMirror.Metalogic.«Language.bindTP»
+          (_root_.GebMirror.Metalogic.«Prelude.nth» x9 x4)
+          _root_.GebMirror.Metalogic.«Derivation.eqParts»)
+        (fun (x12 : _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.foldr
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree →
+              _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+            (fun (x13 : _root_.Geb.Kernel.Tree)
+               (x14 : _root_.List _root_.Geb.Kernel.Tree →
+                 _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+               (x15 : _root_.List _root_.Geb.Kernel.Tree)
+               (x16 : _root_.List _root_.Geb.Kernel.Tree) =>
+              let x17 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.nthOf»
+                (_root_.GebMirror.Metalogic.«Language.p1» x12)
+                x13;
+              let x18 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.nthOf»
+                (_root_.GebMirror.Metalogic.«Language.p2» x12)
+                x13;
+              _root_.GebMirror.Metalogic.«Prover.bindNT»
+                (_root_.GebMirror.Metalogic.«Prover.eval»
+                  x0
+                  x1
+                  x2
+                  x3
+                  (_root_.Geb.Kernel.leaf 4096)
+                  (_root_.Geb.Kernel.leaf 1)
+                  x8
+                  x15
+                  x17)
+                (fun (x19 : _root_.Geb.Kernel.Tree) =>
+                  _root_.GebMirror.Metalogic.«Prover.bindNT»
+                    (_root_.GebMirror.Metalogic.«Prover.eval»
+                      x0
+                      x1
+                      x2
+                      x3
+                      (_root_.Geb.Kernel.leaf 4096)
+                      (_root_.Geb.Kernel.leaf 1)
+                      x8
+                      x15
+                      x18)
+                    (fun (x20 : _root_.Geb.Kernel.Tree) =>
+                      _root_.GebMirror.Metalogic.«Prover.bindNT»
+                        (_root_.GebMirror.Metalogic.«Prover.eval»
                           x0
                           x1
                           x2
-                          ((«Tactics.hypRule» x4) :: ([] : List T))
-                          (leaf 4096)
-                          (leaf 1)
+                          ((_root_.GebMirror.Metalogic.«Tactics.hypRule» x4) ::
+                            ([] : _root_.List _root_.Geb.Kernel.Tree))
+                          (_root_.Geb.Kernel.leaf 4096)
+                          (_root_.Geb.Kernel.leaf 1)
                           x8
                           x15
                           x17)
-                        (fun (x21 : T) =>
-                          «Derivation.bindPT»
-                            («Derivation.eqParts» («Prover.nfTerm» x19))
-                            (fun (x22 : T) =>
-                              let x23 : T := «Prelude.length» x15;
-                              let x24 : T := Const.add x23 (leaf 1);
-                              let x25 : List (List T) := x6 x13;
-                              let x26 : List
-                                T := «Tactics.instEqs» («Language.p1» x22) («Language.p2» x22) x25;
-                              «Base.mapO»
-                                (fun (x27 : T) =>
-                                  «Prover.dNode»
-                                    (leaf 22)
-                                    («Prelude.single»
-                                      («Language.mEq» («Prover.nfTerm» x19) («Prover.nfTerm» x20)))
-                                    («Theory.l2»
-                                      («Prover.dNode»
-                                        (leaf 24)
-                                        («Prelude.single» («Language.mEq» x17 x18))
-                                        («Theory.l2»
-                                          («Prover.dNode»
-                                            (leaf 2)
-                                            ([] : List T)
-                                            («Theory.l2»
-                                              («Prover.mDeriv» («Prover.nfMarked» x19))
-                                              («Prover.mDeriv» («Prover.nfMarked» x20))))
-                                          («Prover.dNode»
-                                            (leaf 18)
-                                            ([] : List T)
-                                            («Theory.l2»
-                                              («Prover.mDeriv» («Prover.nfMarked» x21))
-                                              («Prover.dNode»
-                                                (leaf 0)
-                                                ([] : List T)
-                                                ([] : List T))))))
-                                      («Prover.dNode»
-                                        (leaf 22)
-                                        («Prelude.single» («Prover.nfTerm» x19))
-                                        («Theory.l2»
-                                          («Prover.dNode»
-                                            (leaf 23)
-                                            ([] : List T)
-                                            («Theory.l2»
-                                              («Prover.dNode»
-                                                (leaf 17)
-                                                («Theory.l2» x23 (leaf 0))
-                                                ([] : List T))
-                                              («Prover.dNode»
-                                                (leaf 18)
-                                                ([] : List T)
-                                                («Theory.l2»
-                                                  («Prover.dNode»
-                                                    (leaf 0)
-                                                    ([] : List T)
-                                                    ([] : List T))
-                                                  («Prover.dNode»
-                                                    (leaf 0)
-                                                    ([] : List T)
-                                                    ([] : List T))))))
-                                          («Tactics.cutInsts»
-                                            («Language.p1» x22)
-                                            («Language.p2» x22)
+                        (fun (x21 : _root_.Geb.Kernel.Tree) =>
+                          _root_.GebMirror.Metalogic.«Derivation.bindPT»
+                            (_root_.GebMirror.Metalogic.«Derivation.eqParts»
+                              (_root_.GebMirror.Metalogic.«Prover.nfTerm» x19))
+                            (fun (x22 : _root_.Geb.Kernel.Tree) =>
+                              let x23 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.length»
+                                x15;
+                              let x24 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.add
+                                x23
+                                (_root_.Geb.Kernel.leaf 1);
+                              let x25 : _root_.List (_root_.List _root_.Geb.Kernel.Tree) := x6 x13;
+                              let x26 : _root_.List
+                                _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.instEqs»
+                                (_root_.GebMirror.Metalogic.«Language.p1» x22)
+                                (_root_.GebMirror.Metalogic.«Language.p2» x22)
+                                x25;
+                              _root_.GebMirror.Metalogic.«Base.mapO»
+                                (fun (x27 : _root_.Geb.Kernel.Tree) =>
+                                  _root_.GebMirror.Metalogic.«Prover.dNode»
+                                    (_root_.Geb.Kernel.leaf 22)
+                                    (_root_.GebMirror.Metalogic.«Prelude.single»
+                                      (_root_.GebMirror.Metalogic.«Language.mEq»
+                                        (_root_.GebMirror.Metalogic.«Prover.nfTerm» x19)
+                                        (_root_.GebMirror.Metalogic.«Prover.nfTerm» x20)))
+                                    (_root_.GebMirror.Metalogic.«Theory.l2»
+                                      (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                        (_root_.Geb.Kernel.leaf 24)
+                                        (_root_.GebMirror.Metalogic.«Prelude.single»
+                                          (_root_.GebMirror.Metalogic.«Language.mEq» x17 x18))
+                                        (_root_.GebMirror.Metalogic.«Theory.l2»
+                                          (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                            (_root_.Geb.Kernel.leaf 2)
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (_root_.GebMirror.Metalogic.«Theory.l2»
+                                              (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                                                (_root_.GebMirror.Metalogic.«Prover.nfMarked» x19))
+                                              (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                                                (_root_.GebMirror.Metalogic.«Prover.nfMarked» x20))))
+                                          (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                            (_root_.Geb.Kernel.leaf 18)
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (_root_.GebMirror.Metalogic.«Theory.l2»
+                                              (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                                                (_root_.GebMirror.Metalogic.«Prover.nfMarked» x21))
+                                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                (_root_.Geb.Kernel.leaf 0)
+                                                ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                ([] : _root_.List _root_.Geb.Kernel.Tree))))))
+                                      (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                        (_root_.Geb.Kernel.leaf 22)
+                                        (_root_.GebMirror.Metalogic.«Prelude.single»
+                                          (_root_.GebMirror.Metalogic.«Prover.nfTerm» x19))
+                                        (_root_.GebMirror.Metalogic.«Theory.l2»
+                                          (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                            (_root_.Geb.Kernel.leaf 23)
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (_root_.GebMirror.Metalogic.«Theory.l2»
+                                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                (_root_.Geb.Kernel.leaf 17)
+                                                (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                  x23
+                                                  (_root_.Geb.Kernel.leaf 0))
+                                                ([] : _root_.List _root_.Geb.Kernel.Tree))
+                                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                (_root_.Geb.Kernel.leaf 18)
+                                                ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                  (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                    (_root_.Geb.Kernel.leaf 0)
+                                                    ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                    ([] : _root_.List _root_.Geb.Kernel.Tree))
+                                                  (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                    (_root_.Geb.Kernel.leaf 0)
+                                                    ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                    ([] : _root_.List _root_.Geb.Kernel.Tree))))))
+                                          (_root_.GebMirror.Metalogic.«Tactics.cutInsts»
+                                            (_root_.GebMirror.Metalogic.«Language.p1» x22)
+                                            (_root_.GebMirror.Metalogic.«Language.p2» x22)
                                             x24
                                             x25
                                             x27)))))
                                 (x14
-                                  («Prelude.append»
-                                    («Prelude.append»
+                                  (_root_.GebMirror.Metalogic.«Prelude.append»
+                                    (_root_.GebMirror.Metalogic.«Prelude.append»
                                       x15
-                                      («Theory.l2»
-                                        («Language.mEq» («Prover.nfTerm» x19) («Prover.nfTerm» x20))
-                                        («Prover.nfTerm» x19)))
+                                      (_root_.GebMirror.Metalogic.«Theory.l2»
+                                        (_root_.GebMirror.Metalogic.«Language.mEq»
+                                          (_root_.GebMirror.Metalogic.«Prover.nfTerm» x19)
+                                          (_root_.GebMirror.Metalogic.«Prover.nfTerm» x20))
+                                        (_root_.GebMirror.Metalogic.«Prover.nfTerm» x19)))
                                     x26)
-                                  («Prelude.append»
+                                  (_root_.GebMirror.Metalogic.«Prelude.append»
                                     x16
-                                    («Base.mapT»
-                                      (fun (x27 : T) => Const.add (Const.add x24 (leaf 1)) x27)
-                                      («Base.range» («Prelude.length» x26))))))))))
-            (fun (x13 : List T) (x14 : List T) => x7 x14 x8 x13 x10 x11)
+                                    (_root_.GebMirror.Metalogic.«Base.mapT»
+                                      (fun (x27 : _root_.Geb.Kernel.Tree) =>
+                                        _root_.Geb.Kernel.Const.add
+                                          (_root_.Geb.Kernel.Const.add
+                                            x24
+                                            (_root_.Geb.Kernel.leaf 1))
+                                          x27)
+                                      (_root_.GebMirror.Metalogic.«Base.range»
+                                        (_root_.GebMirror.Metalogic.«Prelude.length» x26))))))))))
+            (fun (x13 : _root_.List _root_.Geb.Kernel.Tree)
+               (x14 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x7 x14 x8 x13 x10 x11)
             x5
             x9
-            ([] : List T)));
+            ([] : _root_.List _root_.Geb.Kernel.Tree)));
     x8
 
 def «Tactics.subVar» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := «Language.subst»
-      («Derivation.weaken1» x1)
-      (fun (x2 : T) =>
-        if (Const.eq x2 (Const.add x0 (leaf 1))).label ≠ 0 then
-          «Language.var» (leaf 0)
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.subst»
+      (_root_.GebMirror.Metalogic.«Derivation.weaken1» x1)
+      (fun (x2 : _root_.Geb.Kernel.Tree) =>
+        if (_root_.Geb.Kernel.Const.eq
+          x2
+          (_root_.Geb.Kernel.Const.add
+            x0
+            (_root_.Geb.Kernel.leaf 1))).label ≠ 0 then
+          _root_.GebMirror.Metalogic.«Language.var» (_root_.Geb.Kernel.leaf 0)
         else
-          «Language.var» x2);
+          _root_.GebMirror.Metalogic.«Language.var» x2);
     x2
 
 def «Tactics.revertCase» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : T)
-    (x3 : T)
-    (x4 : T)
-    (x5 : T)
-    (x6 : List T → List T → T → T → T)
-    (x7 : List T → List T → T → T → T) =>
-    let x8 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x8 : List T) (x9 : List T) (x10 : T) (x11 : T) =>
-      «Base.bindO»
-        («Prelude.nth» x8 x4)
-        (fun (x12 : T) =>
-          «Base.bindO»
-            («Language.listPart» x12)
-            (fun (x13 : T) =>
-              «Base.bindO»
-                («Prelude.nth» x9 x5)
-                (fun (x14 : T) =>
-                  let x15 : T := «Language.mEq» x10 x11;
-                  let x16 : T := «Tactics.ttL» x2;
-                  let x17 : T := «Prover.abstractVar»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree)
+    (x6 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x7 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x8 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x8 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x9 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x10 : _root_.Geb.Kernel.Tree)
+                                         (x11 : _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Base.bindO»
+        (_root_.GebMirror.Metalogic.«Prelude.nth» x8 x4)
+        (fun (x12 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Base.bindO»
+            (_root_.GebMirror.Metalogic.«Language.listPart» x12)
+            (fun (x13 : _root_.Geb.Kernel.Tree) =>
+              _root_.GebMirror.Metalogic.«Base.bindO»
+                (_root_.GebMirror.Metalogic.«Prelude.nth» x9 x5)
+                (fun (x14 : _root_.Geb.Kernel.Tree) =>
+                  let x15 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mEq»
+                    x10
+                    x11;
+                  let x16 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.ttL» x2;
+                  let x17 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.abstractVar»
                     x4
                     x12
-                    («Tactics.impL» x2 x14 x15);
-                  let x18 : T → T := (fun (x18 : T) => «Tactics.subVar» x4 x18);
-                  let x19 : T := x18 x14;
-                  let x20 : T := x18 x15;
-                  «Prover.bindHT»
-                    («Derivation.lowerHyps»
+                    (_root_.GebMirror.Metalogic.«Tactics.impL» x2 x14 x15);
+                  let x18 : _root_.Geb.Kernel.Tree →
+                    _root_.Geb.Kernel.Tree := (fun (x18 : _root_.Geb.Kernel.Tree) =>
+                    _root_.GebMirror.Metalogic.«Tactics.subVar» x4 x18);
+                  let x19 : _root_.Geb.Kernel.Tree := x18 x14;
+                  let x20 : _root_.Geb.Kernel.Tree := x18 x15;
+                  _root_.GebMirror.Metalogic.«Prover.bindHT»
+                    (_root_.GebMirror.Metalogic.«Derivation.lowerHyps»
                       x0
                       x1
                       x8
-                      («Prelude.append»
-                        («Base.mapT» «Derivation.weaken1» x9)
-                        («Prelude.single» x16)))
-                    (fun (x21 : T) =>
-                      let x22 : List T := «Prover.termsOf» x21;
-                      let x23 : T := «Prover.instAt» (leaf 0) («Prelude.single» x13) x19;
-                      let x24 : T := «Prover.instAt» (leaf 0) («Prelude.single» x13) x20;
-                      «Derivation.bindPT»
-                        («Derivation.eqParts» x24)
-                        (fun (x25 : T) =>
-                          «Base.bindO»
+                      (_root_.GebMirror.Metalogic.«Prelude.append»
+                        (_root_.GebMirror.Metalogic.«Base.mapT» _root_.GebMirror.Metalogic.«Derivation.weaken1» x9)
+                        (_root_.GebMirror.Metalogic.«Prelude.single» x16)))
+                    (fun (x21 : _root_.Geb.Kernel.Tree) =>
+                      let x22 : _root_.List
+                        _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.termsOf» x21;
+                      let x23 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.instAt»
+                        (_root_.Geb.Kernel.leaf 0)
+                        (_root_.GebMirror.Metalogic.«Prelude.single» x13)
+                        x19;
+                      let x24 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.instAt»
+                        (_root_.Geb.Kernel.leaf 0)
+                        (_root_.GebMirror.Metalogic.«Prelude.single» x13)
+                        x20;
+                      _root_.GebMirror.Metalogic.«Derivation.bindPT»
+                        (_root_.GebMirror.Metalogic.«Derivation.eqParts» x24)
+                        (fun (x25 : _root_.Geb.Kernel.Tree) =>
+                          _root_.GebMirror.Metalogic.«Base.bindO»
                             (x6
                               x8
-                              («Prelude.append» x22 («Prelude.single» x23))
-                              («Language.p1» x25)
-                              («Language.p2» x25))
-                            (fun (x26 : T) =>
-                              let x27 : List
-                                T := «Prelude.append»
-                                («Base.mapT» «Derivation.weaken2» x22)
-                                («Prelude.single»
-                                  («Derivation.weakenElem» («Tactics.impL» x2 x19 x20)));
-                              let x28 : T := «Derivation.listConsAt» (leaf 1) x13 x19;
-                              let x29 : T := «Derivation.listConsAt» (leaf 1) x13 x20;
-                              «Derivation.bindPT»
-                                («Derivation.eqParts» x29)
-                                (fun (x30 : T) =>
-                                  «Base.mapO»
-                                    (fun (x31 : T) =>
-                                      let x32 : T := «Prover.dNode»
-                                        (leaf 29)
-                                        («Theory.l2» (leaf 0) (leaf 1))
-                                        («Theory.l2»
-                                          («Tactics.impI» x3 («Prelude.length» x22) x23 x24 x26)
-                                          («Tactics.impI» x3 («Prelude.length» x27) x28 x29 x31));
-                                      let x33 : T := «Prover.dNode»
-                                        (leaf 26)
-                                        ([] : List T)
-                                        («Prelude.single»
-                                          («Prover.dNode»
-                                            (leaf 23)
-                                            ([] : List T)
-                                            («Theory.l2»
-                                              («Prover.dNode»
-                                                (leaf 2)
-                                                ([] : List T)
-                                                («Theory.l2»
-                                                  («Prover.dNode»
-                                                    (leaf 3)
-                                                    ([] : List T)
-                                                    ([] : List T))
-                                                  («Prover.dNode»
-                                                    (leaf 3)
-                                                    ([] : List T)
-                                                    ([] : List T))))
-                                              («Prover.dNode»
-                                                (leaf 25)
-                                                ([] : List T)
-                                                («Theory.l2» «Tactics.trueI» x32)))));
-                                      let x34 : T := «Prover.dNode»
-                                        (leaf 22)
-                                        («Prelude.single»
-                                          («Language.mEq» x17 («Language.mLam» x12 x16)))
-                                        («Theory.l2»
+                              (_root_.GebMirror.Metalogic.«Prelude.append»
+                                x22
+                                (_root_.GebMirror.Metalogic.«Prelude.single» x23))
+                              (_root_.GebMirror.Metalogic.«Language.p1» x25)
+                              (_root_.GebMirror.Metalogic.«Language.p2» x25))
+                            (fun (x26 : _root_.Geb.Kernel.Tree) =>
+                              let x27 : _root_.List
+                                _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.append»
+                                (_root_.GebMirror.Metalogic.«Base.mapT» _root_.GebMirror.Metalogic.«Derivation.weaken2» x22)
+                                (_root_.GebMirror.Metalogic.«Prelude.single»
+                                  (_root_.GebMirror.Metalogic.«Derivation.weakenElem»
+                                    (_root_.GebMirror.Metalogic.«Tactics.impL» x2 x19 x20)));
+                              let x28 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Derivation.listConsAt»
+                                (_root_.Geb.Kernel.leaf 1)
+                                x13
+                                x19;
+                              let x29 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Derivation.listConsAt»
+                                (_root_.Geb.Kernel.leaf 1)
+                                x13
+                                x20;
+                              _root_.GebMirror.Metalogic.«Derivation.bindPT»
+                                (_root_.GebMirror.Metalogic.«Derivation.eqParts» x29)
+                                (fun (x30 : _root_.Geb.Kernel.Tree) =>
+                                  _root_.GebMirror.Metalogic.«Base.mapO»
+                                    (fun (x31 : _root_.Geb.Kernel.Tree) =>
+                                      let x32 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                                        (_root_.Geb.Kernel.leaf 29)
+                                        (_root_.GebMirror.Metalogic.«Theory.l2»
+                                          (_root_.Geb.Kernel.leaf 0)
+                                          (_root_.Geb.Kernel.leaf 1))
+                                        (_root_.GebMirror.Metalogic.«Theory.l2»
+                                          (_root_.GebMirror.Metalogic.«Tactics.impI»
+                                            x3
+                                            (_root_.GebMirror.Metalogic.«Prelude.length» x22)
+                                            x23
+                                            x24
+                                            x26)
+                                          (_root_.GebMirror.Metalogic.«Tactics.impI»
+                                            x3
+                                            (_root_.GebMirror.Metalogic.«Prelude.length» x27)
+                                            x28
+                                            x29
+                                            x31));
+                                      let x33 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                                        (_root_.Geb.Kernel.leaf 26)
+                                        ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                        (_root_.GebMirror.Metalogic.«Prelude.single»
+                                          (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                            (_root_.Geb.Kernel.leaf 23)
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (_root_.GebMirror.Metalogic.«Theory.l2»
+                                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                (_root_.Geb.Kernel.leaf 2)
+                                                ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                  (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                    (_root_.Geb.Kernel.leaf 3)
+                                                    ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                    ([] : _root_.List _root_.Geb.Kernel.Tree))
+                                                  (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                    (_root_.Geb.Kernel.leaf 3)
+                                                    ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                    ([] : _root_.List _root_.Geb.Kernel.Tree))))
+                                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                (_root_.Geb.Kernel.leaf 25)
+                                                ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                  _root_.GebMirror.Metalogic.«Tactics.trueI»
+                                                  x32)))));
+                                      let x34 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                                        (_root_.Geb.Kernel.leaf 22)
+                                        (_root_.GebMirror.Metalogic.«Prelude.single»
+                                          (_root_.GebMirror.Metalogic.«Language.mEq»
+                                            x17
+                                            (_root_.GebMirror.Metalogic.«Language.mLam» x12 x16)))
+                                        (_root_.GebMirror.Metalogic.«Theory.l2»
                                           x33
-                                          («Prover.dNode»
-                                            (leaf 24)
-                                            («Prelude.single»
-                                              («Language.app» x17 («Language.var» x4)))
-                                            («Theory.l2»
-                                              («Prover.dNode» (leaf 3) ([] : List T) ([] : List T))
-                                              («Prover.dNode»
-                                                (leaf 23)
-                                                ([] : List T)
-                                                («Theory.l2»
-                                                  («Prover.dNode»
-                                                    (leaf 1)
-                                                    ([] : List T)
-                                                    («Theory.l2»
-                                                      («Prover.dNode»
-                                                        (leaf 2)
-                                                        ([] : List T)
-                                                        («Theory.l2»
-                                                          («Prover.dNode»
-                                                            (leaf 17)
-                                                            («Theory.l2»
-                                                              («Prelude.length» x9)
-                                                              (leaf 0))
-                                                            ([] : List T))
-                                                          («Prover.dNode»
-                                                            (leaf 0)
-                                                            ([] : List T)
-                                                            ([] : List T))))
-                                                      («Prover.dNode»
-                                                        (leaf 3)
-                                                        ([] : List T)
-                                                        ([] : List T))))
-                                                  «Tactics.trueI»)))));
-                                      «Prover.dNode»
-                                        (leaf 27)
-                                        («Theory.l3»
-                                          (Const.add x3 (leaf 4))
-                                          (Const.node (leaf 0) ([] : List T))
-                                          (Const.node (leaf 0) («Theory.l2» x15 x14)))
-                                        («Theory.l2»
+                                          (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                            (_root_.Geb.Kernel.leaf 24)
+                                            (_root_.GebMirror.Metalogic.«Prelude.single»
+                                              (_root_.GebMirror.Metalogic.«Language.app»
+                                                x17
+                                                (_root_.GebMirror.Metalogic.«Language.var» x4)))
+                                            (_root_.GebMirror.Metalogic.«Theory.l2»
+                                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                (_root_.Geb.Kernel.leaf 3)
+                                                ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                ([] : _root_.List _root_.Geb.Kernel.Tree))
+                                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                (_root_.Geb.Kernel.leaf 23)
+                                                ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                  (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                    (_root_.Geb.Kernel.leaf 1)
+                                                    ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                    (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                      (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                        (_root_.Geb.Kernel.leaf 2)
+                                                        ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                        (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                          (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                            (_root_.Geb.Kernel.leaf 17)
+                                                            (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                              (_root_.GebMirror.Metalogic.«Prelude.length» x9)
+                                                              (_root_.Geb.Kernel.leaf 0))
+                                                            ([] : _root_.List _root_.Geb.Kernel.Tree))
+                                                          (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                            (_root_.Geb.Kernel.leaf 0)
+                                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                            ([] : _root_.List _root_.Geb.Kernel.Tree))))
+                                                      (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                        (_root_.Geb.Kernel.leaf 3)
+                                                        ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                        ([] : _root_.List _root_.Geb.Kernel.Tree))))
+                                                  _root_.GebMirror.Metalogic.«Tactics.trueI»)))));
+                                      _root_.GebMirror.Metalogic.«Prover.dNode»
+                                        (_root_.Geb.Kernel.leaf 27)
+                                        (_root_.GebMirror.Metalogic.«Theory.l3»
+                                          (_root_.Geb.Kernel.Const.add
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 4))
+                                          (_root_.Geb.Kernel.Const.node
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree))
+                                          (_root_.Geb.Kernel.Const.node
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (_root_.GebMirror.Metalogic.«Theory.l2» x15 x14)))
+                                        (_root_.GebMirror.Metalogic.«Theory.l2»
                                           x34
-                                          («Prover.dNode»
-                                            (leaf 21)
-                                            («Prelude.single» x5)
-                                            ([] : List T))))
+                                          (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                            (_root_.Geb.Kernel.leaf 21)
+                                            (_root_.GebMirror.Metalogic.«Prelude.single» x5)
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree))))
                                     (x7
                                       (x12 :: (x13 :: x8))
-                                      («Prelude.append» x27 («Prelude.single» x28))
-                                      («Language.p1» x30)
-                                      («Language.p2» x30))))))))));
+                                      (_root_.GebMirror.Metalogic.«Prelude.append»
+                                        x27
+                                        (_root_.GebMirror.Metalogic.«Prelude.single» x28))
+                                      (_root_.GebMirror.Metalogic.«Language.p1» x30)
+                                      (_root_.GebMirror.Metalogic.«Language.p2» x30))))))))));
     x8
 
 def «Tactics.betaRule» :=
-  ((«Prover.nrRule» (leaf 3) («Derivation.terms» ([] : List T))) ::
-    ([] : List T))
+  ((_root_.GebMirror.Metalogic.«Prover.nrRule»
+    (_root_.Geb.Kernel.leaf 3)
+    (_root_.GebMirror.Metalogic.«Derivation.terms»
+      ([] : _root_.List _root_.Geb.Kernel.Tree))) ::
+    ([] : _root_.List _root_.Geb.Kernel.Tree))
 
 def «Tactics.byImpI» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : T)
-    (x4 : List T → List T → T → T → T) =>
-    let x5 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x5 : List T) (x6 : List T) (x7 : T) (x8 : T) =>
-      «Prover.bindNT»
-        («Prover.eval»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x5 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x6 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x7 : _root_.Geb.Kernel.Tree)
+                                         (x8 : _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Prover.bindNT»
+        (_root_.GebMirror.Metalogic.«Prover.eval»
           x0
           x1
-          (leaf 0)
-          «Tactics.betaRule»
-          (leaf 4096)
-          (leaf 0)
+          (_root_.Geb.Kernel.leaf 0)
+          _root_.GebMirror.Metalogic.«Tactics.betaRule»
+          (_root_.Geb.Kernel.leaf 4096)
+          (_root_.Geb.Kernel.leaf 0)
           x5
           x6
           x7)
-        (fun (x9 : T) =>
-          «Prover.bindNT»
-            («Prover.eval»
+        (fun (x9 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Prover.bindNT»
+            (_root_.GebMirror.Metalogic.«Prover.eval»
               x0
               x1
-              (leaf 0)
-              «Tactics.betaRule»
-              (leaf 4096)
-              (leaf 0)
+              (_root_.Geb.Kernel.leaf 0)
+              _root_.GebMirror.Metalogic.«Tactics.betaRule»
+              (_root_.Geb.Kernel.leaf 4096)
+              (_root_.Geb.Kernel.leaf 0)
               x5
               x6
               x8)
-            (fun (x10 : T) =>
-              let x11 : T := «Prover.nfTerm» x9;
-              let x12 : T := «Prover.nfTerm» x10;
-              if («Prelude.and»
-                («Language.mIs» (leaf 11) (leaf 2) x11)
-                (Const.eq (Const.label x12) (leaf 11))).label ≠ 0 then
-                if («Prelude.and»
-                  (Const.eq («Language.mD» x11 (leaf 0)) (Const.add x2 (leaf 2)))
-                  (Const.eq («Language.mD» x12 (leaf 0)) x2)).label ≠ 0 then
-                  let x13 : T := «Language.mArg» x11 (leaf 0);
-                  let x14 : T := «Language.mArg» x11 (leaf 1);
-                  «Derivation.bindPT»
-                    («Derivation.eqParts» x13)
-                    (fun (x15 : T) =>
-                      «Base.mapO»
-                        (fun (x16 : T) =>
-                          «Prover.dNode»
-                            (leaf 23)
-                            ([] : List T)
-                            («Theory.l2»
-                              («Prover.dNode»
-                                (leaf 2)
-                                ([] : List T)
-                                («Theory.l2»
-                                  («Prover.mDeriv» («Prover.nfMarked» x9))
-                                  («Prover.mDeriv» («Prover.nfMarked» x10))))
-                              («Prover.dNode»
-                                (leaf 25)
-                                ([] : List T)
-                                («Theory.l2»
-                                  «Tactics.trueI»
-                                  («Tactics.impI»
+            (fun (x10 : _root_.Geb.Kernel.Tree) =>
+              let x11 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.nfTerm» x9;
+              let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.nfTerm»
+                x10;
+              if (_root_.GebMirror.Metalogic.«Prelude.and»
+                (_root_.GebMirror.Metalogic.«Language.mIs»
+                  (_root_.Geb.Kernel.leaf 11)
+                  (_root_.Geb.Kernel.leaf 2)
+                  x11)
+                (_root_.Geb.Kernel.Const.eq
+                  (_root_.Geb.Kernel.Const.label x12)
+                  (_root_.Geb.Kernel.leaf 11))).label ≠ 0 then
+                if (_root_.GebMirror.Metalogic.«Prelude.and»
+                  (_root_.Geb.Kernel.Const.eq
+                    (_root_.GebMirror.Metalogic.«Language.mD» x11 (_root_.Geb.Kernel.leaf 0))
+                    (_root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 2)))
+                  (_root_.Geb.Kernel.Const.eq
+                    (_root_.GebMirror.Metalogic.«Language.mD» x12 (_root_.Geb.Kernel.leaf 0))
+                    x2)).label ≠ 0 then
+                  let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mArg»
+                    x11
+                    (_root_.Geb.Kernel.leaf 0);
+                  let x14 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mArg»
+                    x11
+                    (_root_.Geb.Kernel.leaf 1);
+                  _root_.GebMirror.Metalogic.«Derivation.bindPT»
+                    (_root_.GebMirror.Metalogic.«Derivation.eqParts» x13)
+                    (fun (x15 : _root_.Geb.Kernel.Tree) =>
+                      _root_.GebMirror.Metalogic.«Base.mapO»
+                        (fun (x16 : _root_.Geb.Kernel.Tree) =>
+                          _root_.GebMirror.Metalogic.«Prover.dNode»
+                            (_root_.Geb.Kernel.leaf 23)
+                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                            (_root_.GebMirror.Metalogic.«Theory.l2»
+                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                (_root_.Geb.Kernel.leaf 2)
+                                ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                (_root_.GebMirror.Metalogic.«Theory.l2»
+                                  (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                                    (_root_.GebMirror.Metalogic.«Prover.nfMarked» x9))
+                                  (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                                    (_root_.GebMirror.Metalogic.«Prover.nfMarked» x10))))
+                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                (_root_.Geb.Kernel.leaf 25)
+                                ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                (_root_.GebMirror.Metalogic.«Theory.l2»
+                                  _root_.GebMirror.Metalogic.«Tactics.trueI»
+                                  (_root_.GebMirror.Metalogic.«Tactics.impI»
                                     x3
-                                    (Const.add («Prelude.length» x6) (leaf 1))
+                                    (_root_.Geb.Kernel.Const.add
+                                      (_root_.GebMirror.Metalogic.«Prelude.length» x6)
+                                      (_root_.Geb.Kernel.leaf 1))
                                     x14
                                     x13
                                     x16)))))
                         (x4
                           x5
-                          («Prelude.append» x6 («Theory.l2» («Tactics.ttL» x2) x14))
-                          («Language.p1» x15)
-                          («Language.p2» x15)))
+                          (_root_.GebMirror.Metalogic.«Prelude.append»
+                            x6
+                            (_root_.GebMirror.Metalogic.«Theory.l2» (_root_.GebMirror.Metalogic.«Tactics.ttL» x2) x14))
+                          (_root_.GebMirror.Metalogic.«Language.p1» x15)
+                          (_root_.GebMirror.Metalogic.«Language.p2» x15)))
                 else
-                  «Prelude.none»
+                  _root_.GebMirror.Metalogic.«Prelude.none»
               else
-                «Prelude.none»)));
+                _root_.GebMirror.Metalogic.«Prelude.none»)));
     x5
 
 def «Tactics.withImpElim» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : T)
-    (x3 : List T)
-    (x4 : List T → List T → List T → T → T → T) =>
-    let x5 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x5 : List T) (x6 : List T) (x7 : T) (x8 : T) =>
-      Const.foldr
-        (α := T)
-        (β := List T → List T → T)
-        (fun (x9 : T)
-           (x10 : List T → List T → T)
-           (x11 : List T)
-           (x12 : List T) =>
-          «Derivation.bindPT»
-            («Language.bindTP» («Prelude.nth» x11 x9) «Derivation.eqParts»)
-            (fun (x13 : T) =>
-              let x14 : T := «Language.p1» x13;
-              if («Language.mIs» (leaf 11) (leaf 2) x14).label ≠ 0 then
-                if (Const.eq
-                  («Language.mD» x14 (leaf 0))
-                  (Const.add x0 (leaf 2))).label ≠ 0 then
-                  let x15 : T := «Language.mArg» x14 (leaf 0);
-                  let x16 : T := «Language.mArg» x14 (leaf 1);
-                  «Base.mapO»
-                    (fun (x17 : T) =>
-                      «Prover.dNode»
-                        (leaf 22)
-                        («Prelude.single» x15)
-                        («Theory.l2»
-                          («Prover.dNode»
-                            (leaf 27)
-                            («Theory.l3»
-                              (Const.add x1 (leaf 4))
-                              (Const.node (leaf 0) ([] : List T))
-                              (Const.node (leaf 0) («Theory.l2» x15 x16)))
-                            («Theory.l2»
-                              («Prover.dNode»
-                                (leaf 23)
-                                ([] : List T)
-                                («Theory.l2»
-                                  («Prover.dNode» (leaf 17) («Theory.l2» x9 (leaf 0)) ([] : List T))
-                                  «Tactics.trueI»))
-                              («Prover.dNode» (leaf 21) («Prelude.single» x2) ([] : List T))))
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x5 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x6 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x7 : _root_.Geb.Kernel.Tree)
+                                         (x8 : _root_.Geb.Kernel.Tree) =>
+      _root_.Geb.Kernel.Const.foldr
+        (α := _root_.Geb.Kernel.Tree)
+        (β := _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+        (fun (x9 : _root_.Geb.Kernel.Tree)
+           (x10 : _root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+           (x11 : _root_.List _root_.Geb.Kernel.Tree)
+           (x12 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Derivation.bindPT»
+            (_root_.GebMirror.Metalogic.«Language.bindTP»
+              (_root_.GebMirror.Metalogic.«Prelude.nth» x11 x9)
+              _root_.GebMirror.Metalogic.«Derivation.eqParts»)
+            (fun (x13 : _root_.Geb.Kernel.Tree) =>
+              let x14 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.p1» x13;
+              if (_root_.GebMirror.Metalogic.«Language.mIs»
+                (_root_.Geb.Kernel.leaf 11)
+                (_root_.Geb.Kernel.leaf 2)
+                x14).label ≠ 0 then
+                if (_root_.Geb.Kernel.Const.eq
+                  (_root_.GebMirror.Metalogic.«Language.mD» x14 (_root_.Geb.Kernel.leaf 0))
+                  (_root_.Geb.Kernel.Const.add
+                    x0
+                    (_root_.Geb.Kernel.leaf 2))).label ≠ 0 then
+                  let x15 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mArg»
+                    x14
+                    (_root_.Geb.Kernel.leaf 0);
+                  let x16 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mArg»
+                    x14
+                    (_root_.Geb.Kernel.leaf 1);
+                  _root_.GebMirror.Metalogic.«Base.mapO»
+                    (fun (x17 : _root_.Geb.Kernel.Tree) =>
+                      _root_.GebMirror.Metalogic.«Prover.dNode»
+                        (_root_.Geb.Kernel.leaf 22)
+                        (_root_.GebMirror.Metalogic.«Prelude.single» x15)
+                        (_root_.GebMirror.Metalogic.«Theory.l2»
+                          (_root_.GebMirror.Metalogic.«Prover.dNode»
+                            (_root_.Geb.Kernel.leaf 27)
+                            (_root_.GebMirror.Metalogic.«Theory.l3»
+                              (_root_.Geb.Kernel.Const.add x1 (_root_.Geb.Kernel.leaf 4))
+                              (_root_.Geb.Kernel.Const.node
+                                (_root_.Geb.Kernel.leaf 0)
+                                ([] : _root_.List _root_.Geb.Kernel.Tree))
+                              (_root_.Geb.Kernel.Const.node
+                                (_root_.Geb.Kernel.leaf 0)
+                                (_root_.GebMirror.Metalogic.«Theory.l2» x15 x16)))
+                            (_root_.GebMirror.Metalogic.«Theory.l2»
+                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                (_root_.Geb.Kernel.leaf 23)
+                                ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                (_root_.GebMirror.Metalogic.«Theory.l2»
+                                  (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                    (_root_.Geb.Kernel.leaf 17)
+                                    (_root_.GebMirror.Metalogic.«Theory.l2» x9 (_root_.Geb.Kernel.leaf 0))
+                                    ([] : _root_.List _root_.Geb.Kernel.Tree))
+                                  _root_.GebMirror.Metalogic.«Tactics.trueI»))
+                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                (_root_.Geb.Kernel.leaf 21)
+                                (_root_.GebMirror.Metalogic.«Prelude.single» x2)
+                                ([] : _root_.List _root_.Geb.Kernel.Tree))))
                           x17))
                     (x10
-                      («Prelude.append» x11 («Prelude.single» x15))
-                      («Tactics.appendNR»
+                      (_root_.GebMirror.Metalogic.«Prelude.append»
+                        x11
+                        (_root_.GebMirror.Metalogic.«Prelude.single» x15))
+                      (_root_.GebMirror.Metalogic.«Tactics.appendNR»
                         x12
-                        ((«Tactics.hypRule» («Prelude.length» x11)) :: ([] : List T))))
+                        ((_root_.GebMirror.Metalogic.«Tactics.hypRule»
+                          (_root_.GebMirror.Metalogic.«Prelude.length» x11)) ::
+                          ([] : _root_.List _root_.Geb.Kernel.Tree))))
                 else
-                  «Prelude.none»
+                  _root_.GebMirror.Metalogic.«Prelude.none»
               else
-                «Prelude.none»))
-        (fun (x9 : List T) (x10 : List T) => x4 x10 x5 x9 x7 x8)
+                _root_.GebMirror.Metalogic.«Prelude.none»))
+        (fun (x9 : _root_.List _root_.Geb.Kernel.Tree)
+           (x10 : _root_.List _root_.Geb.Kernel.Tree) =>
+          x4 x10 x5 x9 x7 x8)
         x3
         x6
-        ([] : List T));
+        ([] : _root_.List _root_.Geb.Kernel.Tree));
     x5
 
 def «Tactics.hypIndex» :=
-  fun (x0 : T) =>
-    let x1 : T := (let x1 : T := x0;
-                   if (Const.eq (Const.label x1) (leaf 6)).label ≠ 0 then
-                     let x2 : List T := Const.children x1;
-                     let x3 : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x2
-                       (leaf 0)
-                       (fun (x3 : T) (_ : List T) => x3);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x2
-                       ([] : List T)
-                       (fun (_ : T) (x5 : List T) => x5);
-                     «Prelude.some» x3
-                   else
-                     «Prelude.none»);
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 6)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.GebMirror.Metalogic.«Prelude.some» x3
+                                        else
+                                          _root_.GebMirror.Metalogic.«Prelude.none»);
     x1
 
 def «Tactics.succPredRw» :=
-  fun (x0 : T) (x1 : T) (x2 : T) =>
-    let x3 : T := (if («Language.mIs» (leaf 6) (leaf 2) x2).label ≠ 0 then
-      let x3 : List
-        T := «Theory.l2»
-        («Language.var» (leaf 1))
-        («Language.var» (leaf 0));
-      «Language/OTPair.just»
-        («Language.pr»
-          («Language.app»
-            («Language.mArg» x2 (leaf 0))
-            («Derivation.instTerm» ([] : List T) x3 x1))
-          («Prover.dNode»
-            (leaf 2)
-            ([] : List T)
-            («Theory.l2»
-              («Prover.dNode» (leaf 0) ([] : List T) ([] : List T))
-              («Prover.dNode»
-                (leaf 16)
-                («Theory.l4»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Language.mIs»
+      (_root_.Geb.Kernel.leaf 6)
+      (_root_.Geb.Kernel.leaf 2)
+      x2).label ≠ 0 then
+      let x3 : _root_.List
+        _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Theory.l2»
+        (_root_.GebMirror.Metalogic.«Language.var» (_root_.Geb.Kernel.leaf 1))
+        (_root_.GebMirror.Metalogic.«Language.var» (_root_.Geb.Kernel.leaf 0));
+      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+        (_root_.GebMirror.Metalogic.«Language.pr»
+          (_root_.GebMirror.Metalogic.«Language.app»
+            (_root_.GebMirror.Metalogic.«Language.mArg» x2 (_root_.Geb.Kernel.leaf 0))
+            (_root_.GebMirror.Metalogic.«Derivation.instTerm»
+              ([] : _root_.List _root_.Geb.Kernel.Tree)
+              x3
+              x1))
+          (_root_.GebMirror.Metalogic.«Prover.dNode»
+            (_root_.Geb.Kernel.leaf 2)
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (_root_.GebMirror.Metalogic.«Theory.l2»
+              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                (_root_.Geb.Kernel.leaf 0)
+                ([] : _root_.List _root_.Geb.Kernel.Tree)
+                ([] : _root_.List _root_.Geb.Kernel.Tree))
+              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                (_root_.Geb.Kernel.leaf 16)
+                (_root_.GebMirror.Metalogic.«Theory.l4»
                   x0
-                  (Const.node (leaf 0) ([] : List T))
-                  (Const.node (leaf 0) x3)
-                  (leaf 1))
-                ([] : List T)))))
+                  (_root_.Geb.Kernel.Const.node
+                    (_root_.Geb.Kernel.leaf 0)
+                    ([] : _root_.List _root_.Geb.Kernel.Tree))
+                  (_root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x3)
+                  (_root_.Geb.Kernel.leaf 1))
+                ([] : _root_.List _root_.Geb.Kernel.Tree)))))
     else
-      «Language/OTPair.nothing»);
+      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»);
     x3
 
 def «Tactics.bySuccPred» :=
-  fun (x0 : List T) (x1 : T) (x2 : List T → List T → T → T → T) =>
-    let x3 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x3 : List T) (x4 : List T) (x5 : T) (x6 : T) =>
-      «Tactics.bindTh»
-        («Derivation.thmAt» x0 x1)
-        (fun (x7 : T) =>
-          «Derivation.bindPT»
-            («Derivation.eqParts» («Derivation.thConcl» x7))
-            (fun (x8 : T) =>
-              «Derivation.bindPT»
-                («Tactics.succPredRw» x1 («Language.p1» x8) x5)
-                (fun (x9 : T) =>
-                  «Derivation.bindPT»
-                    («Tactics.succPredRw» x1 («Language.p1» x8) x6)
-                    (fun (x10 : T) =>
-                      «Base.mapO»
-                        (fun (x11 : T) =>
-                          «Prover.dNode»
-                            (leaf 23)
-                            ([] : List T)
-                            («Theory.l2»
-                              («Prover.dNode»
-                                (leaf 2)
-                                ([] : List T)
-                                («Theory.l2» («Language.p2» x9) («Language.p2» x10)))
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x3 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x4 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x5 : _root_.Geb.Kernel.Tree)
+                                         (x6 : _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Tactics.bindTh»
+        (_root_.GebMirror.Metalogic.«Derivation.thmAt» x0 x1)
+        (fun (x7 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Derivation.bindPT»
+            (_root_.GebMirror.Metalogic.«Derivation.eqParts»
+              (_root_.GebMirror.Metalogic.«Derivation.thConcl» x7))
+            (fun (x8 : _root_.Geb.Kernel.Tree) =>
+              _root_.GebMirror.Metalogic.«Derivation.bindPT»
+                (_root_.GebMirror.Metalogic.«Tactics.succPredRw»
+                  x1
+                  (_root_.GebMirror.Metalogic.«Language.p1» x8)
+                  x5)
+                (fun (x9 : _root_.Geb.Kernel.Tree) =>
+                  _root_.GebMirror.Metalogic.«Derivation.bindPT»
+                    (_root_.GebMirror.Metalogic.«Tactics.succPredRw»
+                      x1
+                      (_root_.GebMirror.Metalogic.«Language.p1» x8)
+                      x6)
+                    (fun (x10 : _root_.Geb.Kernel.Tree) =>
+                      _root_.GebMirror.Metalogic.«Base.mapO»
+                        (fun (x11 : _root_.Geb.Kernel.Tree) =>
+                          _root_.GebMirror.Metalogic.«Prover.dNode»
+                            (_root_.Geb.Kernel.leaf 23)
+                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                            (_root_.GebMirror.Metalogic.«Theory.l2»
+                              (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                (_root_.Geb.Kernel.leaf 2)
+                                ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                (_root_.GebMirror.Metalogic.«Theory.l2»
+                                  (_root_.GebMirror.Metalogic.«Language.p2» x9)
+                                  (_root_.GebMirror.Metalogic.«Language.p2» x10)))
                               x11))
-                        (x2 x3 x4 («Language.p1» x9) («Language.p1» x10)))))));
+                        (x2
+                          x3
+                          x4
+                          (_root_.GebMirror.Metalogic.«Language.p1» x9)
+                          (_root_.GebMirror.Metalogic.«Language.p1» x10)))))));
     x3
 
 def «Tactics.tailTss» :=
-  fun (x0 : List (List T)) =>
-    let x1 : List
-      (List
-        T) := Const.lcase
-      (α := List T)
-      (β := List (List T))
+  fun (x0 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+    let x1 : _root_.List
+      (_root_.List
+        _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      (β := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
       x0
-      ([] : List (List T))
-      (fun (_ : List T) (x2 : List (List T)) => x2);
+      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+      (fun (_ : _root_.List _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+        x2);
     x1
 
 def «Tactics.concatTss» :=
-  fun (x0 : List (List T)) =>
-    let x1 : List
-      T := Const.foldr
-      (α := List T)
-      (β := List T)
-      (fun (x1 : List T) (x2 : List T) => «Prelude.append» x1 x2)
-      ([] : List T)
+  fun (x0 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Prelude.append» x1 x2)
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
       x0;
     x1
 
 def «Tactics.subtermsStep» :=
-  fun (x0 : T) (x1 : List (List T)) =>
-    let x2 : List
-      T := (let x2 : T := Const.label x0;
-            (x0 ::
-              (if (Const.eq x2 (leaf 5)).label ≠ 0 then
-                ([] : List T)
-              else
-                if («Prelude.or»
-                  (Const.eq x2 (leaf 8))
-                  (Const.eq x2 (leaf 9))).label ≠ 0 then
-                  «Tactics.concatTss»
-                    (Const.iter (α := List (List T)) «Tactics.tailTss» x1 (leaf 3))
-                else
-                  if (Const.eq x2 (leaf 10)).label ≠ 0 then
-                    «Tactics.concatTss»
-                      (Const.iter (α := List (List T)) «Tactics.tailTss» x1 (leaf 2))
-                  else
-                    «Tactics.concatTss» («Tactics.tailTss» x1))));
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.label
+                                   x0;
+                                 (x0 ::
+                                   (if (_root_.Geb.Kernel.Const.eq
+                                     x2
+                                     (_root_.Geb.Kernel.leaf 5)).label ≠ 0 then
+                                     ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                   else
+                                     if (_root_.GebMirror.Metalogic.«Prelude.or»
+                                       (_root_.Geb.Kernel.Const.eq x2 (_root_.Geb.Kernel.leaf 8))
+                                       (_root_.Geb.Kernel.Const.eq
+                                         x2
+                                         (_root_.Geb.Kernel.leaf 9))).label ≠ 0 then
+                                       _root_.GebMirror.Metalogic.«Tactics.concatTss»
+                                         (_root_.Geb.Kernel.Const.iter
+                                           (α := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+                                           _root_.GebMirror.Metalogic.«Tactics.tailTss»
+                                           x1
+                                           (_root_.Geb.Kernel.leaf 3))
+                                     else
+                                       if (_root_.Geb.Kernel.Const.eq
+                                         x2
+                                         (_root_.Geb.Kernel.leaf 10)).label ≠ 0 then
+                                         _root_.GebMirror.Metalogic.«Tactics.concatTss»
+                                           (_root_.Geb.Kernel.Const.iter
+                                             (α := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+                                             _root_.GebMirror.Metalogic.«Tactics.tailTss»
+                                             x1
+                                             (_root_.Geb.Kernel.leaf 2))
+                                       else
+                                         _root_.GebMirror.Metalogic.«Tactics.concatTss»
+                                           (_root_.GebMirror.Metalogic.«Tactics.tailTss» x1))));
     x2
 
 def «Tactics.openSubterms» :=
-  fun (x0 : T) =>
-    let x1 : List T := Const.para (α := List T) «Tactics.subtermsStep» x0;
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.para
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      _root_.GebMirror.Metalogic.«Tactics.subtermsStep»
+      x0;
     x1
 
 def «Tactics.findSomeT» :=
-  fun (x0 : T → T) (x1 : List T) =>
-    let x2 : T := Const.foldr
-      (α := T)
-      (β := T)
-      (fun (x2 : T) (x3 : T) =>
-        let x4 : T := x0 x2;
-        if («Prelude.isSome» x4).label ≠ 0 then x4 else x3)
-      «Prelude.none»
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
+        let x4 : _root_.Geb.Kernel.Tree := x0 x2;
+        if (_root_.GebMirror.Metalogic.«Prelude.isSome» x4).label ≠ 0 then x4 else x3)
+      _root_.GebMirror.Metalogic.«Prelude.none»
       x1;
     x2
 
 def «Tactics.varUnless» :=
-  fun (x0 : T → T) (x1 : T) =>
-    let x2 : T := (if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
-      let x2 : T := «Language.mD» x1 (leaf 0);
-      if (x0 x2).label ≠ 0 then «Prelude.none» else «Prelude.some» x2
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (if (_root_.Geb.Kernel.Const.eq
+      (_root_.Geb.Kernel.Const.label x1)
+      (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
+      let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mD»
+        x1
+        (_root_.Geb.Kernel.leaf 0);
+      if (x0 x2).label ≠ 0 then
+        _root_.GebMirror.Metalogic.«Prelude.none»
+      else
+        _root_.GebMirror.Metalogic.«Prelude.some» x2
     else
-      «Prelude.none»);
+      _root_.GebMirror.Metalogic.«Prelude.none»);
     x2
 
 def «Tactics.scrutVar» :=
-  fun (x0 : T → T) (x1 : T) =>
-    let x2 : T := (if («Language.mIs» (leaf 6) (leaf 2) x1).label ≠ 0 then
-      let x2 : T := «Language.mArg» x1 (leaf 0);
-      if («Prelude.and»
-        (Const.eq (Const.label x2) (leaf 7))
-        (Const.eq («Language.mD» x2 (leaf 0)) (leaf 5))).label ≠ 0 then
-        «Tactics.varUnless» x0 («Language.mArg» x1 (leaf 1))
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Language.mIs»
+      (_root_.Geb.Kernel.leaf 6)
+      (_root_.Geb.Kernel.leaf 2)
+      x1).label ≠ 0 then
+      let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mArg»
+        x1
+        (_root_.Geb.Kernel.leaf 0);
+      if (_root_.GebMirror.Metalogic.«Prelude.and»
+        (_root_.Geb.Kernel.Const.eq
+          (_root_.Geb.Kernel.Const.label x2)
+          (_root_.Geb.Kernel.leaf 7))
+        (_root_.Geb.Kernel.Const.eq
+          (_root_.GebMirror.Metalogic.«Language.mD» x2 (_root_.Geb.Kernel.leaf 0))
+          (_root_.Geb.Kernel.leaf 5))).label ≠ 0 then
+        _root_.GebMirror.Metalogic.«Tactics.varUnless»
+          x0
+          (_root_.GebMirror.Metalogic.«Language.mArg» x1 (_root_.Geb.Kernel.leaf 1))
       else
-        «Prelude.none»
+        _root_.GebMirror.Metalogic.«Prelude.none»
     else
-      «Prelude.none»);
+      _root_.GebMirror.Metalogic.«Prelude.none»);
     x2
 
 def «Tactics.datumVar» :=
-  fun (x0 : T → T) (x1 : T) =>
-    let x2 : T := (if («Prelude.or»
-      («Language.mIs» (leaf 8) (leaf 3) x1)
-      («Language.mIs» (leaf 9) (leaf 3) x1)).label ≠ 0 then
-      «Tactics.varUnless» x0 («Language.mArg» x1 (leaf 2))
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Prelude.or»
+      (_root_.GebMirror.Metalogic.«Language.mIs»
+        (_root_.Geb.Kernel.leaf 8)
+        (_root_.Geb.Kernel.leaf 3)
+        x1)
+      (_root_.GebMirror.Metalogic.«Language.mIs»
+        (_root_.Geb.Kernel.leaf 9)
+        (_root_.Geb.Kernel.leaf 3)
+        x1)).label ≠ 0 then
+      _root_.GebMirror.Metalogic.«Tactics.varUnless»
+        x0
+        (_root_.GebMirror.Metalogic.«Language.mArg» x1 (_root_.Geb.Kernel.leaf 2))
     else
-      if («Language.mIs» (leaf 10) (leaf 2) x1).label ≠ 0 then
-        «Tactics.varUnless» x0 («Language.mArg» x1 (leaf 1))
+      if (_root_.GebMirror.Metalogic.«Language.mIs»
+        (_root_.Geb.Kernel.leaf 10)
+        (_root_.Geb.Kernel.leaf 2)
+        x1).label ≠ 0 then
+        _root_.GebMirror.Metalogic.«Tactics.varUnless»
+          x0
+          (_root_.GebMirror.Metalogic.«Language.mArg» x1 (_root_.Geb.Kernel.leaf 1))
       else
-        «Prelude.none»);
+        _root_.GebMirror.Metalogic.«Prelude.none»);
     x2
 
 def «Tactics.stuckVar» :=
-  fun (x0 : T → T) (x1 : T) =>
-    let x2 : T := (let x2 : List T := «Tactics.openSubterms» x1;
-                   let x3 : T := «Tactics.findSomeT» («Tactics.scrutVar» x0) x2;
-                   if («Prelude.isSome» x3).label ≠ 0 then
-                     x3
-                   else
-                     «Tactics.findSomeT» («Tactics.datumVar» x0) x2);
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.List
+                                          _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.openSubterms»
+                                          x1;
+                                        let x3 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.findSomeT»
+                                          (_root_.GebMirror.Metalogic.«Tactics.scrutVar» x0)
+                                          x2;
+                                        if (_root_.GebMirror.Metalogic.«Prelude.isSome» x3).label ≠ 0 then
+                                          x3
+                                        else
+                                          _root_.GebMirror.Metalogic.«Tactics.findSomeT»
+                                            (_root_.GebMirror.Metalogic.«Tactics.datumVar» x0)
+                                            x2);
     x2
 
 def «Tactics.mentions» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := Const.lt (leaf 0) («Prover.uses» x0 x1); x2
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lt
+      (_root_.Geb.Kernel.leaf 0)
+      (_root_.GebMirror.Metalogic.«Prover.uses» x0 x1);
+    x2
 
 def «Tactics.eraseDupsTss» :=
-  fun (x0 : List (List T)) =>
-    let x1 : List
-      (List
-        T) := Const.foldr
-      (α := List T)
-      (β := List (List T) → List (List T))
-      (fun (x1 : List T)
-         (x2 : List (List T) → List (List T))
-         (x3 : List (List T)) =>
-        if (Const.foldr
-          (α := List T)
-          (β := T)
-          (fun (x4 : List T) (x5 : T) => «Prelude.or» («Base.equalTs» x4 x1) x5)
-          (leaf 0)
+  fun (x0 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+    let x1 : _root_.List
+      (_root_.List
+        _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      (β := _root_.List (_root_.List _root_.Geb.Kernel.Tree) →
+        _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List (_root_.List _root_.Geb.Kernel.Tree) →
+           _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+         (x3 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+        if (_root_.Geb.Kernel.Const.foldr
+          (α := _root_.List _root_.Geb.Kernel.Tree)
+          (β := _root_.Geb.Kernel.Tree)
+          (fun (x4 : _root_.List _root_.Geb.Kernel.Tree)
+             (x5 : _root_.Geb.Kernel.Tree) =>
+            _root_.GebMirror.Metalogic.«Prelude.or» (_root_.GebMirror.Metalogic.«Base.equalTs» x4 x1) x5)
+          (_root_.Geb.Kernel.leaf 0)
           x3).label ≠ 0 then
           x2 x3
         else
           x2 (x1 :: x3))
-      (fun (x1 : List (List T)) =>
-        Const.foldr
-          (α := List T)
-          (β := List (List T) → List (List T))
-          (fun (x2 : List T)
-             (x3 : List (List T) → List (List T))
-             (x4 : List (List T)) =>
+      (fun (x1 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+        _root_.Geb.Kernel.Const.foldr
+          (α := _root_.List _root_.Geb.Kernel.Tree)
+          (β := _root_.List (_root_.List _root_.Geb.Kernel.Tree) →
+            _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+          (fun (x2 : _root_.List _root_.Geb.Kernel.Tree)
+             (x3 : _root_.List (_root_.List _root_.Geb.Kernel.Tree) →
+               _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+             (x4 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
             x3 (x2 :: x4))
-          (fun (x2 : List (List T)) => x2)
+          (fun (x2 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) => x2)
           x1
-          ([] : List (List T)))
+          ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree)))
       x0
-      ([] : List (List T));
+      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree));
     x1
 
 def «Tactics.matchesWith» :=
-  fun (x0 : T → T → List T → T) (x1 : T) (x2 : T) =>
-    let x3 : List
-      (List
-        T) := (let x3 : List
-                 T := «Base.mapT»
-                 (fun (x3 : T) =>
-                   if (Const.lt x3 x1).label ≠ 0 then
-                     «Prelude.none»
-                   else
-                     «Prelude.some» («Language.var» (Const.sub x3 x1)))
-                 («Base.range» (Const.add x1 (leaf 64)));
-               «Tactics.eraseDupsTss»
-                 (Const.foldr
-                   (α := T)
-                   (β := List (List T))
-                   (fun (x4 : T) (x5 : List (List T)) =>
-                     let x6 : T := «Tactics.bindAT»
-                       (x0 (leaf 0) x4 x3)
-                       (fun (x6 : T) =>
-                         «Base.allSomeT» («Base.take» x1 («Prover.assigned» x6)));
-                     if («Prelude.isSome» x6).label ≠ 0 then
-                       ((«Prelude.reverse» (Const.children («Prelude.get» x6))) :: x5)
-                     else
-                       x5)
-                   ([] : List (List T))
-                   («Tactics.openSubterms» x2)));
+  fun (x0 : _root_.Geb.Kernel.Tree →
+      _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List
+      (_root_.List
+        _root_.Geb.Kernel.Tree) := (let x3 : _root_.List
+                                      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Base.mapT»
+                                      (fun (x3 : _root_.Geb.Kernel.Tree) =>
+                                        if (_root_.Geb.Kernel.Const.lt x3 x1).label ≠ 0 then
+                                          _root_.GebMirror.Metalogic.«Prelude.none»
+                                        else
+                                          _root_.GebMirror.Metalogic.«Prelude.some»
+                                            (_root_.GebMirror.Metalogic.«Language.var»
+                                              (_root_.Geb.Kernel.Const.sub x3 x1)))
+                                      (_root_.GebMirror.Metalogic.«Base.range»
+                                        (_root_.Geb.Kernel.Const.add
+                                          x1
+                                          (_root_.Geb.Kernel.leaf 64)));
+                                    _root_.GebMirror.Metalogic.«Tactics.eraseDupsTss»
+                                      (_root_.Geb.Kernel.Const.foldr
+                                        (α := _root_.Geb.Kernel.Tree)
+                                        (β := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+                                        (fun (x4 : _root_.Geb.Kernel.Tree)
+                                           (x5 : _root_.List
+                                             (_root_.List _root_.Geb.Kernel.Tree)) =>
+                                          let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.bindAT»
+                                            (x0 (_root_.Geb.Kernel.leaf 0) x4 x3)
+                                            (fun (x6 : _root_.Geb.Kernel.Tree) =>
+                                              _root_.GebMirror.Metalogic.«Base.allSomeT»
+                                                (_root_.GebMirror.Metalogic.«Base.take»
+                                                  x1
+                                                  (_root_.GebMirror.Metalogic.«Prover.assigned» x6)));
+                                          if (_root_.GebMirror.Metalogic.«Prelude.isSome» x6).label ≠ 0 then
+                                            ((_root_.GebMirror.Metalogic.«Prelude.reverse»
+                                              (_root_.Geb.Kernel.Const.children
+                                                (_root_.GebMirror.Metalogic.«Prelude.get» x6))) ::
+                                              x5)
+                                          else
+                                            x5)
+                                        ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+                                        (_root_.GebMirror.Metalogic.«Tactics.openSubterms» x2)));
     x3
 
 def «Tactics.matchesOf» :=
-  fun (x0 : T) (x1 : T) (x2 : T) =>
-    let x3 : List
-      (List T) := «Tactics.matchesWith» («Prover.matchTerm» x0) x1 x2;
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List
+      (_root_.List
+        _root_.Geb.Kernel.Tree) := _root_.GebMirror.Metalogic.«Tactics.matchesWith»
+      (_root_.GebMirror.Metalogic.«Prover.matchTerm» x0)
+      x1
+      x2;
     x3
 
 def «Tactics.appendTss» :=
-  fun (x0 : List (List T)) (x1 : List (List T)) =>
-    let x2 : List
-      (List
-        T) := Const.foldr
-      (α := List T)
-      (β := List (List T))
-      (fun (x2 : List T) (x3 : List (List T)) => (x2 :: x3))
+  fun (x0 : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+    (x1 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+    let x2 : _root_.List
+      (_root_.List
+        _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      (β := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+      (fun (x2 : _root_.List _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+        (x2 :: x3))
       x1
       x0;
     x2
 
 def «Tactics.instArgs» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : List T)
-    (x3 : T)
-    (x4 : List T)
-    (x5 : List T)
-    (x6 : List T)
-    (x7 : T)
-    (x8 : T)
-    (x9 : T) =>
-    let x10 : List
-      (List
-        T) := (let x10 : T := «Language.bindTP»
-                 («Prelude.nth» x6 x9)
-                 «Derivation.eqParts»;
-               if («Language/OTPair.isJust» x10).label ≠ 0 then
-                 let x11 : T := «Language.p1»
-                   («Language/OTPair.fromMaybe» «Tactics.pr0» x10);
-                 if («Language.mIs» (leaf 5) (leaf 1) x11).label ≠ 0 then
-                   let x12 : T := «Prover.eval»
-                     x1
-                     x2
-                     x3
-                     x4
-                     (leaf 4096)
-                     x0
-                     ((«Language.mD» x11 (leaf 0)) :: x5)
-                     («Base.mapT» «Derivation.weaken1» x6)
-                     («Language.mArg» x11 (leaf 0));
-                   if («Prover/ONFR.isJust» x12).label ≠ 0 then
-                     let x13 : T := «Prover.nfTerm»
-                       («Prover/ONFR.fromMaybe» «Tactics.nfr0» x12);
-                     «Tactics.eraseDupsTss»
-                       («Tactics.appendTss»
-                         («Tactics.matchesOf» x13 (leaf 1) x7)
-                         («Tactics.matchesOf» x13 (leaf 1) x8))
-                   else
-                     ([] : List (List T))
-                 else
-                   ([] : List (List T))
-               else
-                 ([] : List (List T)));
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.List _root_.Geb.Kernel.Tree)
+    (x6 : _root_.List _root_.Geb.Kernel.Tree)
+    (x7 : _root_.Geb.Kernel.Tree)
+    (x8 : _root_.Geb.Kernel.Tree)
+    (x9 : _root_.Geb.Kernel.Tree) =>
+    let x10 : _root_.List
+      (_root_.List
+        _root_.Geb.Kernel.Tree) := (let x10 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.bindTP»
+                                      (_root_.GebMirror.Metalogic.«Prelude.nth» x6 x9)
+                                      _root_.GebMirror.Metalogic.«Derivation.eqParts»;
+                                    if (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
+                                      x10).label ≠ 0 then
+                                      let x11 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.p1»
+                                        (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e66726f6d4d61796265»
+                                          _root_.GebMirror.Metalogic.«Tactics.pr0»
+                                          x10);
+                                      if (_root_.GebMirror.Metalogic.«Language.mIs»
+                                        (_root_.Geb.Kernel.leaf 5)
+                                        (_root_.Geb.Kernel.leaf 1)
+                                        x11).label ≠ 0 then
+                                        let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.eval»
+                                          x1
+                                          x2
+                                          x3
+                                          x4
+                                          (_root_.Geb.Kernel.leaf 4096)
+                                          x0
+                                          ((_root_.GebMirror.Metalogic.«Language.mD»
+                                            x11
+                                            (_root_.Geb.Kernel.leaf 0)) ::
+                                            x5)
+                                          (_root_.GebMirror.Metalogic.«Base.mapT»
+                                            _root_.GebMirror.Metalogic.«Derivation.weaken1»
+                                            x6)
+                                          (_root_.GebMirror.Metalogic.«Language.mArg»
+                                            x11
+                                            (_root_.Geb.Kernel.leaf 0));
+                                        if (_root_.GebMirror.Metalogic.«$50726f7665722f4f4e46522e69734a757374»
+                                          x12).label ≠ 0 then
+                                          let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.nfTerm»
+                                            (_root_.GebMirror.Metalogic.«$50726f7665722f4f4e46522e66726f6d4d61796265»
+                                              _root_.GebMirror.Metalogic.«Tactics.nfr0»
+                                              x12);
+                                          _root_.GebMirror.Metalogic.«Tactics.eraseDupsTss»
+                                            (_root_.GebMirror.Metalogic.«Tactics.appendTss»
+                                              (_root_.GebMirror.Metalogic.«Tactics.matchesOf»
+                                                x13
+                                                (_root_.Geb.Kernel.leaf 1)
+                                                x7)
+                                              (_root_.GebMirror.Metalogic.«Tactics.matchesOf»
+                                                x13
+                                                (_root_.Geb.Kernel.leaf 1)
+                                                x8))
+                                        else
+                                          ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+                                      else
+                                        ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+                                    else
+                                      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree)));
     x10
 
 def «Tactics.byInstsOnce» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : List T)
-    (x3 : T)
-    (x4 : List T)
-    (x5 : T)
-    (x6 : List T → List T → List T → T → T → T) =>
-    let x7 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x7 : List T) (x8 : List T) (x9 : T) (x10 : T) =>
-      «Prover.bindNT»
-        («Prover.eval» x1 x2 x3 x4 (leaf 4096) x0 x7 x8 x9)
-        (fun (x11 : T) =>
-          «Prover.bindNT»
-            («Prover.eval» x1 x2 x3 x4 (leaf 4096) x0 x7 x8 x10)
-            (fun (x12 : T) =>
-              let x13 : T := «Prover.nfTerm» x11;
-              let x14 : T := «Prover.nfTerm» x12;
-              if (Const.equal x13 x14).label ≠ 0 then
-                «Tactics.byMode» x0 x1 x2 x3 x4 x7 x8 x9 x10
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree)
+    (x6 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x7 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x7 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x8 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x9 : _root_.Geb.Kernel.Tree)
+                                         (x10 : _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Prover.bindNT»
+        (_root_.GebMirror.Metalogic.«Prover.eval»
+          x1
+          x2
+          x3
+          x4
+          (_root_.Geb.Kernel.leaf 4096)
+          x0
+          x7
+          x8
+          x9)
+        (fun (x11 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Prover.bindNT»
+            (_root_.GebMirror.Metalogic.«Prover.eval»
+              x1
+              x2
+              x3
+              x4
+              (_root_.Geb.Kernel.leaf 4096)
+              x0
+              x7
+              x8
+              x10)
+            (fun (x12 : _root_.Geb.Kernel.Tree) =>
+              let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.nfTerm»
+                x11;
+              let x14 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.nfTerm»
+                x12;
+              if (_root_.Geb.Kernel.Const.equal x13 x14).label ≠ 0 then
+                _root_.GebMirror.Metalogic.«Tactics.byMode» x0 x1 x2 x3 x4 x7 x8 x9 x10
               else
-                let x15 : List
-                  (T ×
-                    List
-                      (List
-                        T)) := Const.foldr
-                  (α := T)
-                  (β := List (T × List (List T)))
-                  (fun (x15 : T) (x16 : List (T × List (List T))) =>
-                    let x17 : List
-                      (List T) := «Tactics.instArgs» x0 x1 x2 x3 x4 x7 x8 x13 x14 x15;
-                    Const.lcase
-                      (α := List T)
-                      (β := List (T × List (List T)))
+                let x15 : _root_.List
+                  (_root_.Geb.Kernel.Tree ×
+                    _root_.List
+                      (_root_.List
+                        _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.foldr
+                  (α := _root_.Geb.Kernel.Tree)
+                  (β := _root_.List
+                    (_root_.Geb.Kernel.Tree ×
+                      _root_.List (_root_.List _root_.Geb.Kernel.Tree)))
+                  (fun (x15 : _root_.Geb.Kernel.Tree)
+                     (x16 : _root_.List
+                       (_root_.Geb.Kernel.Tree ×
+                         _root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
+                    let x17 : _root_.List
+                      (_root_.List
+                        _root_.Geb.Kernel.Tree) := _root_.GebMirror.Metalogic.«Tactics.instArgs»
+                      x0
+                      x1
+                      x2
+                      x3
+                      x4
+                      x7
+                      x8
+                      x13
+                      x14
+                      x15;
+                    _root_.Geb.Kernel.Const.lcase
+                      (α := _root_.List _root_.Geb.Kernel.Tree)
+                      (β := _root_.List
+                        (_root_.Geb.Kernel.Tree ×
+                          _root_.List (_root_.List _root_.Geb.Kernel.Tree)))
                       x17
                       x16
-                      (fun (_ : List T) (_ : List (List T)) => ((x15, x17) :: x16)))
-                  ([] : List (T × List (List T)))
-                  («Base.range»
-                    (if (Const.lt x5 («Prelude.length» x8)).label ≠ 0 then
+                      (fun (_ : _root_.List _root_.Geb.Kernel.Tree)
+                         (_ : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+                        ((x15, x17) :: x16)))
+                  ([] : _root_.List (_root_.Geb.Kernel.Tree ×
+                    _root_.List (_root_.List _root_.Geb.Kernel.Tree)))
+                  (_root_.GebMirror.Metalogic.«Base.range»
+                    (if (_root_.Geb.Kernel.Const.lt
+                      x5
+                      (_root_.GebMirror.Metalogic.«Prelude.length» x8)).label ≠ 0 then
                       x5
                     else
-                      «Prelude.length» x8));
-                Const.lcase
-                  (α := T × List (List T))
-                  (β := T)
+                      _root_.GebMirror.Metalogic.«Prelude.length» x8));
+                _root_.Geb.Kernel.Const.lcase
+                  (α := _root_.Geb.Kernel.Tree ×
+                    _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+                  (β := _root_.Geb.Kernel.Tree)
                   x15
-                  «Prelude.none»
-                  (fun (_ : T × List (List T)) (_ : List (T × List (List T))) =>
-                    Const.foldr
-                      (α := T × List (List T))
-                      (β := List T → List T → List T → T → T → T)
-                      (fun (x18 : T × List (List T))
-                         (x19 : List T → List T → List T → T → T → T)
-                         (x20 : List T) =>
-                        «Tactics.withInsts»
+                  _root_.GebMirror.Metalogic.«Prelude.none»
+                  (fun (_ : _root_.Geb.Kernel.Tree ×
+                       _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+                     (_ : _root_.List
+                       (_root_.Geb.Kernel.Tree ×
+                         _root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
+                    _root_.Geb.Kernel.Const.foldr
+                      (α := _root_.Geb.Kernel.Tree ×
+                        _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+                      (β := _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.List _root_.Geb.Kernel.Tree →
+                          _root_.List _root_.Geb.Kernel.Tree →
+                            _root_.Geb.Kernel.Tree →
+                              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+                      (fun (x18 : _root_.Geb.Kernel.Tree ×
+                           _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+                         (x19 : _root_.List _root_.Geb.Kernel.Tree →
+                           _root_.List _root_.Geb.Kernel.Tree →
+                             _root_.List _root_.Geb.Kernel.Tree →
+                               _root_.Geb.Kernel.Tree →
+                                 _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+                         (x20 : _root_.List _root_.Geb.Kernel.Tree) =>
+                        _root_.GebMirror.Metalogic.«Tactics.withInsts»
                           x1
                           x2
                           x3
                           x4
                           (x18).1
                           (x18).2
-                          (fun (x21 : List T) => x19 («Tactics.appendNR» x20 x21))
+                          (fun (x21 : _root_.List _root_.Geb.Kernel.Tree) =>
+                            x19 (_root_.GebMirror.Metalogic.«Tactics.appendNR» x20 x21))
                           x0)
                       x6
                       x15
-                      ([] : List T)
+                      ([] : _root_.List _root_.Geb.Kernel.Tree)
                       x7
                       x8
                       x9
@@ -2008,51 +3033,69 @@ def «Tactics.byInstsOnce» :=
     x7
 
 def «Tactics.instsLast» :=
-  fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) (x4 : List T) =>
-    let x5 : List T →
-      List T →
-        List T →
-          T →
-            T →
-              T := (fun (x5 : List T) =>
-      «Tactics.byMode» x0 x1 x2 x3 («Tactics.appendNR» x5 x4));
-    x5
-
-def «Tactics.instsRound» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : List T)
-    (x3 : T)
-    (x4 : List T)
-    (x5 : T)
-    (x6 : List T → List T → List T → T → T → T) =>
-    let x7 : List T →
-      List T →
-        List T →
-          T →
-            T →
-              T := (fun (x7 : List T) (x8 : List T) (x9 : List T) (x10 : T) (x11 : T) =>
-      let x12 : T := «Tactics.byMode»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree := (fun (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Tactics.byMode»
         x0
         x1
         x2
         x3
-        («Tactics.appendNR» x7 x4)
+        (_root_.GebMirror.Metalogic.«Tactics.appendNR» x5 x4));
+    x5
+
+def «Tactics.instsRound» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree)
+    (x6 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x7 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree := (fun (x7 : _root_.List _root_.Geb.Kernel.Tree)
+                                           (x8 : _root_.List _root_.Geb.Kernel.Tree)
+                                           (x9 : _root_.List _root_.Geb.Kernel.Tree)
+                                           (x10 : _root_.Geb.Kernel.Tree)
+                                           (x11 : _root_.Geb.Kernel.Tree) =>
+      let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.byMode»
+        x0
+        x1
+        x2
+        x3
+        (_root_.GebMirror.Metalogic.«Tactics.appendNR» x7 x4)
         x8
         x9
         x10
         x11;
-      if («Prelude.isSome» x12).label ≠ 0 then
+      if (_root_.GebMirror.Metalogic.«Prelude.isSome» x12).label ≠ 0 then
         x12
       else
-        «Tactics.byInstsOnce»
+        _root_.GebMirror.Metalogic.«Tactics.byInstsOnce»
           x0
           x1
           x2
           x3
-          («Tactics.appendNR» x7 x4)
+          (_root_.GebMirror.Metalogic.«Tactics.appendNR» x7 x4)
           x5
-          (fun (x13 : List T) => x6 («Tactics.appendNR» x7 x13))
+          (fun (x13 : _root_.List _root_.Geb.Kernel.Tree) =>
+            x6 (_root_.GebMirror.Metalogic.«Tactics.appendNR» x7 x13))
           x8
           x9
           x10
@@ -2060,90 +3103,154 @@ def «Tactics.instsRound» :=
     x7
 
 def «Tactics.byInsts» :=
-  fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) (x4 : List T) (x5 : T) =>
-    let x6 : List T →
-      List T →
-        T →
-          T →
-            T := «Tactics.instsRound»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree) =>
+    let x6 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.instsRound»
       x0
       x1
       x2
       x3
       x4
       x5
-      («Tactics.instsRound»
+      (_root_.GebMirror.Metalogic.«Tactics.instsRound»
         x0
         x1
         x2
         x3
         x4
         x5
-        («Tactics.instsRound»
+        (_root_.GebMirror.Metalogic.«Tactics.instsRound»
           x0
           x1
           x2
           x3
           x4
           x5
-          («Tactics.instsLast» x0 x1 x2 x3 x4)))
-      ([] : List T);
+          (_root_.GebMirror.Metalogic.«Tactics.instsLast» x0 x1 x2 x3 x4)))
+      ([] : _root_.List _root_.Geb.Kernel.Tree);
     x6
 
 def «Tactics.orO» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then x0 else x1); x2
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Prelude.isSome»
+      x0).label ≠ 0 then
+      x0
+    else
+      x1);
+    x2
 
 def «Tactics.byAuto» :=
-  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : List T) (x4 : T) (x5 : T) =>
-    let x6 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x6 : List T) (x7 : List T) (x8 : T) (x9 : T) =>
-      let x10 : T := «Prelude.length» x7;
-      Const.iter
-        (α := List T → List T → T → T → T)
-        (fun (x11 : List T → List T → T → T → T)
-           (x12 : List T)
-           (x13 : List T)
-           (x14 : T)
-           (x15 : T) =>
-          «Tactics.orO»
-            («Tactics.byInsts» x5 x0 x1 x2 x3 x10 x12 x13 x14 x15)
-            («Prover.bindNT»
-              («Prover.eval» x0 x1 x2 x3 (leaf 4096) x5 x12 x13 x14)
-              (fun (x16 : T) =>
-                «Prover.bindNT»
-                  («Prover.eval» x0 x1 x2 x3 (leaf 4096) x5 x12 x13 x15)
-                  (fun (x17 : T) =>
-                    let x18 : T →
-                      T := (fun (x18 : T) =>
-                      «Base.anyT»
-                        (fun (x19 : T) => «Tactics.mentions» x19 x18)
-                        («Base.take» x10 x13));
-                    let x19 : T → T := (fun (_ : T) => leaf 0);
-                    «Base.bindO»
-                      («Tactics.orO»
-                        («Tactics.orO»
-                          («Tactics.stuckVar» x18 («Prover.nfTerm» x16))
-                          («Tactics.stuckVar» x18 («Prover.nfTerm» x17)))
-                        («Tactics.orO»
-                          («Tactics.stuckVar» x19 («Prover.nfTerm» x16))
-                          («Tactics.stuckVar» x19 («Prover.nfTerm» x17))))
-                      (fun (x20 : T) =>
-                        «Base.bindO»
-                          («Prelude.nth» x12 x20)
-                          (fun (x21 : T) =>
-                            if («Prelude.isSome» («Language.listPart» x21)).label ≠ 0 then
-                              «Tactics.byListSplit» x0 x2 x20 x11 x11 x12 x13 x14 x15
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree) =>
+    let x6 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x6 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x7 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x8 : _root_.Geb.Kernel.Tree)
+                                         (x9 : _root_.Geb.Kernel.Tree) =>
+      let x10 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.length»
+        x7;
+      _root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+        (fun (x11 : _root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+           (x12 : _root_.List _root_.Geb.Kernel.Tree)
+           (x13 : _root_.List _root_.Geb.Kernel.Tree)
+           (x14 : _root_.Geb.Kernel.Tree)
+           (x15 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Tactics.orO»
+            (_root_.GebMirror.Metalogic.«Tactics.byInsts» x5 x0 x1 x2 x3 x10 x12 x13 x14 x15)
+            (_root_.GebMirror.Metalogic.«Prover.bindNT»
+              (_root_.GebMirror.Metalogic.«Prover.eval»
+                x0
+                x1
+                x2
+                x3
+                (_root_.Geb.Kernel.leaf 4096)
+                x5
+                x12
+                x13
+                x14)
+              (fun (x16 : _root_.Geb.Kernel.Tree) =>
+                _root_.GebMirror.Metalogic.«Prover.bindNT»
+                  (_root_.GebMirror.Metalogic.«Prover.eval»
+                    x0
+                    x1
+                    x2
+                    x3
+                    (_root_.Geb.Kernel.leaf 4096)
+                    x5
+                    x12
+                    x13
+                    x15)
+                  (fun (x17 : _root_.Geb.Kernel.Tree) =>
+                    let x18 : _root_.Geb.Kernel.Tree →
+                      _root_.Geb.Kernel.Tree := (fun (x18 : _root_.Geb.Kernel.Tree) =>
+                      _root_.GebMirror.Metalogic.«Base.anyT»
+                        (fun (x19 : _root_.Geb.Kernel.Tree) =>
+                          _root_.GebMirror.Metalogic.«Tactics.mentions» x19 x18)
+                        (_root_.GebMirror.Metalogic.«Base.take» x10 x13));
+                    let x19 : _root_.Geb.Kernel.Tree →
+                      _root_.Geb.Kernel.Tree := (fun (_ : _root_.Geb.Kernel.Tree) =>
+                      _root_.Geb.Kernel.leaf 0);
+                    _root_.GebMirror.Metalogic.«Base.bindO»
+                      (_root_.GebMirror.Metalogic.«Tactics.orO»
+                        (_root_.GebMirror.Metalogic.«Tactics.orO»
+                          (_root_.GebMirror.Metalogic.«Tactics.stuckVar»
+                            x18
+                            (_root_.GebMirror.Metalogic.«Prover.nfTerm» x16))
+                          (_root_.GebMirror.Metalogic.«Tactics.stuckVar»
+                            x18
+                            (_root_.GebMirror.Metalogic.«Prover.nfTerm» x17)))
+                        (_root_.GebMirror.Metalogic.«Tactics.orO»
+                          (_root_.GebMirror.Metalogic.«Tactics.stuckVar»
+                            x19
+                            (_root_.GebMirror.Metalogic.«Prover.nfTerm» x16))
+                          (_root_.GebMirror.Metalogic.«Tactics.stuckVar»
+                            x19
+                            (_root_.GebMirror.Metalogic.«Prover.nfTerm» x17))))
+                      (fun (x20 : _root_.Geb.Kernel.Tree) =>
+                        _root_.GebMirror.Metalogic.«Base.bindO»
+                          (_root_.GebMirror.Metalogic.«Prelude.nth» x12 x20)
+                          (fun (x21 : _root_.Geb.Kernel.Tree) =>
+                            if (_root_.GebMirror.Metalogic.«Prelude.isSome»
+                              (_root_.GebMirror.Metalogic.«Language.listPart» x21)).label ≠ 0 then
+                              _root_.GebMirror.Metalogic.«Tactics.byListSplit» x0 x2 x20 x11 x11 x12 x13 x14 x15
                             else
-                              if («Language/OTPair.isJust»
-                                («Language.coprodParts» x21)).label ≠ 0 then
-                                «Tactics.bySplit2» (leaf 3) (leaf 4) x20 x11 x11 x12 x13 x14 x15
+                              if (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
+                                (_root_.GebMirror.Metalogic.«Language.coprodParts» x21)).label ≠ 0 then
+                                _root_.GebMirror.Metalogic.«Tactics.bySplit2»
+                                  (_root_.Geb.Kernel.leaf 3)
+                                  (_root_.Geb.Kernel.leaf 4)
+                                  x20
+                                  x11
+                                  x11
+                                  x12
+                                  x13
+                                  x14
+                                  x15
                               else
-                                «Prelude.none»))))))
-        («Tactics.byInsts» x5 x0 x1 x2 x3 x10)
+                                _root_.GebMirror.Metalogic.«Prelude.none»))))))
+        (_root_.GebMirror.Metalogic.«Tactics.byInsts» x5 x0 x1 x2 x3 x10)
         x4
         x6
         x7
@@ -2152,544 +3259,883 @@ def «Tactics.byAuto» :=
     x6
 
 def «Tactics.condOf» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
-    Const.node (leaf 0) (x0 :: (x1 :: (x2 :: (x3 :: ([] : List T)))))
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 0)
+      (x0 ::
+        (x1 :: (x2 :: (x3 :: ([] : _root_.List _root_.Geb.Kernel.Tree)))))
 
-def «Tactics/OCond.nothing» := Const.node (leaf 0) ([] : List T)
+def «$546163746963732f4f436f6e642e6e6f7468696e67» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «Tactics/OCond.just» :=
-  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+def «$546163746963732f4f436f6e642e6a757374» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
-def «Tactics/OCond.isJust» :=
-  fun (x0 : T) =>
-    let x1 : T := (let x1 : T := x0;
-                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let x2 : List T := Const.children x1;
-                     let _ : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x2
-                       (leaf 0)
-                       (fun (x3 : T) (_ : List T) => x3);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x2
-                       ([] : List T)
-                       (fun (_ : T) (x5 : List T) => x5);
-                     leaf 1
-                   else
-                     let _ : List T := Const.children x1; leaf 0);
+def «$546163746963732f4f436f6e642e69734a757374» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
     x1
 
-def «Tactics/OCond.fromMaybe» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := (let x2 : T := x1;
-                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : List T := Const.children x2;
-                     let x4 : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x3
-                       (leaf 0)
-                       (fun (x4 : T) (_ : List T) => x4);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x3
-                       ([] : List T)
-                       (fun (_ : T) (x6 : List T) => x6);
-                     x4
-                   else
-                     let _ : List T := Const.children x2; x0);
+def «$546163746963732f4f436f6e642e66726f6d4d61796265» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
     x2
 
-def «Tactics/OCond.nthOf» :=
-  fun (x0 : List T) (x1 : T) =>
-    let x2 : T := Const.lcase
-      (α := T)
-      (β := T)
-      (Const.iter
-        (α := List T)
-        (fun (x2 : List T) =>
-          Const.lcase
-            (α := T)
-            (β := List T)
+def «$546163746963732f4f436f6e642e6e74684f66» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
             x2
-            ([] : List T)
-            (fun (_ : T) (x4 : List T) => x4))
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
         x0
         x1)
-      «Tactics/OCond.nothing»
-      (fun (x2 : T) (_ : List T) => «Tactics/OCond.just» x2);
+      _root_.GebMirror.Metalogic.«$546163746963732f4f436f6e642e6e6f7468696e67»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$546163746963732f4f436f6e642e6a757374» x2);
     x2
 
-def «Tactics/OCond.allJust» :=
-  fun (x0 : List T) =>
-    let x1 : T ×
-      List
-        T := Const.foldr
-      (α := T)
-      (β := T × List T)
-      (fun (x1 : T) (x2 : T × List T) =>
-        let x3 : T := x1;
-        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : List T := Const.children x3;
-          let x5 : T := Const.lcase
-            (α := T)
-            (β := T)
+def «$546163746963732f4f436f6e642e616c6c4a757374» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree ×
+      _root_.List
+        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
+        let x3 : _root_.Geb.Kernel.Tree := x1;
+        if (_root_.Geb.Kernel.Const.eq
+          (_root_.Geb.Kernel.Const.label x3)
+          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+          let x4 : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
+          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.Geb.Kernel.Tree)
             x4
-            (leaf 0)
-            (fun (x5 : T) (_ : List T) => x5);
-          let _ : List
-            T := Const.lcase
-            (α := T)
-            (β := List T)
+            (_root_.Geb.Kernel.leaf 0)
+            (fun (x5 : _root_.Geb.Kernel.Tree)
+               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+              x5);
+          let _ : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
             x4
-            ([] : List T)
-            (fun (_ : T) (x7 : List T) => x7);
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x7);
           ((x2).1, (x5 :: (x2).2))
         else
-          let _ : List T := Const.children x3; (leaf 0, (x2).2))
-      (leaf 1, ([] : List T))
+          let _ : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
+          (_root_.Geb.Kernel.leaf 0, (x2).2))
+      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
       x0;
     x1
 
 def «Tactics.bindCT» :=
-  fun (x0 : T) (x1 : T → T) =>
-    let x2 : T := (let x2 : T := x0;
-                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : List T := Const.children x2;
-                     let x4 : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x3
-                       (leaf 0)
-                       (fun (x4 : T) (_ : List T) => x4);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x3
-                       ([] : List T)
-                       (fun (_ : T) (x6 : List T) => x6);
-                     x1 x4
-                   else
-                     let _ : List T := Const.children x2; «Prelude.none»);
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x1 x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          _root_.GebMirror.Metalogic.«Prelude.none»);
     x2
 
 def «Tactics.condParts» :=
-  fun (x0 : T) =>
-    let x1 : T := (if («Prelude.and»
-      («Language.mIs» (leaf 11) (leaf 3) x0)
-      («Prelude.and»
-        (Const.eq («Language.mD» x0 (leaf 0)) (leaf 6))
-        (Const.eq
-          («Prelude.length» (Const.children («Language.mD» x0 (leaf 1))))
-          (leaf 1)))).label ≠ 0 then
-      «Tactics/OCond.just»
-        («Tactics.condOf»
-          («Prelude.at» (Const.children («Language.mD» x0 (leaf 1))) (leaf 0))
-          («Language.mArg» x0 (leaf 2))
-          («Language.mArg» x0 (leaf 1))
-          («Language.mArg» x0 (leaf 0)))
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Prelude.and»
+      (_root_.GebMirror.Metalogic.«Language.mIs»
+        (_root_.Geb.Kernel.leaf 11)
+        (_root_.Geb.Kernel.leaf 3)
+        x0)
+      (_root_.GebMirror.Metalogic.«Prelude.and»
+        (_root_.Geb.Kernel.Const.eq
+          (_root_.GebMirror.Metalogic.«Language.mD» x0 (_root_.Geb.Kernel.leaf 0))
+          (_root_.Geb.Kernel.leaf 6))
+        (_root_.Geb.Kernel.Const.eq
+          (_root_.GebMirror.Metalogic.«Prelude.length»
+            (_root_.Geb.Kernel.Const.children
+              (_root_.GebMirror.Metalogic.«Language.mD» x0 (_root_.Geb.Kernel.leaf 1))))
+          (_root_.Geb.Kernel.leaf 1)))).label ≠ 0 then
+      _root_.GebMirror.Metalogic.«$546163746963732f4f436f6e642e6a757374»
+        (_root_.GebMirror.Metalogic.«Tactics.condOf»
+          (_root_.GebMirror.Metalogic.«Prelude.at»
+            (_root_.Geb.Kernel.Const.children
+              (_root_.GebMirror.Metalogic.«Language.mD» x0 (_root_.Geb.Kernel.leaf 1)))
+            (_root_.Geb.Kernel.leaf 0))
+          (_root_.GebMirror.Metalogic.«Language.mArg» x0 (_root_.Geb.Kernel.leaf 2))
+          (_root_.GebMirror.Metalogic.«Language.mArg» x0 (_root_.Geb.Kernel.leaf 1))
+          (_root_.GebMirror.Metalogic.«Language.mArg» x0 (_root_.Geb.Kernel.leaf 0)))
     else
-      «Tactics/OCond.nothing»);
+      _root_.GebMirror.Metalogic.«$546163746963732f4f436f6e642e6e6f7468696e67»);
     x1
 
 def «Tactics.condVar» :=
-  fun (x0 : T → T) (x1 : T) =>
-    let x2 : T := «Tactics.bindCT»
-      («Tactics.condParts» x1)
-      (fun (x2 : T) =>
-        «Tactics.varUnless» x0 («Prelude.at» (Const.children x2) (leaf 1)));
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.bindCT»
+      (_root_.GebMirror.Metalogic.«Tactics.condParts» x1)
+      (fun (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Tactics.varUnless»
+          x0
+          (_root_.GebMirror.Metalogic.«Prelude.at»
+            (_root_.Geb.Kernel.Const.children x2)
+            (_root_.Geb.Kernel.leaf 1)));
     x2
 
 def «Tactics.stuckVarC» :=
-  fun (x0 : T → T) (x1 : T) =>
-    let x2 : T := «Tactics.orO»
-      («Tactics.findSomeT»
-        («Tactics.condVar» x0)
-        («Tactics.openSubterms» x1))
-      («Tactics.stuckVar» x0 x1);
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.orO»
+      (_root_.GebMirror.Metalogic.«Tactics.findSomeT»
+        (_root_.GebMirror.Metalogic.«Tactics.condVar» x0)
+        (_root_.GebMirror.Metalogic.«Tactics.openSubterms» x1))
+      (_root_.GebMirror.Metalogic.«Tactics.stuckVar» x0 x1);
     x2
 
 def «Tactics.isApps2» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := «Prelude.and»
-      («Language.mIs» (leaf 6) (leaf 2) x1)
-      (let x2 : T := «Language.mArg» x1 (leaf 0);
-       «Prelude.and»
-         («Language.mIs» (leaf 6) (leaf 2) x2)
-         (let x3 : T := «Language.mArg» x2 (leaf 0);
-          «Prelude.and»
-            (Const.eq (Const.label x3) (leaf 11))
-            («Prelude.and»
-              (Const.eq («Language.mD» x3 (leaf 0)) x0)
-              (Const.equal
-                («Language.mD» x3 (leaf 1))
-                (Const.node (leaf 0) ([] : List T))))));
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.and»
+      (_root_.GebMirror.Metalogic.«Language.mIs»
+        (_root_.Geb.Kernel.leaf 6)
+        (_root_.Geb.Kernel.leaf 2)
+        x1)
+      (let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mArg»
+         x1
+         (_root_.Geb.Kernel.leaf 0);
+       _root_.GebMirror.Metalogic.«Prelude.and»
+         (_root_.GebMirror.Metalogic.«Language.mIs»
+           (_root_.Geb.Kernel.leaf 6)
+           (_root_.Geb.Kernel.leaf 2)
+           x2)
+         (let x3 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mArg»
+            x2
+            (_root_.Geb.Kernel.leaf 0);
+          _root_.GebMirror.Metalogic.«Prelude.and»
+            (_root_.Geb.Kernel.Const.eq
+              (_root_.Geb.Kernel.Const.label x3)
+              (_root_.Geb.Kernel.leaf 11))
+            (_root_.GebMirror.Metalogic.«Prelude.and»
+              (_root_.Geb.Kernel.Const.eq
+                (_root_.GebMirror.Metalogic.«Language.mD» x3 (_root_.Geb.Kernel.leaf 0))
+                x0)
+              (_root_.Geb.Kernel.Const.equal
+                (_root_.GebMirror.Metalogic.«Language.mD» x3 (_root_.Geb.Kernel.leaf 1))
+                (_root_.Geb.Kernel.Const.node
+                  (_root_.Geb.Kernel.leaf 0)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree))))));
     x2
 
 def «Tactics.appsOf» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : List
-      T := Const.foldr
-      (α := T)
-      (β := List T)
-      (fun (x2 : T) (x3 : List T) =>
-        if («Tactics.isApps2» x0 x2).label ≠ 0 then (x2 :: x3) else x3)
-      ([] : List T)
-      («Tactics.openSubterms» x1);
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        if (_root_.GebMirror.Metalogic.«Tactics.isApps2» x0 x2).label ≠ 0 then
+          (x2 :: x3)
+        else
+          x3)
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«Tactics.openSubterms» x1);
     x2
 
 def «Tactics.ldefn0» :=
-  «Language.ldefn»
-    (leaf 0)
-    («Language.objs» ([] : List T))
-    (leaf 0)
-    (leaf 0)
+  _root_.GebMirror.Metalogic.«Language.ldefn»
+    (_root_.Geb.Kernel.leaf 0)
+    (_root_.GebMirror.Metalogic.«Language.objs»
+      ([] : _root_.List _root_.Geb.Kernel.Tree))
+    (_root_.Geb.Kernel.leaf 0)
+    (_root_.Geb.Kernel.leaf 0)
 
 def «Tactics.unnodeTy» :=
-  «Theory.prod»
-    «Translation.bitsTy»
-    («Theory.list» «Translation.treeTy»)
+  _root_.GebMirror.Metalogic.«Theory.prod»
+    _root_.GebMirror.Metalogic.«Translation.bitsTy»
+    (_root_.GebMirror.Metalogic.«Theory.list» _root_.GebMirror.Metalogic.«Translation.treeTy»)
 
 def «Tactics.unnodeStep» :=
-  let x0 : T := «Language/OLDefn.nthOf» «Translation.lib» (leaf 4);
-  if («Language/OLDefn.isJust» x0).label ≠ 0 then
-    Const.lcase
-      (α := T)
-      (β := T)
-      («Language.mArgs»
-        («Language.ldBody» («Language/OLDefn.fromMaybe» «Tactics.ldefn0» x0)))
-      «Language.mStar»
-      (fun (x1 : T) (_ : List T) => x1)
+  let x0 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$4c616e67756167652f4f4c4465666e2e6e74684f66»
+    _root_.GebMirror.Metalogic.«Translation.lib»
+    (_root_.Geb.Kernel.leaf 4);
+  if (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f4c4465666e2e69734a757374»
+    x0).label ≠ 0 then
+    _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«Language.mArgs»
+        (_root_.GebMirror.Metalogic.«Language.ldBody»
+          (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f4c4465666e2e66726f6d4d61796265»
+            _root_.GebMirror.Metalogic.«Tactics.ldefn0»
+            x0)))
+      _root_.GebMirror.Metalogic.«Language.mStar»
+      (fun (x1 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        x1)
   else
-    «Language.mStar»
+    _root_.GebMirror.Metalogic.«Language.mStar»
 
 def «Tactics.unnodeU» :=
-  fun (x0 : T) =>
-    let x1 : T := «Language.mRoseRec»
-      «Tactics.unnodeTy»
-      «Tactics.unnodeStep»
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mRoseRec»
+      _root_.GebMirror.Metalogic.«Tactics.unnodeTy»
+      _root_.GebMirror.Metalogic.«Tactics.unnodeStep»
       x0;
     x1
 
 def «Tactics.anyBound» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := (if (Const.eq x0 (leaf 5)).label ≠ 0 then
-      leaf 1
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (if (_root_.Geb.Kernel.Const.eq
+      x0
+      (_root_.Geb.Kernel.leaf 5)).label ≠ 0 then
+      _root_.Geb.Kernel.leaf 1
     else
-      if (Const.eq x0 (leaf 8)).label ≠ 0 then
-        if (Const.eq x1 (leaf 1)).label ≠ 0 then leaf 1 else leaf 0
-      else
-        if (Const.eq x0 (leaf 9)).label ≠ 0 then
-          if (Const.eq x1 (leaf 1)).label ≠ 0 then leaf 2 else leaf 0
+      if (_root_.Geb.Kernel.Const.eq
+        x0
+        (_root_.Geb.Kernel.leaf 8)).label ≠ 0 then
+        if (_root_.Geb.Kernel.Const.eq
+          x1
+          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+          _root_.Geb.Kernel.leaf 1
         else
-          if (Const.eq x0 (leaf 10)).label ≠ 0 then
-            if (Const.eq x1 (leaf 0)).label ≠ 0 then leaf 1 else leaf 0
+          _root_.Geb.Kernel.leaf 0
+      else
+        if (_root_.Geb.Kernel.Const.eq
+          x0
+          (_root_.Geb.Kernel.leaf 9)).label ≠ 0 then
+          if (_root_.Geb.Kernel.Const.eq
+            x1
+            (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+            _root_.Geb.Kernel.leaf 2
           else
-            leaf 0);
+            _root_.Geb.Kernel.leaf 0
+        else
+          if (_root_.Geb.Kernel.Const.eq
+            x0
+            (_root_.Geb.Kernel.leaf 10)).label ≠ 0 then
+            if (_root_.Geb.Kernel.Const.eq
+              x1
+              (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
+              _root_.Geb.Kernel.leaf 1
+            else
+              _root_.Geb.Kernel.leaf 0
+          else
+            _root_.Geb.Kernel.leaf 0);
     x2
 
 def «Tactics.kidsAt» :=
-  fun (x0 : T) (x1 : List (T → T)) =>
-    let x2 : T →
-      T →
-        List
-          T := Const.foldr
-      (α := T → T)
-      (β := T → T → List T)
-      (fun (x2 : T → T) (x3 : T → T → List T) (x4 : T) (x5 : T) =>
-        ((x2 (Const.add x4 («Tactics.anyBound» x0 x5))) ::
-          (x3 x4 (Const.add x5 (leaf 1)))))
-      (fun (_ : T) (_ : T) => ([] : List T))
-      («Prover/UFs.tail» x1);
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List
+      (_root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    let x2 : _root_.Geb.Kernel.Tree →
+      _root_.Geb.Kernel.Tree →
+        _root_.List
+          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree → _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x3 : _root_.Geb.Kernel.Tree →
+           _root_.Geb.Kernel.Tree → _root_.List _root_.Geb.Kernel.Tree)
+         (x4 : _root_.Geb.Kernel.Tree)
+         (x5 : _root_.Geb.Kernel.Tree) =>
+        ((x2
+          (_root_.Geb.Kernel.Const.add
+            x4
+            (_root_.GebMirror.Metalogic.«Tactics.anyBound» x0 x5))) ::
+          (x3 x4 (_root_.Geb.Kernel.Const.add x5 (_root_.Geb.Kernel.leaf 1)))))
+      (fun (_ : _root_.Geb.Kernel.Tree) (_ : _root_.Geb.Kernel.Tree) =>
+        ([] : _root_.List _root_.Geb.Kernel.Tree))
+      (_root_.GebMirror.Metalogic.«$50726f7665722f5546732e7461696c» x1);
     x2
 
 def «Tactics.occStep» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : List (T → T)) =>
-    let x4 : T →
-      T := (let x4 : T := Const.label x2;
-            let x5 : T → T → List T := «Tactics.kidsAt» x4 x3;
-            fun (x6 : T) =>
-              let x7 : T := «Prover.dNode» (leaf 0) ([] : List T) ([] : List T);
-              let x8 : T := Const.add x1 x6;
-              if (Const.eq x4 (leaf 0)).label ≠ 0 then
-                if (Const.eq («Language.mD» x2 (leaf 0)) x8).label ≠ 0 then
-                  «Prover.dNode»
-                    (leaf 1)
-                    ([] : List T)
-                    («Theory.l2»
-                      («Prover.dNode»
-                        (leaf 2)
-                        ([] : List T)
-                        («Prelude.single»
-                          («Prover.dNode» (leaf 6) ([] : List T) ([] : List T))))
-                      («Prover.dNode»
-                        (leaf 16)
-                        («Theory.l4»
-                          x0
-                          (Const.node (leaf 0) ([] : List T))
-                          (Const.node (leaf 0) («Prelude.single» («Language.var» x8)))
-                          (leaf 0))
-                        ([] : List T)))
-                else
-                  x7
-              else
-                if («Prelude.or»
-                  (Const.eq x4 (leaf 5))
-                  («Prelude.or»
-                    (Const.eq x4 (leaf 8))
-                    («Prelude.or»
-                      (Const.eq x4 (leaf 9))
-                      (Const.eq x4 (leaf 10))))).label ≠ 0 then
-                  «Prover.dNode» (leaf 2) ([] : List T) (x5 x6 (leaf 0))
-                else
-                  if («Base.allT»
-                    (fun (x9 : T) => Const.eq («Prover.uses» x9 x8) (leaf 0))
-                    («Language.mArgs» x2)).label ≠ 0 then
-                    x7
-                  else
-                    «Prover.dNode» (leaf 2) ([] : List T) (x5 x6 (leaf 0)));
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List
+      (_root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    let x4 : _root_.Geb.Kernel.Tree →
+      _root_.Geb.Kernel.Tree := (let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.label
+                                   x2;
+                                 let x5 : _root_.Geb.Kernel.Tree →
+                                   _root_.Geb.Kernel.Tree →
+                                     _root_.List
+                                       _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.kidsAt»
+                                   x4
+                                   x3;
+                                 fun (x6 : _root_.Geb.Kernel.Tree) =>
+                                   let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                                     (_root_.Geb.Kernel.leaf 0)
+                                     ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                     ([] : _root_.List _root_.Geb.Kernel.Tree);
+                                   let x8 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.add
+                                     x1
+                                     x6;
+                                   if (_root_.Geb.Kernel.Const.eq
+                                     x4
+                                     (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
+                                     if (_root_.Geb.Kernel.Const.eq
+                                       (_root_.GebMirror.Metalogic.«Language.mD» x2 (_root_.Geb.Kernel.leaf 0))
+                                       x8).label ≠ 0 then
+                                       _root_.GebMirror.Metalogic.«Prover.dNode»
+                                         (_root_.Geb.Kernel.leaf 1)
+                                         ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                         (_root_.GebMirror.Metalogic.«Theory.l2»
+                                           (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                             (_root_.Geb.Kernel.leaf 2)
+                                             ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                             (_root_.GebMirror.Metalogic.«Prelude.single»
+                                               (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                 (_root_.Geb.Kernel.leaf 6)
+                                                 ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                 ([] : _root_.List _root_.Geb.Kernel.Tree))))
+                                           (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                             (_root_.Geb.Kernel.leaf 16)
+                                             (_root_.GebMirror.Metalogic.«Theory.l4»
+                                               x0
+                                               (_root_.Geb.Kernel.Const.node
+                                                 (_root_.Geb.Kernel.leaf 0)
+                                                 ([] : _root_.List _root_.Geb.Kernel.Tree))
+                                               (_root_.Geb.Kernel.Const.node
+                                                 (_root_.Geb.Kernel.leaf 0)
+                                                 (_root_.GebMirror.Metalogic.«Prelude.single»
+                                                   (_root_.GebMirror.Metalogic.«Language.var» x8)))
+                                               (_root_.Geb.Kernel.leaf 0))
+                                             ([] : _root_.List _root_.Geb.Kernel.Tree)))
+                                     else
+                                       x7
+                                   else
+                                     if (_root_.GebMirror.Metalogic.«Prelude.or»
+                                       (_root_.Geb.Kernel.Const.eq x4 (_root_.Geb.Kernel.leaf 5))
+                                       (_root_.GebMirror.Metalogic.«Prelude.or»
+                                         (_root_.Geb.Kernel.Const.eq x4 (_root_.Geb.Kernel.leaf 8))
+                                         (_root_.GebMirror.Metalogic.«Prelude.or»
+                                           (_root_.Geb.Kernel.Const.eq
+                                             x4
+                                             (_root_.Geb.Kernel.leaf 9))
+                                           (_root_.Geb.Kernel.Const.eq
+                                             x4
+                                             (_root_.Geb.Kernel.leaf 10))))).label ≠ 0 then
+                                       _root_.GebMirror.Metalogic.«Prover.dNode»
+                                         (_root_.Geb.Kernel.leaf 2)
+                                         ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x5 x6 (_root_.Geb.Kernel.leaf 0))
+                                     else
+                                       if (_root_.GebMirror.Metalogic.«Base.allT»
+                                         (fun (x9 : _root_.Geb.Kernel.Tree) =>
+                                           _root_.Geb.Kernel.Const.eq
+                                             (_root_.GebMirror.Metalogic.«Prover.uses» x9 x8)
+                                             (_root_.Geb.Kernel.leaf 0))
+                                         (_root_.GebMirror.Metalogic.«Language.mArgs» x2)).label ≠ 0 then
+                                         x7
+                                       else
+                                         _root_.GebMirror.Metalogic.«Prover.dNode»
+                                           (_root_.Geb.Kernel.leaf 2)
+                                           ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                           (x5 x6 (_root_.Geb.Kernel.leaf 0)));
     x4
 
 def «Tactics.occRewrite» :=
-  fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) =>
-    let x4 : T := Const.para (α := T → T) («Tactics.occStep» x0 x1) x2 x3;
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.para
+      (α := _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«Tactics.occStep» x0 x1)
+      x2
+      x3;
     x4
 
 def «Tactics.byTreeSplit» :=
-  fun (x0 : T) (x1 : T) (x2 : List T → List T → T → T → T) =>
-    let x3 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x3 : List T) (x4 : List T) (x5 : T) (x6 : T) =>
-      «Base.bindO»
-        («Prelude.nth» x3 x1)
-        (fun (x7 : T) =>
-          if (Const.equal x7 «Translation.treeTy»).label ≠ 0 then
-            let x8 : T := «Prover.abstractVar» x1 x7 x5;
-            let x9 : T := «Prover.abstractVar» x1 x7 x6;
-            let x10 : T := «Translation.nodeT»
-              («Language.mPair»
-                («Language.var» (leaf 1))
-                («Language.var» (leaf 0)));
-            let x11 : T := «Language.app» («Derivation.weaken2» x8) x10;
-            let x12 : T := «Language.app» («Derivation.weaken2» x9) x10;
-            «Base.mapO»
-              (fun (x13 : T) =>
-                let x14 : T := «Language.mLam»
-                  «Translation.bitsTy»
-                  («Language.mLam» («Theory.list» «Translation.treeTy») x11);
-                let x15 : T := «Language.mLam»
-                  «Translation.bitsTy»
-                  («Language.mLam» («Theory.list» «Translation.treeTy») x12);
-                let x16 : T := «Prover.dNode» (leaf 3) ([] : List T) ([] : List T);
-                let x17 : T := «Prover.dNode» (leaf 0) ([] : List T) ([] : List T);
-                let x18 : T := «Prover.dNode»
-                  (leaf 2)
-                  ([] : List T)
-                  («Theory.l2» x16 x16);
-                let x19 : T := «Prover.dNode»
-                  (leaf 26)
-                  ([] : List T)
-                  («Prelude.single»
-                    («Prover.dNode»
-                      (leaf 23)
-                      ([] : List T)
-                      («Theory.l2»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x3 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x4 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x5 : _root_.Geb.Kernel.Tree)
+                                         (x6 : _root_.Geb.Kernel.Tree) =>
+      _root_.GebMirror.Metalogic.«Base.bindO»
+        (_root_.GebMirror.Metalogic.«Prelude.nth» x3 x1)
+        (fun (x7 : _root_.Geb.Kernel.Tree) =>
+          if (_root_.Geb.Kernel.Const.equal
+            x7
+            _root_.GebMirror.Metalogic.«Translation.treeTy»).label ≠ 0 then
+            let x8 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.abstractVar»
+              x1
+              x7
+              x5;
+            let x9 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.abstractVar»
+              x1
+              x7
+              x6;
+            let x10 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Translation.nodeT»
+              (_root_.GebMirror.Metalogic.«Language.mPair»
+                (_root_.GebMirror.Metalogic.«Language.var» (_root_.Geb.Kernel.leaf 1))
+                (_root_.GebMirror.Metalogic.«Language.var» (_root_.Geb.Kernel.leaf 0)));
+            let x11 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.app»
+              (_root_.GebMirror.Metalogic.«Derivation.weaken2» x8)
+              x10;
+            let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.app»
+              (_root_.GebMirror.Metalogic.«Derivation.weaken2» x9)
+              x10;
+            _root_.GebMirror.Metalogic.«Base.mapO»
+              (fun (x13 : _root_.Geb.Kernel.Tree) =>
+                let x14 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mLam»
+                  _root_.GebMirror.Metalogic.«Translation.bitsTy»
+                  (_root_.GebMirror.Metalogic.«Language.mLam»
+                    (_root_.GebMirror.Metalogic.«Theory.list» _root_.GebMirror.Metalogic.«Translation.treeTy»)
+                    x11);
+                let x15 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mLam»
+                  _root_.GebMirror.Metalogic.«Translation.bitsTy»
+                  (_root_.GebMirror.Metalogic.«Language.mLam»
+                    (_root_.GebMirror.Metalogic.«Theory.list» _root_.GebMirror.Metalogic.«Translation.treeTy»)
+                    x12);
+                let x16 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 3)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree);
+                let x17 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 0)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree);
+                let x18 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 2)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)
+                  (_root_.GebMirror.Metalogic.«Theory.l2» x16 x16);
+                let x19 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 26)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)
+                  (_root_.GebMirror.Metalogic.«Prelude.single»
+                    (_root_.GebMirror.Metalogic.«Prover.dNode»
+                      (_root_.Geb.Kernel.leaf 23)
+                      ([] : _root_.List _root_.Geb.Kernel.Tree)
+                      (_root_.GebMirror.Metalogic.«Theory.l2»
                         x18
-                        («Prover.dNode»
-                          (leaf 26)
-                          ([] : List T)
-                          («Prelude.single»
-                            («Prover.dNode» (leaf 23) ([] : List T) («Theory.l2» x18 x13)))))));
-                let x20 : T := «Tactics.unnodeU» («Language.var» x1);
-                let x21 : T →
-                  T := (fun (x21 : T) =>
-                  «Language.app»
-                    («Language.app» x21 («Language.mFst» x20))
-                    («Language.mSnd» x20));
-                let x22 : T →
-                  T := (fun (x22 : T) =>
-                  «Prover.dNode»
-                    (leaf 1)
-                    ([] : List T)
-                    («Theory.l2»
-                      («Prover.dNode» (leaf 2) ([] : List T) («Theory.l2» x16 x17))
-                      («Prover.dNode»
-                        (leaf 1)
-                        ([] : List T)
-                        («Theory.l2»
+                        (_root_.GebMirror.Metalogic.«Prover.dNode»
+                          (_root_.Geb.Kernel.leaf 26)
+                          ([] : _root_.List _root_.Geb.Kernel.Tree)
+                          (_root_.GebMirror.Metalogic.«Prelude.single»
+                            (_root_.GebMirror.Metalogic.«Prover.dNode»
+                              (_root_.Geb.Kernel.leaf 23)
+                              ([] : _root_.List _root_.Geb.Kernel.Tree)
+                              (_root_.GebMirror.Metalogic.«Theory.l2» x18 x13)))))));
+                let x20 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.unnodeU»
+                  (_root_.GebMirror.Metalogic.«Language.var» x1);
+                let x21 : _root_.Geb.Kernel.Tree →
+                  _root_.Geb.Kernel.Tree := (fun (x21 : _root_.Geb.Kernel.Tree) =>
+                  _root_.GebMirror.Metalogic.«Language.app»
+                    (_root_.GebMirror.Metalogic.«Language.app»
+                      x21
+                      (_root_.GebMirror.Metalogic.«Language.mFst» x20))
+                    (_root_.GebMirror.Metalogic.«Language.mSnd» x20));
+                let x22 : _root_.Geb.Kernel.Tree →
+                  _root_.Geb.Kernel.Tree := (fun (x22 : _root_.Geb.Kernel.Tree) =>
+                  _root_.GebMirror.Metalogic.«Prover.dNode»
+                    (_root_.Geb.Kernel.leaf 1)
+                    ([] : _root_.List _root_.Geb.Kernel.Tree)
+                    (_root_.GebMirror.Metalogic.«Theory.l2»
+                      (_root_.GebMirror.Metalogic.«Prover.dNode»
+                        (_root_.Geb.Kernel.leaf 2)
+                        ([] : _root_.List _root_.Geb.Kernel.Tree)
+                        (_root_.GebMirror.Metalogic.«Theory.l2» x16 x17))
+                      (_root_.GebMirror.Metalogic.«Prover.dNode»
+                        (_root_.Geb.Kernel.leaf 1)
+                        ([] : _root_.List _root_.Geb.Kernel.Tree)
+                        (_root_.GebMirror.Metalogic.«Theory.l2»
                           x16
-                          («Prover.dNode»
-                            (leaf 1)
-                            ([] : List T)
-                            («Theory.l2» x16 («Tactics.occRewrite» x0 x1 x22 (leaf 0))))))));
-                let x23 : T := «Prover.dNode»
-                  (leaf 18)
-                  ([] : List T)
-                  («Theory.l2»
-                    («Prover.dNode»
-                      (leaf 2)
-                      ([] : List T)
-                      («Theory.l2»
-                        («Prover.dNode»
-                          (leaf 2)
-                          ([] : List T)
-                          («Theory.l2»
-                            («Prover.dNode»
-                              (leaf 17)
-                              («Theory.l2» («Prelude.length» x4) (leaf 0))
-                              ([] : List T))
+                          (_root_.GebMirror.Metalogic.«Prover.dNode»
+                            (_root_.Geb.Kernel.leaf 1)
+                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                            (_root_.GebMirror.Metalogic.«Theory.l2»
+                              x16
+                              (_root_.GebMirror.Metalogic.«Tactics.occRewrite»
+                                x0
+                                x1
+                                x22
+                                (_root_.Geb.Kernel.leaf 0))))))));
+                let x23 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 18)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)
+                  (_root_.GebMirror.Metalogic.«Theory.l2»
+                    (_root_.GebMirror.Metalogic.«Prover.dNode»
+                      (_root_.Geb.Kernel.leaf 2)
+                      ([] : _root_.List _root_.Geb.Kernel.Tree)
+                      (_root_.GebMirror.Metalogic.«Theory.l2»
+                        (_root_.GebMirror.Metalogic.«Prover.dNode»
+                          (_root_.Geb.Kernel.leaf 2)
+                          ([] : _root_.List _root_.Geb.Kernel.Tree)
+                          (_root_.GebMirror.Metalogic.«Theory.l2»
+                            (_root_.GebMirror.Metalogic.«Prover.dNode»
+                              (_root_.Geb.Kernel.leaf 17)
+                              (_root_.GebMirror.Metalogic.«Theory.l2»
+                                (_root_.GebMirror.Metalogic.«Prelude.length» x4)
+                                (_root_.Geb.Kernel.leaf 0))
+                              ([] : _root_.List _root_.Geb.Kernel.Tree))
                             x17))
                         x17))
                     x17);
-                «Prover.dNode»
-                  (leaf 22)
-                  («Prelude.single» («Language.mEq» x14 x15))
-                  («Theory.l2»
+                _root_.GebMirror.Metalogic.«Prover.dNode»
+                  (_root_.Geb.Kernel.leaf 22)
+                  (_root_.GebMirror.Metalogic.«Prelude.single»
+                    (_root_.GebMirror.Metalogic.«Language.mEq» x14 x15))
+                  (_root_.GebMirror.Metalogic.«Theory.l2»
                     x19
-                    («Prover.dNode»
-                      (leaf 24)
-                      («Prelude.single» («Language.mEq» (x21 x14) (x21 x15)))
-                      («Theory.l2»
-                        («Prover.dNode»
-                          (leaf 2)
-                          ([] : List T)
-                          («Theory.l2» (x22 x5) (x22 x6)))
+                    (_root_.GebMirror.Metalogic.«Prover.dNode»
+                      (_root_.Geb.Kernel.leaf 24)
+                      (_root_.GebMirror.Metalogic.«Prelude.single»
+                        (_root_.GebMirror.Metalogic.«Language.mEq» (x21 x14) (x21 x15)))
+                      (_root_.GebMirror.Metalogic.«Theory.l2»
+                        (_root_.GebMirror.Metalogic.«Prover.dNode»
+                          (_root_.Geb.Kernel.leaf 2)
+                          ([] : _root_.List _root_.Geb.Kernel.Tree)
+                          (_root_.GebMirror.Metalogic.«Theory.l2» (x22 x5) (x22 x6)))
                         x23))))
               (x2
-                ((«Theory.list» «Translation.treeTy») :: («Translation.bitsTy» :: x3))
-                («Base.mapT» «Derivation.weaken2» x4)
+                ((_root_.GebMirror.Metalogic.«Theory.list» _root_.GebMirror.Metalogic.«Translation.treeTy») ::
+                  (_root_.GebMirror.Metalogic.«Translation.bitsTy» :: x3))
+                (_root_.GebMirror.Metalogic.«Base.mapT» _root_.GebMirror.Metalogic.«Derivation.weaken2» x4)
                 x11
                 x12)
           else
-            «Prelude.none»));
+            _root_.GebMirror.Metalogic.«Prelude.none»));
     x3
 
 def «Tactics.splitStuck» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : T)
-    (x3 : T)
-    (x4 : List T → List T → T → T → T)
-    (x5 : List T → List T → T → T → T)
-    (x6 : List T)
-    (x7 : List T)
-    (x8 : T)
-    (x9 : T) =>
-    let x10 : T := «Base.bindO»
-      («Prelude.nth» x6 x3)
-      (fun (x10 : T) =>
-        if («Prelude.isSome» («Language.listPart» x10)).label ≠ 0 then
-          «Tactics.byListSplit» x0 x1 x3 x4 x5 x6 x7 x8 x9
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x5 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x6 : _root_.List _root_.Geb.Kernel.Tree)
+    (x7 : _root_.List _root_.Geb.Kernel.Tree)
+    (x8 : _root_.Geb.Kernel.Tree)
+    (x9 : _root_.Geb.Kernel.Tree) =>
+    let x10 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Base.bindO»
+      (_root_.GebMirror.Metalogic.«Prelude.nth» x6 x3)
+      (fun (x10 : _root_.Geb.Kernel.Tree) =>
+        if (_root_.GebMirror.Metalogic.«Prelude.isSome»
+          (_root_.GebMirror.Metalogic.«Language.listPart» x10)).label ≠ 0 then
+          _root_.GebMirror.Metalogic.«Tactics.byListSplit» x0 x1 x3 x4 x5 x6 x7 x8 x9
         else
-          if («Language/OTPair.isJust»
-            («Language.coprodParts» x10)).label ≠ 0 then
-            «Tactics.bySplit2» (leaf 3) (leaf 4) x3 x4 x5 x6 x7 x8 x9
+          if (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
+            (_root_.GebMirror.Metalogic.«Language.coprodParts» x10)).label ≠ 0 then
+            _root_.GebMirror.Metalogic.«Tactics.bySplit2»
+              (_root_.Geb.Kernel.leaf 3)
+              (_root_.Geb.Kernel.leaf 4)
+              x3
+              x4
+              x5
+              x6
+              x7
+              x8
+              x9
           else
-            if (Const.equal x10 «Translation.treeTy»).label ≠ 0 then
-              «Tactics.byTreeSplit» x2 x3 x4 x6 x7 x8 x9
+            if (_root_.Geb.Kernel.Const.equal
+              x10
+              _root_.GebMirror.Metalogic.«Translation.treeTy»).label ≠ 0 then
+              _root_.GebMirror.Metalogic.«Tactics.byTreeSplit» x2 x3 x4 x6 x7 x8 x9
             else
-              «Prelude.none»);
+              _root_.GebMirror.Metalogic.«Prelude.none»);
     x10
 
 def «Tactics.byAutoT» :=
-  fun (x0 : T)
-    (x1 : List T)
-    (x2 : T)
-    (x3 : T)
-    (x4 : List T)
-    (x5 : T)
-    (x6 : T) =>
-    let x7 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x7 : List T) (x8 : List T) (x9 : T) (x10 : T) =>
-      let x11 : T := «Prelude.length» x8;
-      let x12 : List T →
-        List T →
-          T →
-            T →
-              T := (fun (x12 : List T) (x13 : List T) (x14 : T) (x15 : T) =>
-        «Prover.bindNT»
-          («Prover.eval» x0 x1 x2 x4 (leaf 4096) x6 x12 x13 x14)
-          (fun (x16 : T) =>
-            «Prover.bindNT»
-              («Prover.eval» x0 x1 x2 x4 (leaf 4096) x6 x12 x13 x15)
-              (fun (x17 : T) =>
-                if (Const.equal
-                  («Prover.nfTerm» x16)
-                  («Prover.nfTerm» x17)).label ≠ 0 then
-                  «Prelude.some»
-                    («Prover.dNode»
-                      (leaf 18)
-                      ([] : List T)
-                      («Theory.l2»
-                        («Prover.mDeriv» («Prover.nfMarked» x16))
-                        («Prover.mDeriv» («Prover.nfMarked» x17))))
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree)
+    (x6 : _root_.Geb.Kernel.Tree) =>
+    let x7 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x7 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x8 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x9 : _root_.Geb.Kernel.Tree)
+                                         (x10 : _root_.Geb.Kernel.Tree) =>
+      let x11 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.length»
+        x8;
+      let x12 : _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree := (fun (x12 : _root_.List _root_.Geb.Kernel.Tree)
+                                           (x13 : _root_.List _root_.Geb.Kernel.Tree)
+                                           (x14 : _root_.Geb.Kernel.Tree)
+                                           (x15 : _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Prover.bindNT»
+          (_root_.GebMirror.Metalogic.«Prover.eval»
+            x0
+            x1
+            x2
+            x4
+            (_root_.Geb.Kernel.leaf 4096)
+            x6
+            x12
+            x13
+            x14)
+          (fun (x16 : _root_.Geb.Kernel.Tree) =>
+            _root_.GebMirror.Metalogic.«Prover.bindNT»
+              (_root_.GebMirror.Metalogic.«Prover.eval»
+                x0
+                x1
+                x2
+                x4
+                (_root_.Geb.Kernel.leaf 4096)
+                x6
+                x12
+                x13
+                x15)
+              (fun (x17 : _root_.Geb.Kernel.Tree) =>
+                if (_root_.Geb.Kernel.Const.equal
+                  (_root_.GebMirror.Metalogic.«Prover.nfTerm» x16)
+                  (_root_.GebMirror.Metalogic.«Prover.nfTerm» x17)).label ≠ 0 then
+                  _root_.GebMirror.Metalogic.«Prelude.some»
+                    (_root_.GebMirror.Metalogic.«Prover.dNode»
+                      (_root_.Geb.Kernel.leaf 18)
+                      ([] : _root_.List _root_.Geb.Kernel.Tree)
+                      (_root_.GebMirror.Metalogic.«Theory.l2»
+                        (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                          (_root_.GebMirror.Metalogic.«Prover.nfMarked» x16))
+                        (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                          (_root_.GebMirror.Metalogic.«Prover.nfMarked» x17))))
                 else
-                  «Prelude.none»)));
-      let x13 : List T →
-        List T →
-          T →
-            T →
-              T := (fun (x13 : List T) (x14 : List T) (x15 : T) (x16 : T) =>
-        if (Const.eq x11 (leaf 0)).label ≠ 0 then
-          «Prelude.none»
+                  _root_.GebMirror.Metalogic.«Prelude.none»)));
+      let x13 : _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree := (fun (x13 : _root_.List _root_.Geb.Kernel.Tree)
+                                           (x14 : _root_.List _root_.Geb.Kernel.Tree)
+                                           (x15 : _root_.Geb.Kernel.Tree)
+                                           (x16 : _root_.Geb.Kernel.Tree) =>
+        if (_root_.Geb.Kernel.Const.eq
+          x11
+          (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
+          _root_.GebMirror.Metalogic.«Prelude.none»
         else
-          «Tactics.byInsts» x6 x0 x1 x2 x4 x11 x13 x14 x15 x16);
-      Const.iter
-        (α := List T → List T → T → T → T)
-        (fun (x14 : List T → List T → T → T → T)
-           (x15 : List T)
-           (x16 : List T)
-           (x17 : T)
-           (x18 : T) =>
-          «Prover.bindNT»
-            («Prover.eval» x0 x1 x2 x4 (leaf 4096) x6 x15 x16 x17)
-            (fun (x19 : T) =>
-              «Prover.bindNT»
-                («Prover.eval» x0 x1 x2 x4 (leaf 4096) x6 x15 x16 x18)
-                (fun (x20 : T) =>
-                  if (Const.equal
-                    («Prover.nfTerm» x19)
-                    («Prover.nfTerm» x20)).label ≠ 0 then
-                    «Prelude.some»
-                      («Prover.dNode»
-                        (leaf 18)
-                        ([] : List T)
-                        («Theory.l2»
-                          («Prover.mDeriv» («Prover.nfMarked» x19))
-                          («Prover.mDeriv» («Prover.nfMarked» x20))))
+          _root_.GebMirror.Metalogic.«Tactics.byInsts» x6 x0 x1 x2 x4 x11 x13 x14 x15 x16);
+      _root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+        (fun (x14 : _root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+           (x15 : _root_.List _root_.Geb.Kernel.Tree)
+           (x16 : _root_.List _root_.Geb.Kernel.Tree)
+           (x17 : _root_.Geb.Kernel.Tree)
+           (x18 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Prover.bindNT»
+            (_root_.GebMirror.Metalogic.«Prover.eval»
+              x0
+              x1
+              x2
+              x4
+              (_root_.Geb.Kernel.leaf 4096)
+              x6
+              x15
+              x16
+              x17)
+            (fun (x19 : _root_.Geb.Kernel.Tree) =>
+              _root_.GebMirror.Metalogic.«Prover.bindNT»
+                (_root_.GebMirror.Metalogic.«Prover.eval»
+                  x0
+                  x1
+                  x2
+                  x4
+                  (_root_.Geb.Kernel.leaf 4096)
+                  x6
+                  x15
+                  x16
+                  x18)
+                (fun (x20 : _root_.Geb.Kernel.Tree) =>
+                  if (_root_.Geb.Kernel.Const.equal
+                    (_root_.GebMirror.Metalogic.«Prover.nfTerm» x19)
+                    (_root_.GebMirror.Metalogic.«Prover.nfTerm» x20)).label ≠ 0 then
+                    _root_.GebMirror.Metalogic.«Prelude.some»
+                      (_root_.GebMirror.Metalogic.«Prover.dNode»
+                        (_root_.Geb.Kernel.leaf 18)
+                        ([] : _root_.List _root_.Geb.Kernel.Tree)
+                        (_root_.GebMirror.Metalogic.«Theory.l2»
+                          (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                            (_root_.GebMirror.Metalogic.«Prover.nfMarked» x19))
+                          (_root_.GebMirror.Metalogic.«Prover.mDeriv»
+                            (_root_.GebMirror.Metalogic.«Prover.nfMarked» x20))))
                   else
-                    «Tactics.orO»
+                    _root_.GebMirror.Metalogic.«Tactics.orO»
                       (x13 x15 x16 x17 x18)
-                      (let x21 : T →
-                         T := (fun (x21 : T) =>
-                         «Base.anyT»
-                           (fun (x22 : T) => «Tactics.mentions» x22 x21)
-                           («Base.take» x11 x16));
-                       let x22 : T → T := (fun (_ : T) => leaf 0);
-                       «Base.bindO»
-                         («Tactics.orO»
-                           («Tactics.orO»
-                             («Tactics.stuckVar» x21 («Prover.nfTerm» x19))
-                             («Tactics.stuckVar» x21 («Prover.nfTerm» x20)))
-                           («Tactics.orO»
-                             («Tactics.stuckVar» x22 («Prover.nfTerm» x19))
-                             («Tactics.stuckVar» x22 («Prover.nfTerm» x20))))
-                         (fun (x23 : T) =>
-                           «Tactics.splitStuck» x0 x2 x3 x23 x14 x14 x15 x16 x17 x18)))))
-        (fun (x14 : List T) (x15 : List T) (x16 : T) (x17 : T) =>
-          «Tactics.orO» (x12 x14 x15 x16 x17) (x13 x14 x15 x16 x17))
+                      (let x21 : _root_.Geb.Kernel.Tree →
+                         _root_.Geb.Kernel.Tree := (fun (x21 : _root_.Geb.Kernel.Tree) =>
+                         _root_.GebMirror.Metalogic.«Base.anyT»
+                           (fun (x22 : _root_.Geb.Kernel.Tree) =>
+                             _root_.GebMirror.Metalogic.«Tactics.mentions» x22 x21)
+                           (_root_.GebMirror.Metalogic.«Base.take» x11 x16));
+                       let x22 : _root_.Geb.Kernel.Tree →
+                         _root_.Geb.Kernel.Tree := (fun (_ : _root_.Geb.Kernel.Tree) =>
+                         _root_.Geb.Kernel.leaf 0);
+                       _root_.GebMirror.Metalogic.«Base.bindO»
+                         (_root_.GebMirror.Metalogic.«Tactics.orO»
+                           (_root_.GebMirror.Metalogic.«Tactics.orO»
+                             (_root_.GebMirror.Metalogic.«Tactics.stuckVar»
+                               x21
+                               (_root_.GebMirror.Metalogic.«Prover.nfTerm» x19))
+                             (_root_.GebMirror.Metalogic.«Tactics.stuckVar»
+                               x21
+                               (_root_.GebMirror.Metalogic.«Prover.nfTerm» x20)))
+                           (_root_.GebMirror.Metalogic.«Tactics.orO»
+                             (_root_.GebMirror.Metalogic.«Tactics.stuckVar»
+                               x22
+                               (_root_.GebMirror.Metalogic.«Prover.nfTerm» x19))
+                             (_root_.GebMirror.Metalogic.«Tactics.stuckVar»
+                               x22
+                               (_root_.GebMirror.Metalogic.«Prover.nfTerm» x20))))
+                         (fun (x23 : _root_.Geb.Kernel.Tree) =>
+                           _root_.GebMirror.Metalogic.«Tactics.splitStuck»
+                             x0
+                             x2
+                             x3
+                             x23
+                             x14
+                             x14
+                             x15
+                             x16
+                             x17
+                             x18)))))
+        (fun (x14 : _root_.List _root_.Geb.Kernel.Tree)
+           (x15 : _root_.List _root_.Geb.Kernel.Tree)
+           (x16 : _root_.Geb.Kernel.Tree)
+           (x17 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Tactics.orO»
+            (x12 x14 x15 x16 x17)
+            (x13 x14 x15 x16 x17))
         x5
         x7
         x8
@@ -2698,155 +4144,257 @@ def «Tactics.byAutoT» :=
     x7
 
 def «Tactics.byAutoC» :=
-  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) (x4 : List T) (x5 : T) =>
-    let x6 : List T →
-      List T →
-        T →
-          T →
-            T := Const.iter
-      (α := List T → List T → T → T → T)
-      (fun (x6 : List T → List T → T → T → T)
-         (x7 : List T)
-         (x8 : List T)
-         (x9 : T)
-         (x10 : T) =>
-        «Tactics.orO»
-          («Tactics.byWeak» x0 x1 x2 x4 x7 x8 x9 x10)
-          («Prover.bindNT»
-            («Prover.eval» x0 x1 x2 x4 (leaf 4096) (leaf 1) x7 x8 x9)
-            (fun (x11 : T) =>
-              «Prover.bindNT»
-                («Prover.eval» x0 x1 x2 x4 (leaf 4096) (leaf 1) x7 x8 x10)
-                (fun (x12 : T) =>
-                  let x13 : T → T := (fun (_ : T) => leaf 0);
-                  «Base.bindO»
-                    («Tactics.orO»
-                      («Tactics.stuckVarC» x13 («Prover.nfTerm» x11))
-                      («Tactics.stuckVarC» x13 («Prover.nfTerm» x12)))
-                    (fun (x14 : T) =>
-                      «Tactics.splitStuck» x0 x2 x3 x14 x6 x6 x7 x8 x9 x10)))))
-      («Tactics.byWeak» x0 x1 x2 x4)
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree) =>
+    let x6 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (fun (x6 : _root_.List _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree →
+             _root_.Geb.Kernel.Tree →
+               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x7 : _root_.List _root_.Geb.Kernel.Tree)
+         (x8 : _root_.List _root_.Geb.Kernel.Tree)
+         (x9 : _root_.Geb.Kernel.Tree)
+         (x10 : _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Tactics.orO»
+          (_root_.GebMirror.Metalogic.«Tactics.byWeak» x0 x1 x2 x4 x7 x8 x9 x10)
+          (_root_.GebMirror.Metalogic.«Prover.bindNT»
+            (_root_.GebMirror.Metalogic.«Prover.eval»
+              x0
+              x1
+              x2
+              x4
+              (_root_.Geb.Kernel.leaf 4096)
+              (_root_.Geb.Kernel.leaf 1)
+              x7
+              x8
+              x9)
+            (fun (x11 : _root_.Geb.Kernel.Tree) =>
+              _root_.GebMirror.Metalogic.«Prover.bindNT»
+                (_root_.GebMirror.Metalogic.«Prover.eval»
+                  x0
+                  x1
+                  x2
+                  x4
+                  (_root_.Geb.Kernel.leaf 4096)
+                  (_root_.Geb.Kernel.leaf 1)
+                  x7
+                  x8
+                  x10)
+                (fun (x12 : _root_.Geb.Kernel.Tree) =>
+                  let x13 : _root_.Geb.Kernel.Tree →
+                    _root_.Geb.Kernel.Tree := (fun (_ : _root_.Geb.Kernel.Tree) =>
+                    _root_.Geb.Kernel.leaf 0);
+                  _root_.GebMirror.Metalogic.«Base.bindO»
+                    (_root_.GebMirror.Metalogic.«Tactics.orO»
+                      (_root_.GebMirror.Metalogic.«Tactics.stuckVarC»
+                        x13
+                        (_root_.GebMirror.Metalogic.«Prover.nfTerm» x11))
+                      (_root_.GebMirror.Metalogic.«Tactics.stuckVarC»
+                        x13
+                        (_root_.GebMirror.Metalogic.«Prover.nfTerm» x12)))
+                    (fun (x14 : _root_.Geb.Kernel.Tree) =>
+                      _root_.GebMirror.Metalogic.«Tactics.splitStuck»
+                        x0
+                        x2
+                        x3
+                        x14
+                        x6
+                        x6
+                        x7
+                        x8
+                        x9
+                        x10)))))
+      (_root_.GebMirror.Metalogic.«Tactics.byWeak» x0 x1 x2 x4)
       x5;
     x6
 
 def «Tactics.absStep» :=
-  fun (x0 : T) (x1 : T) (x2 : List (T → T)) =>
-    let x3 : T →
-      T := (let x3 : T := Const.label x1;
-            let x4 : T → T → List T := «Tactics.kidsAt» x3 x2;
-            fun (x5 : T) =>
-              if (Const.equal
-                x1
-                («Language.rename»
-                  x0
-                  (fun (x6 : T) => Const.add x6 x5))).label ≠ 0 then
-                «Language.var» x5
-              else
-                Const.node x3 ((Const.child x1 (leaf 0)) :: (x4 x5 (leaf 0))));
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List
+      (_root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    let x3 : _root_.Geb.Kernel.Tree →
+      _root_.Geb.Kernel.Tree := (let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.label
+                                   x1;
+                                 let x4 : _root_.Geb.Kernel.Tree →
+                                   _root_.Geb.Kernel.Tree →
+                                     _root_.List
+                                       _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.kidsAt»
+                                   x3
+                                   x2;
+                                 fun (x5 : _root_.Geb.Kernel.Tree) =>
+                                   if (_root_.Geb.Kernel.Const.equal
+                                     x1
+                                     (_root_.GebMirror.Metalogic.«Language.rename»
+                                       x0
+                                       (fun (x6 : _root_.Geb.Kernel.Tree) =>
+                                         _root_.Geb.Kernel.Const.add x6 x5))).label ≠ 0 then
+                                     _root_.GebMirror.Metalogic.«Language.var» x5
+                                   else
+                                     _root_.Geb.Kernel.Const.node
+                                       x3
+                                       ((_root_.Geb.Kernel.Const.child
+                                         x1
+                                         (_root_.Geb.Kernel.leaf 0)) ::
+                                         (x4 x5 (_root_.Geb.Kernel.leaf 0))));
     x3
 
 def «Tactics.abstractTerm» :=
-  fun (x0 : T) (x1 : T) (x2 : T) =>
-    let x3 : T := «Language.mLam»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mLam»
       x0
-      (Const.para
-        (α := T → T)
-        («Tactics.absStep» («Derivation.weaken1» x1))
-        («Derivation.weaken1» x2)
-        (leaf 0));
+      (_root_.Geb.Kernel.Const.para
+        (α := _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+        (_root_.GebMirror.Metalogic.«Tactics.absStep»
+          (_root_.GebMirror.Metalogic.«Derivation.weaken1» x1))
+        (_root_.GebMirror.Metalogic.«Derivation.weaken1» x2)
+        (_root_.Geb.Kernel.leaf 0));
     x3
 
 def «Tactics.maskRwD» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : T)
-    (x3 : T)
-    (x4 : T)
-    (x5 : T)
-    (x6 : T)
-    (x7 : T)
-    (x8 : T)
-    (x9 : T) =>
-    let x10 : T := (let x10 : T := «Tactics.abstractTerm» x1 x6 x9;
-                    let x11 : T := «Prover.dNode» (leaf 0) ([] : List T) ([] : List T);
-                    let x12 : T := «Prover.dNode» (leaf 3) ([] : List T) ([] : List T);
-                    let x13 : T := «Language.mEq»
-                      («Translation.condT» x0 x4 («Language.app» x10 x6) x5)
-                      («Translation.condT» x0 x4 («Language.app» x10 x7) x5);
-                    let x14 : T := «Prover.dNode»
-                      (leaf 18)
-                      ([] : List T)
-                      («Theory.l2»
-                        («Prover.dNode»
-                          (leaf 1)
-                          ([] : List T)
-                          («Theory.l2»
-                            («Prover.dNode»
-                              (leaf 16)
-                              («Theory.l4»
-                                x2
-                                (Const.node (leaf 0) («Theory.l2» x0 x1))
-                                (Const.node (leaf 0) («Theory.l5» x4 x5 x6 x8 x10))
-                                (leaf 1))
-                              ([] : List T))
-                            («Prover.dNode»
-                              (leaf 1)
-                              ([] : List T)
-                              («Theory.l2»
-                                («Prover.dNode»
-                                  (leaf 2)
-                                  ([] : List T)
-                                  («Theory.l3»
-                                    x11
-                                    («Prover.dNode» (leaf 2) ([] : List T) («Theory.l2» x11 x3))
-                                    x11))
-                                («Prover.dNode»
-                                  (leaf 16)
-                                  («Theory.l4»
-                                    x2
-                                    (Const.node (leaf 0) («Theory.l2» x0 x1))
-                                    (Const.node (leaf 0) («Theory.l5» x4 x5 x7 x8 x10))
-                                    (leaf 0))
-                                  ([] : List T))))))
-                        x11);
-                    «Prover.dNode»
-                      (leaf 24)
-                      («Prelude.single» x13)
-                      («Theory.l2»
-                        («Prover.dNode»
-                          (leaf 2)
-                          ([] : List T)
-                          («Theory.l2»
-                            («Prover.dNode» (leaf 2) ([] : List T) («Theory.l3» x11 x12 x11))
-                            («Prover.dNode» (leaf 2) ([] : List T) («Theory.l3» x11 x12 x11))))
-                        x14));
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree)
+    (x6 : _root_.Geb.Kernel.Tree)
+    (x7 : _root_.Geb.Kernel.Tree)
+    (x8 : _root_.Geb.Kernel.Tree)
+    (x9 : _root_.Geb.Kernel.Tree) =>
+    let x10 : _root_.Geb.Kernel.Tree := (let x10 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.abstractTerm»
+                                           x1
+                                           x6
+                                           x9;
+                                         let x11 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                                           (_root_.Geb.Kernel.leaf 0)
+                                           ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                           ([] : _root_.List _root_.Geb.Kernel.Tree);
+                                         let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                                           (_root_.Geb.Kernel.leaf 3)
+                                           ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                           ([] : _root_.List _root_.Geb.Kernel.Tree);
+                                         let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mEq»
+                                           (_root_.GebMirror.Metalogic.«Translation.condT»
+                                             x0
+                                             x4
+                                             (_root_.GebMirror.Metalogic.«Language.app» x10 x6)
+                                             x5)
+                                           (_root_.GebMirror.Metalogic.«Translation.condT»
+                                             x0
+                                             x4
+                                             (_root_.GebMirror.Metalogic.«Language.app» x10 x7)
+                                             x5);
+                                         let x14 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                                           (_root_.Geb.Kernel.leaf 18)
+                                           ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                           (_root_.GebMirror.Metalogic.«Theory.l2»
+                                             (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                               (_root_.Geb.Kernel.leaf 1)
+                                               ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                               (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                 (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                   (_root_.Geb.Kernel.leaf 16)
+                                                   (_root_.GebMirror.Metalogic.«Theory.l4»
+                                                     x2
+                                                     (_root_.Geb.Kernel.Const.node
+                                                       (_root_.Geb.Kernel.leaf 0)
+                                                       (_root_.GebMirror.Metalogic.«Theory.l2» x0 x1))
+                                                     (_root_.Geb.Kernel.Const.node
+                                                       (_root_.Geb.Kernel.leaf 0)
+                                                       (_root_.GebMirror.Metalogic.«Theory.l5» x4 x5 x6 x8 x10))
+                                                     (_root_.Geb.Kernel.leaf 1))
+                                                   ([] : _root_.List _root_.Geb.Kernel.Tree))
+                                                 (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                   (_root_.Geb.Kernel.leaf 1)
+                                                   ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                   (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                     (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                       (_root_.Geb.Kernel.leaf 2)
+                                                       ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                       (_root_.GebMirror.Metalogic.«Theory.l3»
+                                                         x11
+                                                         (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                           (_root_.Geb.Kernel.leaf 2)
+                                                           ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                           (_root_.GebMirror.Metalogic.«Theory.l2» x11 x3))
+                                                         x11))
+                                                     (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                       (_root_.Geb.Kernel.leaf 16)
+                                                       (_root_.GebMirror.Metalogic.«Theory.l4»
+                                                         x2
+                                                         (_root_.Geb.Kernel.Const.node
+                                                           (_root_.Geb.Kernel.leaf 0)
+                                                           (_root_.GebMirror.Metalogic.«Theory.l2» x0 x1))
+                                                         (_root_.Geb.Kernel.Const.node
+                                                           (_root_.Geb.Kernel.leaf 0)
+                                                           (_root_.GebMirror.Metalogic.«Theory.l5»
+                                                             x4
+                                                             x5
+                                                             x7
+                                                             x8
+                                                             x10))
+                                                         (_root_.Geb.Kernel.leaf 0))
+                                                       ([] : _root_.List _root_.Geb.Kernel.Tree))))))
+                                             x11);
+                                         _root_.GebMirror.Metalogic.«Prover.dNode»
+                                           (_root_.Geb.Kernel.leaf 24)
+                                           (_root_.GebMirror.Metalogic.«Prelude.single» x13)
+                                           (_root_.GebMirror.Metalogic.«Theory.l2»
+                                             (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                               (_root_.Geb.Kernel.leaf 2)
+                                               ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                               (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                 (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                   (_root_.Geb.Kernel.leaf 2)
+                                                   ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                   (_root_.GebMirror.Metalogic.«Theory.l3» x11 x12 x11))
+                                                 (_root_.GebMirror.Metalogic.«Prover.dNode»
+                                                   (_root_.Geb.Kernel.leaf 2)
+                                                   ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                   (_root_.GebMirror.Metalogic.«Theory.l3» x11 x12 x11))))
+                                             x14));
     x10
 
 def «Tactics.maskRw» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : T)
-    (x3 : T)
-    (x4 : List T)
-    (x5 : List T)
-    (x6 : T)
-    (x7 : T)
-    (x8 : T)
-    (x9 : T)
-    (x10 : T)
-    (x11 : T) =>
-    let x12 : T := «Tactics.maskRwD»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.List _root_.Geb.Kernel.Tree)
+    (x6 : _root_.Geb.Kernel.Tree)
+    (x7 : _root_.Geb.Kernel.Tree)
+    (x8 : _root_.Geb.Kernel.Tree)
+    (x9 : _root_.Geb.Kernel.Tree)
+    (x10 : _root_.Geb.Kernel.Tree)
+    (x11 : _root_.Geb.Kernel.Tree) =>
+    let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.maskRwD»
       x0
       x1
       x2
-      («Prover.dNode»
-        (leaf 16)
-        («Theory.l4»
+      (_root_.GebMirror.Metalogic.«Prover.dNode»
+        (_root_.Geb.Kernel.leaf 16)
+        (_root_.GebMirror.Metalogic.«Theory.l4»
           x3
-          (Const.node (leaf 0) x4)
-          (Const.node (leaf 0) x5)
-          (leaf 0))
-        ([] : List T))
+          (_root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x4)
+          (_root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x5)
+          (_root_.Geb.Kernel.leaf 0))
+        ([] : _root_.List _root_.Geb.Kernel.Tree))
       x6
       x7
       x8
@@ -2856,282 +4404,410 @@ def «Tactics.maskRw» :=
     x12
 
 def «Tactics.maskStep» :=
-  fun (x0 : T) (x1 : T) (x2 : T) =>
-    Const.node (leaf 0) (x0 :: (x1 :: (x2 :: ([] : List T))))
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 0)
+      (x0 :: (x1 :: (x2 :: ([] : _root_.List _root_.Geb.Kernel.Tree))))
 
-def «Tactics/OMask.nothing» := Const.node (leaf 0) ([] : List T)
+def «$546163746963732f4f4d61736b2e6e6f7468696e67» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «Tactics/OMask.just» :=
-  fun (x0 : T) => Const.node (leaf 1) (x0 :: ([] : List T))
+def «$546163746963732f4f4d61736b2e6a757374» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
-def «Tactics/OMask.isJust» :=
-  fun (x0 : T) =>
-    let x1 : T := (let x1 : T := x0;
-                   if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
-                     let x2 : List T := Const.children x1;
-                     let _ : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x2
-                       (leaf 0)
-                       (fun (x3 : T) (_ : List T) => x3);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x2
-                       ([] : List T)
-                       (fun (_ : T) (x5 : List T) => x5);
-                     leaf 1
-                   else
-                     let _ : List T := Const.children x1; leaf 0);
+def «$546163746963732f4f4d61736b2e69734a757374» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
     x1
 
-def «Tactics/OMask.fromMaybe» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := (let x2 : T := x1;
-                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : List T := Const.children x2;
-                     let x4 : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x3
-                       (leaf 0)
-                       (fun (x4 : T) (_ : List T) => x4);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x3
-                       ([] : List T)
-                       (fun (_ : T) (x6 : List T) => x6);
-                     x4
-                   else
-                     let _ : List T := Const.children x2; x0);
+def «$546163746963732f4f4d61736b2e66726f6d4d61796265» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
     x2
 
-def «Tactics/OMask.nthOf» :=
-  fun (x0 : List T) (x1 : T) =>
-    let x2 : T := Const.lcase
-      (α := T)
-      (β := T)
-      (Const.iter
-        (α := List T)
-        (fun (x2 : List T) =>
-          Const.lcase
-            (α := T)
-            (β := List T)
+def «$546163746963732f4f4d61736b2e6e74684f66» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
             x2
-            ([] : List T)
-            (fun (_ : T) (x4 : List T) => x4))
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
         x0
         x1)
-      «Tactics/OMask.nothing»
-      (fun (x2 : T) (_ : List T) => «Tactics/OMask.just» x2);
+      _root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e6e6f7468696e67»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e6a757374» x2);
     x2
 
-def «Tactics/OMask.allJust» :=
-  fun (x0 : List T) =>
-    let x1 : T ×
-      List
-        T := Const.foldr
-      (α := T)
-      (β := T × List T)
-      (fun (x1 : T) (x2 : T × List T) =>
-        let x3 : T := x1;
-        if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-          let x4 : List T := Const.children x3;
-          let x5 : T := Const.lcase
-            (α := T)
-            (β := T)
+def «$546163746963732f4f4d61736b2e616c6c4a757374» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree ×
+      _root_.List
+        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
+        let x3 : _root_.Geb.Kernel.Tree := x1;
+        if (_root_.Geb.Kernel.Const.eq
+          (_root_.Geb.Kernel.Const.label x3)
+          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+          let x4 : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
+          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.Geb.Kernel.Tree)
             x4
-            (leaf 0)
-            (fun (x5 : T) (_ : List T) => x5);
-          let _ : List
-            T := Const.lcase
-            (α := T)
-            (β := List T)
+            (_root_.Geb.Kernel.leaf 0)
+            (fun (x5 : _root_.Geb.Kernel.Tree)
+               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+              x5);
+          let _ : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
             x4
-            ([] : List T)
-            (fun (_ : T) (x7 : List T) => x7);
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x7);
           ((x2).1, (x5 :: (x2).2))
         else
-          let _ : List T := Const.children x3; (leaf 0, (x2).2))
-      (leaf 1, ([] : List T))
+          let _ : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
+          (_root_.Geb.Kernel.leaf 0, (x2).2))
+      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
       x0;
     x1
 
 def «Tactics.cond0» :=
-  «Tactics.condOf» (leaf 0) (leaf 0) (leaf 0) (leaf 0)
+  _root_.GebMirror.Metalogic.«Tactics.condOf»
+    (_root_.Geb.Kernel.leaf 0)
+    (_root_.Geb.Kernel.leaf 0)
+    (_root_.Geb.Kernel.leaf 0)
+    (_root_.Geb.Kernel.leaf 0)
 
-def «Tactics.mask0» := «Tactics.maskStep» (leaf 0) (leaf 0) (leaf 0)
+def «Tactics.mask0» :=
+  _root_.GebMirror.Metalogic.«Tactics.maskStep»
+    (_root_.Geb.Kernel.leaf 0)
+    (_root_.Geb.Kernel.leaf 0)
+    (_root_.Geb.Kernel.leaf 0)
 
 def «Tactics.bindPM» :=
-  fun (x0 : T) (x1 : T → T) =>
-    let x2 : T := (let x2 : T := x0;
-                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : List T := Const.children x2;
-                     let x4 : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x3
-                       (leaf 0)
-                       (fun (x4 : T) (_ : List T) => x4);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x3
-                       ([] : List T)
-                       (fun (_ : T) (x6 : List T) => x6);
-                     x1 x4
-                   else
-                     let _ : List T := Const.children x2; «Tactics/OMask.nothing»);
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x1 x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          _root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e6e6f7468696e67»);
     x2
 
 def «Tactics.bindCM» :=
-  fun (x0 : T) (x1 : T → T) =>
-    let x2 : T := (let x2 : T := x0;
-                   if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
-                     let x3 : List T := Const.children x2;
-                     let x4 : T := Const.lcase
-                       (α := T)
-                       (β := T)
-                       x3
-                       (leaf 0)
-                       (fun (x4 : T) (_ : List T) => x4);
-                     let _ : List
-                       T := Const.lcase
-                       (α := T)
-                       (β := List T)
-                       x3
-                       ([] : List T)
-                       (fun (_ : T) (x6 : List T) => x6);
-                     x1 x4
-                   else
-                     let _ : List T := Const.children x2; «Tactics/OMask.nothing»);
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x1 x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          _root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e6e6f7468696e67»);
     x2
 
 def «Tactics.bindTM» :=
-  fun (x0 : T) (x1 : T → T) =>
-    let x2 : T := (if («Prelude.isSome» x0).label ≠ 0 then
-      x1 («Prelude.get» x0)
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Prelude.isSome»
+      x0).label ≠ 0 then
+      x1 (_root_.GebMirror.Metalogic.«Prelude.get» x0)
     else
-      «Tactics/OMask.nothing»);
+      _root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e6e6f7468696e67»);
     x2
 
 def «Tactics.findMask» :=
-  fun (x0 : T → T) (x1 : List T) =>
-    let x2 : T := Const.foldr
-      (α := T)
-      (β := T)
-      (fun (x2 : T) (x3 : T) =>
-        let x4 : T := x0 x2;
-        if («Tactics/OMask.isJust» x4).label ≠ 0 then x4 else x3)
-      «Tactics/OMask.nothing»
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
+        let x4 : _root_.Geb.Kernel.Tree := x0 x2;
+        if (_root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e69734a757374»
+          x4).label ≠ 0 then
+          x4
+        else
+          x3)
+      _root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e6e6f7468696e67»
       x1;
     x2
 
 def «Tactics.orMask» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := (if («Tactics/OMask.isJust» x0).label ≠ 0 then
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e69734a757374»
+      x0).label ≠ 0 then
       x0
     else
       x1);
     x2
 
 def «Tactics.maskAt» :=
-  fun (x0 : T)
-    (x1 : T)
-    (x2 : List T)
-    (x3 : T)
-    (x4 : T)
-    (x5 : T)
-    (x6 : T)
-    (x7 : T)
-    (x8 : T) =>
-    let x9 : T := «Tactics.bindPM»
-      («Language.bindTP» («Prelude.nth» x2 x8) «Derivation.eqParts»)
-      (fun (x9 : T) =>
-        let x10 : T := «Language.p1» x9;
-        let x11 : T := «Language.p2» x9;
-        «Tactics.bindCM»
-          («Tactics.condParts» x10)
-          (fun (x12 : T) =>
-            let x13 : T := «Prelude.at» (Const.children x12) (leaf 0);
-            let x14 : T := «Prelude.at» (Const.children x12) (leaf 2);
-            let x15 : T := «Prelude.at» (Const.children x12) (leaf 3);
-            if («Base.not»
-              (Const.equal
-                («Prelude.at» (Const.children x12) (leaf 1))
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree)
+    (x6 : _root_.Geb.Kernel.Tree)
+    (x7 : _root_.Geb.Kernel.Tree)
+    (x8 : _root_.Geb.Kernel.Tree) =>
+    let x9 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.bindPM»
+      (_root_.GebMirror.Metalogic.«Language.bindTP»
+        (_root_.GebMirror.Metalogic.«Prelude.nth» x2 x8)
+        _root_.GebMirror.Metalogic.«Derivation.eqParts»)
+      (fun (x9 : _root_.Geb.Kernel.Tree) =>
+        let x10 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.p1» x9;
+        let x11 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.p2» x9;
+        _root_.GebMirror.Metalogic.«Tactics.bindCM»
+          (_root_.GebMirror.Metalogic.«Tactics.condParts» x10)
+          (fun (x12 : _root_.Geb.Kernel.Tree) =>
+            let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.at»
+              (_root_.Geb.Kernel.Const.children x12)
+              (_root_.Geb.Kernel.leaf 0);
+            let x14 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.at»
+              (_root_.Geb.Kernel.Const.children x12)
+              (_root_.Geb.Kernel.leaf 2);
+            let x15 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.at»
+              (_root_.Geb.Kernel.Const.children x12)
+              (_root_.Geb.Kernel.leaf 3);
+            if (_root_.GebMirror.Metalogic.«Base.not»
+              (_root_.Geb.Kernel.Const.equal
+                (_root_.GebMirror.Metalogic.«Prelude.at»
+                  (_root_.Geb.Kernel.Const.children x12)
+                  (_root_.Geb.Kernel.leaf 1))
                 x4)).label ≠ 0 then
-              «Tactics/OMask.nothing»
+              _root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e6e6f7468696e67»
             else
-              «Tactics.bindPM»
-                (let x16 : T := «Tactics.condParts» x11;
-                 if («Tactics/OCond.isJust» x16).label ≠ 0 then
-                   let x17 : T := «Tactics/OCond.fromMaybe» «Tactics.cond0» x16;
-                   if («Prelude.and»
-                     (Const.equal («Prelude.at» (Const.children x17) (leaf 1)) x4)
-                     (Const.equal
-                       («Prelude.at» (Const.children x17) (leaf 3))
+              _root_.GebMirror.Metalogic.«Tactics.bindPM»
+                (let x16 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.condParts»
+                   x11;
+                 if (_root_.GebMirror.Metalogic.«$546163746963732f4f436f6e642e69734a757374»
+                   x16).label ≠ 0 then
+                   let x17 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$546163746963732f4f436f6e642e66726f6d4d61796265»
+                     _root_.GebMirror.Metalogic.«Tactics.cond0»
+                     x16;
+                   if (_root_.GebMirror.Metalogic.«Prelude.and»
+                     (_root_.Geb.Kernel.Const.equal
+                       (_root_.GebMirror.Metalogic.«Prelude.at»
+                         (_root_.Geb.Kernel.Const.children x17)
+                         (_root_.Geb.Kernel.leaf 1))
+                       x4)
+                     (_root_.Geb.Kernel.Const.equal
+                       (_root_.GebMirror.Metalogic.«Prelude.at»
+                         (_root_.Geb.Kernel.Const.children x17)
+                         (_root_.Geb.Kernel.leaf 3))
                        x15)).label ≠ 0 then
-                     «Language/OTPair.just»
-                       («Language.pr»
-                         («Prelude.at» (Const.children x17) (leaf 2))
-                         («Prover.dNode» (leaf 17) («Theory.l2» x8 (leaf 0)) ([] : List T)))
+                     _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                       (_root_.GebMirror.Metalogic.«Language.pr»
+                         (_root_.GebMirror.Metalogic.«Prelude.at»
+                           (_root_.Geb.Kernel.Const.children x17)
+                           (_root_.Geb.Kernel.leaf 2))
+                         (_root_.GebMirror.Metalogic.«Prover.dNode»
+                           (_root_.Geb.Kernel.leaf 17)
+                           (_root_.GebMirror.Metalogic.«Theory.l2» x8 (_root_.Geb.Kernel.leaf 0))
+                           ([] : _root_.List _root_.Geb.Kernel.Tree)))
                    else
-                     «Language/OTPair.nothing»
+                     _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»
                  else
-                   if (Const.equal x11 x15).label ≠ 0 then
-                     «Language/OTPair.just»
-                       («Language.pr»
+                   if (_root_.Geb.Kernel.Const.equal x11 x15).label ≠ 0 then
+                     _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                       (_root_.GebMirror.Metalogic.«Language.pr»
                          x11
-                         («Prover.dNode»
-                           (leaf 1)
-                           ([] : List T)
-                           («Theory.l2»
-                             («Prover.dNode» (leaf 17) («Theory.l2» x8 (leaf 0)) ([] : List T))
-                             («Prover.dNode»
-                               (leaf 16)
-                               («Theory.l4»
+                         (_root_.GebMirror.Metalogic.«Prover.dNode»
+                           (_root_.Geb.Kernel.leaf 1)
+                           ([] : _root_.List _root_.Geb.Kernel.Tree)
+                           (_root_.GebMirror.Metalogic.«Theory.l2»
+                             (_root_.GebMirror.Metalogic.«Prover.dNode»
+                               (_root_.Geb.Kernel.leaf 17)
+                               (_root_.GebMirror.Metalogic.«Theory.l2» x8 (_root_.Geb.Kernel.leaf 0))
+                               ([] : _root_.List _root_.Geb.Kernel.Tree))
+                             (_root_.GebMirror.Metalogic.«Prover.dNode»
+                               (_root_.Geb.Kernel.leaf 16)
+                               (_root_.GebMirror.Metalogic.«Theory.l4»
                                  x1
-                                 (Const.node (leaf 0) («Prelude.single» x13))
-                                 (Const.node (leaf 0) («Theory.l2» x4 x11))
-                                 (leaf 1))
-                               ([] : List T)))))
+                                 (_root_.Geb.Kernel.Const.node
+                                   (_root_.Geb.Kernel.leaf 0)
+                                   (_root_.GebMirror.Metalogic.«Prelude.single» x13))
+                                 (_root_.Geb.Kernel.Const.node
+                                   (_root_.Geb.Kernel.leaf 0)
+                                   (_root_.GebMirror.Metalogic.«Theory.l2» x4 x11))
+                                 (_root_.Geb.Kernel.leaf 1))
+                               ([] : _root_.List _root_.Geb.Kernel.Tree)))))
                    else
-                     «Language/OTPair.nothing»)
-                (fun (x16 : T) =>
-                  let x17 : T := «Language.p1» x16;
-                  if (Const.equal x14 x17).label ≠ 0 then
-                    «Tactics/OMask.nothing»
+                     _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»)
+                (fun (x16 : _root_.Geb.Kernel.Tree) =>
+                  let x17 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.p1» x16;
+                  if (_root_.Geb.Kernel.Const.equal x14 x17).label ≠ 0 then
+                    _root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e6e6f7468696e67»
                   else
-                    let x18 : T := «Tactics.abstractTerm» x13 x14 x5;
-                    «Tactics.bindTM»
-                      (Const.lcase
-                        (α := T)
-                        (β := T)
-                        («Language.mArgs» x18)
-                        «Prelude.none»
-                        (fun (x19 : T) (_ : List T) => «Prelude.some» x19))
-                      (fun (x19 : T) =>
-                        if (Const.eq («Prover.uses» x19 (leaf 0)) (leaf 0)).label ≠ 0 then
-                          «Tactics/OMask.nothing»
+                    let x18 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.abstractTerm»
+                      x13
+                      x14
+                      x5;
+                    _root_.GebMirror.Metalogic.«Tactics.bindTM»
+                      (_root_.Geb.Kernel.Const.lcase
+                        (α := _root_.Geb.Kernel.Tree)
+                        (β := _root_.Geb.Kernel.Tree)
+                        (_root_.GebMirror.Metalogic.«Language.mArgs» x18)
+                        _root_.GebMirror.Metalogic.«Prelude.none»
+                        (fun (x19 : _root_.Geb.Kernel.Tree)
+                           (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                          _root_.GebMirror.Metalogic.«Prelude.some» x19))
+                      (fun (x19 : _root_.Geb.Kernel.Tree) =>
+                        if (_root_.Geb.Kernel.Const.eq
+                          (_root_.GebMirror.Metalogic.«Prover.uses» x19 (_root_.Geb.Kernel.leaf 0))
+                          (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
+                          _root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e6e6f7468696e67»
                         else
-                          «Tactics/OMask.just»
-                            («Tactics.maskStep»
+                          _root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e6a757374»
+                            (_root_.GebMirror.Metalogic.«Tactics.maskStep»
                               x7
-                              («Translation.condT»
+                              (_root_.GebMirror.Metalogic.«Translation.condT»
                                 x3
                                 x4
-                                («Language.subst» x19 («Derivation.instVar» x17))
+                                (_root_.GebMirror.Metalogic.«Language.subst»
+                                  x19
+                                  (_root_.GebMirror.Metalogic.«Derivation.instVar» x17))
                                 x6)
-                              («Tactics.maskRwD»
+                              (_root_.GebMirror.Metalogic.«Tactics.maskRwD»
                                 x3
                                 x13
                                 x0
-                                («Language.p2» x16)
+                                (_root_.GebMirror.Metalogic.«Language.p2» x16)
                                 x4
                                 x6
                                 x14
@@ -3141,106 +4817,190 @@ def «Tactics.maskAt» :=
     x9
 
 def «Tactics.maskSub» :=
-  fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) =>
-    let x4 : T := «Tactics.findMask»
-      (fun (x4 : T) =>
-        «Tactics.bindCM»
-          («Tactics.condParts» x4)
-          (fun (x5 : T) =>
-            «Tactics.findMask»
-              («Tactics.maskAt»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.findMask»
+      (fun (x4 : _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Tactics.bindCM»
+          (_root_.GebMirror.Metalogic.«Tactics.condParts» x4)
+          (fun (x5 : _root_.Geb.Kernel.Tree) =>
+            _root_.GebMirror.Metalogic.«Tactics.findMask»
+              (_root_.GebMirror.Metalogic.«Tactics.maskAt»
                 x0
                 x1
                 x2
-                («Prelude.at» (Const.children x5) (leaf 0))
-                («Prelude.at» (Const.children x5) (leaf 1))
-                («Prelude.at» (Const.children x5) (leaf 2))
-                («Prelude.at» (Const.children x5) (leaf 3))
+                (_root_.GebMirror.Metalogic.«Prelude.at»
+                  (_root_.Geb.Kernel.Const.children x5)
+                  (_root_.Geb.Kernel.leaf 0))
+                (_root_.GebMirror.Metalogic.«Prelude.at»
+                  (_root_.Geb.Kernel.Const.children x5)
+                  (_root_.Geb.Kernel.leaf 1))
+                (_root_.GebMirror.Metalogic.«Prelude.at»
+                  (_root_.Geb.Kernel.Const.children x5)
+                  (_root_.Geb.Kernel.leaf 2))
+                (_root_.GebMirror.Metalogic.«Prelude.at»
+                  (_root_.Geb.Kernel.Const.children x5)
+                  (_root_.Geb.Kernel.leaf 3))
                 x4)
-              («Prelude.reverse» («Base.range» («Prelude.length» x2)))))
-      («Tactics.openSubterms» x3);
+              (_root_.GebMirror.Metalogic.«Prelude.reverse»
+                (_root_.GebMirror.Metalogic.«Base.range» (_root_.GebMirror.Metalogic.«Prelude.length» x2)))))
+      (_root_.GebMirror.Metalogic.«Tactics.openSubterms» x3);
     x4
 
 def «Tactics.byMaskSubs» :=
-  fun (x0 : T) (x1 : List T) (x2 : T) (x3 : T) (x4 : List T) (x5 : T) =>
-    let x6 : (List T → List T → List T → T → T → T) →
-      List T →
-        List T →
-          T →
-            T →
-              T := Const.iter
-      (α := List T →
-        (List T → List T → List T → T → T → T) → List T → List T → T → T → T)
-      (fun (x6 : List T →
-           (List T → List T → List T → T → T → T) → List T → List T → T → T → T)
-         (x7 : List T)
-         (x8 : List T → List T → List T → T → T → T) =>
-        «Tactics.byNF»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree) =>
+    let x6 : (_root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List _root_.Geb.Kernel.Tree →
+        (_root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.List _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree →
+                _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.List _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree →
+                _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (fun (x6 : _root_.List _root_.Geb.Kernel.Tree →
+           (_root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.List _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree →
+                   _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.List _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree →
+                   _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x7 : _root_.List _root_.Geb.Kernel.Tree)
+         (x8 : _root_.List _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Tactics.byNF»
           x0
           x1
-          (leaf 0)
-          («Tactics.appendNR» x7 x4)
-          (leaf 1)
-          (fun (x9 : List T) (x10 : List T) (x11 : T) (x12 : T) =>
-            let x13 : T := «Tactics.orMask»
-              («Tactics.maskSub» x2 x3 x10 x11)
-              («Tactics.maskSub» x2 x3 x10 x12);
-            if («Tactics/OMask.isJust» x13).label ≠ 0 then
-              let x14 : T := «Prelude.at»
-                (Const.children («Tactics/OMask.fromMaybe» «Tactics.mask0» x13))
-                (leaf 0);
-              let x15 : T := «Prelude.at»
-                (Const.children («Tactics/OMask.fromMaybe» «Tactics.mask0» x13))
-                (leaf 1);
-              «Base.mapO»
-                (fun (x16 : T) =>
-                  «Prover.dNode»
-                    (leaf 22)
-                    («Prelude.single» («Language.mEq» x14 x15))
-                    («Theory.l2»
-                      («Prelude.at»
-                        (Const.children («Tactics/OMask.fromMaybe» «Tactics.mask0» x13))
-                        (leaf 2))
+          (_root_.Geb.Kernel.leaf 0)
+          (_root_.GebMirror.Metalogic.«Tactics.appendNR» x7 x4)
+          (_root_.Geb.Kernel.leaf 1)
+          (fun (x9 : _root_.List _root_.Geb.Kernel.Tree)
+             (x10 : _root_.List _root_.Geb.Kernel.Tree)
+             (x11 : _root_.Geb.Kernel.Tree)
+             (x12 : _root_.Geb.Kernel.Tree) =>
+            let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.orMask»
+              (_root_.GebMirror.Metalogic.«Tactics.maskSub» x2 x3 x10 x11)
+              (_root_.GebMirror.Metalogic.«Tactics.maskSub» x2 x3 x10 x12);
+            if (_root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e69734a757374»
+              x13).label ≠ 0 then
+              let x14 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.at»
+                (_root_.Geb.Kernel.Const.children
+                  (_root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e66726f6d4d61796265»
+                    _root_.GebMirror.Metalogic.«Tactics.mask0»
+                    x13))
+                (_root_.Geb.Kernel.leaf 0);
+              let x15 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.at»
+                (_root_.Geb.Kernel.Const.children
+                  (_root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e66726f6d4d61796265»
+                    _root_.GebMirror.Metalogic.«Tactics.mask0»
+                    x13))
+                (_root_.Geb.Kernel.leaf 1);
+              _root_.GebMirror.Metalogic.«Base.mapO»
+                (fun (x16 : _root_.Geb.Kernel.Tree) =>
+                  _root_.GebMirror.Metalogic.«Prover.dNode»
+                    (_root_.Geb.Kernel.leaf 22)
+                    (_root_.GebMirror.Metalogic.«Prelude.single»
+                      (_root_.GebMirror.Metalogic.«Language.mEq» x14 x15))
+                    (_root_.GebMirror.Metalogic.«Theory.l2»
+                      (_root_.GebMirror.Metalogic.«Prelude.at»
+                        (_root_.Geb.Kernel.Const.children
+                          (_root_.GebMirror.Metalogic.«$546163746963732f4f4d61736b2e66726f6d4d61796265»
+                            _root_.GebMirror.Metalogic.«Tactics.mask0»
+                            x13))
+                        (_root_.Geb.Kernel.leaf 2))
                       x16))
                 (x6
-                  ((«Tactics.hypRule» («Prelude.length» x10)) :: x7)
+                  ((_root_.GebMirror.Metalogic.«Tactics.hypRule»
+                    (_root_.GebMirror.Metalogic.«Prelude.length» x10)) ::
+                    x7)
                   x8
                   x9
-                  («Prelude.append» x10 («Prelude.single» («Language.mEq» x14 x15)))
+                  (_root_.GebMirror.Metalogic.«Prelude.append»
+                    x10
+                    (_root_.GebMirror.Metalogic.«Prelude.single»
+                      (_root_.GebMirror.Metalogic.«Language.mEq» x14 x15)))
                   x11
                   x12)
             else
               x8 x7 x9 x10 x11 x12))
-      (fun (x6 : List T) (x7 : List T → List T → List T → T → T → T) =>
+      (fun (x6 : _root_.List _root_.Geb.Kernel.Tree)
+         (x7 : _root_.List _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
         x7 x6)
       x5
-      ([] : List T);
+      ([] : _root_.List _root_.Geb.Kernel.Tree);
     x6
 
 def «Tactics.byGeneralize» :=
-  fun (x0 : T) (x1 : T) (x2 : List T → List T → T → T → T) =>
-    let x3 : List T →
-      List T →
-        T →
-          T →
-            T := (fun (x3 : List T) (x4 : List T) (x5 : T) (x6 : T) =>
-      let x7 : T := «Tactics.abstractTerm» x0 x1 x5;
-      let x8 : T := «Tactics.abstractTerm» x0 x1 x6;
-      «Base.mapO»
-        (fun (x9 : T) =>
-          «Tactics.applyAbs»
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (fun (x3 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x4 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x5 : _root_.Geb.Kernel.Tree)
+                                         (x6 : _root_.Geb.Kernel.Tree) =>
+      let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.abstractTerm»
+        x0
+        x1
+        x5;
+      let x8 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.abstractTerm»
+        x0
+        x1
+        x6;
+      _root_.GebMirror.Metalogic.«Base.mapO»
+        (fun (x9 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebMirror.Metalogic.«Tactics.applyAbs»
             x1
-            («Prelude.length» x4)
+            (_root_.GebMirror.Metalogic.«Prelude.length» x4)
             x7
             x8
-            («Prover.dNode» (leaf 26) ([] : List T) («Prelude.single» x9)))
+            (_root_.GebMirror.Metalogic.«Prover.dNode»
+              (_root_.Geb.Kernel.leaf 26)
+              ([] : _root_.List _root_.Geb.Kernel.Tree)
+              (_root_.GebMirror.Metalogic.«Prelude.single» x9)))
         (x2
           (x0 :: x3)
-          («Base.mapT» «Derivation.weaken1» x4)
-          («Language.app» («Derivation.weaken1» x7) («Language.var» (leaf 0)))
-          («Language.app»
-            («Derivation.weaken1» x8)
-            («Language.var» (leaf 0)))));
+          (_root_.GebMirror.Metalogic.«Base.mapT» _root_.GebMirror.Metalogic.«Derivation.weaken1» x4)
+          (_root_.GebMirror.Metalogic.«Language.app»
+            (_root_.GebMirror.Metalogic.«Derivation.weaken1» x7)
+            (_root_.GebMirror.Metalogic.«Language.var» (_root_.Geb.Kernel.leaf 0)))
+          (_root_.GebMirror.Metalogic.«Language.app»
+            (_root_.GebMirror.Metalogic.«Derivation.weaken1» x8)
+            (_root_.GebMirror.Metalogic.«Language.var» (_root_.Geb.Kernel.leaf 0)))));
     x3
 
 end GebMirror.Metalogic

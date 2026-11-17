@@ -255,10 +255,16 @@ moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 weak.linter.hashCommand = false
 
 # The stage-1 compiler's image and its sources.
+[[input_file]]
+name = "hygieneSource"
+path = "bootstrap/hygiene.geb"
+text = true
+
 [[lean_lib]]
 name = "GebTestsStage1"
 globs = ["GebTests.Prototypes.Stage1"]
-needs = ["@/compilerImage", "@/stage1Sources", "@/seqSource", "@/datatypeSoundnessStatement"]
+needs = ["@/compilerImage", "@/stage1Sources", "@/seqSource", "@/datatypeSoundnessStatement",
+  "@/hygieneSource"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]

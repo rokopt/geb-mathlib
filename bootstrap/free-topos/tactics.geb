@@ -219,7 +219,7 @@
                                            (dNode 2 (nil T)
                                              (l2 (mDeriv (nfMarked ra)) (mDeriv (nfMarked rb))))
                                            (dNode 21 (single i) (nil T)))))
-                                     (case fs ((frames xs) xs)))))))))
+                                     (case fs ((frames & xs) xs)))))))))
                          ((OWH.nothing) OWH.nothing))))))))))
        (lam ((h1 Ts) (extra NRs)) (OWH.just (wh (terms h1) (rules extra) (frames (nil TPair)))))
        is) hs (nil NormRule)))
@@ -233,8 +233,8 @@
               (lam ((rest T))
                 (foldr TPair T (lam ((f TPair) (acc T)) (dNode 22 (single (p1 f)) (l2 (p2 f) acc)))
                   rest
-                  (case fs ((frames xs) xs))))
-              (k (case x2 ((rules ys) ys)) g (termsOf h2) t u)))))
+                  (case fs ((frames & xs) xs))))
+              (k (case x2 ((rules & ys) ys)) g (termsOf h2) t u)))))
         ((OWH.nothing) none))))
   (defn byListIndHypWeak ((G Globals) (E (List Entry)) (n T) (rs NRs)) Pv
     (byListIndWith G n 0 1 (byWeak G E n rs)

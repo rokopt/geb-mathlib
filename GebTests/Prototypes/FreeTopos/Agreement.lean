@@ -505,8 +505,8 @@ names in scope, gives the encoding of the Lean reader's resolution of every S-ex
 whatever the printer writes for a term under binders to a depth resolves, in the scope of those
 binders, to the term. -/
 theorem reader_inverse_agree : ∃ G' : List Glob, load metalogic = some G' ∧
-    ∃ pr : Ty.den printTermTy, G'[1945]? = some ⟨printTermTy, pr⟩ ∧
-    ∃ rb : Ty.den readBackTy, G'[1935]? = some ⟨readBackTy, rb⟩ ∧
+    ∃ pr : Ty.den printTermTy, G'[1946]? = some ⟨printTermTy, pr⟩ ∧
+    ∃ rb : Ty.den readBackTy, G'[1936]? = some ⟨readBackTy, rb⟩ ∧
       (∀ (defs : List (List Char)) (t : Tree) (d : ℕ),
         pr (defs.map nameTree) t (leaf d) = encOpt ((printTerm? defs t d).map sexpTree)) ∧
       (∀ (defs : List (List Char)) (e : SExp) (scope : List (List Char)),
@@ -523,7 +523,7 @@ theorem reader_inverse_agree : ∃ G' : List Glob, load metalogic = some G' ∧
 program loads to globals among which is a function of the check's type that, at a program's terms
 and a certificate, gives the encoding of what {name}`Geb.Affine.check` gives. -/
 theorem affineCheck_agree : ∃ G' : List Glob, load metalogic = some G' ∧
-    ∃ f : Ty.den affineCheckTy, G'[2013]? = some ⟨affineCheckTy, f⟩ ∧
+    ∃ f : Ty.den affineCheckTy, G'[2014]? = some ⟨affineCheckTy, f⟩ ∧
       ∀ (prog : List Tree) (cert : Tree),
         f prog cert =
           encOpt ((Geb.Affine.check prog cert).map fun E ↦
@@ -542,25 +542,25 @@ declarations whose certificates are such, its check of a development gives the e
 state the check in Lean gives; the evaluation gives the encoded term of the value the evaluation
 in Lean gives, and its test of readiness the test in Lean. -/
 theorem conversion_agree : ∃ G' : List Glob, load metalogic = some G' ∧
-    (∃ f : Ty.den convCheckTy, G'[2174]? = some ⟨convCheckTy, f⟩ ∧
+    (∃ f : Ty.den convCheckTy, G'[2175]? = some ⟨convCheckTy, f⟩ ∧
       ∀ (G : Internal.Globals) (E : Array Internal.Entry) (R : List ℕ) (n : ℕ)
         (d : Internal.ConvDeriv), Plain d →
           DRel (f (encGlobals G) (E.toList.map encEntry) (R.map leaf) (leaf n) (encConv d))
             (Internal.convCheck G E R n d)) ∧
-    (∃ f : Ty.den thmConvChecksTy, G'[2175]? = some ⟨thmConvChecksTy, f⟩ ∧
+    (∃ f : Ty.den thmConvChecksTy, G'[2176]? = some ⟨thmConvChecksTy, f⟩ ∧
       ∀ (G : Internal.Globals) (E : Array Internal.Entry) (R : List ℕ) (a : Internal.Thm)
         (d : Internal.ConvDeriv), Plain d →
           f (encGlobals G) (E.toList.map encEntry) (R.map leaf) (encThm a) (encConv d) =
             ofBool (a.convChecks G E R d)) ∧
-    (∃ f : Ty.den checkConvDevTy, G'[2198]? = some ⟨checkConvDevTy, f⟩ ∧
+    (∃ f : Ty.den checkConvDevTy, G'[2199]? = some ⟨checkConvDevTy, f⟩ ∧
       ∀ (G : Internal.Globals) (E : Array Internal.Entry) (ds : List Internal.ConvDecl),
         (∀ d ∈ ds, DeclPlain d) →
           f (encGlobals G) (E.toList.map encEntry) (ds.map encConvDecl) =
             encOpt ((Internal.checkConvDev G E ds).map encConvState)) ∧
-    (∃ f : Ty.den litEvalTy, G'[2051]? = some ⟨litEvalTy, f⟩ ∧
+    (∃ f : Ty.den litEvalTy, G'[2052]? = some ⟨litEvalTy, f⟩ ∧
       ∀ t : Internal.Term,
         f (encTerm t) = encOpt ((Geb.FreeTopos.Literals.eval t).map fun v ↦ encTerm v.term)) ∧
-    (∃ f : Ty.den readyTy, G'[2096]? = some ⟨readyTy, f⟩ ∧
+    (∃ f : Ty.den readyTy, G'[2097]? = some ⟨readyTy, f⟩ ∧
       ∀ (G : Internal.Globals) (E : Array Internal.Entry) (j : ℕ),
         f (encGlobals G) (E.toList.map encEntry) (leaf j) =
           ofBool (Geb.FreeTopos.Literals.ready G E j)) :=

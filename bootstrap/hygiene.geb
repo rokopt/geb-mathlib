@@ -1,0 +1,31 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The Lean emitter's names: runtime helpers and generated local variables, a closing quoted
+; identifier delimiter, the encoding's prefix, and a newline. The generated mirror is compiled
+; and its main entry tested, so the names must remain distinct and denote these definitions.
+
+(def leaf 1)
+(def mk 2)
+(def Const 3)
+(def x0 4)
+(def "a»b" 5)
+(def "$61c2bb62" 6)
+(def "line
+break" 7)
+(def _root_ 8)
+(def _ 9)
+(def Prefix._root_.GebBoot.name 10)
+(def main
+  (lam ((input T))
+    (node input
+      (cons leaf
+        (cons mk
+          (cons Const
+            (cons x0
+              (cons "a»b"
+                (cons "$61c2bb62"
+                  (cons "line
+break"
+                    (cons _root_ (cons _ (cons Prefix._root_.GebBoot.name (nil T))))))))))))))

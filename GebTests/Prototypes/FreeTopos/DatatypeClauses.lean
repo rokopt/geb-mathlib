@@ -163,9 +163,10 @@ def clauseBinds (P : Prog) (md b : Term) : Term :=
   let aT := pc P "Datatype.aT" []
   let aC := pc P "Datatype.aC" []
   let sLet (x a e b : Term) : Term := pc P "Datatype.sLet" [x, a, e, b]
-  let fb := Term.lam treeTy (Term.lam treeTy (sLet (v 1) aT (pc P "Datatype.sHeadOf" [aC])
+  let fieldLet (x a e b : Term) : Term := pc P "Datatype.fieldLet" [x, a, e, b]
+  let fb := Term.lam treeTy (Term.lam treeTy (fieldLet (v 1) aT (pc P "Datatype.sHeadOf" [aC])
     (sLet aC (pc P "Datatype.sList" [aT]) (pc P "Datatype.sTailOf" [aC]) (v 0))))
-  let rb := Term.lam treeTy (Term.lam treeTy (sLet (v 1) (pc P "Datatype.sList" [aT]) aC (v 0)))
+  let rb := Term.lam treeTy (Term.lam treeTy (fieldLet (v 1) (pc P "Datatype.sList" [aT]) aC (v 0)))
   pc P "Datatype.bindVars" [fb, rb, md, b]
 
 /-- The erasure of a case analysis's clause of metadata {lit}`md` and body {lit}`b`: the binding

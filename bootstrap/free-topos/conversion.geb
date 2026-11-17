@@ -185,8 +185,8 @@
   (import (Option ConvState) as OConvState)
   (defn csConsts ((st ConvState)) Globals (case st ((convState G E R) G)))
   (defn csEntries ((st ConvState)) (List Entry)
-    (case st ((convState G E R) (case E ((entries xs) xs)))))
-  (defn csIndices ((st ConvState)) Ts (case st ((convState G E R) (case R ((indices xs) xs)))))
+    (case st ((convState G E R) (case E ((entries & xs) xs)))))
+  (defn csIndices ((st ConvState)) Ts (case st ((convState G E R) (case R ((indices & xs) xs)))))
   ; a declaration of such a development: a declaration of the base checker, a theorem with a
   ; certificate of the conversion checker, or the record that the evaluation at literals is ready
   ; at an index

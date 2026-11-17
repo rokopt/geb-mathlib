@@ -322,7 +322,7 @@
   (data Objs (objs & T))
   (data LDefn (ldefn T Objs T T))
   (defn ldArity ((d LDefn)) T (case d ((ldefn m ps a b) m)))
-  (defn ldParams ((d LDefn)) Ts (case d ((ldefn m ps a b) (case ps ((objs xs) xs)))))
+  (defn ldParams ((d LDefn)) Ts (case d ((ldefn m ps a b) (case ps ((objs & xs) xs)))))
   (defn ldType ((d LDefn)) T (case d ((ldefn m ps a b) a)))
   (defn ldBody ((d LDefn)) T (case d ((ldefn m ps a b) b)))
   (import (Option LDefn) as OLDefn)
@@ -341,8 +341,8 @@
   (data PrimList (prims & Primitive))
   (data DefList (defs & Definition))
   (data Globals (globals PrimList DefList T))
-  (defn gPrims ((G Globals)) (List Primitive) (case G ((globals p d b) (case p ((prims xs) xs)))))
-  (defn gDefs ((G Globals)) (List Definition) (case G ((globals p d b) (case d ((defs xs) xs)))))
+  (defn gPrims ((G Globals)) (List Primitive) (case G ((globals p d b) (case p ((prims & xs) xs)))))
+  (defn gDefs ((G Globals)) (List Definition) (case G ((globals p d b) (case d ((defs & xs) xs)))))
   (defn gBase ((G Globals)) T (case G ((globals p d b) b)))
 
   (def def0 (defObj 0 0))
@@ -532,7 +532,7 @@
         (lam ((df LDefn))
           (bindQP (allSomeP ys)
             (lam ((rsN TPairList))
-              (let rl (List TPair) (case rsN ((tpairs xs) xs))
+              (let rl (List TPair) (case rsN ((tpairs & xs) xs))
                 (if
                   (and (eq (length th) (ldArity df))
                     (and (allT (isTy G n) th)

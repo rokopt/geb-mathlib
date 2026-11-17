@@ -579,9 +579,10 @@ def walkParts (K : Kit) (T : Defs3) : Option WalkParts := do
   let aT := pc P "Datatype.aT" []
   let aC := pc P "Datatype.aC" []
   let sLet (x a e b : Term) : Term := pc P "Datatype.sLet" [x, a, e, b]
-  let fb := Term.lam treeTy (Term.lam treeTy (sLet (v 1) aT (pc P "Datatype.sHeadOf" [aC])
+  let fieldLet (x a e b : Term) : Term := pc P "Datatype.fieldLet" [x, a, e, b]
+  let fb := Term.lam treeTy (Term.lam treeTy (fieldLet (v 1) aT (pc P "Datatype.sHeadOf" [aC])
     (sLet aC (pc P "Datatype.sList" [aT]) (pc P "Datatype.sTailOf" [aC]) (v 0))))
-  let rb := Term.lam treeTy (Term.lam treeTy (sLet (v 1) (pc P "Datatype.sList" [aT]) aC (v 0)))
+  let rb := Term.lam treeTy (Term.lam treeTy (fieldLet (v 1) (pc P "Datatype.sList" [aT]) aC (v 0)))
   let erNF ← nf (pc P "Datatype.bindVars" [fb, rb, parts, v 1])
   let er ← findFoldr (v 0) erNF
   pure ⟨ty, ok, er⟩
@@ -1043,14 +1044,15 @@ def bindEqs (P : Prog) (S : Defs) (T : Defs3) : List Step :=
     builderEq "headRes" P S [list treeTy, list treeTy, list treeTy] []
       (pc P "Reader.resolve" [v 1, v 2, pc P "Datatype.sHeadOf" [aC],
         consT treeTy (fieldsName P) (v 0)]) res,
+    builderEq "tail0Res" P S [list treeTy, list treeTy, list treeTy] []
+      (pc P "Reader.resolve" [v 1, v 2, pc P "Datatype.sTailOf" [aC],
+        consT treeTy (fieldsName P) (v 0)]) res,
     -- the scope's tail v0, its head's characters v1, the type abbreviations v2, the names v3
     builderEq "tailRes" P S [list treeTy, list treeTy, list treeTy, list treeTy]
       [namedFields P (v 1)]
       (pc P "Reader.resolve" [v 2, v 3, pc P "Datatype.sTailOf" [aC],
         consT treeTy (nodeT (Term.pair (numeral 0) (v 1)))
-          (consT treeTy (fieldsName P) (v 0))]) res] ++
-  []
-
+          (consT treeTy (fieldsName P) (v 0))]) res]
 /-- The lookup of a list of trees at a successor index is the rest's at the index, its sides as
 written ({lit}`nthConsSucc` states them in normal form): an instance at a numeral normalizes,
 without itself, to the lookup as the numeral's normal form leaves it. Proved by normalization, with
@@ -1233,6 +1235,23 @@ def tailConv (P : Prog) (S : Defs) : Step :=
       | dbgTrace "tailConv: not proved" fun _ ↦ none
     pure (a, d))
 
+/-- The tail of the children remaining when an ignored field has added no value to the
+environment. The list is at index zero, as in {lit}`tail0Res`. -/
+def tail0Conv (P : Prog) (S : Defs) : Step :=
+  ("tail0Conv", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, evalMore⟩
+    let tK ← boundTerm E ix "tail0Res"
+    let Γ := [list treeTy, list treeTy, treeTy, Defs3.ctxTy]
+    let env := consT treeTy (treeList P (consT treeTy (pc P "Eval.valQuote" [v 2]) (v 1))) (v 0)
+    let a : Internal.Thm := ⟨0, Γ, [], S.conv (Term.lam nat (S.evN (Term.fst (v 4)) (v 0)
+      (sh 1 env) tK)) (Term.lam treeTy (Term.eq (v 0) (treeList P (v 2))))⟩
+    let lv : Term := (5 : ℕ).rec zeroN fun _ t ↦ succN t
+    let some d := dConv K.L K.G K.E S lv (treeList P (v 1))
+        (linkK K "tail0Conv stable" K.byNorm) (linkK K "tail0Conv value" (K.norm K.byNorm))
+        a.ctx a.hyps a.concl
+      | dbgTrace "tail0Conv: not proved" fun _ ↦ none
+    pure (a, d))
+
 /-- The arguments of an application spine, in order. -/
 def spineArgs (t : Term) : List Term :=
   RoseTree.para (fun l (cs : List (Term × List Term)) ↦ match l, cs with
@@ -1315,6 +1334,11 @@ def restStep (P : Prog) (x r : Term) : Term :=
   let aC := pc P "Datatype.aC" []
   pc P "Datatype.sLet" [x, pc P "Datatype.sList" [aT], aC, r]
 
+/-- Whether a clause's field is the wildcard, whose value and binding are omitted. -/
+def ignoredField (P : Prog) (x : Term) : Term :=
+  pc P "Datatype.namedTx" [x,
+    nodeT (Term.pair (numeral 0) (consT treeTy (leafT (numeral 95)) (nilT treeTy)))]
+
 /-- The resolution of the remaining children's variable's binding of an atom's name, in the scope
 headed by the children remaining's name: in the context of the rest, the binder's characters, the
 scope's tail, the type abbreviations and the definitions' names, its left side in the normal form
@@ -1338,6 +1362,28 @@ def restVarRes (P : Prog) (S : Defs) (T : Defs3) : Step :=
         dEq (fun Γ Φ t u ↦ byMode .full K.G K.E 0 (K.rules Φ ++ unfold) Γ
           (rwHyps (K.rules Φ) Φ) t u) Γ Φ ψ) a.ctx a.hyps a.concl
       | dbgTrace "restVarRes: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- Resolving the advance of the children remaining after a wildcard: one list binding, with
+no binding or evaluation of the skipped field. -/
+def skipRes (P : Prog) (S : Defs) (T : Defs3) : Step :=
+  ("skipRes", fun ix E ↦ do
+    let P := walkProg P
+    let K : Kit := ⟨P, S, E, ix, walkMore ix E ++ ["tail0Res"]⟩
+    let aC := pc P "Datatype.aC" []
+    let Γ := [treeTy, list treeTy, list treeTy, list treeTy]
+    let lhs := pc P "Reader.resolve" [v 2, v 3,
+      pc P "Datatype.sLet" [aC, pc P "Datatype.sList" [pc P "Datatype.aT" []],
+        pc P "Datatype.sTailOf" [aC], v 0], consT treeTy (fieldsName P) (v 1)]
+    let Kw : Kit := { K with more := walkRules ix E }
+    let (l, _) ← evalRw Kw.G Kw.E (Kw.rules []) .full Γ [] lhs
+    let unfold := resolveRules P T ix E
+    let (r, _) ← evalRw K.G K.E (K.rules [] ++ unfold) .full Γ [] lhs
+    let a : Internal.Thm := ⟨0, Γ, [], Term.eq l r⟩
+    let some d := linkK K "skipRes: the sides" (fun Γ Φ ψ ↦
+        dEq (fun Γ Φ t u ↦ byMode .full K.G K.E 0 (K.rules Φ ++ unfold) Γ
+          (rwHyps (K.rules Φ) Φ) t u) Γ Φ ψ) a.ctx a.hyps a.concl
+      | dbgTrace "skipRes: not proved" fun _ ↦ none
     pure (a, d))
 
 /-- The kernel's variable of index 0 converges to the environment's first value: in the context of
@@ -1410,11 +1456,13 @@ def walk (P : Prog) (S : Defs) (T : Defs3) : Step :=
         [leafT (numeral Kernel.Label.tyTree), quotesT P (ts Γ)]) (atPos 12 Γ)
       let kc (Γ : List Tree) : Term := consT treeTy (listTK P (atPos 3 Γ)) (atPos 14 Γ)
       -- the body's hypothesis at the walk's contexts
-      let body : Deducer := linkK K "walk: the body" <|
-        dAllE L K.G K.E 4 (cx Γ₀) <| K.allEΓ env <| K.allEΓ kc <|
-        K.impE (K.byHyp hEnv) <| K.impE (byStep hTy) <| K.impE (K.byHyp hRes) <|
+      let body : Deducer := linkK K "walk: the body" fun Γ Φ ψ ↦
+        (dAllE L K.G K.E 4 (cx Γ) <| K.allEΓ env <| K.allEΓ kc <|
+        K.impE (linkK K "walk: body environment" (K.byHyp hEnv)) <|
+        K.impE (linkK K "walk: body typing" (byStep hTy)) <|
+        K.impE (linkK K "walk: body resolution" (K.byHyp hRes)) <|
         K.impE (K.byHyp hKer) <| K.impE (K.byHyp hCx) <| fun Γ Φ ψ ↦
-          dRwBy (evalRw K.G K.E (K.rules Φ ++ steps) .full) byLast Γ Φ ψ
+          dRwBy (evalRw K.G K.E (K.rules Φ ++ steps) .full) byLast Γ Φ ψ) Γ Φ ψ
       let noRest : Deducer := fun Γ Φ ψ ↦ K.listCase treeTy (rvs Γ)
         (fun Γ Φ ψ ↦ K.listCase treeTy (ts Γ) body (refute "children remaining" hOk) Γ Φ ψ)
         (refute "a remaining variable" hTy) Γ Φ ψ
@@ -1568,13 +1616,17 @@ def walk (P : Prog) (S : Defs) (T : Defs3) : Step :=
           (refute "the raw field type absent" hTy) <|
         decideIn K (fun Γ ↦ pc P "Typing.clauseVar" [E' Γ, r Γ])
           (refute "the remaining variable no clause's" hTy) <|
-        fun Γ₃ Φ₃ ψ₃ ↦ K.treeNode (r Γ₃) (fun Γ Φ ψ ↦
+        (fun Γ₃ Φ₃ ψ₃ ↦ K.treeNode (r Γ₃) (fun Γ Φ ψ ↦
           let pC := Γ.length - 1
           dBits L K.G K.E (ix "listCases") (ix "bitCases") (fun bs ↦
-            if bs.map Oitavem.rank == some 1 then atomCase pC
+            if bs.map Oitavem.rank == some 1 then
+              decideIn K (fun Γ ↦ ignoredField P (r Γ)) (atomCase pC)
+                (decideIn K (fun Γ ↦ pc P "Typing.clauseVar" [E' Γ, r Γ])
+                  (refute "the remaining wildcard's variable" hTy)
+                  (linkK K "walk: the remaining wildcard" (K.norm body)))
             else linkK K s!"walk: the remaining variable's label {bs.map Oitavem.rank}"
               (anyClash K))
-            3 [] (v 1) Γ Φ ψ) Γ₃ Φ₃ ψ₃
+            3 [] (v 1) Γ Φ ψ) Γ₃ Φ₃ ψ₃)
       let rest : Deducer := linkK K "walk: the remaining children's variable" fun Γ Φ ψ ↦
         K.listCase treeTy (rvs Γ) (refute "no remaining variable" hTy)
           (fun Γ Φ ψ ↦ K.listCase treeTy (atPos (Γ.length - 1) Γ) (restVar (Γ.length - 2))
@@ -1922,15 +1974,99 @@ def walk (P : Prog) (S : Defs) (T : Defs3) : Step :=
               (decideIn K (fun Γ ↦ namedFields P (cs Γ)) (binderFlow cs)
                 (linkK K "walk: the binder the children's name" childrenNamed))
               (linkK K "walk: the binder abbreviated" abbreviated)) Γ₃ Φ₃ ψ₃
+          -- A wildcard advances the list without evaluating or binding its head. The induction
+          -- hypothesis sees the old environment beneath the new list entry.
+          let ignored : Deducer := fun Γ Φ ψ ↦
+            dRwHyp (evalRw K.G K.E (K.rulesEx Φ (2 + o)) .full) (2 + o)
+              (fun Γ Φ ψ ↦ dConjE L (Φ.length - 1) (fun Γ Φ ψ ↦
+                let iR := Φ.length - 1
+                let aC := pc P "Datatype.aC" []
+                let aT := pc P "Datatype.aT" []
+                let restEx (Γ : List Tree) : Term := pc P "Reader.expandNums"
+                  [nums Γ, erAt (atPos 11) Γ]
+                let restRes (Γ : List Tree) : Term := pc P "Reader.resolve"
+                  [atPos 3 Γ, atPos 1 Γ, restEx Γ,
+                    consT treeTy (fieldsName P)
+                      (consT treeTy (fieldsName P) (scopeOf P (nums Γ) (cx0 Γ)))]
+                let present : Deducer := fun Γ Φ ψ ↦
+                  dRwHyp (evalRw K.G K.E (K.rulesEx Φ cRes) .full) cRes (fun Γ₀ Φ ψ ↦ do
+                    let (g, c, x) ← apps3Of (P.idx "Check.typeIn") (← Φ[cKer]?)
+                    let (y, _) ← evalRw K.G K.E (K.rules Φ) .full Γ₀ Φ x
+                    let [f, tK] ← nodeKidsT y | none
+                    let [B, r] ← nodeKidsT f | none
+                    let [Pg, F] := ψ.children | none
+                    let [body] := F.children | none
+                    let [f₁, _] := body.children | none
+                    let [fs, env] := f₁.children | none
+                    let [lvl] := fs.children | none
+                    let [_, dR] := lvl.children | none
+                    let [R] := dR.children | none
+                    let lower (u : Term) : Term := Term.subst u fun j ↦ v (j - 1)
+                    let (R, env) := (lower R, lower env)
+                    let lift (u : Term) (Γ : List Tree) : Term := sh (Γ.length - Γ₀.length) u
+                    let ts' := atPos (pT + 1)
+                    let qY (Γ : List Tree) : Term := treeList P (quotesT P (ts' Γ))
+                    let yv (Γ : List Tree) : Term := atPos Γ₀.length Γ
+                    let cx (Γ : List Tree) : Term := consT treeTy (fieldsEntry P) (cx0 Γ)
+                    let relY : Deducer := K.cutThm "relOfListT" (fun Γ ↦ [quotesT P (ts' Γ)]) <|
+                      K.allEΓ (fun _ ↦ leafT (numeral Kernel.Label.tyTree)) <| K.allEΓ (lift R) <|
+                      K.allEΓ (fun _ ↦ tyTreeT) <|
+                      K.impE (K.cutThm "quotesRel" (fun Γ ↦ [ts' Γ])
+                        (K.allEΓ (lift R) byLast)) byLast
+                    let envOk : Deducer := applyThm K "envTCons"
+                      (fun Γ ↦ [yv Γ, fieldsEntry P, lift env Γ, cx Γ, lift R Γ])
+                      [K.byHyp cEnv, relY] byLast
+                    let fieldsNm := pc P "Typing.boundName" [pc P "Typing.kwFields" []]
+                    let cxOk : Deducer :=
+                      let add : Deducer := applyThm K "cxTCons"
+                        (fun Γ ↦ [pc P "Typing.tyList" [pc P "Typing.tyT" []],
+                          fieldsNm, E' Γ, cx Γ]) [K.solve 3, K.byHyp cCx] byLast
+                      decideIn K (fun Γ ↦ pc P "Typing.nameOk" [E' Γ, fieldsNm]) add add
+                    let ih (iTr : ℕ) : Deducer :=
+                      dImpE L 0 K.byNorm <| K.impE (K.byHyp 2) <|
+                      K.impE (K.byHyp iR) <| K.impE (K.byHyp 4) <| K.impE (K.byHyp 5) <|
+                      K.allEΓ (atPos (pF + 1)) <| K.allEΓ ts' <|
+                      K.allEΓ (lift env) <| K.allEΓ cx <| K.allEΓ (lift c) <|
+                      K.impE (linkK K "walk: wildcard typing" (byStep cTy)) <|
+                      K.impE (K.byHyp cOk) <| K.impE envOk <| K.impE cxOk <|
+                      K.impE (K.solve 3) <| K.impE (K.byHyp iTr) <|
+                      linkK K "walk: wildcard induction" fun Γ Φ ψ ↦
+                        byStep (Φ.length - 1) Γ Φ ψ
+                    let isQ (Γ : List Tree) : Term :=
+                      Term.lam treeTy (Term.eq (v 0) (sh 1 (qY Γ)))
+                    (applyThm K "letTyped" (fun _ ↦ [tK, r, B, c, g]) [K.byHyp cKer] <|
+                      K.conjE fun Γ Φ ψ ↦
+                      let iTr := Φ.length - 2
+                      applyThm K "letConv" (fun Γ ↦ [lift env Γ, lift tK Γ, lift r Γ,
+                        lift B Γ, isQ Γ, lift Pg Γ, lift R Γ])
+                        [K.cutThm "tail0Conv" (fun Γ ↦ [atPos 14 Γ, quotesT P (ts' Γ),
+                            t1 Γ, lift R Γ]) byLast,
+                          dAllI L <| dImpI L <| normLastK K (ih iTr)] byLast Γ Φ ψ) Γ₀ Φ ψ)
+                    Γ Φ ψ
+                (applyThm K "letNums" (fun Γ ↦ [erAt (atPos 11) Γ,
+                    pc P "Datatype.sTailOf" [aC], pc P "Datatype.sList" [aT], aC, nums Γ])
+                  [negated] <| normLastK K <|
+                applyThm K "skipRes" (fun Γ ↦ [restEx Γ,
+                    scopeOf P (nums Γ) (cx0 Γ), atPos 3 Γ, atPos 1 Γ]) [] <|
+                  normLastK K <|
+                decideOpt K restRes
+                  (linkK K "walk: wildcard rest unresolved" fun Γ Φ ψ ↦
+                    dRwHyp (evalRw K.G K.E (K.rulesEx Φ cRes) .full) cRes
+                      (fun Γ Φ ψ ↦ K.hypFalse (Φ.length - 1) Γ Φ ψ) Γ Φ ψ)
+                  (linkK K "walk: wildcard rest resolved" present)) Γ Φ ψ) Γ Φ ψ) Γ Φ ψ
           let byLabel : Deducer := fun Γ₃ Φ₃ ψ₃ ↦ K.treeNode (vx Γ₃) (fun Γ Φ ψ ↦
             let pC := Γ.length - 1
             dBits L K.G K.E (ix "listCases") (ix "bitCases") (fun bs ↦
-              if bs.map Oitavem.rank == some 1 then atomCase pC
+              if bs.map Oitavem.rank == some 1 then
+                decideIn K (fun Γ ↦ ignoredField P (vx Γ)) (atomCase pC)
+                  (decideIn K (fun Γ ↦ pc P "Typing.clauseVar" [E' Γ, vx Γ])
+                    (refute "the wildcard's variable" cTy) ignored)
               else linkK K s!"walk: the variable's label {bs.map Oitavem.rank}" (anyClash K))
               3 [] (v 1) Γ Φ ψ) Γ₃ Φ₃ ψ₃
           (decideIn K (fun Γ ↦ pc P "Typing.fieldOk" [ms Γ, ft Γ,
               pc P "Typing.memberships" [ms Γ, t1 Γ]])
-            (refute "the field's test" cOk) byLabel) Γ₂ Φ₂ ψ₂
+            (refute "the field's test" cOk)
+            byLabel) Γ₂ Φ₂ ψ₂
         (decideIn K (fun Γ ↦ pc P "Prelude.isSome" [fieldTy Γ])
           (refute "the field's type absent" cTy) <|
         decideIn K (fun Γ ↦ pc P "Typing.clauseVar" [E' Γ, vx Γ])
@@ -1967,7 +2103,8 @@ def caseDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
   (walkAtoms P).zipIdx.map (fun (n, i) ↦ atomExcluded P S s!"atomExcluded{i}" n) ++
   bindEqs P S T ++
   [stepRes P S, stepResC P S T, nthSuccRaw P, nthOne P S 2, nthOne P S 3, headConv P S,
-    tailConv P S, bindVarEq P S T, restVarRes P S T, var0Conv P S, quotesFieldRel P S T,
+    tailConv P S, tail0Conv P S, bindVarEq P S T, restVarRes P S T, skipRes P S T, var0Conv P S,
+    quotesFieldRel P S T,
     lcaseRebuild P S "lcaseRebuild" treeTy, lcaseRebuild P S "lcaseRebuildL" (list treeTy),
     walk P S T]
 

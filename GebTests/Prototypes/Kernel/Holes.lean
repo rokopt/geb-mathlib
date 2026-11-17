@@ -101,6 +101,8 @@ def shownFilled (text name filling : String) : String :=
   | .error _ => false)
 -- filling one hole leaves the others
 #guard shownFilled "(def f (lam (x T) (pair ?a ?b)))" "a" "x" = "(?b (meta 0))\n  (x T)\n"
+-- A filling uses the source spelling even when its binder shadows a generated operation.
+#guard shownFilled "(def f (lam (unit T) ?a))" "a" "unit" = "complete\n"
 -- a filling of another type, one naming a variable outside the hole's context, one with a hole
 -- of its own, and the filling of a hole the program does not have, are rejected
 #guard shownFilled "(def f (lam (x T) (add ?a x)))" "a" "unit" =

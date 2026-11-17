@@ -278,7 +278,7 @@
            (case d
              ((ldefn m ps a b)
               (case ps
-                ((objs xs)
+                ((objs & xs)
                  (if (eq (length es) (add 2 (add m (length xs))))
                    (bindO (allSomeT (mapT (lam ((i T)) (itype ovars (at es (add 2 i)))) (range m)))
                      (lam ((th T))
@@ -2200,11 +2200,11 @@
         (case acc ((OForms.nothing) OForms.nothing)
           ((OForms.just fs)
            (case fs
-             ((formList last items)
+             ((formList last & items)
               (case (readDocument source) ((ODoc.nothing) OForms.nothing)
                 ((ODoc.just d)
                  (case d
-                   ((document v xs)
+                   ((document v & xs)
                     (if
                       (or (and (eq v 0) (lt 1 (length sources)))
                         (and (lt 0 (Items.length items)) (lt last v)))
@@ -2261,9 +2261,9 @@
     (case st
       ((reading G dd table fs bad)
        (case dd
-         ((results dn dds)
+         ((results dn & dds)
           (case fs
-            ((formList w items)
+            ((formList w & items)
              (let* ((v T (p1 p)) (f T (if (lt 3 v) (withNames (children table) (p2 p)) (p2 p))))
                (cond ((isSome bad) st)
                  ((and (lt 3 v) (headed (p2 p) (quote (0 definition))))
@@ -2318,14 +2318,14 @@
               ((requestOk q)
                (case acc ((readBad why name) acc)
                  ((readOk qs)
-                  (case qs ((requests w dw xs) (readOk (requests w dw (cons q xs)))))))))))
+                  (case qs ((requests w dw & xs) (readOk (requests w dw (cons q xs)))))))))))
         (readOk (requests v dd (nil Request)))
         (range (length names)))))
   (defn readSources ((gt Ts) (defs Ts) (ds (List LDefn)) (sources Ts)) Read
     (case (readDocuments sources) ((OForms.nothing) (readBad 0 (node 0 (nil T))))
       ((OForms.just fs)
        (case fs
-         ((formList v items)
+         ((formList v & items)
           (let*
             ((names Ts (ItemOut.map (lam ((p TPair)) (theoremName (p2 p))) items))
              (twice T (firstRepeated (if (lt 3 v) (cons (quote (0 Nat)) names) names))))
@@ -2341,7 +2341,7 @@
                 ((reading G dd table out bad)
                  (if (isSome bad) (readBad 8 (get bad))
                    (case out
-                     ((formList w theorems)
+                     ((formList w & theorems)
                       (if (eq (Items.length theorems) 0) (readBad 0 (node 0 (nil T)))
                         (readTheorems v G gt defs dd theorems))))))))))))))
 
@@ -2380,9 +2380,9 @@
           (case a
             ((mkThm ar c h f)
              (case c
-               ((objs g)
+               ((objs & g)
                 (case h
-                  ((terms hyps)
+                  ((terms & hyps)
                    (F.prove (connectivesAt defs)
                      ((snd
                         (readScript w eb gt defs (children os) thms script manner (nil T)
@@ -2398,9 +2398,9 @@
     (case a
       ((mkThm ar c h f)
        (case c
-         ((objs g)
+         ((objs & g)
           (case h
-            ((terms hyps)
+            ((terms & hyps)
              (let*
                ((lr TPair
                   (case (eqParts f) ((OTPair.just lr) lr) ((OTPair.nothing) (pr f (ttL o)))))
@@ -2440,22 +2440,22 @@
     (if (and (lt 1 (arity cache)) (and (eq (arity (child cache 0)) 0) (eq (child cache 0) v)))
       (children (child cache 1))
       (nil T)))
-  (defn declaredNames ((dd Results)) Ts (case dd ((results dn dds) (children dn))))
+  (defn declaredNames ((dd Results)) Ts (case dd ((results dn & dds) (children dn))))
   ; The constants with the definitions a development declares, each checked with those before
   ; it, as the reading of the development found them.
   (defn declaredGlobals ((G Globals) (dd Results)) Globals
     (case dd
-      ((results dn dds)
+      ((results dn & dds)
        (case (checkDev G (nil Entry) dds) ((ODevState.nothing) G)
          ((ODevState.just st) (case st ((devState G2 el) G2)))))))
   ; The certificate of a development: its results with the declarations of its definitions, under
   ; their names, after the connectives' rules and before the theorems' declarations.
   (defn certified ((v T) (dd Results) (a Results)) Results
     (case dd
-      ((results dn dds)
+      ((results dn & dds)
        (if (isEmpty (children dn)) a
          (case a
-           ((results ns ds)
+           ((results ns & ds)
             (let eb T (entryBase v)
               (results
                 (node 0
@@ -2736,7 +2736,7 @@
      (uses T))
     Progress
     (case el1
-      ((entries E1)
+      ((entries & E1)
        (let*
          ((ok T (lt how 3))
           (ds1 (List Decl) (Decls.append ds (Decls.single (declLang (requestThm q) d1))))
@@ -2840,9 +2840,9 @@
     (case st ((stuck why name fs items uses) st)
       ((proving a el fs aligned items uses)
        (case a
-         ((results ns ds)
+         ((results ns & ds)
           (case el
-            ((entries E)
+            ((entries & E)
              (let* ((thms Ts (sourceNames v (children ns))) (here T (at old (length thms))))
                (if
                  (and aligned
@@ -2875,7 +2875,7 @@
       ((readBad why name) (node 0 (l3 (failure why name) cache noNode)))
       ((readOk qs)
        (case qs
-         ((requests v dd xs)
+         ((requests v dd & xs)
           (let*
             ((G Globals (declaredGlobals (globalsFor v ds) dd))
              (o T (add (LD.length lib) (LD.length ds)))
@@ -2912,9 +2912,9 @@
        (case st
          ((trState gt ds)
           (case gt
-            ((ktys gs)
+            ((ktys & gs)
              (case ds
-               ((ldefns xs)
+               ((ldefns & xs)
                 (resumeWith gs (children (child bundle 1)) xs (children sources) cache
                   (children (child old 1))
                   (equal old bundle)))))))))))
@@ -2969,11 +2969,11 @@
     (case (readSources gt names ds sources) ((readBad why name) 0)
       ((readOk qs)
        (case qs
-         ((requests v dd xs)
+         ((requests v dd & xs)
           (decode Results saved
             (lam ((a Results))
               (case a
-                ((results ns decls)
+                ((results ns & decls)
                  (let* ((eb T (entryBase v)) (dn Ts (declaredNames dd)) (d T (length dn)))
                    (if
                      (and (equalTs (take d (drop eb (children ns))) dn)
@@ -2992,9 +2992,9 @@
        (case st
          ((trState gt ds)
           (case gt
-            ((ktys gs)
+            ((ktys & gs)
              (case ds
-               ((ldefns xs)
+               ((ldefns & xs)
                 (replayWith gs (children (child bundle 1)) xs (children sources) saved))))))))))
 
   ; The version of the last document of a development that the program's statements read, which
@@ -3005,9 +3005,9 @@
        (case st
          ((trState gt ds)
           (case gt
-            ((ktys gs)
+            ((ktys & gs)
              (case ds
-               ((ldefns xs)
+               ((ldefns & xs)
                 (case (readSources gs (children (child bundle 1)) xs (children sources))
                   ((readBad why name) (failure why name))
-                  ((readOk qs) (case qs ((requests v dd ys) (some v)))))))))))))))
+                  ((readOk qs) (case qs ((requests v dd & ys) (some v)))))))))))))))

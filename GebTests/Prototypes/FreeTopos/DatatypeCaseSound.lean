@@ -1386,6 +1386,26 @@ def metaFun (K : Kit) : Option Term := metaFunAt (v 0) K
 metadata's function. -/
 def ctorFolded (P : Prog) : Prog := { P with folded := P.folded ++ ["Datatype.clauseCtor"] }
 
+/-- A property of present clause metadata, in {name}`partsCtx` after the clause is introduced:
+decide the clause's length first, then the outer guards of its presence. The guards' individual
+field checks need not be evaluated to know the shape of the metadata they permit. -/
+def metaPresentCases (K : Kit) (f : Term) (h : ℕ) (k : Deducer) : Deducer :=
+  let lengthTest (Γ : List Tree) : Term := eqL
+    (pc K.P "Prelude.length" [pc K.P "Datatype.elems" [atPos partsCtx.length Γ]])
+    (leafT (numeral 2))
+  let cases : ℕ → Deducer := Nat.rec (K.orFalse h k) fun _ rec Γ Φ ψ ↦
+    (K.hypFalse h Γ Φ ψ).orElse fun _ ↦ do
+      let body := Term.app (sh (Γ.length - partsCtx.length) f) (atPos partsCtx.length Γ)
+      let (t, _) ← evalRw K.G K.E (K.rules Φ) .head Γ Φ body
+      let some X := (blocking t).find? fun X ↦
+          let ty := Internal.typeIn K.G 0 Γ X
+          ty = some bitsTy ∨ ty = some bitTy
+        | k Γ Φ ψ
+      if Internal.typeIn K.G 0 Γ X = some bitTy then K.bitCase X rec rec Γ Φ ψ
+      else K.listCase bitTy X rec rec Γ Φ ψ
+  let cases := cases 12
+  decideIn K lengthTest cases cases
+
 set_option linter.unusedVariables false in
 /-- The metadata's function of the clauses' parts ({name}`metaFun`) satisfies the hypothesis of
 {name}`metasShaped` ({name}`metaEach`), in the parts' context: the presence at a clause split at
@@ -1398,7 +1418,7 @@ def metaStepOk (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let some f := metaFun K | dbgTrace "metaStepOk: no metadata function" fun _ ↦ none
     let a : Internal.Thm := ⟨0, partsCtx, [], metaEach K.P f⟩
     let some d := (dAllI L <| dImpI L <| fun Γ Φ ψ ↦
-        K.splitHyp (Φ.length - 1) (linkK K "metaStepOk: a case" (K.solve 6)) 14 Γ Φ ψ)
+        metaPresentCases K f (Φ.length - 1) (linkK K "metaStepOk: a case" (K.solve 6)) Γ Φ ψ)
         a.ctx a.hyps a.concl
       | dbgTrace "metaStepOk: not proved" fun _ ↦ none
     pure (a, d))

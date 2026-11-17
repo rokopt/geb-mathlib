@@ -727,8 +727,9 @@
   (data LDefns (ldefns & LDefn))
   (data TrState (trState KTys LDefns))
   (import (Option TrState) as OTrState)
-  (defn stTypes ((st TrState)) Ts (case st ((trState kg kd) (case kg ((ktys xs) xs)))))
-  (defn stDefns ((st TrState)) (List LDefn) (case st ((trState kg kd) (case kd ((ldefns xs) xs)))))
+  (defn stTypes ((st TrState)) Ts (case st ((trState kg kd) (case kg ((ktys & xs) xs)))))
+  (defn stDefns ((st TrState)) (List LDefn)
+    (case st ((trState kg kd) (case kd ((ldefns & xs) xs)))))
   ; the bindings and images of optional values into optional states, as the base binds and maps
   ; optional trees
   (defn bindSS ((m OTrState.Maybe) (f (Arrow TrState OTrState.Maybe))) OTrState.Maybe
@@ -763,7 +764,7 @@
   ; sides' translations, in the translation of its context
   (data GEqn (geqn T T T))
   (data GThm (gthm KTys GEqn))
-  (defn gthmCtx ((th GThm)) Ts (case th ((gthm kc q) (case kc ((ktys xs) xs)))))
+  (defn gthmCtx ((th GThm)) Ts (case th ((gthm kc q) (case kc ((ktys & xs) xs)))))
   (defn gthmEqn ((th GThm)) GEqn (case th ((gthm kc q) q)))
   (defn geqnLhs ((q GEqn)) T (case q ((geqn a l r) l)))
   (defn geqnRhs ((q GEqn)) T (case q ((geqn a l r) r)))
