@@ -356,7 +356,7 @@ def internalVerdict (G : FreeTopos.Internal.Globals) (k : PrimIdx)
       let body := (List.range (thm.arity + env.length)).foldlM (fun e _ ↦ lfBody e) term
       let verdict := if modulo then
           (body >>= fun b ↦ decPfMod k E b env thm.hyps.length).map
-            (thm.convChecks G E)
+            (thm.convChecks G E [])
         else (body >>= fun b ↦ decPf k b env thm.hyps.length).map
             (thm.checks G E)
       match verdict with
@@ -376,7 +376,7 @@ def runGoal (timeout : UInt64) (d : Dev) (S : Sig) (g : Goal) (modulo select : B
   let usable := fun c ↦ !(modulo && redundantModRules.contains c) && (!select || rel c)
   let decl := problem g.name names S rs usable [] g.type
   let t₀ ← IO.monoMsNow
-  let r ← Canonical.canonical decl timeout 1
+  let r ← Canonical.canonical decl timeout 1 false
   let t₁ ← IO.monoMsNow
   let regime := (if modulo then "modulo rules" else "pure LF") ++
     (if select then ", relevant constants" else "")

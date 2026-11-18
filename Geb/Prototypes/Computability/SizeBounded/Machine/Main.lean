@@ -41,7 +41,7 @@ mentions {name}`Turing.MultiTapeTM.ComputableInTimeAndSpaceOfLength`, which depe
 
 # References
 
-* {cite}`Mazzanti2016`
+* {citeKey}`Mazzanti2016`
 
 # Tags
 
@@ -70,7 +70,7 @@ theorem isPolyBounded_time (e : SOf 1) : IsPolyBounded (time e) :=
 
 /-- The meaning of a unary expression is computable by a multi-tape machine in
 polynomial time and linear space: the machine reading of
-{cite}`Mazzanti2016` Theorem 5.7, by the compiled program of the expression
+{citeKey}`Mazzanti2016` Theorem 5.7, by the compiled program of the expression
 rather than the paper's Theorem 5.3 encoding into a single recursion. -/
 theorem computableInTimeAndSpace_sem (e : SOf 1) :
     ∃ c d : ℕ, ComputableInTimeAndSpaceOfLength (fun w ↦ e.sem ![w]) (.refl _) (.refl _)

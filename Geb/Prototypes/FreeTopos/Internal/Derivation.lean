@@ -38,7 +38,7 @@ codomain of a coequalizer's projection, with its instance at the projection's im
 the domain; an equation by a certificate of the combinators that proves the sequent it compiles to;
 and a formula under hypotheses by a certificate that proves the sequent its theorem compiles to
 ({lit}`Thm.seq`), the rule by which the language is complete. These rules are the basic axioms and
-rules of a local set theory ({cite}`RuizHernandezSolorzano2021`, Section 3.2), a formula's
+rules of a local set theory ({citeKey}`RuizHernandezSolorzano2021`, Section 3.2), a formula's
 comprehension the abstraction of the formula and membership application, with the extensionality of
 every exponential in place of that of power types, and with induction. The rewriting takes its terms
 from the term it rewrites, so that a derivation names no term but the steps of its inductions, the
@@ -92,15 +92,15 @@ variables ({lit}`childCtxs`), a traversal of each hypothesis. A rewriting adds n
 that within one every hypothesis is weakened past the same variables: {lit}`checkFast` rewrites
 under the hypotheses as they were stated with the number of the variables, and weakens a
 hypothesis where the rewriting by an equation among the hypotheses reads it, a delayed renaming in
-the manner of explicit substitutions ({cite}`AbadiCardelliCurienLevy1991`). Its proving is the
+the manner of explicit substitutions ({citeKey}`AbadiCardelliCurienLevy1991`). Its proving is the
 checker's. The two are proved equal, and the attribute {lit}`csimp` replaces the checker by it in
 compiled code, so that the proofs about the checker are unchanged and its evaluation is the fast
 one's.
 
 ## References
 
-* {cite}`RuizHernandezSolorzano2021`
-* {cite}`AbadiCardelliCurienLevy1991`
+* {citeKey}`RuizHernandezSolorzano2021`
+* {citeKey}`AbadiCardelliCurienLevy1991`
 
 ## Tags
 

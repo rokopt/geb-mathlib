@@ -206,7 +206,7 @@ no_double_blank \
 # two `set_option doc.verso true` lines, one with its `in` suffix and
 # one with a trailing comment, the
 # `Lean.DocString.Syntax` import and the `GebMeta` meta import are
-# deleted; a `{cite}` role becomes mathlib's `[Key]` citation form,
+# deleted; a `{citeKey}` role becomes mathlib's `[Key]` citation form,
 # other roles become bare code spans, an escaped bracket becomes the
 # bare bracket; and the mathematics between them is byte-identical.
 mkdir -p fork19
@@ -215,17 +215,17 @@ module
 
 public import Mathlib.Foo.Base
 import Lean.DocString.Syntax
-meta import GebMeta  -- shake: keep; supplies the cite docstring role
+meta import GebMeta  -- shake: keep; supplies the citeKey docstring role
 
 set_option doc.verso true in
 /-! # A literate module
 
-{name}`Nat` and {lit}`x ↦ x`, citing {cite}`Key2001` and \[Key2002\].
+{name}`Nat` and {lit}`x ↦ x`, citing {citeKey}`Key2001` and \[Key2002\].
 -/
 
 set_option doc.verso true  -- checked docstrings
 
-/-- The successor, per {cite}`Key2001`. -/
+/-- The successor, per {citeKey}`Key2001`. -/
 def a (n : Nat) : Nat := n + 1
 EOF
 bash "$SCRIPT" Geb/Mathlib/Foo/Lit.lean fork19 >/dev/null

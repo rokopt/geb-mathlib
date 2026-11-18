@@ -32,7 +32,7 @@ from freshly inserted cells, independently of how a concrete runtime allocates t
 
 ## References
 
-* {cite}`DeFalco2010`, Definitions 5.1 and 5.2 and Proposition 5.3.
+* {citeKey}`DeFalco2010`, Definitions 5.1 and 5.2 and Proposition 5.3.
 
 ## Tags
 

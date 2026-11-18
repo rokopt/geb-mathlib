@@ -23,7 +23,7 @@ its clauses and the source form, each checked after the statements of the theore
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

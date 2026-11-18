@@ -15,7 +15,7 @@ set_option doc.verso true in
 /-!
 # The bootstrap kernel
 
-The kernel language of the bootstrap is System T {cite}`Goedel1958` over rose trees with
+The kernel language of the bootstrap is System T {citeKey}`Goedel1958` over rose trees with
 natural-number labels: simple types built from the one base type of trees by the unit type,
 products, function types and lists; λ-terms with de Bruijn indices; quoted trees, a
 conditional on labels, lists with their right fold, the fold of trees and the iteration of a
@@ -78,8 +78,8 @@ types, denotes what {lit}`infer` computes.
 
 ## References
 
-* {cite}`Goedel1958`
-* {cite}`GirardLafontTaylor1989`, Section 7.4.2, for the functions System T defines.
+* {citeKey}`Goedel1958`
+* {citeKey}`GirardLafontTaylor1989`, Section 7.4.2, for the functions System T defines.
 
 ## Tags
 

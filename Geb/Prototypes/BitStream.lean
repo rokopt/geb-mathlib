@@ -76,9 +76,9 @@ formalize the W-type, M-type, and finite-observation comparisons.
 
 ## References
 
-* {cite}`GambinoKock2013`, Section 1.19 and Theorem 4.5, for finite arities
+* {citeKey}`GambinoKock2013`, Section 1.19 and Theorem 4.5, for finite arities
   and polynomial free monads.
-* {cite}`AhmanChapmanUustalu2014`, Section 4.3 and Proposition 4.5, for
+* {citeKey}`AhmanChapmanUustalu2014`, Section 4.3 and Proposition 4.5, for
   the polynomial presentation of cofree comonads.
 
 ## Tags
@@ -102,7 +102,7 @@ open PFunctor
 A polynomial {lit}`P X = Σ a, (B a → X)` is finitary when every direction
 type {lit}`B a` is finite. The set of shapes may be infinite. Over sets,
 this is equivalent to preserving filtered colimits
-({cite}`GambinoKock2013`, Section 1.19). Here every arity is zero or one. -/
+({citeKey}`GambinoKock2013`, Section 1.19). Here every arity is zero or one. -/
 def sig : PFunctor.{0, 0} where
   A := Option Bool
   B := fun a ↦ match a with
@@ -150,7 +150,7 @@ def listToW : List Bool → sig.W :=
 The related free-monad construction uses {lit}`Free P X = μ Y. (X + P Y)`:
 the extra summand supplies variable leaves. Its polynomial shapes are
 well-founded operation trees with designated variable leaves, and its
-directions are those leaves ({cite}`GambinoKock2013`, Theorem 4.5).
+directions are those leaves ({citeKey}`GambinoKock2013`, Theorem 4.5).
 Finite branching and well-foundedness make each such tree finite, so the
 free monad of a finitary polynomial is again finitary.
 
@@ -359,7 +359,7 @@ Here {lit}`Nodes t` consists of the valid finite paths in {lit}`t`, including
 the empty path to its root. These are tree positions, not just the immediate
 directions at the root. A finite bitstring of length {lit}`n` has
 {lit}`n + 1` nodes, including its terminal node; an infinite bitstream has
-one node at each natural-number depth. See {cite}`AhmanChapmanUustalu2014`,
+one node at each natural-number depth. See {citeKey}`AhmanChapmanUustalu2014`,
 Section 4.3 and Proposition 4.5, for the general construction.
 
 Thus this cofree comonad is polynomial but has countably infinite arities.

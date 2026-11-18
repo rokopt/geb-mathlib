@@ -306,11 +306,11 @@ def boundAt (l : Internal.Label) (k i : ℕ) : ℕ := match l, k with
   case natRec | listRec =>
     rcases k with _ | _ | _ | _ | k <;> mirror_simp [«Language.childBound», labelData, boundAt,
       beq_iff_eq, Nat.reduceEqDiff]
-    all_goals split <;> rfl
+    split <;> rfl
   case roseRec =>
     rcases k with _ | _ | _ | k <;> mirror_simp [«Language.childBound», labelData, boundAt,
       beq_iff_eq, Nat.reduceEqDiff]
-    all_goals split <;> rfl
+    split <;> rfl
   all_goals mirror_simp [«Language.childBound», labelData, boundAt, beq_iff_eq, Nat.reduceEqDiff]
 
 /-- A map under the binders of a child: unchanged, lifted once, or lifted twice. -/
@@ -1161,7 +1161,7 @@ theorem typeBinary_eq (G : Internal.Globals) (n : ℕ) (l : Label) (hl : (labelD
   case eq =>
     type_simp [«Language.typeBinary», h, h']
     rcases w Γ with _ | a <;> rcases w' Γ with _ | b <;> type_simp []
-    all_goals simp [eq_comm]
+    simp [eq_comm]
   all_goals type_simp [«Language.typeBinary»]
 
 /-- The mirror's type of a node of three children, at related inferences of the children. -/

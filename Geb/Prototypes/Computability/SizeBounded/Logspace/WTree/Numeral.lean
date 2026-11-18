@@ -42,7 +42,7 @@ the order.
 
 # References
 
-* {cite}`Elias1975`
+* {citeKey}`Elias1975`
 
 # Tags
 

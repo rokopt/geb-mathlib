@@ -14,10 +14,10 @@ set_option doc.verso true in
 
 The decorations of kernel programs by elementary affine logic, which bound the duplication
 of λ-values so that a program typable in the discipline reduces with optimal sharing on an
-interaction net {cite}`BaillotCoppolaDalLago2011`: the checker of the certificates that the
+interaction net {citeKey}`BaillotCoppolaDalLago2011`: the checker of the certificates that the
 untrusted search {lit}`scripts/eal/eal.py` finds.
 
 ## References
 
-* {cite}`BaillotCoppolaDalLago2011`
+* {citeKey}`BaillotCoppolaDalLago2011`
 -/

@@ -7,7 +7,7 @@ module
 
 public import Mathlib.Data.W.Basic
 public import Geb.Mathlib.Data.FinEnum
-meta import GebMeta  -- shake: keep; supplies the cite docstring role
+meta import GebMeta  -- shake: keep; supplies the citeKey docstring role
 
 set_option doc.verso true in
 /-!
@@ -57,8 +57,8 @@ proved through that reconstruction.
 
 ## References
 
-* {cite}`GambinoHyland2004`
-* {cite}`Meertens1992`
+* {citeKey}`GambinoHyland2004`
+* {citeKey}`Meertens1992`
 
 ## Tags
 
@@ -110,7 +110,7 @@ private theorem paraStep_fst {α : Type uA} {β : α → Type uB} (γ : Type uC)
 children as subtrees together with their folded values. Obtained from
 {name}`WType.elim` at the product carrier {lit}`WType β × γ`, whose
 first component reconstructs the subtree, so no new recursion is
-introduced. {cite}`Meertens1992` -/
+introduced. {citeKey}`Meertens1992` -/
 @[expose] def para {α : Type uA} {β : α → Type uB} (γ : Type uC)
     (fγ : (Σ a : α, β a → WType β × γ) → γ) : WType β → γ :=
   fun w ↦ (elim (WType β × γ) (paraStep γ fγ) w).2

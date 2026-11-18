@@ -27,7 +27,7 @@ the soundness at their elements, the binding of a name last.
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

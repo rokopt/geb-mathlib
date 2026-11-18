@@ -23,7 +23,7 @@ structural recursion, the case analysis's chain ({lit}`chainWith`) at the recurs
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

@@ -12,7 +12,7 @@ set_option doc.verso true in
 /-!
 # Mazzanti's algebra of non-size-increasing bitstring functions
 
-The syntax of the function algebra {lit}`S(sbs₀, sbs₁)` of {cite}`Mazzanti2016`
+The syntax of the function algebra {lit}`S(sbs₀, sbs₁)` of {citeKey}`Mazzanti2016`
 over bitstrings, together with its interpretation and the theorem that every
 expression denotes a non-size-increasing function. The base functions are the
 constants, the projections and the two size-bounded binary successors
@@ -22,7 +22,7 @@ substitution and simultaneous recursion on notation. Unlike bounded recursion on
 notation, whose side condition {name}`Cobham.RecBounded` enforces, simultaneous
 recursion here carries no condition: every admissible tree of the signature is an
 expression of the algebra, and its meaning is non-size-increasing by
-{lit}`nsi_eval`, the bitstring form of {cite}`Mazzanti2016` Lemma 2.1.
+{lit}`nsi_eval`, the bitstring form of {citeKey}`Mazzanti2016` Lemma 2.1.
 
 The paper works over the natural numbers in binary notation. Over
 {lit}`List Bool` both successors are injective, so the guard {lit}`x > 0` the
@@ -90,8 +90,8 @@ arity rather than a nullary shape under a substitution, which spares the
 
 # References
 
-* {cite}`Mazzanti2016`
-* {cite}`Clote1999`
+* {citeKey}`Mazzanti2016`
+* {citeKey}`Clote1999`
 
 # Tags
 
@@ -175,7 +175,7 @@ instance sigFinitary : sig.toPFunctor.Finitary
 @[expose] def stepDir {b : ℕ} (i : Bool) (l : Fin b) : Fin b ⊕ (Fin b ⊕ Fin b) :=
   .inr (if i then .inr l else .inl l)
 
-/-- The size-bounded successor of {cite}`Mazzanti2016` § 2 over bitstrings:
+/-- The size-bounded successor of {citeKey}`Mazzanti2016` § 2 over bitstrings:
 {lit}`b` prepended to {lit}`x` when the result is no longer than {lit}`y`, and
 {lit}`x` otherwise. -/
 @[expose] def sbsSem (b : Bool) (x y : List Bool) : List Bool :=
@@ -259,7 +259,7 @@ theorem fst_eval (z : S) : (eval z).1 = arity z :=
 
 /-- A function is non-size-increasing with constant {lit}`k`: whenever every
 argument has length at most {lit}`m`, the value has length at most
-{lit}`max m k`. This is {cite}`Mazzanti2016` § 2's
+{lit}`max m k`. This is {citeKey}`Mazzanti2016` § 2's
 {lit}`|f(x)| ≤ max(|x|, k)` with the maximum of the argument lengths replaced
 by any bound on them. -/
 @[expose] def NSI {n : ℕ} (k : ℕ) (f : Sem n) : Prop :=
@@ -323,7 +323,7 @@ theorem length_stepEnv_le {a b : ℕ} (v : List Bool) (vals : Fin b → List Boo
       (fun i ↦ by unfold stepEnv; rw [Fin.cons_succ, Fin.append_right]; exact hx i) s)
 
 /-- Simultaneous recursion on notation preserves the property, with the maximum of
-the base and step constants: the bitstring form of {cite}`Mazzanti2016` Lemma 2.1's
+the base and step constants: the bitstring form of {citeKey}`Mazzanti2016` Lemma 2.1's
 recursion case. The recursion variable is slot zero and the parameters are the
 rest, as in {lit}`evalValue`. -/
 theorem nsi_srn {a b kg kh : ℕ} {g : Fin b → Sem a} {h : Bool → Fin b → Sem (b + a + 1)}
@@ -402,7 +402,7 @@ theorem nsi_evalValue (a : Shape) (c : Direction a → Σ i, Sem i)
         (Nat.le_max_right _ _)) (nsi_transport _ (hk (.inr (.inr l))))
 
 /-- Every expression denotes a non-size-increasing function, with the constant
-{lit}`nsiConst` reads off its syntax: the bitstring form of {cite}`Mazzanti2016`
+{lit}`nsiConst` reads off its syntax: the bitstring form of {citeKey}`Mazzanti2016`
 Lemma 2.1 for {lit}`S(sbs₀, sbs₁)`. By structural induction on the slice W-type,
 each node being {lit}`nsi_evalValue` at its children. -/
 theorem nsi_eval : ∀ e : S, NSI (nsiConst e.1) (eval e).2 :=

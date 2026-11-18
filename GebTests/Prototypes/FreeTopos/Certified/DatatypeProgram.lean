@@ -34,7 +34,7 @@ before it, in the order of their search ({lit}`GebTests.Prototypes.FreeTopos.Cer
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

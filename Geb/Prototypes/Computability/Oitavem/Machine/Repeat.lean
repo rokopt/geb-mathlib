@@ -61,7 +61,7 @@ run is evaluated through them.
 
 ## References
 
-* {cite}`Oitavem2010`, Definition 3.1: string product and normal composition.
+* {citeKey}`Oitavem2010`, Definition 3.1: string product and normal composition.
 
 ## Tags
 

@@ -27,7 +27,7 @@ used to interpret the roots and variable occurrences of interaction-calculus ter
 
 ## References
 
-* {cite}`DeFalco2010`, Sections 3 and 4.
+* {citeKey}`DeFalco2010`, Sections 3 and 4.
 
 ## Tags
 

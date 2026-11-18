@@ -13,7 +13,7 @@ set_option doc.verso true in
 /-!
 # The logarithmic-space representation of values
 
-The machine of {cite}`Kristiansen2005` Theorem 4.7 holds each register as a
+The machine of {citeKey}`Kristiansen2005` Theorem 4.7 holds each register as a
 status bit, a word of bounded length and the length of an end segment of the
 input in binary. The representation here is the pair of a word and an end
 segment length with no status bit: a value {lit}`⟨u, l⟩` denotes the word
@@ -67,7 +67,7 @@ word part requires successor-freeness.
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

@@ -13,15 +13,15 @@ set_option doc.verso true in
 # Canonical LF modulo rewriting
 
 The extension of canonical LF by rewrite rules on its constants, the λΠ-calculus modulo of
-{cite}`CousineauDowek2007` restricted to canonical forms: types are compared after
+{citeKey}`CousineauDowek2007` restricted to canonical forms: types are compared after
 normalization by the rules, so that a term whose type holds of another by computation checks
 against it. It is the extension that the let definitions with reduction rules of
-{cite}`NormanAvigad2025`, Section 3.1, make to LF: a rule's left side is a constant applied to
+{citeKey}`NormanAvigad2025`, Section 3.1, make to LF: a rule's left side is a constant applied to
 patterns, its right side a canonical term in the pattern variables, applied to arguments where a
 variable is of a function type.
 
 A rule declares its pattern variables as a context. A pattern is a pattern variable, applied to no
-argument whatever its type, as in the rules of {cite}`NormanAvigad2025`, or a constant applied to
+argument whatever its type, as in the rules of {citeKey}`NormanAvigad2025`, or a constant applied to
 patterns; a variable that occurs twice matches equal expressions. Matching is first order and
 binds each variable to an expression of the context the matched expression is in. The right side
 is instantiated by hereditary substitution of the bound expressions for the pattern variables,
@@ -36,7 +36,7 @@ neither terminating nor confluent for the check to be sound, only to be complete
 
 A rule is well typed ({lit}`Rule.ok`) when its context is, its left side, its pattern variables
 η-expanded ({lit}`eta`), synthesizes a type, and its right side checks against that type. The
-η-expansion of a head at a simple type ({cite}`WatkinsEtAl2002`, Definition 15) abstracts over
+η-expansion of a head at a simple type ({citeKey}`WatkinsEtAl2002`, Definition 15) abstracts over
 one variable for each argument the type takes and applies the head to their η-expansions.
 
 ## Main definitions
@@ -51,9 +51,9 @@ one variable for each argument the type takes and applies the head to their η-e
 
 ## References
 
-* {cite}`CousineauDowek2007`
-* {cite}`NormanAvigad2025`, Section 3.1.
-* {cite}`WatkinsEtAl2002`, Definition 15, for η-expansion.
+* {citeKey}`CousineauDowek2007`
+* {citeKey}`NormanAvigad2025`, Section 3.1.
+* {citeKey}`WatkinsEtAl2002`, Definition 15, for η-expansion.
 
 ## Tags
 

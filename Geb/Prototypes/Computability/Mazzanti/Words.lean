@@ -32,7 +32,7 @@ the empty word.
 
 ## References
 
-* {cite}`Mazzanti2016`, Section 2, definition of non-size-increase.
+* {citeKey}`Mazzanti2016`, Section 2, definition of non-size-increase.
 
 ## Tags
 

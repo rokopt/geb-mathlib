@@ -13,7 +13,7 @@ set_option doc.verso true in
 # The η-expansion of atomic terms
 
 The η-expansion of an atomic term checks against the type the term synthesizes
-({cite}`WatkinsEtAl2002`, Lemma 36): a head whose classifier instantiates along a spine to a
+({citeKey}`WatkinsEtAl2002`, Lemma 36): a head whose classifier instantiates along a spine to a
 type, η-expanded at the type's erasure, is a canonical term of the type. The proof is by
 induction on the erasure. At a product, the expansion abstracts over the domain, and its body
 is the expansion at the codomain of the head applied to the spine and to the expansion of the
@@ -35,7 +35,7 @@ only to spines that fill its type ({lit}`judge_appliedAt`).
 
 ## References
 
-* {cite}`WatkinsEtAl2002`, Section 4.6.
+* {citeKey}`WatkinsEtAl2002`, Section 4.6.
 
 ## Tags
 
@@ -141,7 +141,7 @@ theorem etaLong_arrow_lam (α₁ α₂ : SimpleTy) (b : Expr) :
   rw [EtaLong, etaLong_node]
   rfl
 
-/-- The judged expressions are η-long ({cite}`HarperLicata2007`, Section 2.2): in an expression
+/-- The judged expressions are η-long ({citeKey}`HarperLicata2007`, Section 2.2): in an expression
 judged in a context of types of the shape of types, every occurrence of a variable is applied
 to a spine that fills the erasure of its type, and a term checked against a type of the shape is
 η-long at the type's erasure. -/
@@ -282,7 +282,7 @@ theorem spine_append (Γ : Ctx) (c : Expr) (L₁ L₂ : List (Expr × (Ctx → M
   List.foldlM_append
 
 /-- The η-expansion of an atomic term checks against the type it synthesizes
-({cite}`WatkinsEtAl2002`, Lemma 36): where a head's classifier instantiates along a spine to
+({citeKey}`WatkinsEtAl2002`, Lemma 36): where a head's classifier instantiates along a spine to
 a type, in a context of types of the shape of types, the head applied to the spine, η-expanded at
 the type's erasure, checks against the type. -/
 theorem judge_eta {sig : Sig} (hsig : sig.ok = true) :

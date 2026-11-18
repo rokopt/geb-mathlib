@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.PresheafIRUniv.Basic
-meta import GebMeta  -- shake: keep; supplies the cite docstring role
+meta import GebMeta  -- shake: keep; supplies the citeKey docstring role
 
 set_option doc.verso true in
 /-!
@@ -48,7 +48,7 @@ naturality, and {lit}`toLevels_objRestr_cmp` that its image restricts to
 
 The surviving {lit}`Σ (f₀ : X → Z 0)` is the {lit}`δ` constructor of
 inductive-recursive codes, {lit}`⟦δ A F⟧ (U, T) = Σ (g : A → U), ⟦F (T ∘ g)⟧ (U, T)`
-({cite}`DybjerSetzer2003`, and {cite}`GhaniNordvallForsbergMalatesta2015` for
+({citeKey}`DybjerSetzer2003`, and {citeKey}`GhaniNordvallForsbergMalatesta2015` for
 its functorial reading on {lit}`Fam(C)`): read with {lit}`X` the arity and
 {lit}`Z 0` the universe, the transcription of a slice polynomial functor is
 the large-IR code whose continuation is that functor applied to the decoded
@@ -90,9 +90,9 @@ family, rather than the slice functor itself.
 
 ## References
 
-* {cite}`DybjerSetzer2003`
-* {cite}`GhaniNordvallForsbergMalatesta2015`
-* {cite}`Weber2007`
+* {citeKey}`DybjerSetzer2003`
+* {citeKey}`GhaniNordvallForsbergMalatesta2015`
+* {citeKey}`Weber2007`
 
 ## Tags
 

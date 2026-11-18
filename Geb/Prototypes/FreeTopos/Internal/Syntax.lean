@@ -13,7 +13,7 @@ set_option doc.verso true in
 # The terms of the internal language
 
 The terms of the internal language of an elementary topos with data objects, the
-Mitchell–Bénabou language of Section VI.5 of {cite}`MacLaneMoerdijk1992`: the typed λ-calculus
+Mitchell–Bénabou language of Section VI.5 of {citeKey}`MacLaneMoerdijk1992`: the typed λ-calculus
 whose types are objects of the topos, with the element of the terminal object, pairs and their
 components, abstraction and application, the application of a primitive arrow of the
 combinators, the folds of the natural numbers, list and rose-tree objects, the application of a
@@ -25,8 +25,8 @@ variable the index zero. The start and the step of the folds of the natural numb
 objects are terms of the fold's context, the step's extended by the recursion's value and, for a
 list, the element before it, and the step of a rose-tree fold a term of the fold's context
 extended by the pair of a label and the list of the children's values, so that a fold may have
-parameters ({cite}`EscardoSimpson2025`, Proposition 2.3;
-{cite}`GoncharovMiliusSchroderTsampasUrbat2022`, the appendix's induction with parameters).
+parameters ({citeKey}`EscardoSimpson2025`, Proposition 2.3;
+{citeKey}`GoncharovMiliusSchroderTsampasUrbat2022`, the appendix's induction with parameters).
 
 ## Main definitions
 
@@ -37,9 +37,9 @@ parameters ({cite}`EscardoSimpson2025`, Proposition 2.3;
 
 ## References
 
-* {cite}`MacLaneMoerdijk1992`, Section VI.5, for the Mitchell–Bénabou language.
-* {cite}`EscardoSimpson2025`, Proposition 2.3, for the folds with parameters.
-* {cite}`GoncharovMiliusSchroderTsampasUrbat2022`, the appendix's induction with parameters, for
+* {citeKey}`MacLaneMoerdijk1992`, Section VI.5, for the Mitchell–Bénabou language.
+* {citeKey}`EscardoSimpson2025`, Proposition 2.3, for the folds with parameters.
+* {citeKey}`GoncharovMiliusSchroderTsampasUrbat2022`, the appendix's induction with parameters, for
   the folds of rose trees with parameters.
 
 ## Tags

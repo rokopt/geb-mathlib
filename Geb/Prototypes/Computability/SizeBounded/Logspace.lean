@@ -19,7 +19,7 @@ set_option doc.verso true in
 /-!
 # The logspace subalgebra
 
-Index for the modules on {cite}`Kristiansen2005`'s algebra
+Index for the modules on {citeKey}`Kristiansen2005`'s algebra
 {lit}`[I, C_W; comp, simn]` as the successor-free subalgebra of
 {name}`Geb.SizeBounded.S`: its expressions, the end-segment lemma, the
 interpretation on the logarithmic-space representation of values, and the

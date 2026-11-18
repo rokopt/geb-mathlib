@@ -24,7 +24,7 @@ one closed wire, which the net must retain.
 
 ## References
 
-* {cite}`DeFalco2010`, Section 2 and Definition 4.1, describe gluing by following wires
+* {citeKey}`DeFalco2010`, Section 2 and Definition 4.1, describe gluing by following wires
   through identified boundary ports and retaining closed wire components.
 
 ## Tags

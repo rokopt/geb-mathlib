@@ -12,7 +12,7 @@ set_option doc.verso true in
 /-!
 # The judgments of canonical LF
 
-The formation judgments of Canonical LF ({cite}`HarperLicata2007`, Section 2.2, Figures 2 and 3),
+The formation judgments of Canonical LF ({citeKey}`HarperLicata2007`, Section 2.2, Figures 2 and 3),
 with the subordination relation the complete one, so that it restricts nothing. They are
 bidirectional and directed by the syntax, so that each is decided by a fold over the expression it
 classifies, one clause for each rule:
@@ -48,7 +48,7 @@ contexts and signatures (Figure 2) check each declaration in the scope of those 
 
 ## References
 
-* {cite}`HarperLicata2007`, Section 2.2 and Figures 2 and 3.
+* {citeKey}`HarperLicata2007`, Section 2.2 and Figures 2 and 3.
 
 ## Tags
 

@@ -33,7 +33,7 @@ sound ({name}`GebTests.Prototypes.FreeTopos.Datatypes.laterKeywords`).
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

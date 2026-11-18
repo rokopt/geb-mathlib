@@ -22,7 +22,7 @@ number by one is the tail, and a number exceeds another exactly when its end
 segment is the shorter. Zero is the word itself, and a comparison of two
 counters is the emptiness of one end segment dropped by the length of the
 other. This is the arithmetic a logarithmic-space machine performs on a binary
-counter bounded by the input's length, {cite}`Kristiansen2005` Theorem 4.7
+counter bounded by the input's length, {citeKey}`Kristiansen2005` Theorem 4.7
 representing such an end segment by its length in binary.
 
 Doubling, which the reading of a binary field as a number requires, is a
@@ -51,7 +51,7 @@ segment, which drops the number from its own end segment.
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

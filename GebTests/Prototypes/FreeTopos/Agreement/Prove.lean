@@ -1552,26 +1552,26 @@ theorem childRen_eq (l : Internal.Label) (m j : ℕ) (hj : j < m) (f : Tree → 
       Nat.reduceEqDiff]
   case natRec =>
     rcases m with _ | _ | _ | _ | m
-    any_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, hr, hf,
+    all_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, hr, hf,
       beq_iff_eq, Nat.reduceEqDiff]
     rcases j with _ | _ | _ | j
-    any_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, h1, hf,
+    all_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, h1, hf,
       beq_iff_eq, Nat.reduceEqDiff]
     omega
   case listRec =>
     rcases m with _ | _ | _ | _ | m
-    any_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, hr, hf,
+    all_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, hr, hf,
       beq_iff_eq, Nat.reduceEqDiff]
     rcases j with _ | _ | _ | j
-    any_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, h2, hf,
+    all_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, h2, hf,
       beq_iff_eq, Nat.reduceEqDiff]
     omega
   case roseRec =>
     rcases m with _ | _ | _ | m
-    any_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, hr, hf,
+    all_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, hr, hf,
       beq_iff_eq, Nat.reduceEqDiff]
     rcases j with _ | _ | j
-    any_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, h1, hf,
+    all_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, h1, hf,
       beq_iff_eq, Nat.reduceEqDiff]
     omega
   all_goals mirror_simp [«Prover.childRen», labelData, Internal.childRenamings, hr, hf,

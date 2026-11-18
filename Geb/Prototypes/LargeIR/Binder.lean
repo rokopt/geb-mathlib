@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.LargeIR.General
-meta import GebMeta  -- shake: keep; supplies the cite docstring role
+meta import GebMeta  -- shake: keep; supplies the citeKey docstring role
 
 set_option doc.verso true in
 /-!
@@ -25,7 +25,7 @@ is the assignment {lit}`(U, T) ↦ Σ (a : U), Σ (b : T a → U), Π (x : T a),
 whose component {lit}`b : T a → U` is contravariant in the fibre {lit}`T a`,
 so it is not a covariant functor on {lit}`Fam(Type)` with its morphisms
 proper, and the interpretation of large inductive-recursive definitions of
-{cite}`GhaniNordvallForsbergMalatesta2015` accordingly reaches it only over
+{citeKey}`GhaniNordvallForsbergMalatesta2015` accordingly reaches it only over
 {lit}`Fam(Cᵒᵖ)` or over groupoids. The repository's
 {name}`PresheafIRUniv.univPsh` met the same obstruction: its formers are
 binary, the family of codes under the binder dropped.
@@ -60,8 +60,8 @@ be natural.
 
 ## References
 
-* {cite}`GhaniNordvallForsbergMalatesta2015`
-* {cite}`DybjerSetzer2003`
+* {citeKey}`GhaniNordvallForsbergMalatesta2015`
+* {citeKey}`DybjerSetzer2003`
 
 ## Tags
 

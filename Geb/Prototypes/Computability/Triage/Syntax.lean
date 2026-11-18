@@ -32,8 +32,8 @@ These tags distinguish application from value construction without graph sharing
 
 ## References
 
-* {cite}`TreeCalculusSpecification`, triage values and rules.
-* {cite}`TreeCalculusImplementation`, branch-first OCaml evaluator.
+* {citeKey}`TreeCalculusSpecification`, triage values and rules.
+* {citeKey}`TreeCalculusImplementation`, branch-first OCaml evaluator.
 
 ## Tags
 

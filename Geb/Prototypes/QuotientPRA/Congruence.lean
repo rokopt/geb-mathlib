@@ -53,8 +53,8 @@ classes ({lit}`unit_mk_congr`).
 
 ## References
 
-* {cite}`FiorePittsSteenkamp2020`
-* {cite}`AltenkirchCapriottiDijkstraKrausNordvallForsberg2018`
+* {citeKey}`FiorePittsSteenkamp2020`
+* {citeKey}`AltenkirchCapriottiDijkstraKrausNordvallForsberg2018`
 
 ## Tags
 

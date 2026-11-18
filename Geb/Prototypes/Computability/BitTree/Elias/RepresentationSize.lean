@@ -38,7 +38,7 @@ No navigation index or random-access query bound is asserted.
 
 ## References
 
-{cite}`Navarro2016`, Chapter 1, supplies the context of compact representations and the
+{citeKey}`Navarro2016`, Chapter 1, supplies the context of compact representations and the
 multivariable little-o convention. The explicit estimates below are derived from the
 verified delta-code length formula.
 

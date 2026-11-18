@@ -37,7 +37,7 @@ normalization theorem additionally requires a simulation into this relation.
 
 ## References
 
-* {cite}`DeFalco2010`, Definition 5.2 and Corollary 5.4.
+* {citeKey}`DeFalco2010`, Definition 5.2 and Corollary 5.4.
 
 ## Tags
 

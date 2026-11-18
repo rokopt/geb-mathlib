@@ -40,8 +40,8 @@ identifies these with mathlib's explicit end. No relational parametricity axiom 
 
 ## References
 
-* {cite}`Kmett2013`
-* {cite}`NLabProfunctorAlgebra`
+* {citeKey}`Kmett2013`
+* {citeKey}`NLabProfunctorAlgebra`
 
 ## Tags
 
@@ -86,7 +86,7 @@ def dimap {X : Type u} {X' : Type v} {Y : Type w} {Y' : Type z}
 @[simp] theorem dimap_id {X : Type u} {Y : Type v} (t : P.Obj X Y) :
     P.dimap id id t = t := rfl
 
-/-- A diagonal element in the one-object sense of {cite}`NLabProfunctorAlgebra`.
+/-- A diagonal element in the one-object sense of {citeKey}`NLabProfunctorAlgebra`.
 The structure is an element of the profunctor, rather than a map out of it. -/
 abbrev Diagonal : Type (max uA uB uC (u + 1)) := (X : Type u) × P.Obj X X
 

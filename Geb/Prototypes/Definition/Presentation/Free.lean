@@ -56,7 +56,7 @@ mathlib's {lit}`Quotient.finChoice` depends on {lit}`Classical.choice`;
 
 ## References
 
-* {cite}`KellyPower1993`, for finitary monads presented by operations and equations.
+* {citeKey}`KellyPower1993`, for finitary monads presented by operations and equations.
 
 ## Tags
 

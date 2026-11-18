@@ -43,7 +43,7 @@ built the same way from the values of the globals the kernel loads.
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

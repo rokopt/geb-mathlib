@@ -13,8 +13,8 @@ set_option doc.verso true in
 # An environment machine reducing terms
 
 A reduction of the internal language's terms by evaluation in environments of values
-({cite}`Landin1964`), lazily and with each delayed value computed at most once
-({cite}`Launchbury1993`): a term is evaluated in an environment that holds a value for each of
+({citeKey}`Landin1964`), lazily and with each delayed value computed at most once
+({citeKey}`Launchbury1993`): a term is evaluated in an environment that holds a value for each of
 its variables, an abstraction to its closure, and a definition's application to its body
 evaluated in the environment of its arguments' values, so that no term is substituted into
 another as the reduction proceeds. The rules it computes are those of the base checker's
@@ -37,7 +37,7 @@ congruences at children in the term's context; the reduction is sound by that re
 not the prover's.
 
 The normal form of a value is taken by evaluation and reading back
-({cite}`BergerSchwichtenberg1991`), under its constructors, its abstractions and the steps of its
+({citeKey}`BergerSchwichtenberg1991`), under its constructors, its abstractions and the steps of its
 folds: the body of a closure and the step of a fold are evaluated in their environment extended
 by fresh variables, and normalized in the context those variables extend, by the congruences of
 the base checker, so that the values of the environment are shared with that evaluation rather
@@ -70,8 +70,8 @@ node a redex; a rewriting is taken only where the result's variables are leaves.
 
 ## References
 
-* {cite}`Landin1964`, for the evaluation of expressions in environments of closures.
-* {cite}`Launchbury1993`, for lazy evaluation that computes each delayed value at most once.
+* {citeKey}`Landin1964`, for the evaluation of expressions in environments of closures.
+* {citeKey}`Launchbury1993`, for lazy evaluation that computes each delayed value at most once.
 
 ## Tags
 

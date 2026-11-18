@@ -20,7 +20,7 @@ values of its environment's arrows ({lit}`compile_envEq`). A term's arrow is an 
 environment's object to the term's type when the environment's arrows, the primitive arrows and
 the definitions' operations are arrows ({lit}`compile_hom`). In an environment whose arrows are
 precomposed with an arrow, a term's arrow is precomposed with it ({lit}`compile_comp`), the
-naturality of the interpretation of Part I of {cite}`LambekScott1986`; its case of abstraction is
+naturality of the interpretation of Part I of {citeKey}`LambekScott1986`; its case of abstraction is
 the naturality of currying ({name}`Geb.FreeTopos.curry_comp`).
 
 ## Main definitions
@@ -38,7 +38,7 @@ the naturality of currying ({name}`Geb.FreeTopos.curry_comp`).
 
 ## References
 
-* {cite}`LambekScott1986`, Part I, for the interpretation of the typed λ-calculus in a
+* {citeKey}`LambekScott1986`, Part I, for the interpretation of the typed λ-calculus in a
   cartesian closed category.
 
 ## Tags

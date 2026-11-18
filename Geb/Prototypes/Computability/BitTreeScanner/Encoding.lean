@@ -9,7 +9,7 @@ public import Cslib.Foundations.Data.PFunctor.Free
 public import Mathlib.Control.Monad.Cont
 public import Mathlib.Data.Nat.Bits
 public import Aesop
-meta import GebMeta  -- shake: keep; supplies the cite docstring role
+meta import GebMeta  -- shake: keep; supplies the citeKey docstring role
 
 set_option doc.verso true in
 /-!
@@ -23,12 +23,12 @@ bitstrings by a prefix code in a single pass.
 A pair is spelled by the bit {lit}`true` followed by its two children's
 spellings, and a leaf by the bit {lit}`false` followed by the Elias gamma code
 of its bitstring's length plus one and then the bitstring itself. The gamma
-code of {lit}`N ≥ 1`, from {cite}`Elias1975`, is {lit}`⌊log₂ N⌋` zeros followed
+code of {lit}`N ≥ 1`, from {citeKey}`Elias1975`, is {lit}`⌊log₂ N⌋` zeros followed
 by the binary digits of {lit}`N` from the most significant, the first of which
 is a one; it is a prefix code of length {lit}`2 ⌊log₂ N⌋ + 1`, so a leaf's
 length costs a logarithmic number of bits rather than one bit per payload bit.
 The bits at which the spelling branches are those of the recursive scheme
-{cite}`Jacobson1989` § 1 states for unlabelled binary trees, {lit}`false` for
+{citeKey}`Jacobson1989` § 1 states for unlabelled binary trees, {lit}`false` for
 an absent subtree and {lit}`true` followed by the two subtrees' representations
 for a node, two bits per node; the payload of a leaf follows its bit in place.
 A tree of {lit}`p` pairs and {lit}`m` payload bits is spelled by
@@ -104,8 +104,8 @@ instance.
 
 ## References
 
-* {cite}`Elias1975`
-* {cite}`Jacobson1989`
+* {citeKey}`Elias1975`
+* {citeKey}`Jacobson1989`
 
 ## Tags
 

@@ -33,8 +33,8 @@ is: its statement mentions
 
 # References
 
-* {cite}`Kristiansen2005`
-* {cite}`Mazzanti2016`
+* {citeKey}`Kristiansen2005`
+* {citeKey}`Mazzanti2016`
 
 # Tags
 

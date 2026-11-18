@@ -40,7 +40,7 @@ in the bootstrap. It also applies to defunctionalized closures represented as da
 
 ## References
 
-* {cite}`HassanMackieSato2015`, Section 3, for the underlying interaction calculus.
+* {citeKey}`HassanMackieSato2015`, Section 3, for the underlying interaction calculus.
 
 ## Tags
 

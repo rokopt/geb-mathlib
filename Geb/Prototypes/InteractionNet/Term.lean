@@ -19,7 +19,7 @@ arities: substitution is that monad's binding operation. Equations connect roots
 of equations together with an ordered interface represents a net.
 
 These are the terms and equations of the interaction calculus, as presented in
-{cite}`HassanMackieSato2015`, Section 3. The syntax permits arbitrary occurrences of names;
+{citeKey}`HassanMackieSato2015`, Section 3. The syntax permits arbitrary occurrences of names;
 linearity is a condition on a whole configuration or rule, not on an isolated subtree.
 
 ## Main definitions
@@ -36,7 +36,7 @@ linearity is a condition on a whole configuration or rule, not on an isolated su
 
 ## References
 
-* {cite}`HassanMackieSato2015`, Section 3.
+* {citeKey}`HassanMackieSato2015`, Section 3.
 
 ## Tags
 

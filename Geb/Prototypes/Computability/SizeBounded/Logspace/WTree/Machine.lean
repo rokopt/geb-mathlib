@@ -32,7 +32,7 @@ which depends on {lit}`Classical.choice` through Cslib's
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

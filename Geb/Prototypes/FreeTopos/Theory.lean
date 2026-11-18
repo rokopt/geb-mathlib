@@ -15,9 +15,9 @@ set_option doc.verso true in
 The theory whose models are the elementary toposes with chosen structure and the natural
 numbers, list and rose-tree objects. Its sorts are the objects and the arrows. Its operations
 are the domain, the codomain, identities and composition, as in the theory of categories of
-Example 4 of {cite}`PalmgrenVickers2007`; the terminal and initial objects, binary products and
+Example 4 of {citeKey}`PalmgrenVickers2007`; the terminal and initial objects, binary products and
 coproducts, equalizers and coequalizers, exponentials and a subobject classifier, the structure
-of an elementary topos as Section 4.3 of {cite}`Goldblatt1984` defines it, each with its
+of an elementary topos as Section 4.3 of {citeKey}`Goldblatt1984` defines it, each with its
 universal morphisms; and the natural numbers object, the list object of an object, the
 rose-tree object and the rose-tree object over an object of labels, each an initial algebra with
 its structure maps and its fold.
@@ -46,9 +46,9 @@ equalizer is the monomorphism's characteristic map.
 
 ## References
 
-* {cite}`PalmgrenVickers2007`, Example 4, for the theory of categories.
-* {cite}`Goldblatt1984`, Section 4.3, for the definition of an elementary topos.
-* {cite}`GoncharovMiliusSchroderTsampasUrbat2022`, the appendix's induction with parameters, for
+* {citeKey}`PalmgrenVickers2007`, Example 4, for the theory of categories.
+* {citeKey}`Goldblatt1984`, Section 4.3, for the definition of an elementary topos.
+* {citeKey}`GoncharovMiliusSchroderTsampasUrbat2022`, the appendix's induction with parameters, for
   the fold of a rose-tree object with a parameter.
 
 ## Tags
@@ -303,7 +303,7 @@ def roseStepP (P a C S : Tree) : Tree :=
 from the product of the object of parameters {lit}`P` with {lit}`t` into {lit}`C`, by its fold
 {lit}`F` at a step: the fold into the exponential of the parameters by the curried step, whose
 arguments are the parameter, the label and the list of the children's functions each evaluated
-at the parameter, evaluated at the parameter ({cite}`GoncharovMiliusSchroderTsampasUrbat2022`,
+at the parameter, evaluated at the parameter ({citeKey}`GoncharovMiliusSchroderTsampasUrbat2022`,
 the appendix's induction with parameters). -/
 def roseRecP (F : Tree → Tree) (P a t C S : Tree) : Tree :=
   comp (ev P C) (pair (comp (F (curry (prod a (list (exp P C))) P (roseStepP P a C S))) (snd P t))

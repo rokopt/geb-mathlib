@@ -34,7 +34,7 @@ definitions, is a relation of Lean ({lit}`DRel`), and the definition's arrow rep
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

@@ -12,7 +12,7 @@ set_option doc.verso true in
 /-!
 # Kristiansen's word algebra
 
-The algebra of {cite}`Kristiansen2005` § 4 consists of constants and projections,
+The algebra of {citeKey}`Kristiansen2005` § 4 consists of constants and projections,
 closed under composition and simultaneous recursion on notation. It is the
 fragment of {name}`Geb.SizeBounded.SOf` without size-bounded successors.
 
@@ -37,7 +37,7 @@ parameters, in that order.
 
 ## References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 ## Tags
 
@@ -61,7 +61,7 @@ public section
 @[expose] def Allowed : sig.toPFunctor.W → Prop :=
   WType.elim Prop fun x ↦ AllowedShape x.1 ∧ ∀ d, x.2 d
 
-/-- Expressions of the word algebra of {cite}`Kristiansen2005` at arity {lit}`n`. -/
+/-- Expressions of the word algebra of {citeKey}`Kristiansen2005` at arity {lit}`n`. -/
 @[expose] def LOf (n : ℕ) : Type := { e : SizeBounded.SOf n // Allowed e.1.1 }
 
 /-- The binary-word interpretation, inherited from the containing algebra. -/

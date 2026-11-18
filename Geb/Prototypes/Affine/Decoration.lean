@@ -14,12 +14,12 @@ set_option doc.verso true in
 
 A decoration of a kernel term assigns a number of boxes to every node of the term and a
 number of {lit}`!` to every node of the simple types it introduces, in the style of
-{cite}`CoppolaMartini2006`; the decorated term is a derivation of elementary affine logic
+{citeKey}`CoppolaMartini2006`; the decorated term is a derivation of elementary affine logic
 when the numbers satisfy linear constraints, so that checking a given decoration is
 arithmetic on given numbers and needs no solver. The discipline checked is that of the
 search {lit}`scripts/eal/eal.py`, with first-order data, the types without arrows, exempted:
 data are contracted and promoted freely. The exemption is not proved sound for a machine of
-optimal reduction {cite}`BaillotCoppolaDalLago2011`; the checker defines the discipline that
+optimal reduction {citeKey}`BaillotCoppolaDalLago2011`; the checker defines the discipline that
 the bootstrap's programs are required to satisfy.
 
 A decoration mirrors the term, each node labelled by its depth in boxes, the number of
@@ -74,8 +74,8 @@ axiom of choice, where mathlib's enumeration, selected otherwise, does.
 
 ## References
 
-* {cite}`CoppolaMartini2006`
-* {cite}`BaillotCoppolaDalLago2011`
+* {citeKey}`CoppolaMartini2006`
+* {citeKey}`BaillotCoppolaDalLago2011`
 
 ## Tags
 

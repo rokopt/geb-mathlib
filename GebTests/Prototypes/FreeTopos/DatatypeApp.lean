@@ -23,7 +23,7 @@ over a list of binders, and an application of a head to a list of arguments.
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

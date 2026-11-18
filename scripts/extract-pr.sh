@@ -59,7 +59,7 @@ import_kw_re='(public[[:space:]]+)?(meta[[:space:]]+)?import[[:space:]]+'
 # (a trailing comment, when there is one).
 import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 
-# Verso role markup, converted inside a docstring: `{cite}`Key``
+# Verso role markup, converted inside a docstring: `{citeKey}`Key``
 # becomes mathlib's bare `[Key]` citation form, any other `{role}`x``
 # becomes `` `x` ``, and an escaped bracket `\[` or `\]`, the form a
 # literal bracket takes under `doc.verso`, becomes the bare bracket. An
@@ -69,7 +69,7 @@ import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 #
 # Two restrictions, and both are needed. The braces hold one of the
 # role names this repository writes, which docs/rules/lean-coding.md
-# § Literate modules fixes as a closed set: `cite` for a bibliography
+# § Literate modules fixes as a closed set: `citeKey` for a bibliography
 # key, `name` for a constant that must resolve, `option` for a Lean
 # option, `lit` for anything else. And the match runs through the code
 # span's closing backtick, so the span is consumed in one pass.
@@ -97,7 +97,7 @@ import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 # failure: braces upstream are visible and get fixed, where deleted
 # mathematics is not. Add a new role's exact name here when one is
 # first used.
-role_strip='s/(^|[^A-Za-z0-9.`])[{]cite[}]`([^`]*)`/\1[\2]/g; s/(^|[^A-Za-z0-9.`])[{](lit|name|option)[}]`([^`]*)`/\1`\3`/g; s/\\([][])/\1/g'
+role_strip='s/(^|[^A-Za-z0-9.`])[{]citeKey[}]`([^`]*)`/\1[\2]/g; s/(^|[^A-Za-z0-9.`])[{](lit|name|option)[}]`([^`]*)`/\1`\3`/g; s/\\([][])/\1/g'
 
 # The docstring gate in the copy loop below restricts each application
 # of role_strip to a line inside a docstring. A role-shaped brace group
@@ -121,7 +121,7 @@ role_strip='s/(^|[^A-Za-z0-9.`])[{]cite[}]`([^`]*)`/\1[\2]/g; s/(^|[^A-Za-z0-9.`
 # command line, with or without its `in` suffix, each with or without
 # a trailing comment. None has meaning
 # upstream: they are what a literate module carries so that its
-# docstrings are checked Verso markup with the `{cite}` role
+# docstrings are checked Verso markup with the `{citeKey}` role
 # (docs/rules/lean-coding.md § Literate modules), and the copy loop
 # converts that markup to Markdown. An import line
 # is anchored the way the import-prefix rewrite is, by the

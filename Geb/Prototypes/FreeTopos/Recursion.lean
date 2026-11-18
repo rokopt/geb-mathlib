@@ -16,7 +16,7 @@ The natural numbers object, the list objects and the rose-tree objects of a mode
 of an elementary topos, stated of the values of terms at an assignment: the typings of zero, the
 successor, the empty list, construction and the structure maps of rose trees, and the computation
 and the uniqueness of the folds, each an instance of an axiom. A fold is determined, in a
-cartesian closed category, by its equations with a parameter ({cite}`EscardoSimpson2025`,
+cartesian closed category, by its equations with a parameter ({citeKey}`EscardoSimpson2025`,
 Proposition 2.3): two arrows from the product of an
 object of parameters with the natural numbers object that agree at zero and satisfy the
 recursion equation of one step are equal ({lit}`natRec_param_unique`), and likewise from its
@@ -43,7 +43,7 @@ fold into the exponential of the parameters, evaluated at the parameter
 
 ## References
 
-* {cite}`EscardoSimpson2025`
+* {citeKey}`EscardoSimpson2025`
 
 ## Tags
 
@@ -852,7 +852,7 @@ theorem ev_curry_pair {T h k X A B Y : Tree} (hX : IsObj M ρ X) (hA : IsObj M �
 
 /-- The fold of the natural numbers object with a parameter is an arrow from the product of the
 object of parameters with the natural numbers object that is its start at zero and, at a
-successor, its step after the parameter paired with its value ({cite}`EscardoSimpson2025`,
+successor, its step after the parameter paired with its value ({citeKey}`EscardoSimpson2025`,
 Proposition 2.3). -/
 theorem natRecP_spec {z S P C : Tree} (hP : IsObj M ρ P) (hz : Hom M ρ z P C)
     (hS : Hom M ρ S (prod P C) C) :

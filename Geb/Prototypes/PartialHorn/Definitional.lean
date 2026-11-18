@@ -25,7 +25,7 @@ strict, an application defined only where its arguments are; the unfolding of an
 keeps that condition when each argument occurs in the body, which is defined only where the
 terms substituted for its variables are.
 
-The criteria for a definition {cite}`Suppes1957` hold of the models. A model of the theory
+The criteria for a definition {citeKey}`Suppes1957` hold of the models. A model of the theory
 extends to a model of the extension, the new operation read as the body's value
 ({lit}`Model.expand`, {lit}`isModel_expand`). The value of a well-sorted term in the extended
 model is the value of its unfolding in the model ({lit}`eval_expand_unfold`), which is
@@ -60,8 +60,8 @@ of its certificates: its sequents' unfoldings hold in every model of the theory
 
 ## References
 
-* {cite}`Suppes1957`, pp. 153–154, for the criteria of eliminability and non-creativity.
-* {cite}`PalmgrenVickers2007`, Section 3, for models of partial Horn theories.
+* {citeKey}`Suppes1957`, pp. 153–154, for the criteria of eliminability and non-creativity.
+* {citeKey}`PalmgrenVickers2007`, Section 3, for models of partial Horn theories.
 
 ## Tags
 

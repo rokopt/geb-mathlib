@@ -54,8 +54,8 @@ requires. The step reads the current bit from the head of the unread input.
 
 # References
 
-* {cite}`Kristiansen2005`
-* {cite}`Elias1975`
+* {citeKey}`Kristiansen2005`
+* {citeKey}`Elias1975`
 
 # Tags
 

@@ -48,7 +48,7 @@ set_option doc.verso true in
 /-!
 # Oitavem's Logs algebra
 
-The syntactic algebra of {cite}`Oitavem2010` Definition 3.1, its interpretation,
+The syntactic algebra of {citeKey}`Oitavem2010` Definition 3.1, its interpretation,
 the safe-input truncation lemma, polynomial output length, its double
 exponential bound uniform in the expression's size, and correctness and
 logarithmic representation size of capped recursion states. Only logarithmically
@@ -118,5 +118,5 @@ transducer with simultaneous polynomial time and logarithmic work space.
 
 ## References
 
-* {cite}`Oitavem2010`
+* {citeKey}`Oitavem2010`
 -/

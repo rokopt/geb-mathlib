@@ -25,7 +25,7 @@ and closed components remain available to the replacement net.
 
 ## References
 
-* {cite}`DeFalco2010`, Sections 4 and 5, describe the context decomposition of an active pair.
+* {citeKey}`DeFalco2010`, Sections 4 and 5, describe the context decomposition of an active pair.
 
 ## Tags
 

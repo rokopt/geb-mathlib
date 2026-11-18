@@ -51,7 +51,7 @@ sorts their compatibility states ({lit}`Slice.Presentation.resort`).
 
 ## References
 
-* {cite}`KellyPower1993`, for presentations of finitary monads by operations and equations.
+* {citeKey}`KellyPower1993`, for presentations of finitary monads by operations and equations.
 
 ## Tags
 

@@ -32,7 +32,7 @@ member's quotation, is related at the tree type ({lit}`relTDataTree`).
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

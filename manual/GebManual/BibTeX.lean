@@ -25,7 +25,7 @@ single record of the bibliographic detail
 ## Implementation notes
 
 The file is read and parsed by `GebMeta.loadBibliography`, which the
-`{cite}` docstring role shares. Verso's manual genre defines four
+`{citeKey}` docstring role shares. Verso's manual genre defines four
 citable kinds, article, in-proceedings, thesis and arXiv; an entry of
 another kind (a book, a technical report, a web page) is declared as
 an article whose journal is its publisher, institution or

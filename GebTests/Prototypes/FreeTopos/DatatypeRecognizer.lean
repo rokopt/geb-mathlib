@@ -39,7 +39,7 @@ development proceeds by what each of the writer's forms denotes.
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation the recognizers' decisions serve.
+* {citeKey}`Tait1967`, for the logical relation the recognizers' decisions serve.
 
 ## Tags
 

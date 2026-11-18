@@ -14,13 +14,13 @@ set_option doc.verso true in
 /-!
 # Content identity
 
-A definition is identified by the CIDv1 {cite}`RatajBerjon2026` of its payload: the canonical
-encoding {cite}`RFC9804` of the S-expression {lit}`(geb-def/v1 geb-kernel/v1 (imports…) body)`,
+A definition is identified by the CIDv1 {citeKey}`RatajBerjon2026` of its payload: the canonical
+encoding {citeKey}`RFC9804` of the S-expression {lit}`(geb-def/v1 geb-kernel/v1 (imports…) body)`,
 whose imports are the identifiers of the definitions its body refers to, each once, in the order
 of their first references, and whose body is the definition's term with each reference to a
 definition replaced by the reference to the position of its identifier among the imports. The
-CID is of the codec {lit}`raw`, {lit}`0x55`, and its multihash {cite}`BenetSporny2023` is of
-BLAKE3, 32 bytes under the code {lit}`0x1e` of {cite}`Multiformats2026`. A
+CID is of the codec {lit}`raw`, {lit}`0x55`, and its multihash {citeKey}`BenetSporny2023` is of
+BLAKE3, 32 bytes under the code {lit}`0x1e` of {citeKey}`Multiformats2026`. A
 definition's name is no part of its payload, so renaming a definition leaves every identifier
 unchanged, and a change of a definition changes the identifiers of the definitions that refer
 to it, through their imports.
@@ -46,10 +46,10 @@ linked from ({lit}`migrate_link`), so migrating twice changes nothing ({lit}`mig
 
 ## References
 
-* {cite}`RatajBerjon2026` — CIDs.
-* {cite}`BenetSporny2023` — multihashes.
-* {cite}`Multiformats2026` — the multicodec table.
-* {cite}`RFC9804` — the canonical encoding.
+* {citeKey}`RatajBerjon2026` — CIDs.
+* {citeKey}`BenetSporny2023` — multihashes.
+* {citeKey}`Multiformats2026` — the multicodec table.
+* {citeKey}`RFC9804` — the canonical encoding.
 
 ## Tags
 

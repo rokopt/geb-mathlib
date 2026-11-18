@@ -32,7 +32,7 @@ typing checks first, appends them to the environment's; and a run from a rejecti
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

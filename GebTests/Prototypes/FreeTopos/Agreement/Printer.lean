@@ -655,16 +655,20 @@ theorem wfStep_eq (n l d : ℕ) (cs : List Tree) (F : Tree → Tree → Tree)
     | _ :: _ :: _ :: r, _ =>
       have hk : (r.length + 1 + 1 + 1 == 2) = false := rfl
       wf_simp [List.length_cons, hk]
-      all_goals rfl
-  | 10 | 12 | 13 | 14 | 16 | 20 =>
+      rfl
+  | 10 =>
     rw [wfKids_read _ (by decide), hA]
     wf_simp [hS, hB]
-    all_goals (cases cs.length == 2 <;> rfl)
-  | 8 | 11 | 15 | 17 | 18 | 19 | 21 | 22 | 23 | 24 | 25 =>
+    cases cs.length == 2 <;> rfl
+  | 12 | 13 | 14 | 16 | 20 =>
+    rw [wfKids_read _ (by decide), hA]
+    wf_simp [hS, hB]
+  | 8 | 11 | 22 | 23 =>
     wf_simp [hS]
-    all_goals first
+    first
       | exact leafBelow_eq _ _
       | (cases cs.isEmpty <;> rfl)
+  | 15 | 17 | 18 | 19 | 21 | 24 | 25 => wf_simp [hS]
 
 /-- A term's well-formedness under binders to a depth, given the number of definitions, as the
 mirror decides it. -/

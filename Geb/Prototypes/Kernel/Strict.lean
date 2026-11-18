@@ -12,7 +12,7 @@ set_option doc.verso true in
 /-!
 # The strict encodings
 
-The syntaxes of {cite}`RFC9804` that the authoring profile extends, read by the profile's reader
+The syntaxes of {citeKey}`RFC9804` that the authoring profile extends, read by the profile's reader
 ({name}`Geb.Kernel.Document.readDoc`), whose spellings of atoms include theirs. The canonical
 encoding writes each atom verbatim, its length in decimal before a colon and its bytes, and a
 list in parentheses, with no whitespace: it is the encoding a definition's identifier hashes,
@@ -54,8 +54,8 @@ and reads back to the document ({lit}`readStrictDoc_printAdvancedDoc`).
 
 ## References
 
-* {cite}`RFC9804` — the canonical, basic transport and advanced encodings.
-* {cite}`RFC4648` — base 64.
+* {citeKey}`RFC9804` — the canonical, basic transport and advanced encodings.
+* {citeKey}`RFC4648` — base 64.
 
 ## Tags
 

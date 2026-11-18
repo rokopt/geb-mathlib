@@ -1944,9 +1944,8 @@ theorem wStart_reach (hP : PRel P G n unfold kl kc rw) (hF : JRel F o) (v : Val)
           mach_simp [«Machine.wHead», Internal.vnode, vdata]
         rw [hh]
         exact wRose_reach hP hF c s k m m' env hm
-    all_goals
-      refine stuck ?_
-      mach_simp [«Machine.wStart», Machine.whnfStep, Internal.vnode, vdata]
+    refine stuck ?_
+    mach_simp [«Machine.wStart», Machine.whnfStep, Internal.vnode, vdata]
   | _ =>
     refine stuck ?_
     mach_simp [«Machine.wStart», Machine.whnfStep, Internal.vnode, vdata]

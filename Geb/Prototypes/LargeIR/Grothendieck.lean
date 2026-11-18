@@ -8,7 +8,7 @@ module
 public import Geb.Prototypes.LargeIR.Morphism
 public import Geb.Mathlib.CategoryTheory.Grothendieck.Basic
 public import Mathlib.CategoryTheory.Pi.Basic
-meta import GebMeta  -- shake: keep; supplies the cite docstring role
+meta import GebMeta  -- shake: keep; supplies the citeKey docstring role
 
 set_option doc.verso true in
 /-!
@@ -35,7 +35,7 @@ its laws {name}`GebProto.LargeIR.codeMap_id` and
 {name}`GebProto.LargeIR.codeMap_comp`, as an endofunctor {lit}`codeFunctor`
 of the construction: the interpretation of the code as a functor on
 {lit}`Fam(Type)` proper, which is the positive inductive-recursive
-interpretation of {cite}`GhaniNordvallForsbergMalatesta2015` for this code.
+interpretation of {citeKey}`GhaniNordvallForsbergMalatesta2015` for this code.
 
 ## Main definitions
 
@@ -49,7 +49,7 @@ interpretation of {cite}`GhaniNordvallForsbergMalatesta2015` for this code.
 
 ## References
 
-* {cite}`GhaniNordvallForsbergMalatesta2015`
+* {citeKey}`GhaniNordvallForsbergMalatesta2015`
 
 ## Tags
 

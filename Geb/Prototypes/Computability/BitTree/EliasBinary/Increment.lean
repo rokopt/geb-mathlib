@@ -552,7 +552,7 @@ theorem runFrom_carry_bits (bs : List Bool)
   rw [he] at hout
   simp only [Nat.zero_add] at hpos0 hpos1 hselected hcells hwritten
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, hout⟩ <;>
-    (try rw [show flips bs = flips bs - 1 + 1 from he.symm, runFrom_succ_eq_step'])
+    rw [show flips bs = flips bs - 1 + 1 from he.symm, runFrom_succ_eq_step']
   · rw [step_carry_state now k hstate, hd]
     rfl
   · rcases siteSelected_mem k with hs | hs

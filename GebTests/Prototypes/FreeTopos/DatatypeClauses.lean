@@ -25,7 +25,7 @@ fields ({name}`GebTests.Prototypes.FreeTopos.Datatypes.walk`).
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

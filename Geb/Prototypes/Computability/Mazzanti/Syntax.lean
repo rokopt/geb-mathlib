@@ -47,7 +47,7 @@ bound on Lean's evaluator, and do not formalize Theorem 5.7's machine characteri
 
 ## References
 
-* {cite}`Mazzanti2016`, Section 2, Lemma 2.1, and Section 5.
+* {citeKey}`Mazzanti2016`, Section 2, Lemma 2.1, and Section 5.
 
 ## Tags
 

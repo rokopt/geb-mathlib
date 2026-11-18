@@ -14,7 +14,7 @@ set_option doc.verso true in
 
 The interpretation of a closed, derivably defined term in a model descends to its class modulo
 derivable equality. This is the unique homomorphism from the closed term model to that model,
-the initial-model theorem of {cite}`PalmgrenVickers2007`, Theorem 22.
+the initial-model theorem of {citeKey}`PalmgrenVickers2007`, Theorem 22.
 
 ## Main definitions
 
@@ -28,7 +28,7 @@ the initial-model theorem of {cite}`PalmgrenVickers2007`, Theorem 22.
 
 ## References
 
-* {cite}`PalmgrenVickers2007`, Theorem 22.
+* {citeKey}`PalmgrenVickers2007`, Theorem 22.
 
 ## Tags
 

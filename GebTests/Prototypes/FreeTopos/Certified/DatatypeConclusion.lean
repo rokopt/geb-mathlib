@@ -38,7 +38,7 @@ quotation of a tree true exactly when the tree is a member of the datatype ({lit
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

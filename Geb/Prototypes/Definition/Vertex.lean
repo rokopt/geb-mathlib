@@ -17,11 +17,11 @@ A vertex of a term of the free monad is a rooted path: at a variable, the root; 
 operation, either the root or a direction of the operation followed by a vertex of that child.
 A vertex selects a subterm, and a vertex of that subterm translates into a vertex of the whole
 term. Subterms, the root and translation satisfy the five laws of a directed container
-{cite}`AhmanChapmanUustalu2014`: terms and their vertices form the cofree recursive directed
+{citeKey}`AhmanChapmanUustalu2014`: terms and their vertices form the cofree recursive directed
 container on the signature with the variables adjoined as nullary operations. Read as a tree
 of that signature, a term is a shape of the cofree comonoid on it, and its vertices are the
-directions there {cite}`NiuSpivak2023`; the free monad supplies the finite bodies and the
-cofree comonoid the structures they are resolved against {cite}`LibkindSpivak2025`.
+directions there {citeKey}`NiuSpivak2023`; the free monad supplies the finite bodies and the
+cofree comonoid the structures they are resolved against {citeKey}`LibkindSpivak2025`.
 
 Where a direction of the free polynomial ({name}`Geb.Definition.Direction`) addresses a
 variable leaf alone, a vertex addresses every node, operations and nullary operations
@@ -60,11 +60,11 @@ through that recursor.
 
 ## References
 
-* {cite}`AhmanChapmanUustalu2014`, Section 3.1, for directed containers, and Section 4.4,
+* {citeKey}`AhmanChapmanUustalu2014`, Section 3.1, for directed containers, and Section 4.4,
   for the cofree recursive directed container.
-* {cite}`NiuSpivak2023`, Section 8.1, Proposition 8.18, for the cofree comonoid on a
+* {citeKey}`NiuSpivak2023`, Section 8.1, Proposition 8.18, for the cofree comonoid on a
   polynomial, whose directions at a tree are its rooted paths.
-* {cite}`LibkindSpivak2025` for the free monad as a module over the cofree comonoid, the
+* {citeKey}`LibkindSpivak2025` for the free monad as a module over the cofree comonoid, the
   division of roles between bodies and what they run on.
 
 ## Tags

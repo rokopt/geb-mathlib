@@ -15,7 +15,7 @@ set_option doc.verso true in
 Renaming and substitution of the internal language's terms, each lifted under a binder and
 leaving the step of a rose-tree fold in its own context, obey the laws of a monad of terms
 over variables: well-scoped λ-terms form a relative monad on the finite sets
-({cite}`AltenkirchChapmanUustalu2015`, Example 2.1), and the terms here, over all de Bruijn
+({citeKey}`AltenkirchChapmanUustalu2015`, Example 2.1), and the terms here, over all de Bruijn
 indices, obey the same laws. Renaming is a functor: it preserves composites
 ({lit}`rename_rename`) and fixes a term under a map that fixes every index ({lit}`rename_id`).
 Substitution is the binding of the monad whose unit is the variable: substitution at a variable
@@ -51,7 +51,7 @@ node is a variable, an abstraction, a fold, or plain, renaming and substituting 
 
 ## References
 
-* {cite}`AltenkirchChapmanUustalu2015`
+* {citeKey}`AltenkirchChapmanUustalu2015`
 
 ## Tags
 

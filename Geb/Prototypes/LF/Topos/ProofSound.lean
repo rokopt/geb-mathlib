@@ -57,7 +57,7 @@ substitution of a proof, whose variable they do not mention ({lit}`hsubWith_vacu
 
 ## References
 
-* {cite}`HarperLicata2007`, Sections 3.2 and 3.4, for the adequacy of the representations of
+* {citeKey}`HarperLicata2007`, Sections 3.2 and 3.4, for the adequacy of the representations of
   syntax and of judgments.
 
 ## Tags

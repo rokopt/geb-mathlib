@@ -47,8 +47,8 @@ segments is a comparison of numbers.
 
 # References
 
-* {cite}`Kristiansen2005`
-* {cite}`Elias1975`
+* {citeKey}`Kristiansen2005`
+* {citeKey}`Elias1975`
 
 # Tags
 

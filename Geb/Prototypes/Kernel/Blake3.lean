@@ -15,7 +15,7 @@ set_option doc.verso true in
 /-!
 # BLAKE3
 
-The hash function BLAKE3 {cite}`OConnorAumassonNevesWilcoxOHearn2020` in its default mode, with a
+The hash function BLAKE3 {citeKey}`OConnorAumassonNevesWilcoxOHearn2020` in its default mode, with a
 32-byte digest, as the specification states it: the compression function over sixteen 32-bit
 words, chunks of 1024 bytes compressed a 64-byte block at a time, and the binary tree of chunk
 chaining values merged on a stack as the chunks arrive, the root's compression flagged. It is
@@ -30,7 +30,7 @@ official test vectors.
 
 ## References
 
-* {cite}`OConnorAumassonNevesWilcoxOHearn2020` — the specification.
+* {citeKey}`OConnorAumassonNevesWilcoxOHearn2020` — the specification.
 
 ## Tags
 

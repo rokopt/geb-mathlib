@@ -14,7 +14,7 @@ set_option doc.verso true in
 
 The derived profunctor {lit}`H(X, Y) = P(Y, X) → Y` turns diagonal elements into
 structure maps {lit}`P(X, X) → X`, in the one-object sense of
-{cite}`NLabProfunctorAlgebra`. A morphism satisfies the mixed-variance compatibility
+{citeKey}`NLabProfunctorAlgebra`. A morphism satisfies the mixed-variance compatibility
 equation on {lit}`P(Y, X)`.
 The coalgebra counterpart is {lit}`K(X, Y) = X → P(X, Y)`, with diagonal elements
 {lit}`X → P(X, X)`.
@@ -33,7 +33,7 @@ The coalgebra counterpart is {lit}`K(X, Y) = X → P(X, Y)`, with diagonal eleme
 
 ## References
 
-* {cite}`NLabProfunctorAlgebra`
+* {citeKey}`NLabProfunctorAlgebra`
 
 ## Tags
 

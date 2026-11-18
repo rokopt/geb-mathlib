@@ -17,7 +17,7 @@ The fold of a rose-tree object with a parameter in a model of the theory of an e
 object, the fold into the exponential of the parameters, evaluated at the parameter. The
 rose-tree functor, the product of the object of labels with the list object, is strong, so in a
 cartesian closed category its initial algebra admits folds with a parameter
-({cite}`GoncharovMiliusSchroderTsampasUrbat2022`, the appendix's induction with parameters):
+({citeKey}`GoncharovMiliusSchroderTsampasUrbat2022`, the appendix's induction with parameters):
 the fold's step sees the parameter and the label paired with the list of the children's values,
 which the step of the fold into the exponential computes by evaluating each child's function at
 the parameter, a map of the list object with the parameter ({name}`Geb.FreeTopos.listMapP`).
@@ -46,7 +46,7 @@ lists.
 
 ## References
 
-* {cite}`GoncharovMiliusSchroderTsampasUrbat2022`
+* {citeKey}`GoncharovMiliusSchroderTsampasUrbat2022`
 
 ## Tags
 

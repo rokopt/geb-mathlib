@@ -65,7 +65,7 @@ value how long it is, so it costs two runs per position.
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

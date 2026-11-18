@@ -16,7 +16,7 @@ A kind or type of canonical LF is built from {lit}`type`, dependent products and
 of constants: no variable heads an application at a position where a type is expected. An
 expression of that shape ({lit}`Expr.TypeShape`) keeps it under renaming and hereditary
 substitution, which can change an expression only at an application of the substituted variable,
-and so keeps its erasure to a simple type ({cite}`HarperLicata2007`, Lemma 2.9: erasure is
+and so keeps its erasure to a simple type ({citeKey}`HarperLicata2007`, Lemma 2.9: erasure is
 invariant under substitution). Every kind and type that the judgments accept has the shape
 ({lit}`judgeWith_typeShape`), as has every classifier a spine instantiates a classifier of the
 shape to ({lit}`spine_typeShape`).
@@ -34,7 +34,7 @@ shape to ({lit}`spine_typeShape`).
 
 ## References
 
-* {cite}`HarperLicata2007`, Lemma 2.9.
+* {citeKey}`HarperLicata2007`, Lemma 2.9.
 
 ## Tags
 
@@ -189,7 +189,7 @@ def headDepthStep (l : Label) (cs : List (Option ℕ × ℕ)) : Option ℕ × �
     | _, _ => (none, 0)
 
 /-- The constant at the head of a type's final codomain, and the number of products before it
-({cite}`HarperLicata2007`, Section 2.4, for the head of a type). -/
+({citeKey}`HarperLicata2007`, Section 2.4, for the head of a type). -/
 def Expr.headDepth : Expr → Option ℕ × ℕ := RoseTree.elim headDepthStep
 
 /-- The computation rule of the head and depth. -/
@@ -214,7 +214,7 @@ theorem headDepth_rename : ∀ (e : Expr) (ρ : ℕ → ℕ), (e.rename ρ).head
     · rfl
 
 /-- Substitution keeps the head and depth of an expression of the shape of types, whatever the
-reduction ({cite}`HarperLicata2007`, Lemma 2.15: the head is invariant under substitution). -/
+reduction ({citeKey}`HarperLicata2007`, Lemma 2.15: the head is invariant under substitution). -/
 theorem headDepth_hsubWith (red : Expr → List Expr → Option Expr) :
     ∀ (e n : Expr) (j : ℕ) (e' : Expr), e.TypeShape = true → hsubWith red e n j = some e' →
       e'.headDepth = e.headDepth :=

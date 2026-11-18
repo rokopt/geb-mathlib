@@ -22,7 +22,7 @@ An object of the slice over {lit}`A` is an arrow with codomain {lit}`A`. For an 
 pullback constructed from a product and an equalizer. Dependent product is an arrow
 {lit}`pi f p` over {lit}`B`, with evaluation and abstraction. Their typing, computation,
 and uniqueness equations express the right adjoint to base change, as in
-{cite}`Seely1984`, Section 2.4. No separate primitive slice categories are needed.
+{citeKey}`Seely1984`, Section 2.4. No separate primitive slice categories are needed.
 
 The presentation chooses structure: its homomorphisms preserve the named operations
 strictly. Initiality for these homomorphisms is distinct from freeness for functors preserving
@@ -37,8 +37,8 @@ initial-model theorem. The finite colimits are not assumed disjoint or effective
 
 ## References
 
-* {cite}`PalmgrenVickers2007`, Example 4 and Theorem 22, for partial Horn presentations.
-* {cite}`Seely1984`, Section 2.4, for the slice adjunctions.
+* {citeKey}`PalmgrenVickers2007`, Example 4 and Theorem 22, for partial Horn presentations.
+* {citeKey}`Seely1984`, Section 2.4, for the slice adjunctions.
 
 ## Tags
 

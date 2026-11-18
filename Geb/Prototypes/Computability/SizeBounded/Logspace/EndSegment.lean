@@ -12,7 +12,7 @@ set_option doc.verso true in
 /-!
 # The end-segment lemma
 
-{cite}`Kristiansen2005` Lemma 4.5: for every function of the algebra
+{citeKey}`Kristiansen2005` Lemma 4.5: for every function of the algebra
 {lit}`[I, C_W; comp, simn]` there is a constant {lit}`m`, the length of its
 longest constant, such that every value longer than {lit}`m` is an end
 segment, a suffix, of one of the arguments. The paper's proof fixes the least
@@ -43,7 +43,7 @@ the syntax being the length of the longest constant on a successor-free tree.
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 
@@ -139,7 +139,7 @@ theorem preserves_evalValue {P : List Bool → Prop} (hP : SuffixClosed P) {m : 
 
 /-- Every successor-free expression whose constants are within {lit}`m`
 preserves a suffix-closed property holding of every word within {lit}`m`: the
-form of {cite}`Kristiansen2005` Lemma 4.5's induction. -/
+form of {citeKey}`Kristiansen2005` Lemma 4.5's induction. -/
 theorem preserves_eval {P : List Bool → Prop} (hP : SuffixClosed P) {m : ℕ}
     (hm : ∀ w : List Bool, w.length ≤ m → P w) :
     ∀ e : S, sbsFree e.1 = true → nsiConst e.1 ≤ m → Preserves P (eval e).2 :=
@@ -163,7 +163,7 @@ theorem length_le_or_suffix {n : ℕ} (e : LOf n) (x : Fin n → List Bool) :
   exact preserves_transport _ (preserves_eval hP (fun _ h ↦ Or.inl h) e.1.1 e.2 (Nat.le_refl _))
     x hx
 
-/-- {cite}`Kristiansen2005` Lemma 4.5: a value longer than the expression's
+/-- {citeKey}`Kristiansen2005` Lemma 4.5: a value longer than the expression's
 constant is a suffix of one of the arguments. -/
 theorem suffix_of_lt_length {n : ℕ} (e : LOf n) (x : Fin n → List Bool)
     (h : nsiConst e.1.1.1 < (e.sem x).length) : ∃ i, e.sem x <:+ x i := by

@@ -16,7 +16,7 @@ set_option doc.verso true in
 # Kristiansen's word algebra
 
 The constants-and-projections algebra closed under composition and simultaneous
-recursion on notation of {cite}`Kristiansen2005`: its binary-word syntax and
+recursion on notation of {citeKey}`Kristiansen2005`: its binary-word syntax and
 semantics, suffix invariant, logarithmic-size reference representation, and
 polynomial-time, linear-space CSLib machine bound. The representation theorem
 does not supply a logarithmic-space evaluation machine.

@@ -52,8 +52,8 @@ presentation.
 
 ## References
 
-* {cite}`Weber2007`, for parametric right adjoints on presheaf categories.
-* {cite}`KellyPower1993`, for presentations of finitary monads by operations and equations.
+* {citeKey}`Weber2007`, for parametric right adjoints on presheaf categories.
+* {citeKey}`KellyPower1993`, for presentations of finitary monads by operations and equations.
 
 ## Tags
 

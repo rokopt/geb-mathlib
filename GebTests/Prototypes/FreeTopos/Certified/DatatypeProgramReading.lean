@@ -38,7 +38,7 @@ statement follows from the soundness as one formula, true there
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

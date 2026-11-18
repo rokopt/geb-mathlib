@@ -51,7 +51,10 @@ def variableAttachmentAmbient (x : ν) (g : TermFragment arity μ) :
     | .inl (.inl (.inr _)) => .inl true
     | .inl (.inr ⟨c, _⟩) => Fin.elim0 c
     | .inr ⟨_, p⟩ => .inr p
-  left_inv p := by rcases p with b | p; cases b <;> rfl; rfl
+  left_inv p := by
+    rcases p with b | p
+    · cases b <;> rfl
+    · rfl
   right_inv p := by
     rcases p with ((u | v) | ⟨c, p⟩) | ⟨u, p⟩
     · rfl

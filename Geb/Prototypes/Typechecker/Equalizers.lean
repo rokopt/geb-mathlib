@@ -44,7 +44,7 @@ All total logspace functions on bitstrings satisfy the condition: check source
 acceptance and compare the two output streams symbol by symbol, rejecting a symbol
 or length mismatch. Keeping the two simulations uses logarithmic workspace; their
 outputs need not be stored. This uses the read-only input, write-only output model
-of {cite}`CenzerDowneyRemmelUddin2008`, Section 2. It is an algorithmic application,
+of {citeKey}`CenzerDowneyRemmelUddin2008`, Section 2. It is an algorithmic application,
 not a formal machine-class instance.
 
 The condition does not require pairing or any increase in output length. For a
@@ -54,7 +54,7 @@ functions, provided its decision outputs use the designated truth values.
 
 ## References
 
-* {cite}`CenzerDowneyRemmelUddin2008`
+* {citeKey}`CenzerDowneyRemmelUddin2008`
 
 ## Tags
 

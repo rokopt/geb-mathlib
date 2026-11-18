@@ -19,7 +19,7 @@ set_option doc.verso true in
 A hole is the form {lit}`(hole name)`, written {lit}`?name`, at the position of a term. A hole
 of a program stands for a term in the context of its declaring occurrence, the first in the
 program's order, whose binders are its context: a hole is a metavariable of contextual modal
-type theory {cite}`NanevskiPfenningPientka2008`, whose occurrences carry explicit substitutions
+type theory {citeKey}`NanevskiPfenningPientka2008`, whose occurrences carry explicit substitutions
 from its context. Every occurrence of a named hole is one obligation, and an occurrence elsewhere
 than the declaring one substitutes, for each variable of the hole's context, the variable of the
 same name in its own scope.
@@ -30,8 +30,8 @@ variable bound around every definition, so that the hole stands for a function o
 and the kernel's resolution of names makes each definition a kernel term in which the holes are
 the outermost free variables. A hole's expected type is a metavariable, and its variable's type
 the function type from its context's types to it. The typing of the kernel's terms is then a
-list of equations between types, solved by unification {cite}`Wand1987`
-{cite}`Robinson1965`: each application, projection, conditional and list a term builds requires
+list of equations between types, solved by unification {citeKey}`Wand1987`
+{citeKey}`Robinson1965`: each application, projection, conditional and list a term builds requires
 an equation, and a definition's type is a type with metavariables, which the definitions after it
 constrain further. The equations that mention a hole's metavariable are the checks its unknown
 filling suspends, and their solution is the hole's goal.
@@ -89,9 +89,9 @@ definition by a quoted atom beginning with {lit}`?`, which would capture a lifte
 
 ## References
 
-* {cite}`NanevskiPfenningPientka2008`
-* {cite}`Wand1987`
-* {cite}`Robinson1965`
+* {citeKey}`NanevskiPfenningPientka2008`
+* {citeKey}`Wand1987`
+* {citeKey}`Robinson1965`
 
 ## Tags
 

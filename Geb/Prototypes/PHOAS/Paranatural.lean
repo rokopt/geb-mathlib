@@ -15,7 +15,7 @@ set_option doc.verso true in
 The compatibility condition defining scoped terms is strong dinaturality from the
 covariant representable {lit}`Hom(Γ, -)` to the pointwise free monad. For a covariant
 source, ordinary dinaturality and strong dinaturality coincide, as in
-{cite}`Neumann2023`, Definition 3 and Note 6.
+{citeKey}`Neumann2023`, Definition 3 and Note 6.
 
 For the polynomial profunctor itself, each compatible family chooses one operation
 and, at each inner position, either a context variable or a bound variable.
@@ -47,7 +47,7 @@ For the pointwise free monad, {lit}`Scoped.recOn` and {lit}`Scoped.fold_unique` 
 
 ## References
 
-* {cite}`Neumann2023`
+* {citeKey}`Neumann2023`
 
 ## Tags
 

@@ -37,7 +37,7 @@ related to the list of trees of bitstrings of the same shape
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

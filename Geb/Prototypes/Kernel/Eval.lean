@@ -28,7 +28,7 @@ level, a value related to the result. Each level's results persist at the levels
 finitely many results are reached at one level. The fundamental lemma states that a term the
 kernel types evaluates, in an environment related to a value of its context, to a value related to
 its denotation; every application of a typed program therefore terminates at some level, which is
-Tait's method for the simply typed λ-calculus with the kernel's constants {cite}`Tait1967`.
+Tait's method for the simply typed λ-calculus with the kernel's constants {citeKey}`Tait1967`.
 
 ## Main definitions
 
@@ -52,7 +52,7 @@ Tait's method for the simply typed λ-calculus with the kernel's constants {cite
 
 ## References
 
-* {cite}`Tait1967`
+* {citeKey}`Tait1967`
 
 ## Tags
 

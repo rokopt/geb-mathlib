@@ -19,7 +19,7 @@ A presheaf on the walking arrow {lit}`0 ⟶ 1`, represented by {lit}`Fin 2`, is 
 map from its total space at {lit}`1` to its base at {lit}`0`. Suppose every direction
 of a base-level shape of a {name}`PresheafPFunctor` lies at {lit}`0`. Then its base
 component is an ordinary {name}`PFunctor`: it does not inspect the total space.
-This is a specialization of the presheaf PRA formula in {cite}`nLabParametricRightAdjoint`.
+This is a specialization of the presheaf PRA formula in {citeKey}`nLabParametricRightAdjoint`.
 The total-level shapes and their arity reindexing retain the generality of the PRA data.
 
 ## Main definitions
@@ -38,7 +38,7 @@ The total-level shapes and their arity reindexing retain the generality of the P
 
 ## References
 
-* {cite}`nLabParametricRightAdjoint`
+* {citeKey}`nLabParametricRightAdjoint`
 
 ## Tags
 

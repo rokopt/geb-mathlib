@@ -26,7 +26,7 @@ at every number of elements and the others' as their developments state them.
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

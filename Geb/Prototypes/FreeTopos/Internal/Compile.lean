@@ -15,8 +15,8 @@ set_option doc.verso true in
 
 The typing of the internal language's terms and their compilation to arrows of the combinators, the
 interpretation of the typed λ-calculus in a cartesian closed category of Part I of
-{cite}`LambekScott1986` and the compilation of the categorical abstract machine of
-{cite}`CousineauCurienMauny1987`, in one pass. A type is an object term built by the terminal
+{citeKey}`LambekScott1986` and the compilation of the categorical abstract machine of
+{citeKey}`CousineauCurienMauny1987`, in one pass. A type is an object term built by the terminal
 object, products, the initial object, coproducts, exponentials, the subobject classifier, the data
 objects and the operations of the object definitions of the constants from object variables
 ({lit}`IsTy`), so that two types are equal when they are one term. A term is compiled in an
@@ -82,9 +82,9 @@ signature's.
 
 ## References
 
-* {cite}`LambekScott1986`, Part I, for the interpretation of the typed λ-calculus in a
+* {citeKey}`LambekScott1986`, Part I, for the interpretation of the typed λ-calculus in a
   cartesian closed category.
-* {cite}`CousineauCurienMauny1987` for the compilation of λ-terms to categorical combinators.
+* {citeKey}`CousineauCurienMauny1987` for the compilation of λ-terms to categorical combinators.
 
 ## Tags
 

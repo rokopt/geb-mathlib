@@ -35,7 +35,7 @@ The forms of the two bounds as functions of the arguments' lengths — the lengt
 bound linear and the step bound polynomial — are established elsewhere.
 
 {lit}`SOf.correct` is the compiler's half of the soundness of
-{cite}`Mazzanti2016` Theorem 5.7: the compiled program computes the
+{citeKey}`Mazzanti2016` Theorem 5.7: the compiled program computes the
 expression's meaning, the compiler replacing the paper's Theorem 5.3
 encoding of simultaneous recursion into a single recursion.
 
@@ -50,7 +50,7 @@ encoding of simultaneous recursion into a single recursion.
 
 # References
 
-* {cite}`Mazzanti2016`
+* {citeKey}`Mazzanti2016`
 
 # Tags
 

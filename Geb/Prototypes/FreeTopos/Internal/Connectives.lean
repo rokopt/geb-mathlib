@@ -18,7 +18,7 @@ hold in a model of the theory extended by the combinators' definitions, placed a
 constants' definitions ({lit}`LogicAt`). A formula holds over an object when its arrow is truth
 after the arrow to the terminal object, and is true after an arrow into the object when its arrow
 after that arrow is; the conditions are those of the Kripke–Joyal semantics of a topos
-({cite}`MacLaneMoerdijk1992`, Section VI.6), stated of the arrows the formulas compile to, each
+({citeKey}`MacLaneMoerdijk1992`, Section VI.6), stated of the arrows the formulas compile to, each
 derived from the equality its connective is defined by.
 Truth holds; a conjunction holds when both its formulas do; an implication, when its consequent is
 true after every arrow after which its antecedent is; a universal quantification, when its
@@ -29,7 +29,7 @@ quantification that holds whose predicate is true at the pairing of an arrow wit
 element.
 
 Description follows by unique choice ({name}`Geb.FreeTopos.unique_choice`, after
-{cite}`DubucSzyld2015`, Proposition 1.21): a formula of a new variable of which a unique
+{citeKey}`DubucSzyld2015`, Proposition 1.21): a formula of a new variable of which a unique
 existential quantification holds holds at exactly one element of the variable's type
 ({lit}`description`). The language has no description operator: an arrow a functional relation
 determines is named by the relation, and constructed in every model from the classifier.
@@ -49,8 +49,8 @@ determines is named by the relation, and constructed in every model from the cla
 
 ## References
 
-* {cite}`MacLaneMoerdijk1992`
-* {cite}`DubucSzyld2015`
+* {citeKey}`MacLaneMoerdijk1992`
+* {citeKey}`DubucSzyld2015`
 
 ## Tags
 

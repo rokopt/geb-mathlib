@@ -13,7 +13,7 @@ set_option doc.verso true in
 /-!
 # The initial functions and recursion schemes of Logs
 
-The word functions of {cite}`Oitavem2010` Definition 3.1. Normal arguments are
+The word functions of {citeKey}`Oitavem2010` Definition 3.1. Normal arguments are
 arbitrary binary words. There is at most one safe argument. Neither the initial
 functions nor concatenation recursion can read a safe argument. Safe recursion
 passes its result to that position, and log-transition is the only scheme that
@@ -41,7 +41,7 @@ offset after the parameters.
 
 ## References
 
-* {cite}`Oitavem2010`, Definition 3.1 and Lemma 3.3.
+* {citeKey}`Oitavem2010`, Definition 3.1 and Lemma 3.3.
 
 ## Tags
 

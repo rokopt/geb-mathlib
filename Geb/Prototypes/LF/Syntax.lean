@@ -14,8 +14,8 @@ set_option doc.verso true in
 # The syntax of canonical LF
 
 The expressions of Canonical LF, the presentation of the logical framework LF in which only
-canonical forms, long βη-normal forms, are expressions ({cite}`HarperLicata2007`, Section 2.1,
-Figure 1; LF itself is {cite}`HarperHonsellPlotkin1993`). Its kinds are {lit}`type` and the
+canonical forms, long βη-normal forms, are expressions ({citeKey}`HarperLicata2007`, Section 2.1,
+Figure 1; LF itself is {citeKey}`HarperHonsellPlotkin1993`). Its kinds are {lit}`type` and the
 dependent products {lit}`Π x:A. K`; its canonical type families the atomic families
 {lit}`a M₁ … Mₙ` and the dependent products {lit}`Π x:A₂. A`; its canonical terms the atomic
 terms and the abstractions {lit}`λ x. M`; and its atomic terms a variable or a constant applied
@@ -32,7 +32,7 @@ grammar admits no β-redex, since only a head is applied. Variables are de Bruij
 innermost binder's variable the index zero, and constants are indices into the signature, the
 first declared the index zero.
 
-The erasure of a type to a simple type ({cite}`HarperLicata2007`, Figure 4) forgets the
+The erasure of a type to a simple type ({citeKey}`HarperLicata2007`, Figure 4) forgets the
 dependency of a type on terms, keeping the families at its bases and the shape of its products;
 it is the index on which hereditary substitution recurses.
 
@@ -47,9 +47,9 @@ it is the index on which hereditary substitution recurses.
 
 ## References
 
-* {cite}`HarperLicata2007`, Section 2.1 and Figures 1 and 4.
-* {cite}`HarperHonsellPlotkin1993`
-* {cite}`Fiore2008`, for binding signatures.
+* {citeKey}`HarperLicata2007`, Section 2.1 and Figures 1 and 4.
+* {citeKey}`HarperHonsellPlotkin1993`
+* {citeKey}`Fiore2008`, for binding signatures.
 
 ## Tags
 
@@ -114,7 +114,7 @@ end Expr
 
 /-- The number of variables a node of a label binds over its child at a position: a product's
 codomain and an abstraction's body are in the scope of one, every other child in the scope of
-none. These numbers are the binding signature of the syntax ({cite}`Fiore2008`). -/
+none. These numbers are the binding signature of the syntax ({citeKey}`Fiore2008`). -/
 def Label.binders : Label → ℕ → ℕ
   | .pi, 1 => 1
   | .lam, 0 => 1
@@ -152,7 +152,7 @@ def Expr.shift (e : Expr) : Expr := e.rename Nat.succ
 {lit}`B` is written in the context outside the binder and weakened past it. -/
 def Expr.arrow (a b : Expr) : Expr := Expr.pi a b.shift
 
-/-- The label of a node of a simple type ({cite}`HarperLicata2007`, Figure 4). -/
+/-- The label of a node of a simple type ({citeKey}`HarperLicata2007`, Figure 4). -/
 inductive SimpleLabel where
   /-- The base type of a family constant. -/
   | base (a : ℕ)
@@ -175,7 +175,7 @@ def eraseStep (l : Label) (cs : List SimpleTy) : SimpleTy :=
     | .app (.const c), _ => RoseTree.node (.base c) []
     | _, _ => RoseTree.node (.base 0) []
 
-/-- The erasure of a type to a simple type ({cite}`HarperLicata2007`, Figure 4). -/
+/-- The erasure of a type to a simple type ({citeKey}`HarperLicata2007`, Figure 4). -/
 def Expr.erase : Expr → SimpleTy := RoseTree.elim eraseStep
 
 /-- A signature: the kinds and types of the constants, the first declared first, each closed

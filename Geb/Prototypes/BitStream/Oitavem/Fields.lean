@@ -48,7 +48,7 @@ the word holds that many codes there.
 
 # References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 # Tags
 

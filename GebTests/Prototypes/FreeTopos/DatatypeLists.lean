@@ -39,7 +39,7 @@ expansion is the leaf 0, by the soundness of applications.
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation.
+* {citeKey}`Tait1967`, for the logical relation.
 
 ## Tags
 

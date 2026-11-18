@@ -39,7 +39,7 @@ the target endpoint of a node over the witnesses has the value of its source end
 
 ## References
 
-* {cite}`FiorePittsSteenkamp2020`, for W-types with equations.
+* {citeKey}`FiorePittsSteenkamp2020`, for W-types with equations.
 
 ## Tags
 

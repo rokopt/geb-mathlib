@@ -29,7 +29,7 @@ in Geb, to a value related at that type. It is the internal counterpart of
 
 ## References
 
-* {cite}`Tait1967`, for the logical relation and its fundamental lemma.
+* {citeKey}`Tait1967`, for the logical relation and its fundamental lemma.
 
 ## Tags
 

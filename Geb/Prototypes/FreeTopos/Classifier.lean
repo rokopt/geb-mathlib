@@ -38,7 +38,7 @@ after the pairing of the identity with exactly one arrow, the arrow it determine
 characteristic map is truth, and the arrow is the second projection after the section of the
 first that the inverse of the monomorphism's factorization provides ({lit}`chi_hom`,
 {lit}`chiInv_hom`), as a relation is the graph of an arrow when the first projection of its
-subobject is an isomorphism ({cite}`DubucSzyld2015`, Proposition 1.21). Conversely, a relation
+subobject is an isomorphism ({citeKey}`DubucSzyld2015`, Proposition 1.21). Conversely, a relation
 whose arrow is defined is total and univalent ({lit}`functional_of_desc`), so the arrow is defined
 exactly where the relation is functional. As a definition of the combinators ({lit}`descDefn`), a
 partial operation defined where its body is, the arrow is an operation of the theory's extension
@@ -70,7 +70,7 @@ partial operation defined where its body is, the arrow is an operation of the th
 
 ## References
 
-* {cite}`DubucSzyld2015`
+* {citeKey}`DubucSzyld2015`
 
 ## Tags
 
@@ -862,7 +862,7 @@ theorem chiInv_hom {m W X : Tree} (hm : Hom M ρ m W X) (hmc : (monoCond m).Hold
 /-- The arrow a relation from {lit}`X` to {lit}`B`, an arrow into the subobject classifier from
 their product, determines where it is functional: the second projection after the section of the
 first projection of its pullback of truth that the inverse of that projection's factorization
-provides ({cite}`DubucSzyld2015`, Proposition 1.21). -/
+provides ({citeKey}`DubucSzyld2015`, Proposition 1.21). -/
 def desc (X B F : Tree) : Tree :=
   comp (snd X B) (comp (truthIncl F) (comp (chiInv (comp (fst X B) (truthIncl F)))
     (truthLift (chi (comp (fst X B) (truthIncl F))) (idt X))))
@@ -1009,7 +1009,7 @@ theorem chi_true_of_relTotal {F X B : Tree} (hX : IsObj M ρ X) (hB : IsObj M ρ
     ((eval_op₂_congr 3 hχm rfl).trans (truth_comp hM hl)))
 
 /-- Unique choice: a total and univalent relation is true after the pairing of the identity with
-its arrow, and with no other ({cite}`DubucSzyld2015`, Proposition 1.21). -/
+its arrow, and with no other ({citeKey}`DubucSzyld2015`, Proposition 1.21). -/
 theorem unique_choice {F X B : Tree} (hX : IsObj M ρ X) (hB : IsObj M ρ B)
     (hF : Hom M ρ F (prod X B) omega) (hex : RelTotal M ρ F X B)
     (huniq : RelUnivalent M ρ F X B) :

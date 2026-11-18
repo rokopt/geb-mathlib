@@ -15,7 +15,7 @@ set_option doc.verso true in
 A wiring pairs each endpoint with exactly one distinct endpoint. It is a fixed-point-free
 involution, transported along equivalences by conjugation. Closed wires without endpoints
 are accounted for separately in a net. This separates the ordinary wires and loops of
-{cite}`DeFalco2010`, Definition 3.1.
+{citeKey}`DeFalco2010`, Definition 3.1.
 
 ## Main definitions
 
@@ -29,7 +29,7 @@ are accounted for separately in a net. This separates the ordinary wires and loo
 
 ## References
 
-* {cite}`DeFalco2010`, Definitions 3.1 and 3.2.
+* {citeKey}`DeFalco2010`, Definitions 3.1 and 3.2.
 
 ## Tags
 

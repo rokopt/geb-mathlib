@@ -18,7 +18,7 @@ set_option doc.verso true in
 # The adequacy of the representation of the internal language
 
 The representation of a fragment of the internal language by the signature
-{name}`Geb.LF.Topos.sig` is adequate ({cite}`HarperLicata2007`, Section 3.2): the encoding of a
+{name}`Geb.LF.Topos.sig` is adequate ({citeKey}`HarperLicata2007`, Section 3.2): the encoding of a
 term of the language, typed by {lit}`Geb.FreeTopos.Internal.compile`, is a canonical LF term of
 {lit}`tm A` for the encoding {lit}`A` of its type in the encoding of its context; decoding inverts
 encoding; and every canonical LF term of {lit}`tm A` in such a context decodes to a term of the
@@ -86,7 +86,7 @@ extended by the value, so that both may mention the variables around the fold.
 
 ## References
 
-* {cite}`HarperLicata2007`, Section 3.2, for adequacy.
+* {citeKey}`HarperLicata2007`, Section 3.2, for adequacy.
 
 ## Tags
 

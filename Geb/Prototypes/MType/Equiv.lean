@@ -52,7 +52,7 @@ that the module stays free of {name}`Classical.choice`.
 
 ## References
 
-* {cite}`VanDenBergDeMarchi2007`, Section 2, especially Corollary 2.5.
+* {citeKey}`VanDenBergDeMarchi2007`, Section 2, especially Corollary 2.5.
 
 ## Tags
 

@@ -13,7 +13,7 @@ set_option doc.verso true in
 /-!
 # Syntactic expressions of Oitavem's Logs
 
-Definition 3.1 of {cite}`Oitavem2010` as a W-type of a polynomial functor in
+Definition 3.1 of {citeKey}`Oitavem2010` as a W-type of a polynomial functor in
 the slice over pairs of normal and safe arities. An expression is admitted solely
 by its constructor and child arities. No bound term, boundedness certificate, or
 semantic side condition is part of the syntax.
@@ -34,7 +34,7 @@ semantic side condition is part of the syntax.
 
 ## References
 
-* {cite}`Oitavem2010`, Definition 3.1.
+* {citeKey}`Oitavem2010`, Definition 3.1.
 
 ## Tags
 

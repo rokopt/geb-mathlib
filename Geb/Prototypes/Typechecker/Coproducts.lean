@@ -42,11 +42,11 @@ two distinguished values; the pair-code test rejects malformed codes.
 
 For bitstrings, all total logspace transducers satisfy these sufficient conditions:
 they can prepend and remove a tag, test it, and then run the selected computation.
-The workspace excludes the output tape, as in {cite}`CenzerDowneyRemmelUddin2008`,
+The workspace excludes the output tape, as in {citeKey}`CenzerDowneyRemmelUddin2008`,
 Section 2. Fixed tags cost only a constant increase in length.
 
 Even total regular string functions suffice for products and coproducts. The regular
-combinators of {cite}`AlurFreilichRaghothaman2014`, Sections II and III, include choice
+combinators of {citeKey}`AlurFreilichRaghothaman2014`, Sections II and III, include choice
 and pointwise output concatenation. A regular decision function has regular accepted
 and rejected languages; restricting each branch to the corresponding language and
 using choice supplies the conditional. These are informal applications of the
@@ -59,8 +59,8 @@ injection condition here gives an obstruction independent of the chosen coding.
 
 ## References
 
-* {cite}`AlurFreilichRaghothaman2014`
-* {cite}`CenzerDowneyRemmelUddin2008`
+* {citeKey}`AlurFreilichRaghothaman2014`
+* {citeKey}`CenzerDowneyRemmelUddin2008`
 
 ## Tags
 

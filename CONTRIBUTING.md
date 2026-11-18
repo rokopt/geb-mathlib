@@ -181,7 +181,7 @@ does not run config commands on a contributor's behalf.
   bibliographic detail for each cited work lives once in
   `docs/references.bib`, keyed by a citation key; docstrings refer
   to a work by that key in `[Key]` form (mathlib's convention), a
-  literate module by the ``{cite}`Key` `` role that extraction
+  literate module by the ``{citeKey}`Key` `` role that extraction
   converts to that form, so a work cited from several modules is
   described in one place.
   `docs/references.md` is the complementary catalogue of library

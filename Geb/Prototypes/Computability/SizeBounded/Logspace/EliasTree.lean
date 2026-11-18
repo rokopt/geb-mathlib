@@ -17,7 +17,7 @@ set_option doc.verso true in
 
 Index for the modules writing the recognizer of the Elias-length tree
 encoding, {lit}`Geb.BitTree.Elias.validBool`, as an expression of
-{cite}`Kristiansen2005`'s algebra {lit}`[I, C_W; comp, simn]`: the streaming
+{citeKey}`Kristiansen2005`'s algebra {lit}`[I, C_W; comp, simn]`: the streaming
 scanner on monotone counters, the expression, its correctness against the
 scanner, and its logarithmic-space machine reading.
 -/

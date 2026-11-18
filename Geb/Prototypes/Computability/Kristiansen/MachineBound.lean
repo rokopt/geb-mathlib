@@ -23,13 +23,13 @@ every unary expression in polynomial time and linear space.
 ## Implementation notes
 
 This machine stores complete words on work tapes. Its linear space bound does
-not establish the logarithmic space bound of {cite}`Kristiansen2005` Theorem 4.7,
+not establish the logarithmic space bound of {citeKey}`Kristiansen2005` Theorem 4.7,
 which requires a machine evaluating suffix references. This module is allowed
 classical choice because CSLib's machine predicates depend on it.
 
 ## References
 
-* {cite}`Kristiansen2005`
+* {citeKey}`Kristiansen2005`
 
 ## Tags
 

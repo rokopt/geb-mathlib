@@ -61,15 +61,15 @@ induction on trees ({lit}`eq_elim`).
 
 The finiteness of the arguments is an enumeration, {name}`FinEnum`, as in
 {lit}`GebProto.QuotientPRA.Congruence`; with infinitely many arguments the choice of
-representatives requires a choice principle ({cite}`FiorePittsSteenkamp2020`). The
+representatives requires a choice principle ({citeKey}`FiorePittsSteenkamp2020`). The
 arguments of term constructors are terms so that the classes of the arguments can be
 represented by terms; the arguments of witness constructors are unrestricted.
 
 ## References
 
-* {cite}`AltenkirchCapriottiDijkstraKrausNordvallForsberg2018`
-* {cite}`Dijkstra2017`
-* {cite}`FiorePittsSteenkamp2020`
+* {citeKey}`AltenkirchCapriottiDijkstraKrausNordvallForsberg2018`
+* {citeKey}`Dijkstra2017`
+* {citeKey}`FiorePittsSteenkamp2020`
 
 ## Tags
 

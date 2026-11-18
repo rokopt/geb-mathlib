@@ -24,7 +24,7 @@
 #
 # Every location additionally admits the exact module paths
 # Lean.DocString.Syntax and GebMeta, which a literate module imports
-# for its Verso docstring markup and for the `{cite}` docstring role
+# for its Verso docstring markup and for the `{citeKey}` docstring role
 # (docs/rules/lean-coding.md § Literate modules).
 #
 # `Batteries.*` is admitted to every upstream-eligible subtree because

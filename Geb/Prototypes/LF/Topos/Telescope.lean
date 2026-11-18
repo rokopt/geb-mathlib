@@ -53,7 +53,7 @@ the substitutions having values at the encodings of types ({lit}`hsubs_tm_encTy`
 
 ## References
 
-* {cite}`HarperLicata2007`, Section 2, for signatures and hereditary substitution.
+* {citeKey}`HarperLicata2007`, Section 2, for signatures and hereditary substitution.
 
 ## Tags
 

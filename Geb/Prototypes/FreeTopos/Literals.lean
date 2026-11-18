@@ -22,7 +22,7 @@ before a bitstring, whether a bitstring is empty, the successor, doubling, the p
 conditional at bitstrings and at comparisons, addition, multiplication, equality, comparison,
 less, the difference of a number at most the first and the truncated difference, the quotient
 and the remainder, and the base-two logarithm, with the components of a pair. A literal is a
-numeral, the bitstring of a number's index in the enumeration of {cite}`Oitavem2010`, a
+numeral, the bitstring of a number's index in the enumeration of {citeKey}`Oitavem2010`, a
 comparison's result, or a pair of numerals, so that the kernel's division and remainder, the
 components of the library's quotient and remainder, evaluate.
 
@@ -56,7 +56,7 @@ step sound without the rewriting being performed.
 
 ## References
 
-* {cite}`Oitavem2010`, Remark 2.2, for the enumeration of the bitstrings.
+* {citeKey}`Oitavem2010`, Remark 2.2, for the enumeration of the bitstrings.
 
 ## Tags
 

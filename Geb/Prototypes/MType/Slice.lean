@@ -57,9 +57,9 @@ every universe.
 
 ## References
 
-* {cite}`GambinoHyland2004`
-* {cite}`GambinoKock2013`
-* {cite}`VanDenBergDeMarchi2007`, Section 2.
+* {citeKey}`GambinoHyland2004`
+* {citeKey}`GambinoKock2013`
+* {citeKey}`VanDenBergDeMarchi2007`, Section 2.
 
 ## Tags
 

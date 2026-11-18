@@ -25,7 +25,7 @@ unchanged. Both contractions embed in the same renamed ambient gluing.
 
 ## References
 
-* {cite}`DeFalco2010`, Definitions 3.2 and 5.2.
+* {citeKey}`DeFalco2010`, Definitions 3.2 and 5.2.
 
 ## Tags
 

@@ -17,7 +17,7 @@ kernel type to an object of the internal language ({name}`Geb.FreeTopos.Translat
 well-typed kernel term to a term of the internal language. This module relates the kernel's
 denotation of each type ({name}`Geb.Kernel.Ty.den`) to the value of its translation in the topos
 of types and functional relations: a tree to the tree of the bitstrings of its labels in the
-enumeration of {cite}`Oitavem2010`, and the unit, product, function and list types
+enumeration of {citeKey}`Oitavem2010`, and the unit, product, function and list types
 componentwise. It proves the fundamental lemma of that logical relation: a kernel term's
 translation, in a represented context, has the type the kernel's checker infers and represents
 the term's denotation.
@@ -48,7 +48,7 @@ variables reached through {lit}`repC_var0` and {lit}`repC_varS`.
 
 ## References
 
-* {cite}`Oitavem2010`, Remark 2.2, for the enumeration of the bitstrings.
+* {citeKey}`Oitavem2010`, Remark 2.2, for the enumeration of the bitstrings.
 
 ## Tags
 
