@@ -143,7 +143,7 @@ syntax (name := gebProgram) "geb_program " ident " from " str " mirror " ident :
     -- the global of the definition of index k is its mirror, at the type whose denotation is the
     -- mirror's type
     let heq (k : ℕ) (thmName : Name) (doc : String) : CoreM Unit := do
-      let mName := m ++ .mkSimple (String.ofList ((ds.map Prod.fst).getD k []))
+      let mName := mirrorName m ((ds.map Prod.fst).getD k [])
       let some info := (← getEnv).find? mName | throwError "the definition {mName} has no mirror"
       let gk := mkConst (nm "g" k)
       let fstE := mkApp3 (mkConst ``Sigma.fst [0, 0]) treeT (mkConst ``Kernel.Ty.den) gk

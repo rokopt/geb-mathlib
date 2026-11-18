@@ -10,8 +10,9 @@
 ; knows to hold and each case analysis and structural recursion marked by nodes no reader writes;
 ; the typing (bootstrap/stage1/typing.geb) checks them; and their erasure is the program the
 ; stage-0 expansion writes, each abstraction over several binders written as abstractions over
-; one and each clause's field bound at the trees' type, which the reader resolves to the same
-; terms.
+; one and each named clause field bound at the trees' type, which the reader resolves to the same
+; terms. Patterns repeat & at a remaining-children field; {lit}`_` has no binding, and named fields
+; retain theirs even when unused.
 ; A program's forms are decoded once, where the stage-0 compiler's front end gives them as trees,
 ; and the names of keywords, numerals and recognizers the kernel's modules share stay trees. The
 ; stage-1 compiler is the stage-0 compiler with this expansion in place of that one; built by the
@@ -30,11 +31,11 @@
   (deftype MTx OTx.Maybe)
   (import (Seq MTx) as MTxs)
   (defn sameName ((a Name) (b Name)) T (equal (rep a) (rep b)))
-  (defn atomName ((x Tx)) Name (case x ((tAtom cs) (name cs)) (else (name (nil T)))))
-  (defn isAtomTx ((x Tx)) T (case x ((tAtom cs) 1) (else 0)))
-  (defn isListTx ((x Tx)) T (case x ((tList xs) 1) (else 0)))
+  (defn atomName ((x Tx)) Name (case x ((tAtom & cs) (name cs)) (else (name (nil T)))))
+  (defn isAtomTx ((x Tx)) T (case x ((tAtom & cs) 1) (else 0)))
+  (defn isListTx ((x Tx)) T (case x ((tList & xs) 1) (else 0)))
   (defn namedTx ((x Tx) (kw T)) T (named (rep x) kw))
-  (defn elems ((x Tx)) (List Tx) (case x ((tList xs) xs) (else (nil Tx))))
+  (defn elems ((x Tx)) (List Tx) (case x ((tList & xs) xs) (else (nil Tx))))
   (defn nthTx ((xs (List Tx)) (i T)) Tx (Txs.atOr tx0 xs i))
 
   ; forms under construction
@@ -118,7 +119,8 @@
   ; the binders of an abstraction, one binder (x A) or a list of them, as the typing and the reader
   ; read them
   (defn bindersTx ((b Tx)) (List Tx)
-    (case b ((tList xs) (if (and (eq (Txs.length xs) 2) (isAtomTx (nthTx xs 0))) (Txs.single b) xs))
+    (case b
+      ((tList & xs) (if (and (eq (Txs.length xs) 2) (isAtomTx (nthTx xs 0))) (Txs.single b) xs))
       (else (nil Tx))))
   ; the abstraction over each binder of a list in turn around a body, the first outermost, each
   ; over a list of one binder, which the typing and the reader read as they read the abstraction
@@ -179,17 +181,17 @@
   ; takes it only at a node with fewer children than its constructor has fields, which no member is
   (defn expandAliases ((env (List Decl)) (ty Tx)) Tx
     (cata Tx Tx ty
-      ((tAtom cs) (case (findAlias (name cs) env) ((OTx.just a) a) ((OTx.nothing) (tAtom cs))))
-      ((tList rs) (tList rs))
+      ((tAtom & cs) (case (findAlias (name cs) env) ((OTx.just a) a) ((OTx.nothing) (tAtom cs))))
+      ((tList & rs) (tList rs))
       (else tx0)))
   (deftype TT (Prod Tx Tx))
   (import (Seq TT) as TTs)
   (defn defaultOf ((ty Tx)) Tx
     (snd
       (cata Tx TT ty
-        ((tAtom cs)
+        ((tAtom & cs)
          (pair (tAtom cs) (if (namedTx (tAtom cs) kwUnit) aUnitV (asTy (tAtom cs) aZero))))
-        ((tList rs)
+        ((tList & rs)
          (let*
            ((fs (List Tx)
               (foldr TT (List Tx) (lam ((r TT) (a (List Tx))) (cons (fst r) a)) (nil Tx) rs))
@@ -221,7 +223,7 @@
   ; variables and the parts extra gives of the constructor and the variables, numerals as atoms;
   ; and the clauses' bodies, an else clause's last
   (defn clauseCtor ((env (List Decl)) (c Tx)) ODecl.Maybe
-    (case (nthTx (elems c) 0) ((tList ps) (findCtor (atomName (nthTx ps 0)) env))
+    (case (nthTx (elems c) 0) ((tList & ps) (findCtor (atomName (nthTx ps 0)) env))
       (else ODecl.nothing)))
   (deftype CP (Prod Tx (Prod (List Tx) (List Tx))))
   ; a clause's variables split at its constructor's fixed fields, each written by entry with its
@@ -260,9 +262,26 @@
                    ((ODecl.just e)
                     (case e
                       ((ctorD m j dd fs v w)
-                       (let p (Prod (List Tx) (List Tx))
-                         (splitVars (elems fs) w (Txs.tail (elems (nthTx (elems c) 0))) entry)
-                         (if (and (eq (Txs.length (elems c)) 2) (sameName dd d))
+                       (let*
+                         ((written (List Tx) (Txs.tail (elems (nthTx (elems c) 0))))
+                          (vars (List Tx)
+                            (if v
+                              (Txs.append (dropLast (dropLast written))
+                                (Txs.single (nthTx written (sub (Txs.length written) 1))))
+                              written))
+                          (p (Prod (List Tx) (List Tx)) (splitVars (elems fs) w vars entry)))
+                         (if
+                           (and (eq (Txs.length (elems c)) 2)
+                             (and (sameName dd d)
+                               (and
+                                 (eq (Txs.length written) (add (Txs.length (elems fs)) (mul 2 v)))
+                                 (and
+                                   (if v (namedTx (nthTx written (Txs.length (elems fs))) kwAmp) 1)
+                                   (foldr Tx T
+                                     (lam ((x Tx) (ok T))
+                                       (and (and (isAtomTx x) (if (namedTx x kwAmp) 0 1)) ok))
+                                     1
+                                     vars)))))
                            (OTx.just
                              (tList
                                (cons (numAtom j)
@@ -340,8 +359,9 @@
   ; its expansion as a function of the declarations
   (defn expandExpr ((env (List Decl)) (e Tx)) MTx
     ((snd
-       (cata Tx XR e ((tAtom cs) (pair (tAtom cs) (lam ((env (List Decl))) (OTx.just (tAtom cs)))))
-         ((tList rs)
+       (cata Tx XR e
+         ((tAtom & cs) (pair (tAtom cs) (lam ((env (List Decl))) (OTx.just (tAtom cs)))))
+         ((tList & rs)
           (let fs (List Tx) (xrForms rs)
             (pair (tList fs)
               (lam ((env (List Decl)))
@@ -530,6 +550,8 @@
   (defn bindVars ((fb Binder) (rb Binder) (meta Tx) (body Tx)) Tx
     (let ms (List Tx) (elems meta)
       (foldr Tx Tx fb (foldr Tx Tx rb body (elems (nthTx ms 2))) (elems (nthTx ms 1)))))
+  ; a wildcard has no binding and does not evaluate the field's value
+  (defn fieldLet ((v Tx) (a Tx) (e Tx) (b Tx)) Tx (if (namedTx v (quote (0 _))) b (sLet v a e b)))
   ; case analysis: the scrutinee bound once, its label tested, and in a clause its children,
   ; each fixed field's variable bound to the head of those remaining and the remaining children's
   ; to the rest
@@ -539,8 +561,9 @@
         (lam ((meta Tx) (b Tx))
           (sLet aC (sList aT) (sx2 aChildren aS)
             (bindVars
-              (lam ((v Tx) (acc Tx)) (sLet v aT (sHeadOf aC) (sLet aC (sList aT) (sTailOf aC) acc)))
-              (lam ((v Tx) (acc Tx)) (sLet v (sList aT) aC acc))
+              (lam ((v Tx) (acc Tx))
+                (fieldLet v aT (sHeadOf aC) (sLet aC (sList aT) (sTailOf aC) acc)))
+              (lam ((v Tx) (acc Tx)) (fieldLet v (sList aT) aC acc))
               meta
               b))))))
   ; structural recursion: the clauses in the step of the kernel's fold of trees whose step sees the
@@ -567,19 +590,20 @@
                                 (sx3 aPair (sLam1 aU aUnit dr) (sx2 aNil th))
                                 (sLam2 aH th aTl (sList th) (sx3 aPair aH aTl)))
                               (if (numOf (nthTx (elems e) 1))
-                                (sLet v r (sx2 (sx2 aFst aQ) aUnitV)
+                                (fieldLet v r (sx2 (sx2 aFst aQ) aUnitV)
                                   (sLet aC (sList aT) (sTailOf aC) acc))
-                                (sLet v aT (sHeadOf aC) (sLet aC (sList aT) (sTailOf aC) acc))))))
+                                (fieldLet v aT (sHeadOf aC)
+                                  (sLet aC (sList aT) (sTailOf aC) acc))))))
                         (lam ((e Tx) (acc Tx))
                           (let v Tx (nthTx (elems e) 0)
                             (if (numOf (nthTx (elems e) 1))
-                              (sLet v (sList r)
+                              (fieldLet v (sList r)
                                 (sx6 aFoldr th (sList r)
                                   (sLam2 aH th aA (sList r) (sx3 aCons (sx2 aH aUnitV) aA))
                                   (sx2 aNil r)
                                   (sx2 aSnd aQ))
                                 acc)
-                              (sLet v (sList aT) aC acc))))
+                              (fieldLet v (sList aT) aC acc))))
                         meta
                         b)))))))
           (nthTx rs 2))
@@ -592,9 +616,10 @@
   ; function when it is a member; the datum of a member, the quotation of the tree; and case
   ; analysis and structural recursion their chains of tests
   (defn eraseExpr ((e Tx)) Tx
-    (cata Tx Tx e ((tAs a b) b) ((tOf a b) b) ((tAtom cs) (tAtom cs)) ((tCase rs) (eraseCase rs))
-      ((tCata rs) (eraseCata rs))
-      ((tList rs)
+    (cata Tx Tx e ((tAs a b) b) ((tOf a b) b) ((tAtom & cs) (tAtom cs))
+      ((tCase & rs) (eraseCase rs))
+      ((tCata & rs) (eraseCata rs))
+      ((tList & rs)
        (let* ((k T (Txs.length rs)) (h Tx (nthTx rs 0)))
          (cond ((and (namedTx h kwRep) (eq k 2)) (sx1 (nthTx rs 1)))
            ((and (namedTx h kwDecode) (eq k 5))
@@ -605,7 +630,7 @@
       (else tx0)))
   (defn eraseForm ((f Tx)) Tx
     (case f ((tData d) (sx3 aDeftype d aT))
-      ((tList xs)
+      ((tList & xs)
        (if (and (eq (Txs.length xs) 3) (namedTx (nthTx xs 0) kwDef))
          (sx3 (nthTx xs 0) (nthTx xs 1) (eraseExpr (nthTx xs 2)))
          f))
@@ -617,7 +642,7 @@
     (let p (Prod (List Tx) (List Tx))
       (foldr Tx (Prod (List Tx) (List Tx))
         (lam ((f Tx) (acc (Prod (List Tx) (List Tx))))
-          (case f ((tMarker xs) (pair (cons f (fst acc)) (snd acc)))
+          (case f ((tMarker & xs) (pair (cons f (fst acc)) (snd acc)))
             (else (pair (fst acc) (cons f (snd acc))))))
         (pair (nil Tx) (nil Tx))
         fs)
@@ -625,7 +650,7 @@
   ; a program's checked forms erased, the templates' instances at opaque arguments dropped
   (defn kernelForms ((fs (List Tx))) (List Tx)
     (foldr Tx (List Tx)
-      (lam ((f Tx) (acc (List Tx))) (case f ((tGeneric gs) acc) (else (cons (eraseForm f) acc))))
+      (lam ((f Tx) (acc (List Tx))) (case f ((tGeneric & gs) acc) (else (cons (eraseForm f) acc))))
       (nil Tx)
       fs))
   ; a program's forms expanded with their datatypes, checked and erased, the templates' instances

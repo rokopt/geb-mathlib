@@ -110,7 +110,7 @@
   ; pattern's variables to optional terms: the optional extended assignment
   (data Assign (assign & T))
   (import (Option Assign) as OAssign)
-  (defn assigned ((a Assign)) Ts (case a ((assign s) s)))
+  (defn assigned ((a Assign)) Ts (case a ((assign & s) s)))
   (defn bindAA ((m OAssign.Maybe) (f (Arrow Assign OAssign.Maybe))) OAssign.Maybe
     (case m ((OAssign.just a) (f a)) ((OAssign.nothing) OAssign.nothing)))
   (deftype Mt (Arrow T (Arrow T (Arrow Ts OAssign.Maybe))))
@@ -171,8 +171,8 @@
     (case m ((OThm.just a) (f a)) ((OThm.nothing) OTPair.nothing)))
   (defn mapTP ((f (Arrow T TPair)) (m T)) OTPair.Maybe
     (if (isSome m) (OTPair.just (f (get m))) OTPair.nothing))
-  (defn termsOf ((h Terms)) Ts (case h ((terms xs) xs)))
-  (defn objsOf ((h Objs)) Ts (case h ((objs xs) xs)))
+  (defn termsOf ((h Terms)) Ts (case h ((terms & xs) xs)))
+  (defn objsOf ((h Objs)) Ts (case h ((objs & xs) xs)))
 
   ; the first rule that rewrites a term at its root: the pair of the result and its derivation
   (deftype RW (Arrow T T))
@@ -262,7 +262,7 @@
   (import (Map NFR Marked) as NFRMarked)
   (data NFRList (nfrs & NFR))
   (import (Option NFRList) as ONFRList)
-  (defn nfrsOf ((l NFRList)) (List NFR) (case l ((nfrs xs) xs)))
+  (defn nfrsOf ((l NFRList)) (List NFR) (case l ((nfrs & xs) xs)))
   ; the bindings, images and collections of optional normal forms, as the base's of optional trees
   (defn bindNT ((m ONFR.Maybe) (f (Arrow NFR T))) T
     (case m ((ONFR.just r) (f r)) ((ONFR.nothing) none)))
@@ -302,11 +302,11 @@
   ; hypotheses and a term; normalization reads its context, hypotheses and term
   (data Job (job T Objs T Terms T))
   (data Jobs (jobs & Job))
-  (defn jobsOf ((qs Jobs)) (List Job) (case qs ((jobs xs) xs)))
+  (defn jobsOf ((qs Jobs)) (List Job) (case qs ((jobs & xs) xs)))
   (import (Seq Job) as JobL)
   (import (Map T Job) as JobAt)
   (defn jobDp ((j Job)) T (case j ((job dp g k hs t) dp)))
-  (defn jobCtx ((j Job)) Ts (case j ((job dp g k hs t) (case g ((objs xs) xs)))))
+  (defn jobCtx ((j Job)) Ts (case j ((job dp g k hs t) (case g ((objs & xs) xs)))))
   (defn jobNum ((j Job)) T (case j ((job dp g k hs t) k)))
   (defn jobHyps ((j Job)) Ts (case j ((job dp g k hs t) (termsOf hs))))
   (defn jobTerm ((j Job)) T (case j ((job dp g k hs t) t)))

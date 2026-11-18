@@ -108,6 +108,17 @@ with tempfile.TemporaryDirectory(prefix='geb-editor-services-') as directory:
     assert 'y' not in {text(s['name']) for s in query('((Nil) C)', patterns, offset=7)['completions']}
     data_types = query('(C T)', patterns, offset=3)['completions']
     assert [text(s['name']) for s in data_types] == ['D']
+    patterns = '''(data D (C T & T))
+(defn f ((_ T) (x D)) T (case x ((C _ & rest) _)))
+'''
+    outer = selected(query('((_ T)', patterns, offset=2))[1]
+    body = query('rest) _', patterns, offset=6)
+    assert selected(body)[1] == outer
+    assert 'rest' in {text(s['name']) for s in body['completions']}
+    assert '&' not in {text(s['name']) for s in body['completions']}
+    for offset in (3, 5):
+        marker = query('(C _ & rest)', patterns, offset=offset)
+        assert marker['target'] is None and marker['completions'] == []
     for body in ['', '(lam ((y T)) )', '(let y T x )', '(let* ((y T x)) )']:
         empty = '(defn f ((x T)) T ' + body + ')'
         caret = len(empty) - (2 if body else 1)

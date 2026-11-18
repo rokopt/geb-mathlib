@@ -47,8 +47,9 @@ register_simp_attr template
 open Lean Elab Command Meta in
 /-- {lit}`template_equations ns`: for each constant of the namespace {lit}`ns` whose name's last
 component names a definition of a template's instance, {lit}`P/I.f` with {lit}`f` a function of
-{lit}`GebTests.Prototypes.FreeTopos.Agreement.Templates` of the same type, the theorem {lit}`P/I.f_template` equating it with {lit}`f`, by
-reflexivity, a simp lemma in the default set and the set {lit}`template`. -/
+{lit}`GebTests.Prototypes.FreeTopos.Agreement.Templates` of the same type, the theorem
+{lit}`P/I.f_template` equating it with {lit}`f`, by reflexivity, a simp lemma in the default set
+and the set {lit}`template`. -/
 elab "template_equations " ns:ident : command => do
   let ns := ns.getId
   let here := `GebTests.Prototypes.FreeTopos.Agreement.Templates
@@ -57,7 +58,18 @@ elab "template_equations " ns:ident : command => do
     "l4", "l5", "l6", "res", "bad", "ok", "pure", "fail", "orElse"]
   let cands := (← getEnv).constants.fold (init := #[]) fun acc c _ ↦
     match c with
-    | .str p s => if p == ns && s.contains '/' then acc.push (c, s) else acc
+    | .str p s =>
+      let original := if s.startsWith "$" then do
+          let cs := s.toList.drop 1
+          if cs.length % 2 != 0 || !cs.all Char.isHexDigit then none else do
+            let bs ← (List.range (cs.length / 2)).mapM fun i ↦
+              (Syntax.decodeNatLitVal? ("0x" ++ String.ofList ((cs.drop (2 * i)).take 2))).map
+                Nat.toUInt8
+            String.fromUTF8? ⟨bs.toArray⟩
+        else some s
+      match original with
+      | some s => if p == ns && s.contains '/' then acc.push (c, s) else acc
+      | none => acc
     | _ => acc
   for (c, s) in cands.qsort (fun a b ↦ a.2 < b.2) do
     let f := (s.splitOn ".").getLast!

@@ -422,12 +422,13 @@ Extension:
   resumed with no search for a theorem whose statement and script the
   cache has, proved, and the record of
   elaborated definitions for the first program outside the compilers;
-  documentation as literate pages has a first inclusion. Waiting on the datatype
-  language's completion: hygienic elaboration with explicit assembly,
-  patterns with `&`, unused pattern variables, primitives that no binding
-  shadows and emitted names that no definition captures; holes in the
-  datatype language; and diagnostics with locations of its typing. The typed
-  enumerator accompanies the first substantial module. The rest, the store
+  documentation as literate pages has a first inclusion. Source binders are
+  renamed before datatype expansion, emitted Lean references are qualified
+  and names escaped injectively; patterns repeat `&` and accept `_` for an
+  ignored field, retaining named bindings even when unused. Remaining:
+  explicit assembly; holes in the datatype language; and diagnostics with
+  locations of its typing. The typed enumerator accompanies the first
+  substantial module. The rest, the store
   and a language server among it, waits on its consumers;
   the Geb-native refinement search follows the bootstrap.
 
@@ -2775,9 +2776,13 @@ tag := "geb-grows-in-itself"
   kernel forms alone expands to itself, so the fixed point holds with
   the expansion in the compiler. Recognizers, type parameters and a
   static check of datatypes are the datatype language's completion
-  ({ref "datatype-completion"}[The datatype language's completion]); the
-  expansion refers to some primitives by name, so a program does not
-  rebind them around case analysis and structural recursion.
+  ({ref "datatype-completion"}[The datatype language's completion]). Module
+  elaboration renames source binders into a private namespace before
+  expansion, so their spelling cannot capture a generated primitive or
+  recognizer reference. A pattern repeats `&` at its constructor's
+  remaining-children field. `_` ignores a field, including the forcing of a
+  recursive result; named fields retain their bindings even when unused.
+  Subsequent fields still receive the children at their declared positions.
 * Geb: the elaborator rewritten in the datatype language it accepts,
   and its staged self-compilation.
 
@@ -2956,9 +2961,10 @@ and the trees:
     and to name no numeral abbreviation, which the reader would replace
 :::
 
-The erasure rewrites these forms wherever they occur, so the typing
-admits no binder named `rep`, `decode` or `datum`: the erasure leaves
-every binder the typing accepts as the typing reads it. Nor does it admit
+Module elaboration renames source binders with the private prefix `%%`
+before the typing receives them. The core typing admits no binder named
+`rep`, `decode` or `datum`: the erasure leaves every binder the typing
+accepts as the typing reads it. Nor does it admit
 a binder taking a name that the expansion and the erasure write free under
 the program's binders: a primitive, the unit value, and the recognizer
 `D.member` of a datatype `D`. The names the erasure binds around the terms
@@ -2966,12 +2972,12 @@ it is given, the variable `%e` of a decoded tree and those of a case
 analysis's and a structural recursion's scrutinee, node and suspended
 results, the typing reads them in, so that a decoding's function and
 default, and each clause's body, are typed in the scope the erasure gives
-them; and it admits no clause variable beginning with `%`, as the erasure's
-own do, among which it binds a clause's. Each name the expansion and the
+them. Clause variables may use `%%`, but not the erasure's single-`%`
+prefix, among whose names it binds a clause's. Each name the expansion and the
 erasure write thus refers to what they write it for. Conversely, the names
 beginning with `%` are the implementation's: module elaboration, the
 expansion and the erasure bind and write them
-around a program's code, so both compilers reject a program whose source
+around a program's code, so the seed and both compilers reject a program whose source
 has an atom beginning with `%` outside its quotations and datums, and each
 name a program writes refers to what the program declares.
 
@@ -3735,7 +3741,7 @@ tag := "authoring-compatibility"
   * Complete
 *
   * Hygienic elaboration, explicit assembly and patterns
-  * Ready
+  * Hygienic elaboration and patterns: complete. Explicit assembly: ready
 *
   * Early in writing: holes in the datatype language, located diagnostics
     and the typed enumerator
@@ -4461,11 +4467,9 @@ and semantic dependencies are references to definitions.
   folds, and sorting the members of a cycle by their digests does not
   solve symmetric cycles.
 * Generated names are made hygienic before a large library is written:
-  identifiers the expansion generates are reserved or its expansion is
-  hygienic, and emitted Lean names escape injectively with the runtime's
-  names qualified. The section on improvements records the capture of
-  primitives in the datatype language's expansion and the conflicts with
-  emitted `T`, `leaf` and `mk`.
+  module elaboration gives source binders private names before datatype
+  expansion, and emitted Lean names escape injectively with global and
+  runtime references qualified.
 * Converting existing source replays the old resolver, so that the
   meaning to be re-expressed is known exactly, and the converted source
   then follows the new reader's rules, duplicates rejected; no present
@@ -4610,8 +4614,10 @@ datatype language, in the seed's reading of a program
 `GebTests/Prototypes/Kernel/Modules.lean`. It flattens a program's
 blocks into declarations under qualified names, renaming every name of a
 body to what it denotes; each form of the kernel and of the datatype
-language gives its children their roles, so a name bound in a term, a
-quoted datum and a hole's name are not renamed. A qualified name that is
+language gives its children their roles. Bound names and their occurrences
+receive the private prefix `%%`, preserving lexical shadowing while keeping
+generated references distinct. Quoted data and hole names keep their spelling.
+The pattern markers `&` and `_` bind no names. A qualified name that is
 not visible becomes the reserved atom `hole`, which denotes nothing, so a
 declaration a module does not export cannot be reached by its qualified
 name. A module with parameters is a template elaborated at each import
@@ -6390,8 +6396,8 @@ datatypes by `data`.
   * Shadowing a primitive cannot alter generated operations; emitted names
     capture no definition; imports resolve deterministically; failures name
     a source occurrence and preserve existing outputs; a pattern writes the
-    `&` its declaration writes, and a variable that a clause does not use is
-    not bound
+    `&` its declaration writes, and a field written `_` is not bound;
+    named fields retain their bindings even when unused
 :::
 
 The sources are converted to the forms a step adds in one mechanical
@@ -8292,18 +8298,6 @@ tag := "improvements"
 The following are known limitations of what is constructed, each with
 the change that removes it.
 
-* Primitives named in expansions. The expansion of the datatype language
-  refers to the
-  primitives `label`, `child`, `children`, `node` and `eq` by name, so a
-  program that binds one of these names around a case analysis or a
-  structural recursion changes the expansion's meaning. A reference to
-  a primitive that no binding shadows, a reader form naming a
-  primitive by its index, added to the seed's reader and to the Geb
-  reader alike, removes the dependence; the reservation of names
-  beginning with `%` for the expansion is likewise documented and not
-  enforced. Hygienic elaboration, a step of the authoring sequence,
-  removes both ({ref "files-editions"}[Files, editions and the host
-  boundary]).
 * Diagnostics of the Geb compiler. The compilers' entry points, as
   functions, give a program they reject the empty tree, so that `geb-kernel
   run` of a compiler's image writes an empty file. The executable
@@ -8374,13 +8368,6 @@ the change that removes it.
   dependency of a library of the modules that read it (`lakefile.toml`);
   a change to a source of the stage-0 compiler, which most of the tests
   import, still rebuilds most of them.
-* Emitted names. A program's definition named `T`, `leaf` or `mk` makes
-  the emitted module ill-typed, since the module refers to the tree type,
-  the leaf and the node by those names; qualifying them as the constants
-  are qualified, as the hygiene of generated names requires, removes the
-  restriction.
-* Patterns. A pattern omits the `&` that a declaration writes, and every
-  pattern variable is bound whether or not the clause uses it.
 * Monomorphic compositions. The datatype language has no polymorphic
   definitions, and a template's instances are distinct types, so a
   composition of computations at two types of values is a definition of

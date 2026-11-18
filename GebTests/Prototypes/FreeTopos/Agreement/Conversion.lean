@@ -142,7 +142,7 @@ theorem ruleOf_eq (r : NormRule) : «Conversion.ruleOf» (encRule r) = encRule r
 /-- The mirror's rules of the normalizer read from encoded rules are those encodings. -/
 theorem rulesOf_eq (rs : List NormRule) :
     «Conversion.rulesOf» (rs.map encRule) = rs.map encRule := by
-  simp only [«Conversion.rulesOf», «Conversion/RuleAt.map», foldr_eq]
+  simp only [«Conversion.rulesOf», «$436f6e76657273696f6e2f52756c6541742e6d6170», foldr_eq]
   exact List.rec rfl (fun r rs ih ↦ by
     simp only [List.map_cons, List.foldr_cons, ih, ruleOf_eq]) rs
 
@@ -246,7 +246,8 @@ theorem machineReduceBy_eq (unf' : Tree → Tree) (unfold : ℕ → Bool)
     «Conversion.machineReduceBy» (encGlobals G) (E.toList.map encEntry) (leaf n) unf' (leaf kl)
         (leaf kc) (rs.map encRule) (leaf fuel) Γ (Φ.map encTerm) (encTerm t) =
       encOpt ((Internal.machineReduceBy G E n unfold kl kc rs fuel Γ Φ t).map encTerm) := by
-  have hemp : «Conversion/EachRule.isEmpty» (rs.map encRule) = ofBool rs.isEmpty := by
+  have hemp : «$436f6e76657273696f6e2f4561636852756c652e6973456d707479»
+      (rs.map encRule) = ofBool rs.isEmpty := by
     simp only [template, isEmpty_eq, List.isEmpty_map]
   simp only [«Conversion.machineReduceBy», hemp, ofBool_bne, label_ne_zero,
     Internal.machineReduceBy]
@@ -383,7 +384,8 @@ theorem convStep_eq (l : ConvRule) (hl : RulePlain l) (v : DV)
       rw [(anyT_eq (fun x ↦ Const.eq x (leaf j)) (fun x ↦ x.label == j) _ fun x _ ↦ rfl).trans
         (congrArg ofBool (List.any_map.trans (any_leaf_eq j except)))]
       mirror_simp []
-    have hemp : «Conversion/EachRule.isEmpty» (rs.map encRule) = ofBool rs.isEmpty := by
+    have hemp : «$436f6e76657273696f6e2f4561636852756c652e6973456d707479»
+        (rs.map encRule) = ofBool rs.isEmpty := by
       simp only [template, isEmpty_eq, List.isEmpty_map]
     simp only [«Conversion.convStep», label_eq, label_encConv, child_encConv, convData, lt_leaf,
       eq_leaf, label_ne_zero, ofBool_bne, children_eq, RoseTree.children_node, Nat.reduceLT,

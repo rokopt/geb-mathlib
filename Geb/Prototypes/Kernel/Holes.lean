@@ -135,7 +135,7 @@ def readBinders (tys : TypeNames) (b : SExp) : Option Scope :=
     match c.label, c.children with
     | none, [x, A] => do
       let s ← x.label
-      if isLifted s then none else some (s, ← readType tys A)
+      if isLifted (sourceName s) then none else some (s, ← readType tys A)
     | _, _ => none
 
 /-- One node of the search for holes: an atom contributes none, and is rejected when it begins
@@ -146,7 +146,7 @@ def occStep (tys : TypeNames) (a : Option (List Char))
     (cs : List (SExp × (Scope → Option (List Decl)))) (scope : Scope) : Option (List Decl) :=
   let all := (cs.mapM (m := Option) fun c ↦ c.2 scope).map List.flatten
   match a, cs with
-  | some s, _ => if isLifted s then none else some []
+  | some s, _ => if isLifted (sourceName s) then none else some []
   | none, (h, _) :: rest =>
     if isKw h "quote" then some []
     else if isKw h "hole" then
@@ -163,7 +163,7 @@ def occStep (tys : TypeNames) (a : Option (List Char))
       match rest with
       | [(x, _), (A, _), (_, e), (_, body)] => do
         let s ← x.label
-        if isLifted s then none
+        if isLifted (sourceName s) then none
         else some ((← e scope) ++ (← body ((s, ← readType tys A) :: scope)))
       | _ => all
     else all
@@ -429,6 +429,8 @@ modules, of the forms, or of resolving a definition. -/
 def liftProgram (text : List Char) : Except String Lifted := do
   let some es := readSExps text
     | .error "the text is not well formed or its parentheses do not balance"
+  if let some n := es.findSome? reservedSourceName? then
+    throw s!"the name {String.ofList n} is reserved for the implementation"
   let fs := dropGeneric (← elabModules es)
   let some (_, _, ps) := fs.foldl pendStep (some ([], [], []))
     | .error "a form is not a def, a deftype nor a defnum, or its name is reserved, declared \
@@ -449,7 +451,8 @@ def obligationsOf (budget : ℕ) (L : Lifted) : Except String Report := do
   let n := L.decls.length
   let (GT, es) ← genProgram (L.decls.zipIdx.map fun (d, i) ↦ varTy d (mvar i)) L.ps L.terms n
   let θ ← unifyDefs budget L.ps es
-  let holes : List Hole := L.decls.zipIdx.map fun (d, i) ↦ ⟨d.name, d.context, substM θ (mvar i)⟩
+  let holes : List Hole := L.decls.zipIdx.map fun (d, i) ↦
+    ⟨d.name, d.context.map (fun (n, A) ↦ (sourceName n, A)), substM θ (mvar i)⟩
   let cs := holes.map fun h ↦ closure h.context (dflt (ground tT h.target))
   .ok ⟨holes, (L.ps.map (·.name)).zip (GT.map (substM θ)), L.terms.map (completeTerm cs)⟩
 
@@ -523,6 +526,9 @@ def fill (L : Lifted) (name : List Char) (e : SExp) : Except String Lifted := do
       let q ← L.ps[← L.owners[p]?]?
       pure (d, q) : Option (Decl × Pending))
     | .error "the hole's declaration is missing"
+  if (reservedSourceName? e).isSome then
+    throw s!"the filling of {String.ofList name} names an implementation name"
+  let e := rename [] e .term (d.context.map (sourceName ∘ Prod.fst))
   let some m := resolve q.tys q.defs (expandNums q.nums e) (d.context.map Prod.fst)
     | .error s!"the filling of {String.ofList name} does not resolve in its context"
   let u := wk (L.decls.length - p - 1) (closure d.context m)

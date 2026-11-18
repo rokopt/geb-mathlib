@@ -39,13 +39,21 @@
 # not.
 
 set -euo pipefail
+# The interpreted reader's continuations grow with the largest layer's source text. Give both
+# the main thread and Lean's worker threads a finite stack size; an unlimited OS limit does not
+# raise the runtime's own stack-overflow threshold on every host.
+bootstrap_stack=$(ulimit -Hs)
+if [ "$bootstrap_stack" = unlimited ]; then bootstrap_stack=${LEAN_STACK_SIZE_KB:-2097152}; fi
+ulimit -s "$bootstrap_stack"
+export LEAN_STACK_SIZE_KB="${LEAN_STACK_SIZE_KB:-$bootstrap_stack}"
 cd "$(dirname "$0")/.."
 
 b=bootstrap
 img=$b/compiler.img
 lean=$b/lean/GebBoot.lean
 # each mirror emitted as one module: its name, then its manifest
-mirrors=("Kernel $b/kernel.manifest" "DatatypeSoundness $b/datatype-soundness.manifest")
+mirrors=("Kernel $b/kernel.manifest" "DatatypeSoundness $b/datatype-soundness.manifest"
+  "Hygiene $b/hygiene.manifest")
 kernel=.lake/build/bin/geb-kernel
 
 tmp=$(mktemp -d)
@@ -71,7 +79,7 @@ mirror() {
   "$kernel" join "$3" "$tmp/$name.geb"
   "$kernel" run "$img" mainLean "$tmp/$name.geb" "$tmp/$name.raw"
   [ -s "$tmp/$name.raw" ] || fail "the image's mainLean rejects the mirror $name"
-  sed "s/^namespace GebBoot$/namespace GebMirror.$name/; s/^end GebBoot$/end GebMirror.$name/" \
+  sed "s/^namespace GebBoot$/namespace GebMirror.$name/; s/^end GebBoot$/end GebMirror.$name/; s/_root_\.GebBoot\.«/_root_.GebMirror.$name.«/g" \
     "$tmp/$name.raw" > "$out"
 }
 
@@ -93,6 +101,7 @@ layered() {
     "$kernel" run "$img" main "$tmp/layer.geb" "$tmp/layer.img"
     [ -s "$tmp/layer.img" ] || fail "the image rejects the layer $name"
     awk -v skip="$count" -v prev="$prev" '
+      { gsub(/_root_\.GebBoot\.«/, "_root_.GebMirror.Metalogic.«") }
       /^def «/ { n++ }
       n == 0 {
         if ($0 ~ /^public import / && prev != "") print "public import GebMirror.Metalogic." prev

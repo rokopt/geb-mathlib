@@ -213,10 +213,10 @@
          (case a
            ((mkThm n ctx hyps result)
             (case hyps
-              ((terms fs)
+              ((terms & fs)
                (if
                  (and (eq n (length th))
-                   (and (eq (length (case ctx ((objs xs) xs))) (length sg))
+                   (and (eq (length (case ctx ((objs & xs) xs))) (length sg))
                      (and (equal phi (instTerm th sg result))
                        (eq (length fs) (Deducers.length ps)))))
                  (mapO (lam ((ds T)) (rule j th sg (children ds)))

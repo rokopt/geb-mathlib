@@ -104,7 +104,7 @@ theorem loaded_at (L : Translated PST) {name : String} {T : Kernel.Tree} {f : Ke
 /-- The functions of the compiler's passes that the mirror defines. -/
 def passFns : PassFns where
   expandTyped := «Datatype.expandTyped»
-  nothing := «Typing/OName.nothing»
+  nothing := «$547970696e672f4f4e616d652e6e6f7468696e67»
   checkAll := «Typing.checkAll»
   env0 := «Typing.env0»
   markersFirst := «Datatype.markersFirst»
@@ -200,8 +200,8 @@ def hypFns : HypFns where
   numOf := «Reader.numOf»
   nameOf := «Reader.nameOf»
   node2 := «Reader.node2»
-  reverse := «Datatype/Txs.reverse»
-  drop := «Datatype/Txs.drop»
+  reverse := «$44617461747970652f5478732e72657665727365»
+  drop := «$44617461747970652f5478732e64726f70»
   kernelForms := «Datatype.kernelForms»
   markers := «Recognize.markers»
   markerCtors := «Typing.markerCtors»

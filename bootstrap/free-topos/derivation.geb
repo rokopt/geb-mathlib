@@ -216,7 +216,7 @@
   (defn allSomeTerms ((ms Ts)) OTerms.Maybe
     (if (allT isSome ms) (OTerms.just (terms (mapT get ms))) OTerms.nothing))
   (defn termsOr ((m OTerms.Maybe)) Ts
-    (case m ((OTerms.just h) (case h ((terms xs) xs))) ((OTerms.nothing) (nil T))))
+    (case m ((OTerms.just h) (case h ((terms & xs) xs))) ((OTerms.nothing) (nil T))))
   (defn lowerHyps ((G Globals) (n T) (g Ts) (hs Ts)) OTerms.Maybe
     (allSomeTerms
       (mapT
@@ -227,8 +227,8 @@
   ; theorems: an arity, a context, hypotheses and a conclusion
   (data Thm (mkThm T Objs Terms T))
   (defn thArity ((a Thm)) T (case a ((mkThm m c h q) m)))
-  (defn thCtx ((a Thm)) Ts (case a ((mkThm m c h q) (case c ((objs xs) xs)))))
-  (defn thHyps ((a Thm)) Ts (case a ((mkThm m c h q) (case h ((terms xs) xs)))))
+  (defn thCtx ((a Thm)) Ts (case a ((mkThm m c h q) (case c ((objs & xs) xs)))))
+  (defn thHyps ((a Thm)) Ts (case a ((mkThm m c h q) (case h ((terms & xs) xs)))))
   (defn thConcl ((a Thm)) T (case a ((mkThm m c h q) q)))
   (import (Option Thm) as OThm)
   (def thm0 (mkThm 0 (objs (nil T)) (terms (nil T)) 0))
@@ -279,7 +279,7 @@
   ; whether the compilations of the constants' definitions pass a test, and whether a certificate
   ; proves a sequent in the theory they extend, with the entries' sequents as its theorems
   (def pdl0 (pdefns (nil PDefn)))
-  (defn pdefnsOf ((l PDefnList)) (List PDefn) (case l ((pdefns xs) xs)))
+  (defn pdefnsOf ((l PDefnList)) (List PDefn) (case l ((pdefns & xs) xs)))
   (defn anyDefs ((G Globals) (f (Arrow (List PDefn) T))) T
     (let cd OPDefnList.Maybe (compileDefs G)
       (if (OPDefnList.isJust cd) (f (pdefnsOf (OPDefnList.fromMaybe pdl0 cd))) 0)))
@@ -294,26 +294,26 @@
 
   ; the contexts and hypotheses of a node's children
   (data Scope (scope Objs Terms))
-  (defn scopeCtx ((c Scope)) Ts (case c ((scope g hs) (case g ((objs xs) xs)))))
-  (defn scopeHyps ((c Scope)) Ts (case c ((scope g hs) (case hs ((terms xs) xs)))))
+  (defn scopeCtx ((c Scope)) Ts (case c ((scope g hs) (case g ((objs & xs) xs)))))
+  (defn scopeHyps ((c Scope)) Ts (case c ((scope g hs) (case hs ((terms & xs) xs)))))
   (defn ctxPair ((g Ts) (hs Ts)) Scope (scope (objs g) (terms hs)))
   (import (Seq Scope) as ScopeL)
   (import (Few Scope) as ScopeF)
   (import (Map T Scope) as ScopeAt)
   (data Scopes (scopes & Scope))
-  (defn scopesOf ((c Scopes)) (List Scope) (case c ((scopes xs) xs)))
+  (defn scopesOf ((c Scopes)) (List Scope) (case c ((scopes & xs) xs)))
   (import (Option Scopes) as OScopes)
   (def scope0 (ctxPair (nil T) (nil T)))
   ; a child's context with the number of variables by which it extends its node's
   (data Binder (binder Objs T))
-  (defn binderCtx ((b Binder)) Ts (case b ((binder g m) (case g ((objs xs) xs)))))
+  (defn binderCtx ((b Binder)) Ts (case b ((binder g m) (case g ((objs & xs) xs)))))
   (defn binderNum ((b Binder)) T (case b ((binder g m) m)))
   (defn ctxNum ((g Ts) (m T)) Binder (binder (objs g) m))
   (import (Seq Binder) as BinderL)
   (import (Few Binder) as BinderF)
   (import (Map T Binder) as BinderAt)
   (data Binders (binders & Binder))
-  (defn bindersOf ((c Binders)) (List Binder) (case c ((binders xs) xs)))
+  (defn bindersOf ((c Binders)) (List Binder) (case c ((binders & xs) xs)))
   (import (Option Binders) as OBinders)
   (def binder0 (ctxNum (nil T) 0))
   (defn bindTB ((m T) (f (Arrow T OBinders.Maybe))) OBinders.Maybe
@@ -889,7 +889,7 @@
     (case m ((ODevState.just a) (f a)) ((ODevState.nothing) ODevState.nothing)))
   (defn stConsts ((st DevState)) Globals (case st ((devState G E) G)))
   (defn stEntries ((st DevState)) (List Entry)
-    (case st ((devState G E) (case E ((entries xs) xs)))))
+    (case st ((devState G E) (case E ((entries & xs) xs)))))
 
   ; the quotient of a type by a relation
   (defn quotStep ((G Globals) (E (List Entry)) (n T) (A T) (R T)) ODevState.Maybe

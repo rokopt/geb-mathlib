@@ -180,8 +180,11 @@ def termScope (file : String) (pos : Locate.Pos) (t : Locate.Located)
     if role == .clause then
       if nodes.head?.bind (·.children.head?) |>.any (fun c ↦ contains c.label.1 pos) then
         return {}
-      let bs := nodes.head?.toList.flatMap fun p ↦
-        (p.children.drop 1).filterMap fun n ↦ localSymbol file n n
+      let fields := nodes.head?.toList.flatMap fun p ↦ p.children.drop 1
+      let marker (n : Locate.Located) := n.label.2 == some ['&'] || n.label.2 == some ['_']
+      if fields.any (fun n ↦ marker n && contains n.label.1 pos) then
+        return { active := false }
+      let bs := (fields.filter fun n ↦ !marker n).filterMap fun n ↦ localSymbol file n n
       if let some b := bs.find? (contains ·.selection pos) then return { locals := b :: locals }
       return (childAt 1 .term (bs.reverse ++ locals)).getD (following 0 (bs.reverse ++ locals))
     if role == .letBindings then

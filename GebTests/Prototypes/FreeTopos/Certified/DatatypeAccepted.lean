@@ -444,15 +444,15 @@ def mirrorIndices : List (String × ℕ) :=
     ("Typing.envNoms", 204), ("Typing.envMs", 207), ("Typing.env0", 208),
     ("Typing.lookupName", 209), ("Typing.hasName", 210), ("Typing.recognizerName", 213),
     ("Typing.markerNames", 243), ("Typing.memberOf", 247), ("Typing.decimalChars", 269),
-    ("Typing.markerCtors", 286), ("Typing/OName.nothing", 299), ("Typing.checkAll", 313),
-    ("Datatype/Txs.reverse", 318), ("Datatype/Txs.drop", 320), ("Datatype.isListTx", 338),
-    ("Datatype.namedTx", 339), ("Datatype.elems", 340), ("Datatype.nthTx", 341),
-    ("Datatype.kwData", 387), ("Datatype.kwDefn", 390), ("Datatype.kwGeneric", 395),
-    ("Datatype.memberName", 400), ("Datatype.xpStep", 473), ("Datatype.genericStep", 474),
-    ("Datatype.expandTyped", 475), ("Datatype.markersFirst", 483), ("Datatype.kernelForms", 484),
-    ("Recognize.markers", 530), ("Recognize.insertRecognizers", 542), ("Eval.valQuote", 557),
-    ("Eval.valUnit", 558), ("Eval.valPair", 559), ("Eval.listOf", 564), ("Eval.next", 580),
-    ("Eval.level", 581), ("charsFixed", 590), ("srcForm", 591), ("implName", 593)]
+    ("Typing.markerCtors", 286), ("Typing/OName.nothing", 300), ("Typing.checkAll", 314),
+    ("Datatype/Txs.reverse", 319), ("Datatype/Txs.drop", 321), ("Datatype.isListTx", 339),
+    ("Datatype.namedTx", 340), ("Datatype.elems", 341), ("Datatype.nthTx", 342),
+    ("Datatype.kwData", 388), ("Datatype.kwDefn", 391), ("Datatype.kwGeneric", 396),
+    ("Datatype.memberName", 401), ("Datatype.xpStep", 474), ("Datatype.genericStep", 475),
+    ("Datatype.expandTyped", 476), ("Datatype.markersFirst", 485), ("Datatype.kernelForms", 486),
+    ("Recognize.markers", 532), ("Recognize.insertRecognizers", 544), ("Eval.valQuote", 559),
+    ("Eval.valUnit", 560), ("Eval.valPair", 561), ("Eval.listOf", 566), ("Eval.next", 582),
+    ("Eval.level", 583), ("charsFixed", 592), ("srcForm", 593), ("implName", 595)]
 
 set_option doc.verso false in
 /-- The entries of the manifest of the compilers' program are at the indices named with them, as

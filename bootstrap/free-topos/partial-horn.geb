@@ -127,7 +127,7 @@
   (data SortList (sorts & T))
   (data OpSig (opSig SortList T))
   (import (Option OpSig) as OOpSig)
-  (defn opArgs ((o OpSig)) Ts (case o ((opSig as s) (case as ((sorts xs) xs)))))
+  (defn opArgs ((o OpSig)) Ts (case o ((opSig as s) (case as ((sorts & xs) xs)))))
   (defn opSort ((o OpSig)) T (case o ((opSig as s) s)))
 
   ; the binding of an optional signature into an optional tree, as the base binds optional trees
@@ -195,8 +195,8 @@
     (equal (rep (oeqns xs)) (rep (oeqns ys))))
   (data Sequent (seq SortList EqnList Eqn))
   (import (Option Sequent) as OSequent)
-  (defn seqCtx ((a Sequent)) Ts (case a ((seq c h q) (case c ((sorts xs) xs)))))
-  (defn seqHyps ((a Sequent)) (List Eqn) (case a ((seq c h q) (case h ((eqns xs) xs)))))
+  (defn seqCtx ((a Sequent)) Ts (case a ((seq c h q) (case c ((sorts & xs) xs)))))
+  (defn seqHyps ((a Sequent)) (List Eqn) (case a ((seq c h q) (case h ((eqns & xs) xs)))))
   (defn seqConcl ((a Sequent)) Eqn (case a ((seq c h q) q)))
   (defn mkSeq ((ctx Ts) (hs (List Eqn)) (q Eqn)) Sequent (seq (sorts ctx) (eqns hs) q))
   (defn seqScoped ((a Sequent)) T
@@ -207,8 +207,8 @@
   (data OpSigList (opSigs & OpSig))
   (data SeqList (seqs & Sequent))
   (data Theory (theory OpSigList SeqList))
-  (defn thySig ((th Theory)) (List OpSig) (case th ((theory s a) (case s ((opSigs xs) xs)))))
-  (defn thyAxioms ((th Theory)) (List Sequent) (case th ((theory s a) (case a ((seqs xs) xs)))))
+  (defn thySig ((th Theory)) (List OpSig) (case th ((theory s a) (case s ((opSigs & xs) xs)))))
+  (defn thyAxioms ((th Theory)) (List Sequent) (case th ((theory s a) (case a ((seqs & xs) xs)))))
 
   ; the checker's result at a certificate: an optional equation, as a function of the context's
   ; sorts and the hypotheses
@@ -341,7 +341,7 @@
   (data PDefnList (pdefns & PDefn))
   (import (Option PDefn) as OPDefn)
   (import (Option PDefnList) as OPDefnList)
-  (defn pdCtx ((d PDefn)) Ts (case d ((pdefn c s b) (case c ((sorts xs) xs)))))
+  (defn pdCtx ((d PDefn)) Ts (case d ((pdefn c s b) (case c ((sorts & xs) xs)))))
   (defn pdSort ((d PDefn)) T (case d ((pdefn c s b) s)))
   (defn pdBody ((d PDefn)) T (case d ((pdefn c s b) b)))
 

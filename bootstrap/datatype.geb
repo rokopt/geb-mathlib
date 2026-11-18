@@ -30,12 +30,13 @@
 ; constructors of a datatype the keyword data declares, it leaves the marker from which the
 ; recognizers are written (bootstrap/recognize.geb).
 ;
-; A pattern (c x ...) names one variable for each field of c, the last standing for the
-; remaining children when c has a & field; the & is not repeated in the pattern.
+; A pattern (c x ... & xs) repeats the declaration's & before the remaining children's variable.
+; A field written {lit}`_` does not bind a name or force a recursive result. Named fields retain
+; their bindings even when unused. The fields are walked in order to reach subsequent fields.
 ;
-; Names beginning with % are reserved for the expansion. The expansion refers to the
-; primitives label, child, children, node and eq by name, so a program does not rebind
-; them around case and cata; nor does it declare D.member for a datatype D it decodes.
+; Source names beginning with % are rejected. Module elaboration renames source binders with %%
+; before expansion, keeping them distinct from primitives, recognizers and the expansion's
+; single-% names. A program does not declare D.member for a datatype D it decodes.
 
 (module Datatype
   (export aDef kwData kwCase kwCata kwRep kwDecode kwDatum kwDefn decimalChars memberName sTail
@@ -219,11 +220,20 @@
   ; body, and start binds around them all
   (deftype Binder (Arrow T (Arrow T (Arrow T T))))
   (def bindWith
-    (lam ((fb Binder) (rb Binder) (start (Arrow T T)) (ctor T) (vars Ts) (body T))
-      (let* ((fields Ts (children (child ctor 3))) (isVar T (child ctor 4)))
+    (lam ((fb Binder) (rb Binder) (start (Arrow T T)) (ctor T) (written Ts) (body T))
+      (let*
+        ((fields Ts (children (child ctor 3))) (isVar T (child ctor 4))
+         (vars Ts
+           (if isVar
+             (append (dropLast (dropLast written)) (single (at written (sub (length written) 1))))
+             written)))
         (if
-          (and (eq (length vars) (add (length fields) isVar))
-            (allTrue (foldr T Ts (lam ((v T) (r Ts)) (cons (isAtom v) r)) (nil T) vars)))
+          (and (eq (length written) (add (length fields) (mul 2 isVar)))
+            (and (if isVar (named (at written (length fields)) kwAmp) 1)
+              (allTrue
+                (foldr T Ts (lam ((v T) (r Ts)) (cons (and (isAtom v) (if (named v kwAmp) 0 1)) r))
+                  (nil T)
+                  vars))))
           (some
             (start
               (foldr T T (lam ((p T) (acc T)) (fb (child p 1) (child p 0) acc))
@@ -317,9 +327,10 @@
   ; case analysis: the scrutinee bound once, its label tested, and in a clause its children, each
   ; fixed field's variable bound to the head of those remaining and the remaining children's to
   ; the rest
+  (def fieldLet (lam ((v T) (a T) (e T) (b T)) (if (named v (quote (0 _))) b (sLet v a e b))))
   (def caseField
-    (lam ((ty T) (v T) (b T)) (sLet v aT (sHeadOf aC) (sLet aC (sList aT) (sTailOf aC) b))))
-  (def caseRest (lam ((ty T) (v T) (b T)) (sLet v (sList aT) aC b)))
+    (lam ((ty T) (v T) (b T)) (fieldLet v aT (sHeadOf aC) (sLet aC (sList aT) (sTailOf aC) b))))
+  (def caseRest (lam ((ty T) (v T) (b T)) (fieldLet v (sList aT) aC b)))
   (def caseStart (lam ((b T)) (sLet aC (sList aT) (sx2 aChildren aS) b)))
   (def expandCase
     (lam ((env Ts) (raw T) (rs RRs))
@@ -344,18 +355,19 @@
         (sx6 aLcase (thTy r) (splitTy r) (sx2 aSnd aQ)
           (sx3 aPair (sLam1 aU aUnit dr) (sx2 aNil (thTy r)))
           (sLam2 aH (thTy r) aTl (sList (thTy r)) (sx3 aPair aH aTl)))
-        (if (named ty d) (sLet v r (sx2 (sx2 aFst aQ) aUnitV) (sLet aC (sList aT) (sTailOf aC) b))
-          (sLet v aT (sHeadOf aC) (sLet aC (sList aT) (sTailOf aC) b))))))
+        (if (named ty d)
+          (fieldLet v r (sx2 (sx2 aFst aQ) aUnitV) (sLet aC (sList aT) (sTailOf aC) b))
+          (fieldLet v aT (sHeadOf aC) (sLet aC (sList aT) (sTailOf aC) b))))))
   (def cataRest
     (lam ((d T) (r T) (ty T) (v T) (b T))
       (if (named ty d)
-        (sLet v (sList r)
+        (fieldLet v (sList r)
           (sx6 aFoldr (thTy r) (sList r)
             (sLam2 aH (thTy r) aA (sList r) (sx3 aCons (sx2 aH aUnitV) aA))
             (sx2 aNil r)
             (sx2 aSnd aQ))
           b)
-        (sLet v (sList aT) aC b))))
+        (fieldLet v (sList aT) aC b))))
   (def cataStart
     (lam ((r T) (dr T) (b T))
       (sLet aQ (splitTy r) (sx3 aPair (sLam1 aU aUnit dr) aK)

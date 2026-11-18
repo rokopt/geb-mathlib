@@ -28,6 +28,11 @@ parameters is declared, it is elaborated once more at opaque arguments, into a f
 {lit}`(%generic …)` that the stage-1 compiler checks and every reader drops
 ({lit}`genericOf`).
 
+Source binders and their occurrences are renamed with {lit}`%%` before datatype expansion.
+The source entry rejects unquoted names beginning with {lit}`%`, so these private names cannot
+capture a generated primitive, recognizer or single-{lit}`%` temporary. Patterns retain their
+{lit}`&` marker and {lit}`_` wildcard, neither of which binds a name.
+
 Every name of a declaration's body is renamed to what it denotes in the flat program, a name
 bound around it in a term excepted; the forms of the kernel and of the datatype language give
 each child its role, so a quoted datum and the name of a hole are never renamed. A name visible
@@ -41,7 +46,7 @@ The term forms {lit}`(let* ((x A e) …) body)` and
 in scope in the bindings after it and in the body. An empty binding list gives the body.
 Conditional clauses are tested in order and require exactly one final {lit}`else` clause;
 that clause alone gives its default. Quotations and datums are unchanged. Neither keyword may
-name a declaration. A program without modules or either chain is unchanged.
+name a declaration. A program without modules or either chain still receives private binder names.
 
 ## Main definitions
 
@@ -119,7 +124,22 @@ inductive Role where
 def boundBy (b : SExp) : List Ident := (binders b).filterMap fun c ↦ c.children.head?.bind (·.label)
 
 /-- The variables a pattern {lit}`(c x …)` binds. -/
-def patternVars (p : SExp) : List Ident := (p.children.drop 1).filterMap (·.label)
+def patternVars (p : SExp) : List Ident :=
+  ((p.children.drop 1).filterMap (·.label)).filter fun s ↦ s != ['&'] && s != ['_']
+
+/-- A source binder's private name. Source names beginning with {lit}`%` are rejected before
+elaboration; {lit}`%%` is distinct from every name introduced by datatype expansion. -/
+def localName (s : Ident) : Ident := '%' :: '%' :: s
+
+/-- A private source binder's spelling before elaboration, for reports and fillings written
+in its source context. Other names retain their spelling. -/
+def sourceName (s : Ident) : Ident :=
+  match s with
+  | '%' :: '%' :: rest => rest
+  | _ => s
+
+/-- A binder renamed into the private namespace; a malformed binder is left for the reader. -/
+def localAtom (x : SExp) : SExp := x.label.map (atom ∘ localName) |>.getD x
 
 /-- Sequential typed bindings as nested {lit}`let` forms. A malformed binding gives an empty
 term, which the reader rejects. -/
@@ -145,9 +165,9 @@ def condChain (cs : List SExp) : SExp :=
     | _, _ => slist []
   | [] => slist []
 
-/-- One node renamed in each role, from its children renamed in each: in a term, an atom bound
-around it is kept and any other visible name renamed, the forms of the kernel and of the
-datatype language giving each child its role; in a type every visible name is renamed. -/
+/-- One node renamed in each role, from its children renamed in each: in a term, a bound atom
+receives its private name and any other visible name is qualified. The forms of the kernel and
+datatype language give each child its role; in a type every visible name is renamed. -/
 def renameStep (vis : Visible) (a : Option Ident)
     (rs : List (SExp × (Role → List Ident → SExp))) (r : Role) (bound : List Ident) : SExp :=
   let orig := RoseTree.node a (rs.map Prod.fst)
@@ -157,10 +177,11 @@ def renameStep (vis : Visible) (a : Option Ident)
   | .datum, _ => orig
   | .type, some s => atom (flat vis s)
   | .type, none => slist (as .type [] rs)
-  | .term, some s => atom (if bound.contains s then s else flat vis s)
+  | .term, some s => atom (if bound.contains s && (numeral? s).isNone then localName s
+      else flat vis s)
   | .letBinding, _ =>
     match a, rs with
-    | none, [(x, _), (_, rA), (_, e)] => slist [x, rA .type [], e .term bound]
+    | none, [(x, _), (_, rA), (_, e)] => slist [localAtom x, rA .type [], e .term bound]
     | _, _ => slist []
   | .letBindings, _ =>
     let (_, bs) := rs.foldl (fun (scope, bs) (b, rb) ↦
@@ -175,7 +196,8 @@ def renameStep (vis : Visible) (a : Option Ident)
   | .binders, none =>
     match rs with
     | (x, _) :: rest =>
-      if x.label.isSome then slist (x :: as .type [] rest) else slist (as .binders [] rs)
+      if x.label.isSome then slist (localAtom x :: as .type [] rest)
+      else slist (as .binders [] rs)
     | [] => orig
   | .clause, some _ => orig
   | .clause, none =>
@@ -184,7 +206,8 @@ def renameStep (vis : Visible) (a : Option Ident)
       if p.label.isSome then slist [p, body .term bound]
       else
         let pat := match p.children with
-          | c :: xs => slist (atom (c.label.map (flat vis) |>.getD []) :: xs)
+          | c :: xs => slist (atom (c.label.map (flat vis) |>.getD []) ::
+              xs.map fun x ↦ if isKw x "&" || isKw x "_" then x else localAtom x)
           | [] => p
         slist [pat, body .term (patternVars p ++ bound)]
     | _ => orig
@@ -208,7 +231,8 @@ def renameStep (vis : Visible) (a : Option Ident)
       else if isKw h "let" then
         match rest with
         | [(x, _), (_, rA), (_, e), (_, body)] =>
-          slist [h, x, rA .type [], e .term bound, body .term (x.label.toList ++ bound)]
+          slist [h, localAtom x, rA .type [], e .term bound,
+            body .term (x.label.toList ++ bound)]
         | _ => orig
       else if isKw h "let*" then
         match rest with
@@ -543,9 +567,26 @@ stage-1 compiler reads. -/
 def dropGeneric (fs : List SExp) : List SExp :=
   fs.filter fun f ↦ !(f.children.head?.any (isKw · "%generic"))
 
-/-- The definitions of a program, its modules elaborated, as names with kernel terms. -/
+/-- The first implementation name in a source expression, ignoring quoted data. -/
+def reservedSourceName? (e : SExp) : Option Ident :=
+  RoseTree.para (fun a rs ↦
+    match a with
+    | some ('%' :: cs) => some ('%' :: cs)
+    | some _ => none
+    | none =>
+      match rs with
+      | (h, _) :: rest =>
+        if isKw h "quote" then none
+        else if isKw h "datum" && rest.length == 2 then rest.head?.bind (·.2)
+        else rs.findSome? (·.2)
+      | [] => none) e
+
+/-- The definitions of a source program, whose unquoted names do not begin with {lit}`%`,
+its modules elaborated, as names with kernel terms. -/
 def readProgram (text : List Char) : Option (List (List Char × Tree)) := do
-  readForms (dropGeneric (← expandModules (← readSExps text)))
+  let es ← readSExps text
+  if (es.findSome? reservedSourceName?).isSome then none
+  else readForms (dropGeneric (← expandModules es))
 
 /-- The first failure of a program, as a message: text that is not well formed, modules that do
 not elaborate, or the first failure of {name}`diagnoseForms`; nothing when the program reads and
@@ -554,6 +595,9 @@ def diagnose (text : List Char) : Option String :=
   match readSExps text with
   | none => some "the text is not well formed or its parentheses do not balance"
   | some es =>
+    if let some n := es.findSome? reservedSourceName? then
+      some s!"the name {String.ofList n} is reserved for the implementation"
+    else
     match elabModules es with
     | .error msg => some msg
     | .ok fs => diagnoseForms (dropGeneric fs)

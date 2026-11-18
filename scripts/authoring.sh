@@ -26,7 +26,7 @@ def definitions(text):
     body = text.split('\nend ', 1)[0]
     return re.findall(r'^def «.*?(?=^def «|\Z)', body, re.M | re.S)
 
-full = Path(sys.argv[1]).read_text()
+full = Path(sys.argv[1]).read_text().replace('_root_.GebBoot.«', '_root_.GebMirror.Metalogic.«')
 base = []
 for layer in ('Checker', 'Translation', 'Prover', 'Tactics'):
     base.extend(definitions(Path(f'bootstrap/lean/GebMirror/Metalogic/{layer}.lean').read_text()))

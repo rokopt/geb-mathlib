@@ -7,6 +7,10 @@ module
 
 public import GebTests.Prototypes.Stage0 -- shake: keep
 public meta import GebTests.Prototypes.Stage0 -- shake: keep
+public import GebMirror.Hygiene -- shake: keep
+public meta import GebMirror.Hygiene -- shake: keep
+public import Geb.Prototypes.Kernel.LoadCommand -- shake: keep
+public meta import Geb.Prototypes.Kernel.LoadCommand -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -44,6 +48,11 @@ namespace Geb.Kernel.Stage1Tests
 open Stage0Tests
 open scoped FinEnum
 
+-- The emitted module compiles and its definition references survive local and runtime names,
+-- quoted-identifier delimiters, the encoding prefix, and line breaks.
+#guard GebMirror.Hygiene.«main» (leaf 99) = mk 99 ((List.range 10).map fun n ↦ leaf (n + 1))
+#guard GebMirror.Hygiene.«Prefix._root_.GebBoot.name» = leaf 10
+
 /-- The source of the lists of the datatype language, a module with a parameter. -/
 def seq : String := include_str "../../bootstrap/seq.geb"
 
@@ -62,6 +71,19 @@ text, does. -/
 def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
   runImage img (nameTree p) == runMain compilerText (nameTree p)
 
+/-- Names that exercise the Lean backend's escaping and qualification. -/
+def hygieneSource : String := include_str "../../bootstrap/hygiene.geb"
+
+-- The loader finds the escaped mirror names and proves each definition's denotation.
+run_cmd do
+  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let some b := (runImage img (ofBytes hygieneSource.toUTF8)).bind toBytes |>.bind readImage
+    | throwError "the hygiene fixture does not compile"
+  let some ds := unbundle b | throwError "the hygiene fixture does not unbundle"
+  let some gs := load (ds.map Prod.snd) | throwError "the hygiene fixture does not load"
+  Lean.Elab.Command.liftCoreM <| LoadCommand.declareLoading
+    `Geb.Kernel.Stage1Tests.hygiene `GebMirror.Hygiene ds (gs.map (·.1)) false
+
 -- the stage-1 compiler, from the committed image, agrees with the stage-0 compiler on the
 -- programs in the datatype language and the kernel's examples
 #eval show IO Unit from do
@@ -73,10 +95,8 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
 -- the stage-1 compiler checks the datatypes data declares, each distinct from the trees: it
 -- rejects, naming the definition, a case analysis of a tree, a constructor applied to a tree, a
 -- primitive of trees applied to a value of a datatype, the representation of a tree, a datum
--- that is not a member, a decoding into a function of trees, a binder named by a keyword the
--- erasure rewrites, a variable named by a keyword, a list headed by a keyword in none of its
--- forms, binders named by a recognizer and by a primitive, which the erasure and the expansion
--- write free under them, a decoding whose default, read in the scope of the variable the erasure
+-- that is not a member, a decoding into a function of trees, a list headed by a keyword in none
+-- of its forms, and a decoding whose default, read in the scope of the variable the erasure
 -- binds to the decoded tree, is that tree, of another type than the function's result, a datum
 -- one of whose atoms names a numeral abbreviation, which the reader replaces, a decoding of a
 -- datatype whose recognizer's name a numeral abbreviation abbreviates, which the reader would read
@@ -86,7 +106,9 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
 -- naming the variable bound to the decoded tree; the compiler rejects a clause's
 -- variable named like the erasure's own; the typing accepts the representation given to the
 -- primitive, an application to several arguments, that clause with its variable renamed, and a
--- datum whose atom names no abbreviation, read as its characters' codes
+-- datum whose atom names no abbreviation, read as its characters' codes. The raw typing entry
+-- also rejects names reserved for generated operations; module elaboration gives source binders
+-- private names, so the public compiler accepts these binders.
 #eval show IO Unit from do
   let img ← IO.FS.readBinFile "bootstrap/compiler.img"
   let some t := readImage img | throw (IO.userError "the committed image does not read")
@@ -99,14 +121,8 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
     ("(def r (lam ((t T)) (rep t)))", "r"),
     (nat ++ "(def d (datum Nat (2)))", "d"),
     (nat ++ "(def e (lam ((t T)) (decode Nat t (lam ((x T)) 1) 0)))", "e"),
-    ("(def b (lam ((rep T)) rep))", "b"), ("(def c (lam ((x T) (datum T)) x))", "c"),
-    ("(def u (lam ((fold T)) fold))", "u"),
     ("(def k (lam ((lam (Arrow T T)) (x T)) (lam x)))", "k"),
-    (nat ++ "(def m (lam ((Nat.member (Arrow T T))) " ++
-      "(decode Nat 7 (lam ((n Nat)) n) zero)))", "m"),
     (nat ++ "(def v (lam ((\"%e\" Nat)) (decode Nat 7 (lam ((n Nat)) n) \"%e\")))", "v"),
-    (nat ++ "(def q (lam ((child (Arrow T (Arrow T T))) (t Nat)) " ++
-      "(case t ((zero) zero) ((succ n) n))))", "q"),
     ("(data Q (q0) (q1 T T)) (defnum ab 3) (def d (datum Q (1 ab)))", "d"),
     ("(defnum Nat.member 3) " ++ nat ++
       "(def e (lam ((t T)) (decode Nat t (lam ((n Nat)) (rep n)) 0)))", "e"),
@@ -114,11 +130,22 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
     ("(data D (a T) (b T)) (defnum 0 1) " ++
       "(def m (lam ((t T)) (case (datum D (1 (9))) ((a x) 2) ((b y) 3))))", "0"),
     (nat ++ "(def m (lam ((t T)) (decode Nat t (lam ((n Nat)) (rep n)) \"%e\")))", "m")]
-  for (p, n) in rejected do
+  let privateBinders := [
+    ("(def b (lam ((rep T)) rep))", "b"), ("(def c (lam ((x T) (datum T)) x))", "c"),
+    ("(def u (lam ((fold T)) fold))", "u"),
+    (nat ++ "(def m (lam ((Nat.member (Arrow T T))) " ++
+      "(decode Nat 7 (lam ((n Nat)) n) zero)))", "m"),
+    (nat ++ "(def q (lam ((child (Arrow T (Arrow T T))) (t Nat)) " ++
+      "(case t ((zero) zero) ((succ n) n))))", "q")]
+  for (p, n) in rejected ++ privateBinders do
     unless typeErrorOf p == some (nameTree n.toList) do
       throw (IO.userError s!"the typing does not reject {n}")
+  for (p, n) in rejected do
     unless runImage img (nameTree p.toList) == some (mk 0 []) do
       throw (IO.userError s!"the stage-1 compiler compiles {n}")
+  for (p, n) in privateBinders do
+    unless ((runImage img (nameTree p.toList)).bind toBytes).bind readImage |>.isSome do
+      throw (IO.userError s!"the stage-1 compiler rejects the private binder in {n}")
   let clause (x : String) : String :=
     nat ++ "(data Q (mk T Nat)) (def s (lam ((p Q)) (case p ((mk " ++ x ++ " y) y))))"
   unless runImage img (nameTree (clause "\"%s\"").toList) == some (mk 0 []) do
@@ -128,6 +155,74 @@ def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
     "(data L (l0) (l1 & T)) (def d (datum L (1 ab)))"]
   unless accepted.all fun p ↦ typeErrorOf p == some (mk 0 []) do
     throw (IO.userError "the typing rejects a well-typed program")
+
+-- Private source binders cannot capture generated operations. Patterns repeat &, and omitted
+-- bindings preserve field positions and lexical scope, including nested shadowing and quotations.
+#eval show IO Unit from do
+  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let compile (p : String) : Option ByteArray := (runImage img (nameTree p.toList)).bind toBytes
+  let run (p : String) : Option Tree := do
+    runEntry (← readImage (← compile p)) "main".toList (leaf 0)
+  let packet := "(data Packet (packet T T & T)) "
+  let value := "(packet 10 20 (cons 30 (nil T)))"
+  let clause (pat body : String) := packet ++ "(def main (lam ((t T)) (case " ++ value ++
+    " ((packet " ++ pat ++ ") " ++ body ++ "))))"
+  for (p, expected) in [
+      (clause "_ y & xs" "(add y (lcase T T xs 0 (lam ((h T) (r (List T))) h)))", leaf 50),
+      (clause "_ y & _" "y", leaf 20),
+      (clause "x y & xs" "((lam ((x T)) x) y)", leaf 20),
+      (clause "x x & _" "x", leaf 20),
+      (packet ++ "(def choose (lam ((_ T)) (case " ++ value ++
+        " ((packet _ y & _) _)))) (def main (lam ((t T)) (choose 99)))", leaf 99),
+      (packet ++ "(def choose (lam ((label T) (children T) (eq T) (child T)) " ++
+        "(case " ++ value ++ " ((packet _ y & _) y))))" ++
+        "(def main (lam ((t T)) (choose 1 2 3 4)))", leaf 20)] do
+    unless run p == some expected && agreesOn img compiler.toList p.toList do
+      throw (IO.userError s!"hygiene or pattern semantics disagree: {p}")
+  for body in ["y", "((lam ((x T)) x) y)", "(quote (0 x))",
+      "(case " ++ value ++ " ((packet x z & _) x))"] do
+    let named := compile (clause "x y & xs" body)
+    let ignored := compile (clause "_ y & _" body)
+    unless (named.bind readImage).isSome && (ignored.bind readImage).isSome && named != ignored do
+      throw (IO.userError s!"an unused named pattern binding is omitted: {body}")
+  for pat in ["x y xs", "& x y xs", "x & y xs", "x y & &", "x y & xs & ys"] do
+    let p := clause pat "0"
+    unless compile p == some ByteArray.empty && agreesOn img compiler.toList p.toList do
+      throw (IO.userError s!"a malformed rest pattern is accepted: {pat}")
+  unless compile (clause "_ y & _" "_") == some ByteArray.empty do
+    throw (IO.userError "a wildcard binds a name")
+  let nat := "(data Nat (zero) (succ Nat)) "
+  let p := nat ++ "(defn size ((unit T) (node T) (n Nat)) T " ++
+    "(cata Nat T n ((zero) 0) ((succ r) (add r 1)))) " ++
+    "(defn decodeSize ((Nat.member (Arrow T T)) (t T)) T " ++
+    "(decode Nat t (lam ((n Nat)) (size 99 99 n)) 9)) " ++
+    "(def main (lam ((t T)) (decodeSize (lam ((u T)) 0) (quote (1 (1 (0)))))))"
+  unless run p == some (leaf 2) && agreesOn img compiler.toList p.toList do
+    throw (IO.userError "a source binder captures recursion or decoding")
+  let ignored := nat ++ "(def main (lam ((t T)) " ++
+    "(cata Nat T (succ (succ zero)) ((zero) 7) ((succ _) 3))))"
+  unless run ignored == some (leaf 3) && agreesOn img compiler.toList ignored.toList do
+    throw (IO.userError "a discarded recursive field changes the result")
+  let named := ignored.replace "(succ _)" "(succ unused)"
+  unless run named == some (leaf 3) && agreesOn img compiler.toList named.toList &&
+      compile named != compile ignored do
+    throw (IO.userError "an unused named recursive field loses its binding")
+  let abbreviated := "(defnum _ 42) " ++ ignored
+  unless run abbreviated == some (leaf 3) && agreesOn img compiler.toList abbreviated.toList do
+    throw (IO.userError "a numeral abbreviation changes a wildcard")
+  let foldClause (pat body : String) :=
+    "(data Rose (tip T) (branch Rose Rose & Rose)) (def main (lam ((t T)) " ++
+    "(cata Rose T (branch (tip 10) (tip 20) (cons (tip 30) (nil Rose))) " ++
+    "((tip n) n) ((branch " ++ pat ++ ") " ++ body ++ "))))"
+  for (pat, body, expected) in [
+      ("_ y & rs", "(add y (foldr T T add 0 rs))", 50),
+      ("_ y & _", "y", 20), ("_ _ & _", "99", 99)] do
+    let p := foldClause pat body
+    unless run p == some (leaf expected) && agreesOn img compiler.toList p.toList do
+      throw (IO.userError s!"discarded recursive fields change later positions: {pat}")
+  let namedRest := compile (foldClause "_ y & unused" "y")
+  unless (namedRest.bind readImage).isSome && namedRest != compile (foldClause "_ y & _" "y") do
+    throw (IO.userError "an unused named recursive rest field loses its binding")
 
 -- the stage-1 compiler reads the type of a decoding and of a datum through a type abbreviation as
 -- the datatype it abbreviates: the datum is checked a member of the datatype, and the datatype's

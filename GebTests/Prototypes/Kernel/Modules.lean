@@ -16,11 +16,13 @@ set_option doc.verso true in
 /-!
 # Module examples
 
-A program without modules or binding and conditional chains is unchanged by their elaboration,
-the kernel's examples among them. Modules without parameters export their definitions under
+A program without modules or binding and conditional chains resolves to the same kernel terms
+after its binders are renamed, the kernel's examples among them. Modules without parameters export
+their definitions under
 qualified names, imported unqualified or under a name. A module with parameters is instantiated at
 each import, a sort parameter by a type and an operation by a term of its type. A name bound in a
-term, a quoted datum and a hole are not renamed. A clash, an import naming no module or leaving a
+term is renamed into the private namespace; a quoted datum and a hole are preserved.
+A clash, an import naming no module or leaving a
 parameter unsupplied, and an export naming nothing are rejected with a message. The elaboration
 written in Geb, {lit}`bootstrap/modules.geb`, agrees with Lean's, and the stage-0 compiler
 compiles a module of the datatype language. A module's identifier is unchanged by renaming the
@@ -46,11 +48,16 @@ namespace Geb.Kernel.ModulesTests
 
 open Geb.Kernel.Stage0Tests Document
 
--- a program without modules is unchanged, the kernel's examples among them
+-- private binder names preserve the kernel's examples
 #guard [Tests.factorial, Tests.size, Tests.mirror, Tests.quadruple, Tests.sugar,
     Tests.numerals].all fun p ↦
-  ((readSExps p.toList).bind expandModules).map (·.map canonOf) =
-    (readSExps p.toList).map (·.map canonOf)
+  readProgram p.toList = (readSExps p.toList).bind readForms
+
+-- Source cannot impersonate private names; quoted bytes remain data.
+#guard ["%s", "%%x"].all fun n ↦
+  (readProgram s!"(def main (lam ((\"{n}\" T)) \"{n}\"))".toList).isNone
+#guard runMain "(def main (lam ((x T)) (quote (0 \"%%x\"))))".toList (leaf 0) =
+  some (mk 0 ("%%x".toList.map fun c ↦ leaf c.toNat))
 
 /-- A module of arithmetic exporting one of its definitions. -/
 def arith : String :=
@@ -97,7 +104,7 @@ def twice : String :=
   some "the import of Twice supplies 1 of its 2 parameters"
 #guard (diagnose (twice ++ " (def u (lam ((x T)) unit)) (import (Twice T u))").toList).isSome
 
--- a name bound in a term is not renamed, nor a quoted datum
+-- a local name still shadows a visible definition; quoted data retains its spelling
 #guard runMain ("(module M (export h q) (def tail (lam ((x T)) x))" ++
     " (def h (lam ((tail T)) tail)) (def q (lam ((x T)) (quote (0 tail)))))" ++
     " (def main (lam ((t T)) (node 0 (cons (M.h 4) (children (M.q 0))))))").toList (leaf 0) =

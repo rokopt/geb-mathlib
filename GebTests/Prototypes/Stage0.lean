@@ -119,7 +119,7 @@ a case analysis with an else clause. -/
 def roses : String := "
 (data Rose (rnode T & Rose))
 (defn count ((t Rose)) T
-  (cata Rose T t ((rnode l rs) (add 1 (foldr T T (lam ((a T) (b T)) (add a b)) 0 rs)))))
+  (cata Rose T t ((rnode l & rs) (add 1 (foldr T T (lam ((a T) (b T)) (add a b)) 0 rs)))))
 (data Color (red) (green) (blue))
 (defn isRed ((c Color)) T (case c ((red) 1) (else 0)))
 (def leafRose (lam ((l T)) (rnode l (nil Rose))))
