@@ -213,7 +213,7 @@ def cataMetaStep (P : Prog) (S : Defs) (T : Defs3) : Step :=
           (K.allEΓ (fun _ ↦ fts) (K.conjE fun Γ Φ ψ ↦
             (K.byHyp (Φ.length - 1) Γ Φ ψ).orElse fun _ ↦ K.byHyp (Φ.length - 2) Γ Φ ψ))) Γ Φ ψ
     let goal : ℕ → Deducer := fun n ↦ n.rec (fun _ _ _ ↦ none) fun _ rec ↦ K.norm fun Γ Φ ψ ↦
-      if ψ == Internal.Logic.tt P.o then some Internal.Logic.trueI else
+      if ψ == Internal.Logic.tt P.o then some Internal.Logic.trueIC else
       match defnParts ψ with
       | some (i, _, _) => if i = P.o + 1 then dConjI L rec rec Γ Φ ψ else byEntries Γ Φ ψ
       | none => (K.byNorm Γ Φ ψ).orElse fun _ ↦ byEntries Γ Φ ψ

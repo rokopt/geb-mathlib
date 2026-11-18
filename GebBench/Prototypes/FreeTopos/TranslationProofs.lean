@@ -12,14 +12,14 @@ set_option doc.verso true in
 # The checker's times on the theorems of Gödel's T
 
 For each file of {lit}`GebTests.Prototypes.FreeTopos.TranslationProofs`, the nodes of the
-language's derivations of its theorems, the bit steps among them, and the least of three times the
-checker takes, in microseconds; and the same for the lemmas the development proves before the
-theorems. The prelude's development is measured both by innermost normalization and by weak head
-normal forms first.
+certificates of its theorems, the bit steps among them, and the least of three times the checker
+takes, in microseconds; and the same for the lemmas the
+development proves before the theorems. The prelude's development is measured both by innermost
+normalization and by weak head normal forms first.
 
 ## Main definitions
 
-* {lit}`derivSize`, {lit}`bitSteps` — the nodes of a derivation and its bit steps.
+* {lit}`derivSize`, {lit}`bitSteps` — the nodes of a certificate and its bit steps.
 * {lit}`report` — the measurement of a file.
 * {lit}`run` — the measurements of the files.
 
@@ -37,17 +37,18 @@ namespace GebBench.Prototypes.FreeTopos.TranslationProofs
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation
 open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Translation (sizeM)
-open Internal (Term Deriv Decl Rule)
+open Internal (Term ConvDeriv ConvDecl ConvRule)
 
-/-- The terms a rule names. -/
-def ruleTerms : Rule → List Term
+/-- The terms a rule of the language names, and none for a step of conversion. -/
+def ruleTerms : ConvRule → List Term
   | .thm _ _ σ _ | .apply _ _ σ => σ
   | .natInd _ _ s | .listInd _ _ s | .roseInd _ _ _ s => [s]
   | .cut φ | .convFrom φ => [φ]
   | _ => []
 
-/-- The number of nodes of a derivation, the terms its rules name counted. -/
-def derivSize : Deriv → ℕ := RoseTree.elim fun l rs ↦ 1 + rs.sum + ((ruleTerms l).map sizeM).sum
+/-- The number of nodes of a certificate, the terms its rules name counted. -/
+def derivSize : ConvDeriv → ℕ :=
+  RoseTree.elim fun l rs ↦ 1 + rs.sum + ((ruleTerms l).map sizeM).sum
 
 /-- The least time, over three evaluations, to evaluate a Boolean, in microseconds, with its
 value. -/
@@ -62,9 +63,9 @@ def timeUs (f : Unit → Bool) : IO (Bool × ℕ) := do
     if i = 0 ∨ d < best then best := d
   pure (b, best)
 
-/-- The bit steps of a derivation: the case analyses of bits, which only the arithmetic of the
-labels performs. -/
-def bitSteps : Deriv → ℕ := RoseTree.elim fun l rs ↦
+/-- The bit steps of a certificate: the case analyses of bits among its rules of the language,
+which only the arithmetic of the labels performs. -/
+def bitSteps : ConvDeriv → ℕ := RoseTree.elim fun l rs ↦
   (match l with | .caseInl _ _ | .caseInr _ _ => 1 | _ => 0) + rs.sum
 
 set_option compiler.extract_closed false in
@@ -73,20 +74,20 @@ language's derivations of the file's theorems, the bit steps among them, and the
 times the checker takes, in microseconds; and a row of the same for the lemmas the development
 proves before the theorems; the file's name alone where no development is computed. -/
 def report (name : String) (D : List Tree) (ts : List GoedelT.Thm)
-    (dev : Internal.Globals → ℕ → List Internal.Thm → Option (List Decl)) : IO Unit := do
+    (dev : Internal.Globals → ℕ → List Internal.Thm → Option (List ConvDecl)) : IO Unit := do
   match translate D ts with
   | none => throw (IO.userError s!"{name}: no translation")
   | some (G, m, ts) => match dev G m ts with
     | none => IO.println s!"{name},no development"
     | some ds => do
       let k := ds.length - ts.length
-      let (okA, tA) ← timeUs fun _ ↦ Internal.checkThms G (ds.take k) #[]
-      let some (G₁, E₁) := Internal.checkDev G #[] (ds.take k)
+      let (okA, tA) ← timeUs fun _ ↦ Internal.checkConvThms G (ds.take k) #[]
+      let some (G₁, E₁, _) := Internal.checkConvDev G #[] (ds.take k)
         | throw (IO.userError s!"{name}: the lemmas do not check")
-      let (okL, tL) ← timeUs fun _ ↦ Internal.checkThms G₁ (ds.drop k) E₁
+      let (okL, tL) ← timeUs fun _ ↦ Internal.checkConvThms G₁ (ds.drop k) E₁
       if !(okA && okL) then throw (IO.userError s!"{name}: a development does not check")
-      let dvs (l : List Decl) : List Deriv :=
-        l.filterMap fun | Decl.language _ d => some d | _ => none
+      let dvs (l : List ConvDecl) : List ConvDeriv :=
+        l.filterMap fun | .conv _ d => some d | _ => none
       let row (xs : List ℕ) : String := ",".intercalate (xs.map toString)
       if k > 0 then
         IO.println (name ++ "-lemmas," ++ row [((dvs (ds.take k)).map derivSize).sum,

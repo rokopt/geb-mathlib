@@ -40,8 +40,9 @@ namespace GebTests.Prototypes.FreeTopos.InternalCitations
 
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Prover Geb.FreeTopos.Sorts
 open GebTests.Prototypes.FreeTopos.Internal
-open Geb.FreeTopos.Internal (Term Thm Deriv Entry Decl byListInd checkThms compileDefs compileEq)
-open Geb.FreeTopos.Internal.Logic (nd)
+open Geb.FreeTopos.Internal (Term Thm ConvDeriv Entry ConvDecl byListInd checkConvThms
+  compileDefs compileEq)
+open Geb.FreeTopos.Internal.Logic (cnd)
 
 /-- The definitions of the combinators that appending and addition compile to. -/
 def cds : List PartialHorn.Defn := (compileDefs G).getD []
@@ -57,7 +58,7 @@ def appendNilTwice : Thm :=
 gives the list, the prover's proof that appending it twice does by rewriting with that theorem,
 and the language's statement of the latter, citing the prover's certificate. The result's last
 component is the certificate the language cites. -/
-def developmentWith : Option (List Decl × Tree) := do
+def developmentWith : Option (List ConvDecl × Tree) := do
   let (i, lib) ← libraryWith false
   let E₀ : Array Entry := (lib.map fun (s, _) ↦ Entry.combinators s).toArray
   let d₁ ← byListInd G E₀ 1 0 1 InternalDerivation.consStep
@@ -71,19 +72,19 @@ def developmentWith : Option (List Decl × Tree) := do
   let (k₂, dev₂) ← (normalizeThm lrs k₁ cds).run dev₁
   let (k₃, dev₃) ← (proveSeq q (byNorm (lrs ++ [{ src := .thm k₂ }]) q.concl) cds).run dev₂
   let c := Scope.cite ⟨[obj], []⟩ k₃
-  pure (lib.map (fun (s, c) ↦ Decl.combinators s c) ++ [Decl.language appendNil d₁] ++
-    (dev₃.drop (k₁ + 1)).map (fun (s, c) ↦ Decl.combinators s c) ++
-    [Decl.language appendNilTwice (nd (.cert c))], c)
+  pure (lib.map (fun (s, c) ↦ ConvDecl.combinators s c) ++ [ConvDecl.language appendNil d₁] ++
+    (dev₃.drop (k₁ + 1)).map (fun (s, c) ↦ ConvDecl.combinators s c) ++
+    [ConvDecl.language appendNilTwice (cnd (.cert c))], c)
 
 /-- The development. -/
-def development : Option (List Decl) := developmentWith.map Prod.fst
+def development : Option (List ConvDecl) := developmentWith.map Prod.fst
 
 -- the development checks, its declarations of both kinds
-#guard development.any fun ds ↦ checkThms G ds #[]
+#guard development.any fun ds ↦ checkConvThms G ds #[]
 
 -- the certificate does not prove another equation
-#guard developmentWith.any fun (ds, c) ↦ !checkThms G (ds.dropLast ++
-  [Decl.language ⟨1, [L], [], Term.eq (appendT (Term.var 0) nilT) nilT⟩ (nd (.cert c))]) #[]
+#guard developmentWith.any fun (ds, c) ↦ !checkConvThms G (ds.dropLast ++
+  [ConvDecl.language ⟨1, [L], [], Term.eq (appendT (Term.var 0) nilT) nilT⟩ (cnd (.cert c))]) #[]
 
 end GebTests.Prototypes.FreeTopos.InternalCitations
 

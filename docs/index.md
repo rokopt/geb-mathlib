@@ -4511,12 +4511,12 @@ import-direction rules above are enforced by
   carries a representation over constants, in a sorted environment, to
   constants that extend them (`Geb.FreeTopos.Internal.repC_lift`), and a
   definition's arrow to what its body represents over all the constants
-  (`Geb.FreeTopos.Internal.rep_def_full`). `Prove.lean` is the
-  language's prover prototyped in Lean:
+  (`Geb.FreeTopos.Internal.rep_def_full`). `Prove.lean` holds the
+  reductions of the language's prover prototyped in Lean:
   normalization innermost first or to weak normal forms, earlier theorems
-  as rewriting rules found by matching, induction and case analysis;
-  every derivation it computes is checked by
-  `Geb.FreeTopos.Internal.check`. The compiler replaces its reduction by
+  as rewriting rules found by matching, each with the rewriting
+  derivation it computes, which `Geb.FreeTopos.Internal.check` accepts.
+  The compiler replaces its reduction by
   `Geb.FreeTopos.Internal.evalFast`, proved equal to it
   (`Geb.FreeTopos.Internal.eval_eq_evalFast`), which weakens a hypothesis
   where a rule reads it, tries at a node only the rules whose left side's
@@ -4537,7 +4537,25 @@ import-direction rules above are enforced by
   (`Geb.FreeTopos.Internal.convCheck_sound`). The compiler replaces it by
   `Geb.FreeTopos.Internal.convCheckFast`, proved equal to it
   (`Geb.FreeTopos.Internal.convCheck_eq_convCheckFast`), whose steps of
-  the base checker are those of `Geb.FreeTopos.Internal.checkFast`. Its
+  the base checker are those of `Geb.FreeTopos.Internal.checkFast`. A
+  step of conversion computes its result by the reductions of
+  `Reduce.lean` (`Geb.FreeTopos.Internal.normalizeR`,
+  `Geb.FreeTopos.Internal.evalR`), the projections of the prover's,
+  which the compiler replaces by the rules prepared once and by the
+  reduction it runs in place of the prover's
+  (`Geb.FreeTopos.Internal.normalizeR_eq_normalizeRFast`,
+  `Geb.FreeTopos.Internal.evalR_eq_evalRFast`), so that a step takes the
+  time of the prover's reduction. `Provers.lean` holds the provers, by
+  normalization, induction and case analysis: a proof is a certificate
+  of the conversion checker in which a reduction whose derivation has
+  more nodes than a bound (`Geb.FreeTopos.Internal.stepBound`) is the
+  step that names it by its rules, its fuel and its depth
+  (`Geb.FreeTopos.Internal.normalizeC`,
+  `Geb.FreeTopos.Internal.evalC`), in place of that derivation, and a
+  reduction of a derivation within the bound keeps it, which the checker
+  walks sooner than it performs the reduction; the bound is above the
+  derivations of the stored developments, whose certificates so hold
+  derivations. Its
   step of evaluation
   rewrites a term built of the translation library's arithmetic over
   numerals, its quotient and remainder and its logarithm among it, to
@@ -4657,10 +4675,12 @@ import-direction rules above are enforced by
   once, and the command of `Agreement/TemplateEquations.lean` equates
   every copy with it. `bootstrap/free-topos/prove.geb`,
   in the same program, is the prover written again in the datatype
-  language: `Agreement/Prove.lean` proves each of its entry points equal
-  to the
-  Lean prover's at every encoded input, at rules related to the
-  normalizer's and provers related to Lean's. The reader's resolution,
+  language: `Agreement/Prove.lean` proves its reductions, each with the
+  derivation it computes, equal to the Lean prover's at every encoded
+  input, at rules related to the normalizer's, and
+  `Agreement/Provers.lean` its provers, whose reductions name their
+  steps of conversion, equal to Lean's at provers related to Lean's, so
+  that the two construct the same certificates. The reader's resolution,
   `bootstrap/reader.geb`, and the printer of kernel terms,
   `bootstrap/printer.geb`, are in the same program, the printer in a
   layer of its own: `Agreement/Printer.lean` proves the printer and its test of
@@ -4672,7 +4692,8 @@ import-direction rules above are enforced by
   The check of elementary-affine certificates, `bootstrap/affine.geb`, is
   a layer of its own: `Agreement/Affine.lean` proves it equal to
   `Geb.Affine.check` at every program and certificate. The checker with a
-  step of conversion is the program's last layer: the evaluation at
+  step of conversion is the layer after the prover's and before the
+  tactics', whose proofs are its certificates: the evaluation at
   literals (`bootstrap/free-topos/literals.geb`), which represents a
   bitstring by the number it denotes and computes the library's
   arithmetic by the kernel's primitives on labels, the environment machine
@@ -4802,7 +4823,11 @@ import-direction rules above are enforced by
   identity on programs of kernel forms. Those modules search for the
   developments, whose certificates `StoredWriter.lean` writes,
   `bootstrap/certificates/`, the table of each development's distinct
-  nodes (`Stored.lean`); the modules of `Certified/` read the
+  nodes (`Stored.lean`), each theorem with its certificate of the
+  conversion checker, which holds a derivation of each reduction, none
+  reaching the provers' bound, so that it is a derivation of the base
+  checker; the modules of
+  `Certified/` read the
   certificates of weakening, substitution, the expansion's identity, the
   lemmas of trees, the fundamental lemma and the datatype language's
   soundness, and state that
@@ -4886,7 +4911,8 @@ import-direction rules above are enforced by
   `Geb.Prototypes.Computability.Oitavem.Word`.
 - `Geb/Prototypes/FreeTopos/Tactics.lean` — the tactics the proofs about
   the compiler's components compose from the internal language's prover
-  (`Geb.FreeTopos.Internal.byNorm` and the provers beside it): proofs by
+  (`Geb.FreeTopos.Internal.byNorm` and the provers beside it), each a
+  prover of certificates of the conversion checker: proofs by
   reduction to a depth (`Tactics/Reduction.lean`), by induction and case
   analysis of lists, bitstrings, rose trees and coproducts
   (`Tactics/Induction.lean`), with hypotheses cut in as rewriting rules,

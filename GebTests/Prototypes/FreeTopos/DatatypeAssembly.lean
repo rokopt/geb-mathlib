@@ -406,7 +406,7 @@ def expListThm (P : Prog) : Internal.Thm :=
 expansion's fold at the list taken, with its reduction; the results of the fold at the list's
 elements; and the normal form with those results abstracted to the variable of index 0. -/
 def expBodyParts (P : Prog) (S : Defs) (T : Defs3) (ix : String → ℕ)
-    (E : Array Internal.Entry) : Option (Term × Internal.Deriv × Term × Term) := do
+    (E : Array Internal.Entry) : Option (Term × Internal.ConvDeriv × Term × Term) := do
   let K := expKit P S ix E
   let a := expListThm P
   let e := pc P "Datatype.expandExpr" [v 1, nodeT (Term.pair (numeral 2) (v 0))]

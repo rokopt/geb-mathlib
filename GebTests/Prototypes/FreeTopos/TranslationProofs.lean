@@ -9,8 +9,8 @@ public import GebTests.Prototypes.FreeTopos.Translation -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.Translation -- shake: keep
 public import GebTests.Prototypes.Stage0 -- shake: keep
 public meta import GebTests.Prototypes.Stage0 -- shake: keep
-public import Geb.Prototypes.FreeTopos.Internal.Prove -- shake: keep
-public meta import Geb.Prototypes.FreeTopos.Internal.Prove -- shake: keep
+public import Geb.Prototypes.FreeTopos.Internal.ConvDevelopment -- shake: keep
+public meta import Geb.Prototypes.FreeTopos.Internal.ConvDevelopment -- shake: keep
 public import Geb.Prototypes.FreeTopos.Tactics -- shake: keep
 public meta import Geb.Prototypes.FreeTopos.Tactics -- shake: keep
 
@@ -137,7 +137,7 @@ def results (bundler : List Char) (files : List (List Char × ℕ)) :
     let b ← if r.label == 1 then r.children.head? else none
     pure (theoremsOf (← Kernel.unbundle b) k)
 
-open Internal (Term Deriv Decl Entry NormRule Rule)
+open Internal (Term ConvDeriv ConvDecl Entry NormRule Rule)
 
 /-- The unfolding of every definition below an index. -/
 def deltas (m : ℕ) : List NormRule := (List.range m).map NormRule.delta
@@ -148,7 +148,8 @@ def deltasExcept (m : ℕ) (ks : List ℕ) : List NormRule :=
 
 /-- A development: each theorem with the derivation its prover computes from the entries
 before it. -/
-def develop (ts : List (Internal.Thm × (Array Entry → Option Deriv))) : Option (List Decl) :=
+def develop (ts : List (Internal.Thm × (Array Entry → Option ConvDeriv))) :
+    Option (List ConvDecl) :=
   (ts.foldl (fun acc (a, p) ↦ acc.bind fun (E, ds) ↦
     (p E).map fun d ↦ (E.push (.language a), ds ++ [.language a d])) (some (#[], []))).map
     Prod.snd
@@ -166,22 +167,22 @@ def sides (a : Internal.Thm) : Term × Term :=
 
 /-- The proof by normalization of a theorem with rules. -/
 def norm (G : Internal.Globals) (rs : List NormRule) (fuel : ℕ) (a : Internal.Thm)
-    (E : Array Entry) : Option Deriv :=
+    (E : Array Entry) : Option ConvDeriv :=
   Internal.byNorm G E 0 rs fuel a.ctx a.hyps (sides a).1 (sides a).2
 
 /-- The proof by normalization, weak head normal forms first, of a theorem with rules. -/
 def normW (G : Internal.Globals) (rs : List NormRule) (fuel : ℕ) (a : Internal.Thm)
-    (E : Array Entry) : Option Deriv :=
+    (E : Array Entry) : Option ConvDeriv :=
   Internal.byNormW G E 0 rs fuel a.ctx a.hyps (sides a).1 (sides a).2
 
 /-- The proof of a theorem by induction on its innermost list variable with a step. -/
 def listInd (G : Internal.Globals) (s : Term) (rs : List NormRule) (fuel : ℕ)
-    (a : Internal.Thm) (E : Array Entry) : Option Deriv :=
+    (a : Internal.Thm) (E : Array Entry) : Option ConvDeriv :=
   Internal.byListInd G E 0 0 1 s rs fuel a.ctx a.hyps (sides a).1 (sides a).2
 
 /-- The prelude's development: the unit laws and the associativity of appending, and appending
 the empty list twice by rewriting with the right unit law. -/
-def preludeDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List Decl) :=
+def preludeDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List ConvDecl) :=
   let rs := baseRules ++ deltas m
   let step := consT treeTy (Term.var 1) (Term.var 0)
   match ts with
@@ -196,7 +197,7 @@ def firstFold : Term → Option (Term × Term) := RoseTree.para fun l cs ↦ mat
 
 /-- The normal form of a term in a context, in object variables, by rules, or the term. -/
 def nf (G : Internal.Globals) (rs : List NormRule) (k : ℕ) (Γ : List Tree) (t : Term) : Term :=
-  ((Internal.normalizeW G #[] k rs 4096 Γ [] t).map Prod.fst).getD t
+  ((Internal.normalizeWC G #[] k rs 4096 Γ [] t).map Prod.fst).getD t
 
 /-- The rebuilding of a bitstring by the fold of the definition of an index that pairs the list
 with its value: the first component of the fold is the list, its side in normal form. -/
@@ -221,7 +222,7 @@ zero is the identity, and addition of a successor is the successor of the sum, b
 the bitstrings and case analysis of their bits, the last first for the functions of the first
 summand; and then the theorems, the first by normalization and the others by rewriting with
 these lemmas. -/
-def natDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List Decl) := do
+def natDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List ConvDecl) := do
   let rs := baseRules ++ deltas m
   let [t₀, t₁, t₂] := ts | none
   let rA ← rebuild G rs D.add
@@ -229,7 +230,7 @@ def natDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (L
   let rL ← lcaseRebuild G rs
   let (zA, sA) ← (lib[D.add]?).bind fun d ↦ firstFold d.body
   let rsR : List NormRule := [.thm 0 [], .thm 1 [], .thm 2 [bitTy, bitsTy]] ++ rs
-  let side (a : Internal.Thm) (p : Internal.Prover) : Option Deriv :=
+  let side (a : Internal.Thm) (p : Internal.Prover) : Option ConvDeriv :=
     p a.ctx a.hyps (sides a).1 (sides a).2
   let addOne : Internal.Thm :=
     ⟨0, [bitsTy], [], Term.eq (call D.add [] [v 0, oneN]) (call D.succ [] [v 0])⟩
@@ -278,7 +279,7 @@ def lambek : Internal.Thm :=
 /-- The lemmas on the unfolding of trees, each with its proof: the fold by construction and the
 fusion of the rebuilding with the unfolding by list induction, and Lambek's lemma by the
 uniqueness of the fold, rewriting by them. -/
-def treeLemmas (G : Internal.Globals) : List (Internal.Thm × (Array Entry → Option Deriv)) :=
+def treeLemmas (G : Internal.Globals) : List (Internal.Thm × (Array Entry → Option ConvDeriv)) :=
   [(mapId, listInd G (consT treeTy (Term.var 1) (Term.var 0)) baseRules 64 mapId),
    (mapFusion, listInd G (consT treeTy (nodeT (unnodeU (Term.var 1))) (Term.var 0)) baseRules 64
       mapFusion),
@@ -286,7 +287,7 @@ def treeLemmas (G : Internal.Globals) : List (Internal.Thm × (Array Entry → O
       (baseRules ++ [.thm 0 [], .thm 1 []]) 64 lambek.ctx (sides lambek).1 (sides lambek).2)]
 
 /-- The prelude's development, weak head normal forms first. -/
-def preludeDevW (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List Decl) :=
+def preludeDevW (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List ConvDecl) :=
   let rs := baseRules ++ deltas m
   let step := consT treeTy (Term.var 1) (Term.var 0)
   match ts with
@@ -296,24 +297,24 @@ def preludeDevW (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Opti
 
 /-- The type checker's development: the quoted tree's type, weak head normal forms first,
 every definition unfolded. -/
-def checkDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List Decl) :=
+def checkDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List ConvDecl) :=
   develop (ts.map fun t ↦ (t, normW G (baseRules ++ deltas m) 4096 t))
 
 /-- A development of the tree lemmas and then theorems each by normalization, weak head normal
 forms first, every definition unfolded and Lambek's lemma rewriting. -/
-def treeDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List Decl) :=
+def treeDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List ConvDecl) :=
   develop (treeLemmas G ++
     ts.map fun t ↦ (t, normW G (.thm 2 [] :: baseRules ++ deltas m) 4096 t))
 
 /-- Whether a file's development checks, the lemmas it proves first and its theorems, where it
 computes one. -/
 def checks (D : List Tree) (ts : List GoedelT.Thm)
-    (dev : Internal.Globals → ℕ → List Internal.Thm → Option (List Decl)) : Bool :=
+    (dev : Internal.Globals → ℕ → List Internal.Thm → Option (List ConvDecl)) : Bool :=
   match translate D ts with
   | none => false
   | some (G, m, ts) => match dev G m ts with
     | none => true
-    | some ds => Internal.checkThms G ds #[]
+    | some ds => Internal.checkConvThms G ds #[]
 
 -- each file's development checks, the prelude's both by innermost normalization and through weak
 -- head normal forms

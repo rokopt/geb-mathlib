@@ -73,7 +73,7 @@ open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Weakening
 open GebTests.Prototypes.FreeTopos.TreeCases
 open GebTests.Prototypes.FreeTopos.Translation (baseRules)
-open Internal (Term NormRule Entry Deriv Decl Definition)
+open Internal (Term NormRule Entry ConvDeriv ConvDecl Definition)
 open scoped FinEnum
 
 /-- The expansion at a node of a variable label and children, and at a form, as definitions. -/
@@ -259,7 +259,7 @@ def mapEqSteps (P : Prog) : List Step :=
   let rs (ix : String → ℕ) : List NormRule :=
     baseRules ++ [.unitVar, .deltaBelow P.o (["xL", "xR"].map P.idx),
       .thm (ix "rebLF") [omega, list omega], .thm (ix "tailReb") [omega]]
-  let refl : Deriv := RoseTree.node .refl []
+  let refl : ConvDeriv := RoseTree.node .refl []
   let tailReb : Option Internal.Thm := do
     let (z, sT) ← (lib[D.tail]?).bind fun d ↦ firstFold d.body
     pure ⟨1, [list (x 0)], [], Term.eq (Term.fst (Term.listRec z sT (v 0))) (v 0)⟩
@@ -274,10 +274,10 @@ def mapEqSteps (P : Prog) : List Step :=
       let dΩ := Term.eq Term.star Term.star
       let hd (w : Term) : Term := call D.headD [omega] [dΩ, w]
       let tl (w : Term) : Term := call D.tail [omega] [w]
-      let (h₁, dh₁, _) ← Internal.eval P.G E 0 rs 4096 .head Γ Φ (hd L)
-      let (h₂, dh₂, _) ← Internal.eval P.G E 0 rs 4096 .head Γ Φ (hd R)
-      let (t₁, dt₁, _) ← Internal.eval P.G E 0 rs 4096 .head Γ Φ (tl L)
-      let (t₂, dt₂, _) ← Internal.eval P.G E 0 rs 4096 .head Γ Φ (tl R)
+      let (h₁, dh₁, _) ← Internal.evalC P.G E 0 rs 4096 .head Γ Φ (hd L)
+      let (h₂, dh₂, _) ← Internal.evalC P.G E 0 rs 4096 .head Γ Φ (hd R)
+      let (t₁, dt₁, _) ← Internal.evalC P.G E 0 rs 4096 .head Γ Φ (tl L)
+      let (t₂, dt₂, _) ← Internal.evalC P.G E 0 rs 4096 .head Γ Φ (tl R)
       let dHd := RoseTree.node (.convFrom (Term.eq (hd L) (hd R))) [RoseTree.node .cong [dh₁, dh₂],
         RoseTree.node .join [RoseTree.node .cong [RoseTree.node (.rwHyp iA false) [], refl], refl]]
       let dTl := RoseTree.node (.convFrom (Term.eq (tl L) (tl R))) [RoseTree.node .cong [dt₁, dt₂],
@@ -385,7 +385,7 @@ def exprSteps (P : Prog) : List Step :=
       "Datatype.expandDecode"] ++
       [.thm (ix "applyF") []]
     let w := byWeak P.G E 0 rs
-    let refl : Deriv := RoseTree.node .refl []
+    let refl : ConvDeriv := RoseTree.node .refl []
     let rest : Internal.Prover := fun Γ Φ t u ↦ do
       let n := Γ.length
       let csv := v (n - 2)
@@ -393,7 +393,7 @@ def exprSteps (P : Prog) : List Step :=
       let some (Entry.language me) := E[ix "mapEq"]? | none
       let impInst := Internal.instTerm [] [csv] me.concl
       let Φ₁ := Φ ++ [impInst]
-      let instEq (name gL gR : String) : Term × Deriv :=
+      let instEq (name gL gR : String) : Term × ConvDeriv :=
         (Term.eq (Term.app (apps (call (P.idx gL) [] []) [csv]) sv)
           (Term.app (apps (call (P.idx gR) [] []) [csv]) sv),
          RoseTree.node .join [RoseTree.node .cong
@@ -430,8 +430,8 @@ def formLemmas (P : Prog) (rs : (String → ℕ) → List NormRule) : List Step 
   let aDef := call (P.idx "Datatype.aDef") [] []
   let hdRaw : Term × Term := (condT treeTy (lab (named (v 0))) (v 0) aDef, aDef)
   let nf (G : Internal.Globals) (E : Array Entry) (ix : String → ℕ) (n : ℕ) (Γ : List Tree)
-      (t : Term) : Option (Term × Deriv) :=
-    (Internal.eval G E n (rs ix) 4096 .weak Γ [] t).map fun (w, d, _) ↦ (w, d)
+      (t : Term) : Option (Term × ConvDeriv) :=
+    (Internal.evalC G E n (rs ix) 4096 .weak Γ [] t).map fun (w, d, _) ↦ (w, d)
   [("long", fun ix E ↦ do
       let raw := call D.lab [] [apps (call (P.idx "long3") [] []) [v 0]]
       let zero := nilT bitTy
@@ -485,7 +485,7 @@ def formSteps (P : Prog) : List Step :=
   [step "form" a (fun ix E ↦
     let rs := rsF ix
     let w := byWeak P.G E 0 rs
-    let refl : Deriv := RoseTree.node .refl []
+    let refl : ConvDeriv := RoseTree.node .refl []
     let kw (name : String) (t : Term) : Option Term :=
       (appsOf (P.idx "Reader.named") t).find? fun u ↦ match u.children with
         | [_, k] => k = call (P.idx name) [] [] | _ => false
@@ -565,7 +565,7 @@ def runSteps (P : Prog) : List Step :=
     "Datatype.dataDecl", "Datatype.marker", "Reader.named"]
   [step "run" a (fun ix E ↦
     let rs := [.thm (ix "maskSplit") [prodTs], .thm (ix "maskSplit") [XP]] ++ rsC P ix folded
-    let refl : Deriv := RoseTree.node .refl []
+    let refl : ConvDeriv := RoseTree.node .refl []
     let consP : Internal.Prover := fun Γ Φ t u ↦ do
       -- context [out, env, rest, form]; the step's lemma at the form, the environment and the
       -- output, and the induction hypothesis at the environment and output after the step
@@ -617,14 +617,14 @@ def programSteps (P : Prog) : List Step :=
   [step "expansion" a (fun ix E ↦
     let rs := [.thm (ix "condFst") [treeTy, list treeTy], .thm (ix "condSnd") [treeTy, list treeTy],
       .thm (ix "revRev") [], .thm (ix "maskSplit") [treeTy]] ++ rsC P ix folded
-    let refl : Deriv := RoseTree.node .refl []
+    let refl : ConvDeriv := RoseTree.node .refl []
     let es := v 0
     let nil := nilT treeTy
     let run (name : String) : Term := apps (call (P.idx name) [] []) [es, nil, nil]
     let χ := Term.eq (run "rL") (run "rR")
     let dχ := RoseTree.node .join [RoseTree.node .cong [RoseTree.node .cong
       [RoseTree.node (.thm (ix "run") [] [es] false) [], refl], refl], refl]
-    let proj (f : Term → Term) (i : ℕ) : Term × Deriv :=
+    let proj (f : Term → Term) (i : ℕ) : Term × ConvDeriv :=
       (Term.eq (f (run "rL")) (f (run "rR")),
         RoseTree.node .join [RoseTree.node .cong [RoseTree.node (.rwHyp i false) []], refl])
     let prover : Internal.Prover := fun Γ Φ t u ↦ do
@@ -656,7 +656,7 @@ def program : Option Prog := do
 
 /-- The development in a translated program, its last lemma the statement; the name of the first
 lemma not proved, where one is not. -/
-def certificate (P : Prog) : Except String (List Decl) := do
+def certificate (P : Prog) : Except String (List ConvDecl) := do
   let some dev := development P | throw "the development is not stated"
   (developNamed dev).mapError fun name ↦ s!"the lemma {name} is not proved"
 

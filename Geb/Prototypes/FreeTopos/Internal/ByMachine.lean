@@ -36,7 +36,6 @@ theorem whose translation is not accepted keeps its derivation.
 
 ## Main definitions
 
-* {lit}`liftDeriv` — a derivation as a certificate of the conversion checker.
 * {lit}`joinByMachine` — the join of an equation's sides by two steps of the machine.
 * {lit}`unfoldsIn`, {lit}`citedIn` — the definitions a rewriting unfolds, the rules it cites.
 * {lit}`joinByMachineAs` — the join by a step at each side taking it as its rewriting takes it.
@@ -57,9 +56,6 @@ namespace Geb.FreeTopos.Internal
 open PartialHorn (Tree)
 open Sorts
 open scoped FinEnum
-
-/-- A derivation as a certificate of the conversion checker, each node its rule. -/
-def liftDeriv : Deriv → ConvDeriv := RoseTree.map ConvRule.base
 
 /-- Whether a rule rewrites by a theorem or by a hypothesis. -/
 def Rule.cites : Rule → Bool

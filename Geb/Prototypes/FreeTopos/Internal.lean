@@ -27,6 +27,7 @@ public import Geb.Prototypes.FreeTopos.Internal.Params
 public import Geb.Prototypes.FreeTopos.Internal.Proofs
 public import Geb.Prototypes.FreeTopos.Internal.Prove
 public import Geb.Prototypes.FreeTopos.Internal.ProveChecked
+public import Geb.Prototypes.FreeTopos.Internal.Provers
 public import Geb.Prototypes.FreeTopos.Internal.Reduce
 public import Geb.Prototypes.FreeTopos.Internal.Represent
 public import Geb.Prototypes.FreeTopos.Internal.RepresentEq

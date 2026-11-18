@@ -441,18 +441,30 @@ def present (proofs : String) (written : List Compiler.Source) (result : Tree) :
   else if result.label == 2 then .error (rejection proofs written result)
   else .error s!"{proofs}: the program has no translation into the metalogic"
 
+/-- The theory of the proofs a certificate or a cache keeps: the internal language's derivations
+with the steps of conversion, each naming a reduction that the check computes. -/
+def theoryName : Tree := nameTree "free-topos/conversion/v1".toList
+
+/-- The theory of the derivations of the internal language's rules alone, which a certificate or
+a cache written before the steps of conversion names. Such a derivation is a proof of the theory
+with those steps in which none occurs. -/
+def baseTheoryName : Tree := nameTree "free-topos/base/v1".toList
+
+/-- Whether a certificate or a cache names a theory whose proofs the check of certificates reads:
+the theory written, or that of the derivations without steps. -/
+def readsTheory (theory : Tree) : Bool :=
+  decide (theory = theoryName) || decide (theory = baseTheoryName)
+
 /-- The certificate format and theory are separate from the kernel image's wire version. -/
 def envelope (format : Tree) (profile : Profile) (program certificate : Tree) : Tree :=
-  mk 0 [format, nameTree "free-topos/base/v1".toList,
-    nameTree (canonOf profile.toSExp), program, certificate]
+  mk 0 [format, theoryName, nameTree (canonOf profile.toSExp), program, certificate]
 
 /-- The compiled program a certificate was produced against and the development it saves, read
 only for the format, theory and profile against which it was produced. -/
 def savedOf (expected : Tree) (profile : Profile) (saved : Tree) : Except String (Tree × Tree) :=
   match saved.children with
   | [format, theory, header, source, cert] =>
-    if saved.label == 0 && decide (format = expected) &&
-        decide (theory = nameTree "free-topos/base/v1".toList) &&
+    if saved.label == 0 && decide (format = expected) && readsTheory theory &&
         decide (header = nameTree (canonOf profile.toSExp)) then
       .ok (source, cert)
     else .error "certificate format, theory, profile, or compiled program differs"
@@ -558,9 +570,6 @@ def Uses.render (u : Uses) : String :=
 /-- The format of a development's cache, separate from that of its certificate. -/
 def cacheFormat : Tree := nameTree "geb-proof-cache/v2".toList
 
-/-- The theory of the derivations a certificate or a cache keeps. -/
-def theoryName : Tree := nameTree "free-topos/base/v1".toList
-
 /-- The file of a proof document's cache in a directory of caches: the document's file name
 before a number of its path, so that documents of one name in several directories have
 several caches. The number identifies nothing: a cache is read for the items it holds, each
@@ -578,7 +587,7 @@ def readCache (path : System.FilePath) (profile : Profile) : IO (Tree × Tree) :
   let some saved := readImage (← IO.FS.readBinFile path) | return (leaf 0, leaf 0)
   match saved.children with
   | [format, theory, header, source, cache] =>
-    if saved.label == 0 && decide (format = cacheFormat) && decide (theory = theoryName) &&
+    if saved.label == 0 && decide (format = cacheFormat) && readsTheory theory &&
         decide (header = nameTree (canonOf profile.toSExp)) then
       return (cache, source)
     else return (leaf 0, leaf 0)

@@ -47,8 +47,8 @@ namespace GebTests.Prototypes.FreeTopos.InternalConstants
 
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Prover Geb.FreeTopos.Sorts
 open GebTests.Prototypes.FreeTopos.Internal
-open Geb.FreeTopos.Internal (Term Thm Entry Decl Globals checkThms compileDefs)
-open Geb.FreeTopos.Internal.Logic (nd)
+open Geb.FreeTopos.Internal (Term Thm Entry ConvDecl Globals checkConvThms compileDefs)
+open Geb.FreeTopos.Internal.Logic (cnd)
 
 /-- The definitions of the combinators that appending and addition compile to. -/
 def cds : List PartialHorn.Defn := (compileDefs G).getD []
@@ -104,7 +104,7 @@ the object parameter, confirmed by the inference, and of the product of the natu
 themselves, confirmed by the prover's certificate; the arrows into and out of the pairs; and the
 theorems of the round trip, citing the prover's certificate, and of an element of the pairs. The
 result's last components are the certificates that confirm adding two and the product. -/
-def developmentWith : Option (List Decl × Tree × Tree) := do
+def developmentWith : Option (List ConvDecl × Tree × Tree) := do
   let (i, lib) ← libraryWith false
   let (k, dev) ← (proveSeq twoPrim.seq (Prover.byNorm (rules i) twoPrim.seq.concl) cds).run lib
   let dfdProd : PartialHorn.Seq := ⟨[], [], dfd (prod nat nat)⟩
@@ -118,36 +118,37 @@ def developmentWith : Option (List Decl × Tree × Tree) := do
   let E : Array Entry := (dev.map fun (s, _) ↦ Entry.combinators s).toArray
   let d ← Internal.byNorm G₃ E 0 [.delta 2] 16 [] [] (Term.defn 2 [] [Term.arr 4 [] Term.star])
     (Term.arr 5 [] (Term.arr 4 [] Term.star))
-  pure (dev.map (fun (s, c) ↦ Decl.combinators s c) ++
-    [Decl.constant onePrim none, Decl.constant twoPrim (some c), Decl.definition addTwoD,
-      Decl.language addTwoOne d, Decl.object 1 pairsObj none,
-      Decl.object 0 (prod nat nat) (some c₂), Decl.constant toPairs none,
-      Decl.constant fromPairs none, Decl.language roundTrip (nd (.cert c₃)),
-      Decl.language pairsRefl (nd .join [nd .refl, nd .refl])], c, c₂)
+  pure (dev.map (fun (s, c) ↦ ConvDecl.combinators s c) ++
+    [ConvDecl.constant onePrim none, ConvDecl.constant twoPrim (some c),
+      ConvDecl.definition addTwoD,
+      ConvDecl.language addTwoOne d, ConvDecl.object 1 pairsObj none,
+      ConvDecl.object 0 (prod nat nat) (some c₂), ConvDecl.constant toPairs none,
+      ConvDecl.constant fromPairs none, ConvDecl.language roundTrip (cnd (.cert c₃)),
+      ConvDecl.language pairsRefl (cnd .join [cnd .refl, cnd .refl])], c, c₂)
 
 /-- The development. -/
-def development : Option (List Decl) := developmentWith.map Prod.fst
+def development : Option (List ConvDecl) := developmentWith.map Prod.fst
 
 /-- The declarations of the combinators that open the development. -/
-def opening (ds : List Decl) : List Decl := ds.take (ds.length - 10)
+def opening (ds : List ConvDecl) : List ConvDecl := ds.take (ds.length - 10)
 
 -- the development checks, its declarations of every kind
-#guard development.any fun ds ↦ checkThms G ds #[]
+#guard development.any fun ds ↦ checkConvThms G ds #[]
 
 -- the theorem does not check before the constants it applies
-#guard development.any fun ds ↦ !checkThms G (opening ds ++
+#guard development.any fun ds ↦ !checkConvThms G (opening ds ++
   (ds.drop (ds.length - 7)).take 1 ++ (ds.drop (ds.length - 10)).take 3) #[]
 
 -- the certificate does not confirm a primitive arrow of another codomain
-#guard developmentWith.any fun (ds, c, _) ↦ !checkThms G (opening ds ++
-  [Decl.constant ⟨0, comp succ succ, nat, one⟩ (some c)]) #[]
+#guard developmentWith.any fun (ds, c, _) ↦ !checkConvThms G (opening ds ++
+  [ConvDecl.constant ⟨0, comp succ succ, nat, one⟩ (some c)]) #[]
 
 -- a theorem in a context of the pairs does not check before their definition
-#guard development.any fun ds ↦ !checkThms G (opening ds ++ (ds.drop (ds.length - 1))) #[]
+#guard development.any fun ds ↦ !checkConvThms G (opening ds ++ (ds.drop (ds.length - 1))) #[]
 
 -- the certificate of the product's definedness does not confirm another object
-#guard developmentWith.any fun (ds, _, c₂) ↦ !checkThms G (opening ds ++
-  [Decl.object 0 (prod nat one) (some c₂)]) #[]
+#guard developmentWith.any fun (ds, _, c₂) ↦ !checkConvThms G (opening ds ++
+  [ConvDecl.object 0 (prod nat one) (some c₂)]) #[]
 
 end GebTests.Prototypes.FreeTopos.InternalConstants
 

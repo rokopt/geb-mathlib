@@ -580,7 +580,7 @@ def indexLemma (P : Prog) (S : Defs) (name : String) (Γ : List Tree) (x xs : Te
           (fun _ ↦ [suffix (i + 1), headAt i, xN]) K.byNorm) Γ Φ φ
         dCut φ d k Γ Φ ψ) (linkK K s!"{name}: the sides" K.byNorm)
     -- truth cut in first: the hypothesis of index 0 supplies no rule
-    let some d := dCut (Internal.Logic.tt P.o) Internal.Logic.trueI chain a.ctx a.hyps a.concl
+    let some d := dCut (Internal.Logic.tt P.o) Internal.Logic.trueIC chain a.ctx a.hyps a.concl
       | dbgTrace s!"{name}: not proved" fun _ ↦ none
     pure (a, d))
 

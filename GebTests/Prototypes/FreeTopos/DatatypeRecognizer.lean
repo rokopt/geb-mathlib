@@ -1198,7 +1198,7 @@ def eqSuccLemmas (P : Prog) (S : Defs) : List Step :=
     [.thm (ix "eqZeroSuccB") []] ++ rulesNth P ix
   let auto (ix : String → ℕ) (E : Array Internal.Entry) : Internal.Prover :=
     byAuto P.G E 0 (rs ix) 2 .open
-  let side (a : Internal.Thm) (p : Internal.Prover) : Option Internal.Deriv :=
+  let side (a : Internal.Thm) (p : Internal.Prover) : Option Internal.ConvDeriv :=
     p a.ctx [] (TranslationProofs.sides a).1 (TranslationProofs.sides a).2
   [step "eqZeroSuccB" eqZS (fun ix E ↦
       side eqZS (bitsCases P.G 0 (byAuto P.G E 0 (rulesNth P ix) 2 .open))),

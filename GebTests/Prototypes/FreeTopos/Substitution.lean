@@ -57,7 +57,7 @@ namespace GebTests.Prototypes.FreeTopos.Substitution
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
 open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Weakening
-open Internal (Term NormRule Entry Deriv Decl Definition)
+open Internal (Term NormRule Entry ConvDeriv ConvDecl Definition)
 open scoped FinEnum
 
 /-! The program. -/
@@ -137,9 +137,9 @@ def weakeningSteps (P : Prog) : List Step :=
       let α := [v 1, nilT treeTy, v 2, v 3]
       let F := apps (Term.app (call (P.idx "wkL") [] []) (v 0)) α
       let H := apps (Term.app (call (P.idx "wkR") [] []) (v 0)) α
-      let (_, dF, _) ← Internal.eval P.G E 0 (baseNorm P) 4096 .weak wkZ.ctx [] F
-      let (_, dH, _) ← Internal.eval P.G E 0 (baseNorm P) 4096 .weak wkZ.ctx [] H
-      let rw : Deriv := α.foldl (fun d _ ↦ RoseTree.node .cong [d, RoseTree.node .refl []])
+      let (_, dF, _) ← Internal.evalC P.G E 0 (baseNorm P) 4096 .weak wkZ.ctx [] F
+      let (_, dH, _) ← Internal.evalC P.G E 0 (baseNorm P) 4096 .weak wkZ.ctx [] H
+      let rw : ConvDeriv := α.foldl (fun d _ ↦ RoseTree.node .cong [d, RoseTree.node .refl []])
         (RoseTree.node (.thm (ix "weakening") [] [v 0] false) [])
       pure (RoseTree.node (.convFrom (Term.eq F H)) [RoseTree.node .cong [dF, dH],
         RoseTree.node .join [rw, RoseTree.node .refl []]]))]
@@ -163,7 +163,7 @@ def succLemmas (P : Prog) : Option (List Step) := do
     (Term.lam bitsTy (call D.eqB [] [v 0, v 1]))⟩
   let auto (ix : String → ℕ) (E : Array Entry) : Internal.Prover :=
     byAuto P.G E 0 (rulesSub P ix) 2 .open
-  let side (a : Internal.Thm) (p : Internal.Prover) : Option Deriv :=
+  let side (a : Internal.Thm) (p : Internal.Prover) : Option ConvDeriv :=
     p a.ctx [] (sides a).1 (sides a).2
   pure [
     step "rebD" rebD (fun _ E ↦ side rebD (byListIndWeak P.G E 0 (consT bitTy (v 1) (v 0))
@@ -191,7 +191,7 @@ the index is neither below nor at the first part's length; and the type of a var
 substituted term's type for the variable below the first part is its type in the context with
 the substituted variable, by induction on the first part. -/
 def varLemmas (P : Prog) : List Step :=
-  let side (a : Internal.Thm) (p : Internal.Prover) : Option Deriv :=
+  let side (a : Internal.Thm) (p : Internal.Prover) : Option ConvDeriv :=
     p a.ctx [] (sides a).1 (sides a).2
   let stSide (name : String) : Term := Term.lam bitsTy
     (apps (call (P.idx name) [] []) [v 1, v 2, v 3, v 4, leafT (v 0)])
@@ -283,17 +283,17 @@ def program : Option Prog := do
 /-- The development proving the statement in a translated program: the lemmas, each with its
 derivation, and the statement, with the derivation found by induction on rose trees; the reason
 where a lemma or the statement is not proved. -/
-def certificate (P : Prog) : Except String (List Decl) := do
+def certificate (P : Prog) : Except String (List ConvDecl) := do
   let some dev := development P | throw "the development is not stated"
   let decls ← (developNamed dev).mapError fun name ↦ s!"the lemma {name} is not proved"
-  let some (_, E) := Internal.checkDev P.G #[] decls
+  let some (_, E, _) := Internal.checkConvDev P.G #[] decls
     | throw "the development does not check"
   let ix (name : String) : ℕ := (dev.findIdx? (·.1 == name)).getD 0
   let a := substitution P
   let some d := Internal.byRoseIndHyp 2 0 1
       (bySubLabels P (Internal.prepareRules E (subRules ix)) E) a.ctx [] (sides a).1 (sides a).2
     | throw "the statement is not proved"
-  pure (decls ++ [Decl.language a d])
+  pure (decls ++ [ConvDecl.language a d])
 
 end GebTests.Prototypes.FreeTopos.Substitution
 

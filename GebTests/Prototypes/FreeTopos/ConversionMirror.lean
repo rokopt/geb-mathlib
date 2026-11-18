@@ -59,6 +59,7 @@ namespace GebTests.Prototypes.FreeTopos.ConversionMirror
 
 open Geb Geb.Kernel Geb.FreeTopos
 open GebTests.Prototypes.FreeTopos.Agreement.Encode
+  GebTests.Prototypes.FreeTopos.Agreement.Provers
   GebTests.Prototypes.FreeTopos.Agreement.Conversion
 open GebTests.Prototypes.FreeTopos.Literals (G entries bin lit first recorded byLit)
 open GebTests.Prototypes.FreeTopos.Machine (byMachine proves hypThm)

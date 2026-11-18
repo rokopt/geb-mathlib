@@ -40,8 +40,8 @@ namespace GebTests.Prototypes.FreeTopos.InternalQuotients
 
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Sorts
 open GebTests.Prototypes.FreeTopos.Internal
-open Geb.FreeTopos.Internal (Term Thm Entry Decl Globals checkDev checkThms)
-open Geb.FreeTopos.Internal.Logic (nd)
+open Geb.FreeTopos.Internal (Term Thm Entry ConvDecl Globals checkConvDev checkConvThms)
+open Geb.FreeTopos.Internal.Logic (cnd)
 
 /-- The pairs of natural numbers. -/
 def P : Tree := prod nat nat
@@ -89,13 +89,13 @@ def eqns : List Internal.NormRule := [.rule .beta, .rule .fstPair, .rule .sndPai
 /-- The development: the quotient, the respect of the relation by the sum, its descent, the
 respect by the sum with zero added, its descent, the agreement of the descents by induction on
 the quotient, and the image of a pair with zero added. -/
-def development : Option (List Decl) := do
-  let ds₁ : List Decl := [Decl.quotient 0 P sameSum,
-    Decl.language respectSum (nd (.hyp 0)), Decl.descent 4 nat (sumT 0) 1]
-  let (G₁, E₁) ← checkDev G #[] ds₁
+def development : Option (List ConvDecl) := do
+  let ds₁ : List ConvDecl := [ConvDecl.quotient 0 P sameSum,
+    ConvDecl.language respectSum (cnd (.hyp 0)), ConvDecl.descent 4 nat (sumT 0) 1]
+  let (G₁, E₁, _) ← checkConvDev G #[] ds₁
   let d₁ ← Internal.byNorm G₁ E₁ 0 [.hyp 0] 16 [P, P] [sameSum] (sum0T 1) (sum0T 0)
-  let ds₂ := ds₁ ++ [Decl.language respectSum0 d₁, Decl.descent 4 nat (sum0T 0) 3]
-  let (G₂, E₂) ← checkDev G #[] ds₂
+  let ds₂ := ds₁ ++ [ConvDecl.language respectSum0 d₁, ConvDecl.descent 4 nat (sum0T 0) 3]
+  let (G₂, E₂, _) ← checkConvDev G #[] ds₂
   -- at an image, the two descents compute to the sum with zero added and the sum
   let d₂ ← Internal.byNorm G₂ E₂ 0 (eqns ++ [.thm 4 [], .thm 2 []]) 64 [P] []
     (desc0T (qT (Term.var 0))) (descT (qT (Term.var 0)))
@@ -105,21 +105,22 @@ def development : Option (List Decl) := do
       (Term.snd (Term.pair (Term.var 1) (addT (Term.var 0) zeroT))))
     (addT (Term.fst (Term.pair (Term.var 1) (Term.var 0)))
       (Term.snd (Term.pair (Term.var 1) (Term.var 0))))
-  pure (ds₂ ++ [Decl.language descAgree (nd (.quotInd 4 []) [d₂]),
-    Decl.language addZeroImage (nd (.apply 0 []
+  pure (ds₂ ++ [ConvDecl.language descAgree (cnd (.quotInd 4 []) [d₂]),
+    ConvDecl.language addZeroImage (cnd (.apply 0 []
       [Term.pair (Term.var 1) (Term.var 0), Term.pair (Term.var 1) (addT (Term.var 0) zeroT)])
       [d₃])])
 
 -- the development checks
-#guard development.any fun ds ↦ checkThms G ds #[]
+#guard development.any fun ds ↦ checkConvThms G ds #[]
 
 -- a descent citing the relation's theorem, not its function's respect of it, does not check
-#guard development.any fun ds ↦ !checkThms G (ds.take 2 ++ [Decl.descent 4 nat (sumT 0) 0]) #[]
+#guard development.any fun ds ↦
+  !checkConvThms G (ds.take 2 ++ [ConvDecl.descent 4 nat (sumT 0) 0]) #[]
 
 -- an induction on the codomain of the successor, not a quotient's projection, does not check
-#guard development.any fun ds ↦ !checkThms G (ds.take 5 ++
-  [Decl.language ⟨0, [nat], [], Term.eq (Term.var 0) (Term.var 0)⟩
-    (nd (.quotInd 3 []) [nd .join [nd .refl, nd .refl]])]) #[]
+#guard development.any fun ds ↦ !checkConvThms G (ds.take 5 ++
+  [ConvDecl.language ⟨0, [nat], [], Term.eq (Term.var 0) (Term.var 0)⟩
+    (cnd (.quotInd 3 []) [cnd .join [cnd .refl, cnd .refl]])]) #[]
 
 end GebTests.Prototypes.FreeTopos.InternalQuotients
 

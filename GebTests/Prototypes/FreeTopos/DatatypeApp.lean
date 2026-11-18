@@ -85,10 +85,10 @@ def rawListR (P : Prog) (T : Defs3) : Step :=
     let some l := (nfE P.G E rs Γ (T.foldAt 4 ps (nodeT (Term.pair (numeral 2) (v 0))))).map
         Term.fst
       | dbgTrace "rawListR: left" fun _ ↦ none
-    let some (w, dw, _) := Internal.eval P.G E 0
+    let some (w, dw, _) := Internal.evalC P.G E 0
         (rs ++ [.delta (T.argIdx 4), .delta (P.idx "Reader.resolveList")]) 4096 .weak Γ [] l
       | dbgTrace "rawListR: weak" fun _ ↦ none
-    let some (r, dr, _) := Internal.eval P.G E 0 rs 4096 .full Γ [] w
+    let some (r, dr, _) := Internal.evalC P.G E 0 rs 4096 .full Γ [] w
       | dbgTrace "rawListR: right" fun _ ↦ none
     if l == r then none else
     pure (⟨0, Γ, [], Term.eq l r⟩, nd .join [nd .trans [dw, dr], nd .refl]))

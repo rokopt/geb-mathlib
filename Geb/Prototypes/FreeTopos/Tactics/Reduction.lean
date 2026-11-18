@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.FreeTopos.Internal.Prove
+public import Geb.Prototypes.FreeTopos.Internal.Provers
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -13,9 +13,11 @@ set_option doc.verso true in
 # Proofs by reduction
 
 Proofs of an equation of the internal language by reducing its sides with the evaluator
-({name}`Geb.FreeTopos.Internal.eval`) to a depth: to one normal form, or to normal forms whose
+({name}`Geb.FreeTopos.Internal.evalC`) to a depth: to one normal form, or to normal forms whose
 equation another prover proves; and by normalization through weak head normal forms with the
-hypotheses as rewriting rules. The tactics of the modules beside this one compose them.
+hypotheses as rewriting rules. Each is a certificate of the conversion checker, a reduction
+named by the step of conversion that computes it. The tactics of the modules beside this one
+compose them.
 
 ## Main definitions
 
@@ -37,7 +39,7 @@ set_option doc.verso true
 namespace Geb.FreeTopos.Tactics
 
 open Geb.PartialHorn (Tree)
-open Internal (Term NormRule Entry Deriv)
+open Internal (Term NormRule Entry ConvDeriv)
 open scoped FinEnum
 
 /-- The application of a term to arguments, the first first. -/
@@ -46,8 +48,8 @@ def apps (f : Term) (xs : List Term) : Term := xs.foldl Term.app f
 /-- The proof of an equation by reducing both sides to one normal form, to a depth. -/
 def byMode (m : Internal.Depth) (G : Internal.Globals) (E : Array Entry) (n : ℕ)
     (rs : List NormRule) : Internal.Prover := fun Γ Φ t u ↦ do
-  let (v, d₁, _) ← Internal.eval G E n rs 4096 m Γ Φ t
-  let (v', d₂, _) ← Internal.eval G E n rs 4096 m Γ Φ u
+  let (v, d₁, _) ← Internal.evalC G E n rs 4096 m Γ Φ t
+  let (v', d₂, _) ← Internal.evalC G E n rs 4096 m Γ Φ u
   if v = v' then some (RoseTree.node .join [d₁, d₂]) else none
 
 /-- The proof of an equation by reducing both sides to one weak normal form. -/
@@ -58,8 +60,8 @@ def byWeak (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRul
 the rewritten equation by {lit}`p`. -/
 def byNF (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule)
     (m : Internal.Depth) (p : Internal.Prover) : Internal.Prover := fun Γ Φ t u ↦ do
-  let (t', dt, _) ← Internal.eval G E n rs 4096 m Γ Φ t
-  let (u', du, _) ← Internal.eval G E n rs 4096 m Γ Φ u
+  let (t', dt, _) ← Internal.evalC G E n rs 4096 m Γ Φ t
+  let (u', du, _) ← Internal.evalC G E n rs 4096 m Γ Φ u
   let q ← p Γ Φ t' u'
   pure (RoseTree.node .conv [RoseTree.node .cong [dt, du], q])
 

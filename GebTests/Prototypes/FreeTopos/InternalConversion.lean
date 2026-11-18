@@ -72,10 +72,9 @@ def proves (i : ℕ) (d : ConvDeriv) : Bool := (theorems[i]?.map (·.1)).any (·
 #guard !proves 0 (byConv (.norm InternalDerivation.eqns 64))
 #guard !proves 0 (byConv (.eval InternalDerivation.eqns 64 .full))
 
--- the step of conversion is a fraction of the base checker's derivation
-#guard development.any fun ds ↦ match ds[4]? with
-  | some (Internal.Decl.language _ d) => nodes (byConv (.eval (rules 1) 64 .full)) < nodes d
-  | _ => false
+-- a step of conversion, one node, stands in place of the derivation its reduction computes
+#guard (theorems[4]?.map (·.1)).any fun a ↦ (Internal.eqParts a.concl).any fun (t, _) ↦
+  (Internal.eval G #[] a.arity (rules 1) 64 .full a.ctx a.hyps t).any fun (_, d, _) ↦ 1 < nodes d
 
 /-- An instance of the second theorem, that appending the empty list is the identity, at a list
 itself appended to the empty list. -/

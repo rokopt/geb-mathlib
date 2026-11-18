@@ -1,6 +1,6 @@
 module
 
-public import GebMirror.Metalogic.Prover
+public import GebMirror.Metalogic.Conversion
 
 /-! Generated from a Geb program by `bootstrap/stage1/lean.geb`. -/
 

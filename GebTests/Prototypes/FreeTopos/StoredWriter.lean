@@ -13,8 +13,8 @@ set_option doc.verso true in
 # Writing the certificates
 
 A development of the internal language as the text of a certificate: the table of the distinct
-nodes of its tree ({name}`GebTests.Prototypes.FreeTopos.Stored.declsToNats`), written as its
-numbers in decimal, which {name}`GebTests.Prototypes.FreeTopos.Stored.declsOfText` reads back.
+nodes of its tree ({name}`GebTests.Prototypes.FreeTopos.Stored.convDeclsToNats`), written as its
+numbers in decimal, which {name}`GebTests.Prototypes.FreeTopos.Stored.convDeclsOfText` reads back.
 
 ## Main definitions
 
@@ -27,7 +27,7 @@ numbers in decimal, which {name}`GebTests.Prototypes.FreeTopos.Stored.declsOfTex
 Reading the certificates a development continues from, by {name}`IO.FS.readFile`, depends on
 {lit}`Classical.choice` through the proofs of its validation of UTF-8, so the module is admitted to
 {lit}`GebMeta.classicalAllowedModules`: it writes certificates and proves nothing, while the
-reading of a certificate's text ({name}`GebTests.Prototypes.FreeTopos.Stored.declsOfText`) and
+reading of a certificate's text ({name}`GebTests.Prototypes.FreeTopos.Stored.convDeclsOfText`) and
 the searches are held to the strict axiom set.
 
 ## Tags
@@ -59,10 +59,10 @@ def generate (dir : System.FilePath) (only : List String := []) : IO UInt32 := d
     let mut before : List (List Internal.Thm) := []
     for f in reads do
       let text ← IO.FS.readFile (dir / s!"{f}.cert")
-      match Stored.declsOfText text with
+      match Stored.convDeclsOfText text with
       | some ds => before := before ++ [ds.filterMap fun
-          | .language a _ => some a
-          | _ => none]
+        | .conv a _ => some a
+        | _ => none]
       | none => throw (IO.userError s!"{name}: the certificate {f} does not read")
     let t₀ ← IO.monoMsNow
     let r ← IO.lazyPure fun _ ↦ search before

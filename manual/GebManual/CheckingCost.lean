@@ -384,7 +384,12 @@ against their cost.
    the prover's reduction. The conversion checker's steps `norm` and
    `eval` compute the prover's reduction's result alone, without its
    derivation, which removes the first factor from the certificates'
-   size and leaves the time of a step the reduction's own; the step
+   size and leaves the time of a step the reduction's own, more than the
+   time of the check of the derivation the step replaces: the provers
+   name a reduction by its step where its derivation has more nodes than
+   a bound, and the stored certificates, whose derivations are within
+   it, are measured with their reductions named by steps
+   ({ref "measurements"}[The measurements]); the step
    `machine` reduces by the environment machine, at numerals of six
    decimal digits from 3.5 times faster than the step `eval` at their
    equality to 105 times at their product
@@ -641,6 +646,96 @@ own reading the committed certificates, takes 40.0 minutes: the searches
 times sum to 48 minutes, against 43 in turn; `decode-case`, the longest
 at 589 seconds, begins among the last, as it is listed, and ends the
 searches. No process exceeds 4.8 gigabytes of resident memory.
+
+With the provers naming a reduction by its step where its derivation
+has more nodes than a bound
+({ref "conversion-continuation"}[Completing the checker with a step of
+conversion]), the stored certificates were generated and checked at
+derivations, with every reduction that rewrites a step, and at a bound
+of 1024 nodes. The modules of
+`GebTests/Prototypes/FreeTopos/Certified/` build, on sixteen cores, the
+first two columns in builds run at the same time and the third in a
+later run, in seconds, the derivations checked by the base checker and
+the certificates with steps by the conversion checker:
+
+:::table +header
+*
+  * Module
+  * Derivations
+  * Every reduction a step
+  * Steps past 1024 nodes
+*
+  * `Weakening`, `Substitution`, `Expansion`, `TreeCases`
+  * 11, 21, 7.2, 4.3
+  * 12, 29, 6.8, 3.2
+  * 11, 19, 5.0, 3.1
+*
+  * `Normalization`
+  * 31
+  * 82
+  * 43
+*
+  * `Datatype`
+  * 37
+  * 72
+  * 50
+*
+  * `DatatypeList`
+  * 163
+  * 273
+  * 265
+*
+  * `DatatypeForms`
+  * 537
+  * 966
+  * 751
+*
+  * `DatatypeDatum`
+  * 148
+  * 1418
+  * 908
+*
+  * `DatatypeCase`
+  * 267
+  * 783
+  * 505
+*
+  * `DatatypeGenerated`
+  * 359
+  * 700
+  * Not measured
+*
+  * `DatatypeCata`
+  * 2910
+  * Stopped after 5500
+  * Not measured
+:::
+
+A step is checked by performing its reduction, which traverses the whole
+term and tries its rules at each node, and a derivation along its
+rewritings alone. The certificates of `DatatypeDatum` have 16132
+rewritings of 286 nodes on average at derivations, where a step in
+place of one traverses the whole of the term the derivation rewrites a
+part of. The
+searches of `datatype-atom` and of `datatype-list`, each in turn on
+the same machine, which check each declaration they store, take 29.0
+and 339 seconds at derivations, 36.4 and 425 with every reduction a
+step, and 35.3 and 408 at the bound of 1024; the search of
+`datatype-list` reaches 2.4 gigabytes of resident memory at derivations
+and 1.1 at either bound. With the provers' bound above the stored
+developments' derivations, a search's certificates are those
+derivations as certificates of the conversion checker, which it checks
+by that checker: the same two searches take 28 and 362 seconds, the
+second beside other searches, and reach 0.35 and 2.6 gigabytes against
+0.33 and 2.4. The conversion checker's check of derivations
+alone takes more than the base checker's: the module `DatatypeDatum`,
+its certificate's derivations read as certificates of the conversion
+checker, elaborates in about 250 seconds against about 190 by the base
+checker, the two run at the same time, so that the columns of steps
+include that difference. The certificates' sizes at the three are in
+{ref "conversion-continuation"}[Completing the checker with a step of
+conversion], and the stored certificates are those of derivations,
+which the modules check by the base checker.
 
 # The searches' remaining time
 %%%

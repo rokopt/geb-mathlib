@@ -10,7 +10,11 @@
 ; from proofs of others. A derivation is encoded as the checker of derivations encodes it, a
 ; derivation with a mark whether it rewrites as the pair of the two, and a rule of the normalizer
 ; as the node of its constructor's position over its fields, paired with its left side's
-; matching where it has one, as their datatypes declare them.
+; matching where it has one, as their datatypes declare them. A proof is a certificate of the
+; checker with a step of conversion: a prover names a reduction whose derivation has more nodes
+; than a bound by the step that computes it, the node of the step's position after the rules of
+; the checker of derivations over its rules, its fuel and its depth, in place of that
+; derivation, and keeps a derivation within the bound.
 
 (module Prover
   (export dNode Marked mark mDeriv mFlag NFR nfr nfTerm nfMarked ONFR.Maybe ONFR.nothing ONFR.just
@@ -44,6 +48,12 @@
     rebuild
     marked
     zipTs
+    normalizeD
+    ruleNode
+    rulesNode
+    dSize
+    stepBound
+    stepped
     normalize
     joinBy
     byNorm
@@ -57,6 +67,7 @@
     UFs.tail
     uses
     EV
+    evalD
     eval
     EVB
     Job
@@ -392,9 +403,40 @@
         (NsOut.map nsResult
           (NsAt.map (lam ((j Job)) (nsDone (ONFR.just (nfr (jobTerm j) dRefl)))) js)))
       fuel))
-  (defn normalize ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) NF
+  (defn normalizeD ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) NF
     (lam ((g Ts) (hs Ts) (t T))
       (firstR (normB G E n rs fuel (JobL.single (job 0 (objs g) 0 (terms hs) t))))))
+
+  ; the rule a step of conversion names for a rule of the normalizer: the theorem for a theorem
+  ; whose matching is prepared, which the checker of the step prepares again, and any other rule
+  ; itself; and the node of the rules a step names
+  (defn ruleNode ((r NormRule)) T (case r ((nrThmAt j th p k) (rep (nrThm j th))) (else (rep r))))
+  (import (Map NormRule T) as RuleOut)
+  (defn rulesNode ((rs NRs)) T (node 0 (RuleOut.map ruleNode rs)))
+  ; the number of a derivation's nodes, counted as a tree, a node once for each path to it from
+  ; the root; the node of a rule's data is no node of the derivation
+  (defn dSize ((d T)) T
+    (para T (lam ((nd T) (rs Ts)) (add 1 (foldr T T (lam ((x T) (acc T)) (add x acc)) 0 (tail rs))))
+      d))
+  ; the number of nodes above which a reduction's derivation is replaced by its step: the
+  ; checker performs a step's reduction, which traverses the whole term, and checks a
+  ; derivation along its rewritings alone, sooner; the bound is above the nodes of every
+  ; derivation the reductions of the stored developments compute
+  (def stepBound 4294967296)
+  ; a reduction's result with the certificate of its rewriting: where the reduction rewrites, the
+  ; step of conversion where its derivation has more nodes than the bound and the derivation
+  ; otherwise, and the identity where it does not rewrite
+  (defn stepped ((st T) (r NFR)) NFR
+    (nfr (nfTerm r)
+      (if (mFlag (nfMarked r))
+        (if (lt stepBound (dSize (mDeriv (nfMarked r)))) (mark st 1) (nfMarked r))
+        dRefl)))
+  ; the normalization, each result with the certificate of its rewriting, the step of conversion
+  ; that names it by its rules and its fuel, which the conversion checker computes again, where
+  ; the derivation it computes has more nodes than the bound
+  (defn normalize ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) NF
+    (let* ((nf NF (normalizeD G E n rs fuel)) (st T (dNode 37 (l2 (rulesNode rs) fuel) (nil T))))
+      (lam ((g Ts) (hs Ts) (t T)) (mapNN (lam ((r NFR)) (stepped st r)) (nf g hs t)))))
 
   ; the proof of an equation by normalizing both sides to one term
   (defn joinBy ((nf NF) (g Ts) (hs Ts) (t T) (u T)) T
@@ -837,10 +879,17 @@
     (lam ((dp T) (g Ts) (k T) (hs Ts) (t T))
       (firstR (evalB G n rw fuel (JobL.single (job dp (objs g) k (terms hs) t))))))
   ; the reduction: the rules indexed and the hypotheses prepared once
-  (defn eval ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) EV
+  (defn evalD ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) EV
     (let idx Idx (indexRules E rs)
       (lam ((dp T) (g Ts) (hs Ts) (t T))
         ((evalK G n (rootRewriteK G E n idx (prepareHyps hs)) fuel) dp g 0 hs t))))
+  ; the reduction, each result with the certificate of its rewriting, the step of conversion that
+  ; names it by its rules, its fuel and its depth where the derivation it computes has more nodes
+  ; than the bound
+  (defn eval ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) EV
+    (let* ((ev EV (evalD G E n rs fuel)) (rn T (rulesNode rs)))
+      (lam ((dp T) (g Ts) (hs Ts) (t T))
+        (mapNN (lam ((r NFR)) (stepped (dNode 38 (l3 rn fuel dp) (nil T)) r)) (ev dp g hs t)))))
   (defn whnf ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) NF (eval G E n rs fuel 0))
   (defn normalizeW ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T)) NF (eval G E n rs fuel 3))
   (defn byNormW ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T)) T

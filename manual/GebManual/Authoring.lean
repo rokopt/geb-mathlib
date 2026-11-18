@@ -73,9 +73,15 @@ unless they are given a directory of caches
 ({ref "proof-cache"}[The cache of a development]).
 
 `replay` checks the saved derivations against the source statements and
-their names. It performs no proof search. Reducing `normalize`'s budget
+their names. A theorem's derivation, here and below, is its certificate of
+the checker with a step of conversion: the derivation of the internal
+language's rules in which a reduction a script performs, where its own
+derivation has more nodes than the prover's bound, is one step naming the
+reduction's rules and budget, which a check computes again.
+`replay` performs no proof search. Reducing `normalize`'s budget
 to zero can make `prove` fail while `replay` continues to accept the saved
-certificate. Changing the statement, its name, the program, or its
+certificate, whose steps keep the budgets they were found with. Changing
+the statement, its name, the program, or its
 profile prevents that reuse. Comments and notes may change while the
 compiled program stays the same; examples are checked again on replay.
 A certificate of the program as it was before a change is carried to the
@@ -1035,7 +1041,10 @@ come by in the first of three ways that applies.
   those of the theorems of the same names, and the checker of developments
   is given the derivation with the entries of the present development.
   Where it admits the derivation the theorem is declared with it, and the
-  theorem's companion is derived again.
+  theorem's companion is derived again. The check computes a step's
+  reduction with the definitions as they are, so that a step that unfolds
+  a definition since defined otherwise is admitted where its reduction
+  still reaches the terms its derivation joins.
 * Proved. The theorem's script is run, as without a cache.
 
 A theorem that is not proved, one with a hole or a step that fails, keeps
@@ -1058,9 +1067,10 @@ program at the position of the present definition of its name, a
 connective at its position after the present definitions, and a
 definition that the present program does not declare at a position that
 names none. Each item's dependency set includes the definitions named by
-its statement, its companion and the terms in its derivations, including
-the statements of cited theorems, and closes those references under the
-bodies of definitions. Definitions are compared in full after their
+its statement, its companion and the terms and the steps' rules in its
+derivations, including the statements of cited theorems, and closes those
+references under the bodies of definitions. Definitions are compared in
+full after their
 references are transported. An unrelated definition may change or move
 without rechecking that item's derivations. A changed dependency requires
 a check, and a derivation that no longer checks requires a search.
@@ -1096,8 +1106,9 @@ lake exe geb-author transport Draft.proofs.geb /tmp/earlier.cert /tmp/draft.cert
 
 It runs no script and decides nothing. Where the present program declares
 no definition of a name the certificate's declarations cite, or defines
-one otherwise than a derivation unfolds it, the development does not
-replay, and nothing is written. The certificate read is left as it is.
+one otherwise than a derivation unfolds it, or so that a step's reduction
+no longer reaches the terms its derivation joins, the development does
+not replay, and nothing is written. The certificate read is left as it is.
 
 The task `Geb: check saved file` of `.vscode/tasks.json` and the command
 of `editors/efm-langserver/config.yaml` pass
@@ -1142,7 +1153,10 @@ dependency lockfile. `record/compiler.img` retains the exact bytes of
 `bootstrap/compiler.img` used at the milestone. The certificate envelope separately identifies
 its format (`geb-proof/v2` for version `1`, `geb-proof/v3` for version `2`,
 `geb-proof/v4` for version `3`, `geb-proof/v5` for version `4`), theory
-(`free-topos/base/v1`),
+(`free-topos/conversion/v1`, the internal language's derivations with
+the steps of conversion, a reduction named by the step that computes it;
+a certificate of the theory `free-topos/base/v1`, the derivations with
+no such step, is read as one of it),
 document profile and exact compiled program; its declarations retain the
 statements, their companions and their source names.
 

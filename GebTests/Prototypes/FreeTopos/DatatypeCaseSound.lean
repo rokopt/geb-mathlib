@@ -1470,7 +1470,7 @@ depth, past it the remaining bits' head split as well, each case by normalizatio
 vocabulary's rules with the rebuilding of doubling's fold ({lit}`rebDN`) and the double of a
 successor ({lit}`dblSuccN`). -/
 def byBitsSplit (K : Kit) (P : Prog) (ix : String → ℕ) (depth : ℕ) (a : Internal.Thm) :
-    Option Internal.Deriv :=
+    Option Internal.ConvDeriv :=
   let rsH (Φ : List Term) : List Internal.NormRule :=
     [.thm (ix "rebDN") [], .thm (ix "dblSuccN") []] ++ vRules P ix ++
       (List.range Φ.length).map Internal.NormRule.hyp
@@ -1496,8 +1496,8 @@ def restateU (P : Prog) (name src : String) : Step :=
     let some (Internal.Entry.language a) := E[ix src]? | none
     let (l, r) ← Internal.eqParts a.concl
     let rs := foldedRules P
-    let (l', dl, _) ← Internal.eval P.G E a.arity rs 4096 .full a.ctx [] l
-    let (r', dr, _) ← Internal.eval P.G E a.arity rs 4096 .full a.ctx [] r
+    let (l', dl, _) ← Internal.evalC P.G E a.arity rs 4096 .full a.ctx [] l
+    let (r', dr, _) ← Internal.evalC P.G E a.arity rs 4096 .full a.ctx [] r
     pure (⟨a.arity, a.ctx, [], Term.eq l' r'⟩, nd (.convFrom (Term.eq l r))
       [nd .cong [dl, dr], nd (.apply (ix src) ((List.range a.arity).map x)
         ((List.range a.ctx.length).map v))]))
@@ -1527,7 +1527,7 @@ def dropLastDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
       -- the first component of doubling's paramorphism rebuilds the bitstring, in the
       -- vocabulary's normal form: by induction
       let rs := vRules P ix
-      let some (dn, _, _) := Internal.eval P.G E 0 rs 4096 .full [bitsTy] []
+      let some (dn, _, _) := Internal.evalC P.G E 0 rs 4096 .full [bitsTy] []
           (call D.dbl [] [v 0]) | none
       let some reb := (match dn.label, dn.children with
           | .snd, [f] => some (Term.fst f)
@@ -1575,7 +1575,7 @@ def dropLastDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
       let rs := arithR P ++ [.thm (ix "addOneB") []]
       let ln := pc P "Datatype/Txs.length" [v 0]
       let nfE (t : Term) : Term :=
-        ((Internal.eval P.G E 0 rs 4096 .full [list treeTy] [] t).map fun (z, _, _) ↦ z).getD t
+        ((Internal.evalC P.G E 0 rs 4096 .full [list treeTy] [] t).map fun (z, _, _) ↦ z).getD t
       let a : Internal.Thm := ⟨0, [list treeTy], [], Term.eq (nfE (leafT (call D.lab [] [ln])))
         (nfE ln)⟩
       let byRs : Deducer := dEq (fun Γ Φ t u ↦ byMode .full P.G E 0 rs Γ (rwHyps rs Φ) t u)

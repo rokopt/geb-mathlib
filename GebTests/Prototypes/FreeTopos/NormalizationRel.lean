@@ -58,7 +58,7 @@ namespace GebTests.Prototypes.FreeTopos.Normalization
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
 open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Weakening
-open Internal (Term NormRule Entry Deriv Decl)
+open Internal (Term NormRule Entry ConvDeriv ConvDecl)
 open scoped FinEnum
 
 /-- A constant of one type argument applied to its first argument converges at once to the

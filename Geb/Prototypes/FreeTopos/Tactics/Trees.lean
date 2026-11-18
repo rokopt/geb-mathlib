@@ -40,7 +40,7 @@ namespace Geb.FreeTopos.Tactics
 
 open Geb.PartialHorn (Tree)
 open Geb.FreeTopos.Translation
-open Internal (Term NormRule Entry Deriv)
+open Internal (Term NormRule Entry ConvDeriv)
 open scoped FinEnum
 
 /-- The type the unfolding of trees folds into: the pair of a label and the list of the
@@ -59,8 +59,8 @@ def unnodeU (t : Term) : Term := Term.roseRec unnodeTy unnodeStep t
 {lit}`i` stands for the variable, back to the term: at each occurrence of the variable, the pair
 of the unfolding's components is the unfolding, and the tree rebuilt from it is the variable,
 Lambek's lemma of index {lit}`lk`. -/
-def occRewrite (lk i : ℕ) : Term → ℕ → Deriv := RoseTree.para fun l cs d ↦
-  let refl : Deriv := RoseTree.node .refl []
+def occRewrite (lk i : ℕ) : Term → ℕ → ConvDeriv := RoseTree.para fun l cs d ↦
+  let refl : ConvDeriv := RoseTree.node .refl []
   let j := i + d
   match l with
   | .var k =>
@@ -95,15 +95,15 @@ def byTreeSplit (lk i : ℕ) (p : Internal.Prover) : Internal.Prover :=
     let q ← p (list treeTy :: bitsTy :: Γ) (Φ.map Internal.weaken2) A B
     let Fl := Term.lam bitsTy (Term.lam (list treeTy) A)
     let Hl := Term.lam bitsTy (Term.lam (list treeTy) B)
-    let beta : Deriv := RoseTree.node .beta []
-    let refl : Deriv := RoseTree.node .refl []
-    let betaBoth : Deriv := RoseTree.node .cong [beta, beta]
+    let beta : ConvDeriv := RoseTree.node .beta []
+    let refl : ConvDeriv := RoseTree.node .refl []
+    let betaBoth : ConvDeriv := RoseTree.node .cong [beta, beta]
     let dG := RoseTree.node .funExt [RoseTree.node .conv [betaBoth,
       RoseTree.node .funExt [RoseTree.node .conv [betaBoth, q]]]]
     let U := unnodeU (v i)
     let applied (L : Term) : Term := Term.app (Term.app L (Term.fst U)) (Term.snd U)
     let χ := Term.eq (applied Fl) (applied Hl)
-    let side (w : Term) : Deriv := RoseTree.node .trans [RoseTree.node .cong [beta, refl],
+    let side (w : Term) : ConvDeriv := RoseTree.node .trans [RoseTree.node .cong [beta, refl],
       RoseTree.node .trans [beta, RoseTree.node .trans [beta, occRewrite lk i w 0]]]
     let dχ := RoseTree.node .join [RoseTree.node .cong [RoseTree.node .cong
       [RoseTree.node (.rwHyp Φ.length false) [], refl], refl], refl]
@@ -128,14 +128,14 @@ def byAutoT (G : Internal.Globals) (E : Array Entry) (n lk : ℕ) (rs : List Nor
     (m : Internal.Depth := .weak) : Internal.Prover := fun Γ₀ Φ₀ t₀ u₀ ↦
   let hs := Φ₀.length
   let direct : Internal.Prover := fun Γ Φ t u ↦ do
-    let (t', dt, _) ← Internal.eval G E n rs 4096 m Γ Φ t
-    let (u', du, _) ← Internal.eval G E n rs 4096 m Γ Φ u
+    let (t', dt, _) ← Internal.evalC G E n rs 4096 m Γ Φ t
+    let (u', du, _) ← Internal.evalC G E n rs 4096 m Γ Φ u
     if t' = u' then some (RoseTree.node .join [dt, du]) else none
   let solve : Internal.Prover := fun Γ Φ t u ↦ (direct Γ Φ t u).orElse fun _ ↦
     if hs = 0 then none else byInsts m G E n rs hs Γ Φ t u
   (d.rec solve fun _ rec Γ Φ t u ↦ do
-    let (t', dt, _) ← Internal.eval G E n rs 4096 m Γ Φ t
-    let (u', du, _) ← Internal.eval G E n rs 4096 m Γ Φ u
+    let (t', dt, _) ← Internal.evalC G E n rs 4096 m Γ Φ t
+    let (u', du, _) ← Internal.evalC G E n rs 4096 m Γ Φ u
     if t' = u' then some (RoseTree.node .join [dt, du]) else
     (if hs = 0 then none else byInsts m G E n rs hs Γ Φ t u).orElse fun _ ↦ do
     let skip (i : ℕ) : Bool := (Φ.take hs).any (mentions · i)
@@ -149,8 +149,8 @@ the same way, to a depth. -/
 def byAutoC (G : Internal.Globals) (E : Array Entry) (n lk : ℕ) (rs : List NormRule) (d : ℕ) :
     Internal.Prover :=
   d.rec (byWeak G E n rs) fun _ rec Γ Φ t u ↦ (byWeak G E n rs Γ Φ t u).orElse fun _ ↦ do
-    let (t', _, _) ← Internal.eval G E n rs 4096 .weak Γ Φ t
-    let (u', _, _) ← Internal.eval G E n rs 4096 .weak Γ Φ u
+    let (t', _, _) ← Internal.evalC G E n rs 4096 .weak Γ Φ t
+    let (u', _, _) ← Internal.evalC G E n rs 4096 .weak Γ Φ u
     let i ← (stuckVarC (fun _ ↦ false) t').orElse fun _ ↦ stuckVarC (fun _ ↦ false) u'
     splitStuck G n lk i rec Γ Φ t u
 
@@ -176,10 +176,10 @@ def abstractTerm (b : Tree) (x y : Term) : Term :=
 absorption lemma of index {lit}`ab`, the occurrences of {lit}`x`, of the type {lit}`b`, are the
 conditional on the same test between {lit}`x` and {lit}`z`, which {lit}`dM` rewrites to the
 conditional between {lit}`x'` and {lit}`z`, which absorption removes. -/
-def maskRwD (a b : Tree) (ab : ℕ) (dM : Deriv) (c d x x' z y : Term) : Deriv :=
+def maskRwD (a b : Tree) (ab : ℕ) (dM : ConvDeriv) (c d x x' z y : Term) : ConvDeriv :=
   let F := abstractTerm b x y
-  let refl : Deriv := RoseTree.node .refl []
-  let beta : Deriv := RoseTree.node .beta []
+  let refl : ConvDeriv := RoseTree.node .refl []
+  let beta : ConvDeriv := RoseTree.node .beta []
   let χ := Term.eq (condT a c (Term.app F x) d) (condT a c (Term.app F x') d)
   let dχ := RoseTree.node .join [RoseTree.node .trans
     [RoseTree.node (.thm ab [a, b] [c, d, x, z, F] true) [],
@@ -193,7 +193,7 @@ def maskRwD (a b : Tree) (ab : ℕ) (dM : Deriv) (c d x x' z y : Term) : Deriv :
 {name}`maskRwD`, the rewriting the masked lemma of index {lit}`j` at the objects {lit}`θ` and the
 terms {lit}`σ`. -/
 def maskRw (a b : Tree) (ab j : ℕ) (θ : List Tree) (σ : List Term) (c d x x' z y : Term) :
-    Deriv :=
+    ConvDeriv :=
   maskRwD a b ab (RoseTree.node (.thm j θ σ false) []) c d x x' z y
 
 /-- The rewriting of the conditional subterm {lit}`S`, of the type {lit}`a` on the test {lit}`c`
@@ -201,7 +201,7 @@ between {lit}`y` and {lit}`d`, by the hypothesis of index {lit}`i`, where its fi
 conditional on the same test whose first branch {lit}`y` mentions: the subterm, its rewriting and
 the derivation of their equation, as {lit}`maskSub` describes. -/
 def maskAt (ab cs : ℕ) (Φ : List Term) (a : Tree) (c y d S : Term) (i : ℕ) :
-    Option (Term × Term × Deriv) := do
+    Option (Term × Term × ConvDeriv) := do
   let (L, R) ← Internal.eqParts (← Φ[i]?)
   let (b, c', x, z) ← condParts L
   if c' ≠ c then none else
@@ -224,7 +224,7 @@ subterm, its rewriting and the derivation of their equation, by the absorption l
 {lit}`ab` and the condition lemma of index {lit}`cs`. A hypothesis equates a conditional with a
 conditional on its test with another first branch and the same second, or with a term that is
 its second branch, which the condition lemma makes the conditional between it and itself. -/
-def maskSub (ab cs : ℕ) (Φ : List Term) (w : Term) : Option (Term × Term × Deriv) :=
+def maskSub (ab cs : ℕ) (Φ : List Term) (w : Term) : Option (Term × Term × ConvDeriv) :=
   (openSubterms w).findSome? fun S ↦ do
     let (a, c, y, d) ← condParts S
     (List.range Φ.length).reverse.findSome? (maskAt ab cs Φ a c y d S)
@@ -254,7 +254,7 @@ def byGeneralize (a : Tree) (c : Term) (p : Internal.Prover) : Internal.Prover :
     let H := abstractTerm a c u
     let q ← p (a :: Γ) (Φ.map Internal.weaken1) (Term.app (Internal.weaken1 F) (v 0))
       (Term.app (Internal.weaken1 H) (v 0))
-    let refl : Deriv := RoseTree.node .refl []
+    let refl : ConvDeriv := RoseTree.node .refl []
     let dχ := RoseTree.node .cong [RoseTree.node .beta [], RoseTree.node .beta []]
     let pχ := RoseTree.node .join [RoseTree.node .cong
       [RoseTree.node (.rwHyp Φ.length false) [], refl], refl]

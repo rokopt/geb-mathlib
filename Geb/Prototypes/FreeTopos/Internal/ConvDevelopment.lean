@@ -34,7 +34,11 @@ development's check is the check of its declarations, each of the first kind.
 * {lit}`ConvDecl` — a declaration of a development: a declaration of the base checker, a theorem
   with a certificate of the conversion checker, or the record of an index at which the evaluation
   at literals is ready.
-* {lit}`checkConvDev` — the check of a development.
+* {lit}`ConvDecl.language` and the names beside it — a theorem with its certificate, and the
+  declarations of the base checker, under the names the base checker's declarations have, so
+  that a development of certificates is written as one of derivations.
+* {lit}`checkConvDev`, {lit}`checkConvThms` — the check of a development, and whether a
+  development checks.
 
 ## Main statements
 
@@ -74,6 +78,34 @@ inductive ConvDecl where
   ({name}`Geb.FreeTopos.Literals.ready`), its equations the theorems from {lit}`j` on. -/
   | ready (j : ℕ)
 
+/-! The declarations of the base checker as declarations of a development with certificates, each
+under the name of the base checker's declaration, a theorem of the language under that name being
+one with a certificate, so that a development is written as one of the base checker's. -/
+
+/-- A theorem of the language, with a certificate of the conversion checker. -/
+@[match_pattern] abbrev ConvDecl.language (a : Thm) (c : ConvDeriv) : ConvDecl := .conv a c
+
+@[inherit_doc Decl.combinators, match_pattern]
+abbrev ConvDecl.combinators (s : PartialHorn.Seq) (c : Tree) : ConvDecl := .base (.combinators s c)
+
+@[inherit_doc Decl.definition, match_pattern]
+abbrev ConvDecl.definition (d : Defn) : ConvDecl := .base (.definition d)
+
+@[inherit_doc Decl.constant, match_pattern]
+abbrev ConvDecl.constant (p : Prim) (c : Option Tree) : ConvDecl := .base (.constant p c)
+
+@[inherit_doc Decl.object, match_pattern]
+abbrev ConvDecl.object (arity : ℕ) (body : Tree) (c : Option Tree) : ConvDecl :=
+  .base (.object arity body c)
+
+@[inherit_doc Decl.quotient, match_pattern]
+abbrev ConvDecl.quotient (arity : ℕ) (A : Tree) (R : Term) : ConvDecl :=
+  .base (.quotient arity A R)
+
+@[inherit_doc Decl.descent, match_pattern]
+abbrev ConvDecl.descent (kq : ℕ) (C : Tree) (h : Term) (jr : ℕ) : ConvDecl :=
+  .base (.descent kq C h jr)
+
 /-- The state of a development's check: the constants, the entries, and the indices at which the
 evaluation at literals is ready. -/
 abbrev ConvState : Type := Globals × Array Entry × List ℕ
@@ -92,6 +124,11 @@ def ConvDecl.step (G : Globals) (E : Array Entry) (R : List ℕ) : ConvDecl → 
 before it leave, from no index at which the evaluation at literals is ready. -/
 def checkConvDev (G : Globals) (E : Array Entry) (ds : List ConvDecl) : Option ConvState :=
   ds.foldlM (fun st d ↦ d.step st.1 st.2.1 st.2.2) (G, E, [])
+
+/-- Whether a development with certificates checks: each declaration proved with those before
+it. -/
+def checkConvThms (G : Globals) (ds : List ConvDecl) (E : Array Entry) : Bool :=
+  (checkConvDev G E ds).isSome
 
 /-- A declaration's check of the base checker extends the entries. -/
 theorem Decl.prefix_of_step {d : Decl} {G G' : Globals} {E E' : Array Entry}

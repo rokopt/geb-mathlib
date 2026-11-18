@@ -7,7 +7,9 @@
 ; the step of the checker of derivations, each premise standing for the rule of the language its
 ; certificate's root stands for; at a step of conversion the result of the prover's reduction of
 ; the term under the rules the step names, under the hypotheses weakened past the number of
-; variables the rewriting is given; and at an application of a theorem the checker's application
+; variables the rewriting is given, the reductions being those that compute a derivation
+; (normalizeD and evalD of the prover), which the step discards; and at an application of a
+; theorem the checker's application
 ; at the instance whose conclusion matches the formula. A certificate is the node of its rule's
 ; position over the node of the rule's data followed by its premises: a rule of the language at
 ; its position among Geb.FreeTopos.Internal.Rule's constructors with its data, and after them the
@@ -21,7 +23,10 @@
 ; declarations are checked as Geb.FreeTopos.Internal.checkConvDev checks them: a declaration of
 ; the base checker by its step; a theorem with a certificate, added to the entries where the
 ; certificate proves it given the indices recorded; and the record of an index, added to the
-; indices where the evaluation at literals is ready there.
+; indices where the evaluation at literals is ready there. A declaration of the checker of
+; developments is checked as one of these, a theorem's derivation read as its certificate, so that
+; a development whose proofs a prover writes, a reduction of a large derivation a step of
+; conversion, is checked as the checker of developments checks a development of derivations.
 
 (module Conversion
   (export CK toRule ruleOf applyInst machineReduceBy machineRun convStep convCheck thmConvChecks
@@ -37,7 +42,10 @@
     cdConv
     cdReady
     convDeclStep
-    checkConvDev)
+    checkConvDev
+    asConv
+    certStep
+    checkCertDev)
   (import Prelude)
   (import Base)
   (import Theory)
@@ -81,13 +89,13 @@
   ; a step of conversion by the prover's normalization, and by its reduction to a depth: the
   ; reduction's result under the hypotheses weakened past k new innermost variables, and no proof
   (defn stepNorm ((G Globals) (E (List Entry)) (n T) (dt Ts)) CK
-    (let nf NF (normalize G E n (rulesOf (children (at dt 0))) (at dt 1))
+    (let nf NF (normalizeD G E n (rulesOf (children (at dt 0))) (at dt 1))
       (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
         (if md 0
           (bindNT (nf g (mapT (lam ((h T)) (weakenBy k h)) hs) t)
             (lam ((r NFR)) (some (nfTerm r))))))))
   (defn stepEval ((G Globals) (E (List Entry)) (n T) (dt Ts)) CK
-    (let ev EV (eval G E n (rulesOf (children (at dt 0))) (at dt 1))
+    (let ev EV (evalD G E n (rulesOf (children (at dt 0))) (at dt 1))
       (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
         (if md 0
           (bindNT (ev (at dt 2) g (mapT (lam ((h T)) (weakenBy k h)) hs) t)
@@ -225,4 +233,26 @@
         (case st ((OConvState.just s) (convDeclStep (csConsts s) (csEntries s) (csIndices s) d))
           ((OConvState.nothing) OConvState.nothing)))
       (OConvState.just (convState G (entries E) (indices (nil T))))
-      (ConvDecls.reverse ds))))
+      (ConvDecls.reverse ds)))
+
+  ; the check of a declaration of the checker of developments whose theorem's derivation may
+  ; hold steps of conversion, as a prover writes them: the declaration read as one of a
+  ; development with certificates, a theorem's derivation its certificate, and checked with no
+  ; index at which the evaluation at literals is ready
+  (defn asConv ((d Decl)) ConvDecl (case d ((declLang a c) (cdConv a c)) (else (cdBase d))))
+  (defn certStep ((G Globals) (E (List Entry)) (d Decl)) ODevState.Maybe
+    (case (convDeclStep G E (nil T) (asConv d))
+      ((OConvState.just s) (case s ((convState G1 E1 R1) (ODevState.just (devState G1 E1)))))
+      ((OConvState.nothing) ODevState.nothing)))
+  ; the state after a development of such declarations, each checked with the state the
+  ; declarations before it leave
+  (import (Seq Decl) as Decls)
+  (defn checkCertDev ((G Globals) (E (List Entry)) (ds (List Decl))) ODevState.Maybe
+    (foldr Decl ODevState.Maybe
+      (lam ((d Decl) (st ODevState.Maybe))
+        (case st
+          ((ODevState.just s)
+           (case s ((devState G1 E1) (certStep G1 (case E1 ((entries & xs) xs)) d))))
+          ((ODevState.nothing) ODevState.nothing)))
+      (ODevState.just (devState G (entries E)))
+      (Decls.reverse ds))))

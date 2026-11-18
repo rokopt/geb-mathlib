@@ -43,7 +43,7 @@ namespace Geb.FreeTopos.Tactics
 
 open Geb.PartialHorn (Tree)
 open Geb.FreeTopos.Translation
-open Internal (Term NormRule Entry Deriv)
+open Internal (Term NormRule Entry ConvDeriv)
 open scoped FinEnum
 
 /-- A prover under {lit}`k` new variables of the statement's arguments, by extensionality. -/

@@ -140,15 +140,15 @@ certificates it continues from. Closed terms are not extracted, so that each sea
 is timed rather than when the program starts. -/
 def searches : List (String × Search) :=
   List.append [("weakening", ([], fun _ ↦ inProgram Weakening.program fun P ↦
-      (Weakening.certificate P).bind fun ds ↦ (Stored.certOf "weakening" ds).map ([·]))),
+      (Weakening.certificate P).bind fun ds ↦ (Stored.convCertOf "weakening" ds).map ([·]))),
     ("substitution", ([], fun _ ↦ inProgram Substitution.program fun P ↦
-      (Substitution.certificate P).bind fun ds ↦ (Stored.certOf "substitution" ds).map ([·]))),
+      (Substitution.certificate P).bind fun ds ↦ (Stored.convCertOf "substitution" ds).map ([·]))),
     ("tree-cases", ([], fun _ ↦ inProgram TreeCases.program fun P ↦
-      (TreeCases.certificate P).bind fun ds ↦ (Stored.certOf "tree-cases" ds).map ([·]))),
+      (TreeCases.certificate P).bind fun ds ↦ (Stored.convCertOf "tree-cases" ds).map ([·]))),
     ("expansion", ([], fun _ ↦ inProgram Expansion.program fun P ↦
-      (Expansion.certificate P).bind fun ds ↦ (Stored.certOf "expansion" ds).map ([·]))),
+      (Expansion.certificate P).bind fun ds ↦ (Stored.convCertOf "expansion" ds).map ([·]))),
     ("normalization", ([], fun _ ↦ inProgram Normalization.extended fun (P, S) ↦
-      (Normalization.certificates P S).bind fun cs ↦ cs.mapM fun (n, ds) ↦ Stored.certOf n ds)),
+      (Normalization.certificates P S).bind fun cs ↦ cs.mapM fun (n, ds) ↦ Stored.convCertOf n ds)),
     ("datatype-base", ([], fun _ ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦
       Datatypes.certificates P S T)),
     ("datatype-atom", (["datatype-base"], fun dss ↦ inProgram Datatypes.extended3 fun (P, S, T) ↦

@@ -17,8 +17,9 @@ application and its value's numeral proved five ways, in the development of
 {lit}`GebTests.Prototypes.FreeTopos.Literals`: by the derivation the prover's normalization
 computes, reducing each side to its normal form, weak head normal forms first, checked by the
 base checker; by that reduction of each side, its derivation computed and not checked; by a step
-of conversion that performs that reduction computing its result alone
-({name}`Geb.FreeTopos.Internal.evalR`); by a step of evaluation, the arithmetic of the natural
+of conversion that performs that reduction for its result alone
+({name}`Geb.FreeTopos.Internal.evalR`, which the compiler computes by the same compiled
+reduction); by a step of evaluation, the arithmetic of the natural
 numbers; and by a step of the environment machine at each side
 ({name}`Geb.FreeTopos.Internal.machineReduce`). Each row gives the derivation's nodes and the
 least of three times each check takes, in microseconds.
@@ -64,7 +65,10 @@ def report (name : String) (s : Sym) (a b : ℕ) : IO Unit := do
   let t := bin s a b
   let some v := Geb.FreeTopos.Literals.eval t | throw (IO.userError s!"{name}: no value")
   let a' : Thm := ⟨0, [], [], Term.eq t v.term⟩
-  let some d := Tactics.byMode .full G entries 0 rs [] [] t v.term
+  let some d := (do
+      let (l, dl, _) ← Internal.eval G entries 0 rs 4096 .full [] [] t
+      let (r, dr, _) ← Internal.eval G entries 0 rs 4096 .full [] [] v.term
+      if l == r then some (RoseTree.node Internal.Rule.join [dl, dr] : Internal.Deriv) else none)
     | throw (IO.userError s!"{name}: no derivation")
   let (okB, tB) ← timeUs fun _ ↦ a'.checks G entries d
   let (okD, tD) ← timeUs fun _ ↦
@@ -77,7 +81,8 @@ def report (name : String) (s : Sym) (a b : ℕ) : IO Unit := do
   let (okM, tM) ← timeUs fun _ ↦ GebTests.Prototypes.FreeTopos.Machine.proves t v.term
   if !(okB && okD && okN && okL && okM) then
     throw (IO.userError s!"{name} {a} {b}: a check fails ({okB} {okD} {okN} {okL} {okM})")
-  IO.println (",".intercalate ([name] ++ [a, b, derivSize d, tB, tD, tN, tL, tM].map toString))
+  IO.println (",".intercalate ([name] ++
+    [a, b, derivSize (Internal.liftDeriv d), tB, tD, tN, tL, tM].map toString))
 
 set_option compiler.extract_closed false in
 /-- The measurements. Closed terms are not extracted, so that each check runs when it is timed

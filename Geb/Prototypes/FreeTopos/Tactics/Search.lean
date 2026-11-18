@@ -39,7 +39,7 @@ namespace Geb.FreeTopos.Tactics
 
 open Geb.PartialHorn (Tree)
 open Geb.FreeTopos.Translation
-open Internal (Term NormRule Entry Deriv)
+open Internal (Term NormRule Entry ConvDeriv)
 open scoped FinEnum
 
 /-- The subterms of a term outside its binders and its folds' starts and steps, each with its
@@ -104,7 +104,7 @@ def instArgs (m : Internal.Depth) (G : Internal.Globals) (E : Array Entry) (n : 
     List (List Term) :=
   match (Φ[h]?).bind Internal.eqParts with
   | some (F, _) => match F.label, F.children with
-    | .lam a, [b] => match Internal.eval G E n rs 4096 m (a :: Γ) (Φ.map Internal.weaken1) b with
+    | .lam a, [b] => match Internal.evalC G E n rs 4096 m (a :: Γ) (Φ.map Internal.weaken1) b with
       | some (bw, _, _) => (matchesOf bw 1 t' ++ matchesOf bw 1 u').eraseDups
       | none => []
     | _, _ => []
@@ -116,8 +116,8 @@ weak normal form, matches the sides' weak normal forms, each cut in. -/
 def byInstsOnce (m : Internal.Depth) (G : Internal.Globals) (E : Array Entry) (n : ℕ)
     (rs : List NormRule) (hs : ℕ) (next : List NormRule → Internal.Prover) : Internal.Prover :=
   fun Γ Φ t u ↦ do
-  let (t', _, _) ← Internal.eval G E n rs 4096 m Γ Φ t
-  let (u', _, _) ← Internal.eval G E n rs 4096 m Γ Φ u
+  let (t', _, _) ← Internal.evalC G E n rs 4096 m Γ Φ t
+  let (u', _, _) ← Internal.evalC G E n rs 4096 m Γ Φ u
   if t' = u' then byMode m G E n rs Γ Φ t u else
   let found := (List.range (min hs Φ.length)).filterMap fun h ↦
     let αs := instArgs m G E n rs Γ Φ t' u' h
@@ -145,8 +145,8 @@ def byAuto (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRul
   let hs := Φ₀.length
   (d.rec (byInsts m G E n rs hs) fun _ rec Γ Φ t u ↦
   (byInsts m G E n rs hs Γ Φ t u).orElse fun _ ↦ do
-    let (t', _, _) ← Internal.eval G E n rs 4096 m Γ Φ t
-    let (u', _, _) ← Internal.eval G E n rs 4096 m Γ Φ u
+    let (t', _, _) ← Internal.evalC G E n rs 4096 m Γ Φ t
+    let (u', _, _) ← Internal.evalC G E n rs 4096 m Γ Φ u
     let skip (i : ℕ) : Bool := (Φ.take hs).any (mentions · i)
     let i ← ((stuckVar skip t').orElse fun _ ↦ stuckVar skip u').orElse fun _ ↦
       (stuckVar (fun _ ↦ false) t').orElse fun _ ↦ stuckVar (fun _ ↦ false) u'

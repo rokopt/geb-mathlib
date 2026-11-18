@@ -297,8 +297,14 @@ the expansion of kernel forms and the lemmas of trees) are found by
 searches for derivations, which take from seconds to minutes compiled, and are
 committed as certificates, `bootstrap/certificates/*.cert`, as the
 bootstrap's image is. A certificate stores a development's declarations,
-each theorem with its derivation, as the table of the distinct nodes of
-their tree (`GebTests/Prototypes/FreeTopos/Stored.lean`). The modules of
+each theorem with its certificate of the checker with a step of
+conversion, as the table of the distinct nodes of their tree
+(`GebTests/Prototypes/FreeTopos/Stored.lean`). In a certificate a
+reduction whose derivation has more nodes than the provers' bound
+(`Geb.FreeTopos.Internal.stepBound`) is the step that names it, which
+the check computes again; no reduction of the stored developments
+reaches the bound, so that their certificates hold derivations, which
+the base checker checks. The modules of
 `GebTests/Prototypes/FreeTopos/Certified/` read the certificates of
 weakening, substitution, the expansion's identity, the lemmas of trees,
 the fundamental lemma and the datatype language's soundness, and state

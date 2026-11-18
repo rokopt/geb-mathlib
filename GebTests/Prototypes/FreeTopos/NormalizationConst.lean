@@ -67,7 +67,7 @@ namespace GebTests.Prototypes.FreeTopos.Normalization
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
 open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Weakening
-open Internal (Term NormRule Entry Deriv Decl)
+open Internal (Term NormRule Entry ConvDeriv ConvDecl)
 open scoped FinEnum
 
 namespace Kit
@@ -104,7 +104,7 @@ def anyHyp : Deducer := fun Γ Φ ψ ↦ (dHyp Γ Φ ψ).orElse fun _ ↦
 
 /-- Truth, conjunctions, hypotheses and equations, after normalization, to a depth. -/
 def auto (d : ℕ) : Deducer := d.rec (fun _ _ _ ↦ none) fun _ rec ↦ K.norm fun Γ Φ ψ ↦
-  if ψ == Internal.Logic.tt K.P.o then some Internal.Logic.trueI else
+  if ψ == Internal.Logic.tt K.P.o then some Internal.Logic.trueIC else
   match defnParts ψ with
   | some (i, _, _) =>
     if i = K.P.o + 1 then dConjI K.L rec rec Γ Φ ψ else K.anyHyp Γ Φ ψ

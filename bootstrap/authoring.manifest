@@ -8,6 +8,9 @@
     check.geb
     free-topos/translation.geb
     free-topos/prove.geb
+    free-topos/literals.geb
+    free-topos/machine.geb
+    free-topos/conversion.geb
     free-topos/tactics.geb
     free-topos/logic.geb
     formula.geb

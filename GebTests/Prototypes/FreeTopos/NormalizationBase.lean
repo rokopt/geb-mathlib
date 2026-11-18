@@ -72,16 +72,16 @@ open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.T
 open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Weakening
 open GebTests.Prototypes.FreeTopos.Translation (baseRules)
-open Internal (Term NormRule Entry Deriv Decl Definition)
+open Internal (Term NormRule Entry ConvDeriv ConvDecl Definition)
 open scoped FinEnum
 
 /-! Deductions. -/
 
 /-- A deduction: a derivation of a formula in a context under hypotheses, when one is found. -/
-abbrev Deducer : Type := List Tree → List Term → Term → Option Deriv
+abbrev Deducer : Type := List Tree → List Term → Term → Option ConvDeriv
 
 /-- A derivation's node of a rule. -/
-abbrev nd (l : Internal.Rule) (cs : List Deriv := []) : Deriv := RoseTree.node l cs
+abbrev nd (l : Internal.Rule) (cs : List ConvDeriv := []) : ConvDeriv := RoseTree.node (.base l) cs
 
 /-- The connectives' definitions from the index {lit}`o` and their rules from the index
 {lit}`j`. -/
@@ -105,7 +105,7 @@ def dEq (p : Internal.Prover) : Deducer := fun Γ Φ φ ↦ do
 def dHyp : Deducer := fun _ Φ φ ↦ (Φ.findIdx? (· == φ)).map fun i ↦ nd (.hyp i)
 
 /-- The proof of a formula rewritten by a rewriting derivation found for it. -/
-def dRwBy (rw : List Tree → List Term → Term → Option (Term × Deriv)) (k : Deducer) :
+def dRwBy (rw : List Tree → List Term → Term → Option (Term × ConvDeriv)) (k : Deducer) :
     Deducer := fun Γ Φ φ ↦ do
   let (φ', d) ← rw Γ Φ φ
   pure (nd .conv [d, ← k Γ Φ φ'])
@@ -121,16 +121,16 @@ def rwHyps (rs : List NormRule) (Φ : List Term) : List Term :=
 
 /-- The rewriting of a term by the evaluator, by rules, to a depth. -/
 def evalRw (G : Internal.Globals) (E : Array Entry) (rs : List NormRule) (m : Internal.Depth) :
-    List Tree → List Term → Term → Option (Term × Deriv) := fun Γ Φ t ↦
-  (Internal.eval G E 0 rs 4096 m Γ (rwHyps rs Φ) t).map fun (t', d, _) ↦ (t', d)
+    List Tree → List Term → Term → Option (Term × ConvDeriv) := fun Γ Φ t ↦
+  (Internal.evalC G E 0 rs 4096 m Γ (rwHyps rs Φ) t).map fun (t', d, _) ↦ (t', d)
 
 /-- The rewriting of a term by a rewriting derivation, as the checker performs it. -/
-def rwWith (G : Internal.Globals) (E : Array Entry) (d : Deriv) :
-    List Tree → List Term → Term → Option (Term × Deriv) := fun Γ Φ t ↦
-  ((Internal.check G E 0 d).1 Γ Φ t).map (·, d)
+def rwWith (G : Internal.Globals) (E : Array Entry) (d : ConvDeriv) :
+    List Tree → List Term → Term → Option (Term × ConvDeriv) := fun Γ Φ t ↦
+  ((Internal.convCheck G E [] 0 d).1 Γ Φ t).map (·, d)
 
 /-- A hypothesis rewritten, added after the hypotheses. -/
-def dRwHyp (rw : List Tree → List Term → Term → Option (Term × Deriv)) (i : ℕ) (k : Deducer) :
+def dRwHyp (rw : List Tree → List Term → Term → Option (Term × ConvDeriv)) (i : ℕ) (k : Deducer) :
     Deducer := fun Γ Φ φ ↦ do
   let ψ ← Φ[i]?
   let (ψ', d) ← rw Γ Φ ψ
@@ -141,7 +141,7 @@ def dImpI (L : Conn) (k : Deducer) : Deducer := fun Γ Φ φ ↦ do
   let (i, _, cs) ← defnParts φ
   match cs with
   | [q, p] =>
-    if i = L.o + 2 then pure (Internal.Logic.impI L.j Φ.length p q (← k Γ (Φ ++ [p]) q))
+    if i = L.o + 2 then pure (Internal.Logic.impIC L.j Φ.length p q (← k Γ (Φ ++ [p]) q))
     else none
   | _ => none
 
@@ -153,7 +153,7 @@ def dAllI (L : Conn) (k : Deducer) : Deducer := fun Γ Φ φ ↦ do
   | [a], [P] => match P.label, P.children with
     | .lam _, [b] =>
       if i = L.o + 3 then
-        pure (Internal.Logic.allI (← k (a :: Γ) (Φ.map Internal.weaken1 ++ [Internal.Logic.tt L.o])
+        pure (Internal.Logic.allIC (← k (a :: Γ) (Φ.map Internal.weaken1 ++ [Internal.Logic.tt L.o])
           b))
       else none
     | _, _ => none
@@ -475,7 +475,7 @@ def natRules (P : Prog) : List NormRule :=
 
 /-- The normal form of a term by rules, or the term. -/
 def nfBy (P : Prog) (rs : List NormRule) (Γ : List Tree) (t : Term) : Term :=
-  ((Internal.eval P.G #[] 0 rs 4096 .full Γ [] t).map Prod.fst).getD t
+  ((Internal.evalC P.G #[] 0 rs 4096 .full Γ [] t).map Prod.fst).getD t
 
 /-- A theorem whose sides are stated in normal form by rules. -/
 def nfThm (P : Prog) (rs : List NormRule) (Γ : List Tree) (t u : Term) : Internal.Thm :=
@@ -501,10 +501,10 @@ def natLemmas (P : Prog) (S : Defs) : List Step :=
     (S.add (v 2) (S.add (v 1) (v 0)))
   let addComm := nfThm P rs [nat, nat] (S.add (v 1) (v 0)) (S.add (v 0) (v 1))
   let ind (names : List String) (a : Internal.Thm) (ix : String → ℕ) (E : Array Entry) :
-      Option Deriv :=
+      Option ConvDeriv :=
     Internal.byNatIndHyp P.G E 0 kZero kSucc (names.map (fun nm ↦ .thm (ix nm) []) ++ rsD) 4096
       a.ctx [] (sides a).1 (sides a).2
-  let comp (a : Internal.Thm) (_ : String → ℕ) (E : Array Entry) : Option Deriv :=
+  let comp (a : Internal.Thm) (_ : String → ℕ) (E : Array Entry) : Option ConvDeriv :=
     byMode .full P.G E 0 rsD a.ctx [] (sides a).1 (sides a).2
   [step "natAddZero" addZero (comp addZero), step "natAddSucc" addSucc (comp addSucc),
     step "natZeroAdd" zeroAdd (ind [] zeroAdd), step "natSuccAdd" succAdd (ind [] succAdd),
@@ -536,7 +536,7 @@ def stabLemmas (P : Prog) (S : Defs) : List Step :=
     dAllI L fun Γ Φ φ ↦ pre ix E (dAllE L P.G E 0 (S.add (v 1) (v 0)) fun Γ Φ φ ↦
       dEq (byMode .full P.G E 0 (.hyp (Φ.length - 1) :: addRules P ix)) Γ Φ φ) Γ Φ φ
   let run (a : Internal.Thm) (pre : (String → ℕ) → Array Entry → Deducer → Deducer)
-      (ix : String → ℕ) (E : Array Entry) : Option Deriv :=
+      (ix : String → ℕ) (E : Array Entry) : Option ConvDeriv :=
     byInst pre ix E a.ctx a.hyps a.concl
   [step "stabR" stabR (run stabR fun _ _ k ↦ k),
     -- the sum's commutation, cut in and rewritten by first
@@ -580,7 +580,7 @@ def caseLemmas (P : Prog) : List Step :=
 /-! The case analysis of terms. -/
 
 /-- A formula proved and cut in, used as a hypothesis after the hypotheses. -/
-def dCut (ψ : Term) (dψ : Deriv) (k : Deducer) : Deducer := fun Γ Φ φ ↦ do
+def dCut (ψ : Term) (dψ : ConvDeriv) (k : Deducer) : Deducer := fun Γ Φ φ ↦ do
   pure (nd (.cut ψ) [dψ, ← k Γ (Φ ++ [ψ]) φ])
 
 /-- The case analysis of a list term of elements of the type {lit}`a`, by the lemma of index
@@ -634,7 +634,7 @@ def foldedRules (P : Prog) : List NormRule :=
 /-- The normal form of a term by rules with the entries, or nothing. -/
 def nfE (G : Internal.Globals) (E : Array Entry) (rs : List NormRule) (Γ : List Tree)
     (t : Term) : Option Term :=
-  (Internal.eval G E 0 rs 4096 .full Γ [] t).map Prod.fst
+  (Internal.evalC G E 0 rs 4096 .full Γ [] t).map Prod.fst
 
 /-- The rest of a construction of a bitstring. -/
 def kidsOf' (t : Term) : Option Term := match t.label, t.children with
@@ -672,11 +672,11 @@ def eqnLemmas (P : Prog) : List Step :=
   let sc (t : Term) : Term := call D.succ [] [t]
   let neq (n : ℕ) : Internal.Thm :=
     nfThm P rs [bitsTy] (call D.eqB [] [n.rec (sc (v 0)) fun _ t ↦ sc t, numeral n]) bnilT
-  let byBit (a : Internal.Thm) (ix : String → ℕ) (E : Array Entry) : Option Deriv :=
+  let byBit (a : Internal.Thm) (ix : String → ℕ) (E : Array Entry) : Option ConvDeriv :=
     let p (tag : String) : Internal.Prover := fun Γ Φ t u ↦
       (byMode .full P.G E 0 (eqnRules P ix) Γ Φ t u).orElse fun _ ↦
-        let nf (w : Term) : String := ((Internal.eval P.G E 0 (eqnRules P ix) 4096 .full Γ Φ w).map
-          fun (r : Term × Deriv × Bool) ↦ showT r.1).getD "none"
+        let nf (w : Term) : String := ((Internal.evalC P.G E 0 (eqnRules P ix) 4096 .full Γ Φ w).map
+          fun (r : Term × ConvDeriv × Bool) ↦ showT r.1).getD "none"
         dbgTrace s!"{tag}: {nf t} = {nf u}" fun _ ↦ none
     -- the innermost bitstring empty, or a bit, zero or one, before a rest
     byListSplit P.G 0 0 (p "nil") (bySplit2 3 4 1 (p "zero") (p "one")) a.ctx [] (sides a).1
@@ -731,7 +731,7 @@ def genEq (P : Prog) (name : String) (Γ : List Tree) (t : Term) (unfold : List 
     let rs := vRules P ix
     let some l := nfE P.G E rs Γ t | dbgTrace s!"{name}: left" fun _ ↦ none
     let rsU := extra.map (fun nm ↦ .thm (ix nm) []) ++ rs ++ unfold.map .delta
-    let some (r, d, _) := Internal.eval P.G E 0 rsU 4096 m Γ [] l
+    let some (r, d, _) := Internal.evalC P.G E 0 rsU 4096 m Γ [] l
       | dbgTrace s!"{name}: right" fun _ ↦ none
     pure (⟨0, Γ, [], Term.eq l r⟩, nd .join [d, nd .refl]))
 
@@ -744,9 +744,9 @@ def genRoot (P : Prog) (name : String) (Γ : List Tree) (t : Term) (k : ℕ) (ex
   (name, fun ix E ↦ do
     let rs := vRules P ix
     let some l := nfE P.G E rs Γ t | dbgTrace s!"{name}: left" fun _ ↦ none
-    let some (l₁, d₁, _) := Internal.eval P.G E 0 [.delta k] 4096 .head Γ [] l
+    let some (l₁, d₁, _) := Internal.evalC P.G E 0 [.delta k] 4096 .head Γ [] l
       | dbgTrace s!"{name}: root" fun _ ↦ none
-    let some (r, d₂, _) := Internal.eval P.G E 0 (extra.map (fun nm ↦ .thm (ix nm) []) ++ rs)
+    let some (r, d₂, _) := Internal.evalC P.G E 0 (extra.map (fun nm ↦ .thm (ix nm) []) ++ rs)
         4096 .full Γ [] l₁
       | dbgTrace s!"{name}: right" fun _ ↦ none
     pure (⟨0, Γ, [], Term.eq l r⟩, nd .join [nd .trans [d₁, d₂], nd .refl]))
@@ -865,20 +865,20 @@ def rebuildLemmas (P : Prog) (tag : String) (FX : Tree) (fstAt : Term → Term �
         nd .join [nd .cong [nd (.thm (ix s!"{tag}FstAbs") [] [v 0] false), nd .refl], nd .refl]]
       let d ← match unfold with
         | some k => do
-          let (_, d₁, _) ← Internal.eval P.G E 0 [.delta k] 4096 .head Γ [] (Term.fst folded)
+          let (_, d₁, _) ← Internal.evalC P.G E 0 [.delta k] 4096 .head Γ [] (Term.fst folded)
           pure (nd .conv [nd .cong [d₁, nd .refl], de])
         | none => do
           let ψ := Term.eq (Term.fst folded) (v 0)
           let p := nd .join [nd .cong [nd (.thm (ix s!"{tag}FstAbs") [] [v 0] false), nd .refl],
             nd .refl]
-          if (Internal.check P.G E 0 (nd .cong [nd .beta, nd .beta])).1 Γ [] e == some ψ then
+          if (Internal.convCheck P.G E [] 0 (nd .cong [nd .beta, nd .beta])).1 Γ [] e == some ψ then
             -- the first component's normal form, from the first component
-            let (_, dn, _) ← Internal.eval P.G E 0 rs 4096 .full Γ [] (Term.fst folded)
+            let (_, dn, _) ← Internal.evalC P.G E 0 rs 4096 .full Γ [] (Term.fst folded)
             pure (nd (.convFrom ψ) [nd .cong [dn, nd .refl], de])
           else
             -- the instance's sides reduced to the normal form, where the parameter is not a
             -- variable and its components are projections
-            let (r, dr, _) ← Internal.eval P.G E 0 rs 4096 .full Γ [] e
+            let (r, dr, _) ← Internal.evalC P.G E 0 rs 4096 .full Γ [] e
             if r == Term.eq l (v 0) then pure (nd (.convFrom e) [dr, p]) else
               dbgTrace s!"{tag}Fst: {showT r}" fun _ ↦ none
       pure (⟨0, Γ, [], Term.eq l (v 0)⟩, d))]
@@ -897,8 +897,8 @@ def restate (P : Prog) (name src : String) : Step :=
     let some (Entry.language a) := E[ix src]? | none
     let (l, r) ← Internal.eqParts a.concl
     let rs := vRules P ix
-    let (l', dl, _) ← Internal.eval P.G E a.arity rs 4096 .full a.ctx [] l
-    let (r', dr, _) ← Internal.eval P.G E a.arity rs 4096 .full a.ctx [] r
+    let (l', dl, _) ← Internal.evalC P.G E a.arity rs 4096 .full a.ctx [] l
+    let (r', dr, _) ← Internal.evalC P.G E a.arity rs 4096 .full a.ctx [] r
     let θ := (List.range a.arity).map x
     let σ := (List.range a.ctx.length).map v
     pure (⟨a.arity, a.ctx, [], Term.eq l' r'⟩,
@@ -919,7 +919,7 @@ def lookupLemmas (P : Prog) : List Step :=
       let X := x 0
       let t := Term.fst (Term.listRec (Term.pair (nilT X) (nilT X))
         (Term.pair (consT X (v 1) (Term.fst (v 0))) (Term.fst (v 0))) (v 0))
-      let l ← (Internal.eval P.G E 1 rs 4096 .full [list X] [] t).map Prod.fst
+      let l ← (Internal.evalC P.G E 1 rs 4096 .full [list X] [] t).map Prod.fst
       let d ← Internal.byListIndHyp P.G E 1 0 1 rs 4096 [list X] [] l (v 0)
       pure (⟨1, [list X], [], Term.eq l (v 0)⟩, d)),
     restate P "rIterSucc" "iterSuccP", restate P "rIterComm" "iterCommP",
@@ -1130,12 +1130,13 @@ declaration kept with its equal subterms one object ({name}`ShareCommon.shareCom
 names of all the theorems, the entries after the steps and the steps' declarations; the name of
 the first step not proved, where one is not. -/
 def developAfter (names : List String) (E : Array Entry) (xs : List Step) :
-    Except String (List String × Array Entry × List Decl) := do
+    Except String (List String × Array Entry × List ConvDecl) := do
   let names' := names ++ xs.map (·.1)
   let ix (name : String) : ℕ := (names'.findIdx? (· == name)).getD 0
-  let (E', ds) ← xs.foldlM (fun (acc : Array Entry × List Decl) (x : Step) ↦ match x.2 ix acc.1 with
+  let (E', ds) ← xs.foldlM (fun (acc : Array Entry × List ConvDecl) (x : Step) ↦
+    match x.2 ix acc.1 with
     | some (a, d) => Except.ok (acc.1.push (Entry.language a),
-      acc.2 ++ [ShareCommon.shareCommon' (Decl.language a d)])
+      acc.2 ++ [ShareCommon.shareCommon' (ConvDecl.language a d)])
     | none => Except.error s!"the lemma {x.1} is not proved") (E, [])
   pure (names', E', ds)
 
@@ -1265,7 +1266,7 @@ def orFalse (h : ℕ) (k : Deducer) : Deducer := fun Γ Φ ψ ↦
 
 /-- Truth, conjunctions and equations, after normalization, to a depth. -/
 def solve (d : ℕ) : Deducer := d.rec (fun _ _ _ ↦ none) fun _ rec ↦ K.norm fun Γ Φ ψ ↦
-  if ψ == Internal.Logic.tt K.P.o then some Internal.Logic.trueI else
+  if ψ == Internal.Logic.tt K.P.o then some Internal.Logic.trueIC else
   match defnParts ψ with
   | some (i, _, _) => if i = K.P.o + 1 then dConjI K.L rec rec Γ Φ ψ else none
   | none => K.byNorm Γ Φ ψ
@@ -1318,9 +1319,9 @@ normalized, cut in after the hypotheses; nothing where rewriting the left side's
 equation does not reach the right side's. -/
 def image (h : ℕ) (f : Term → Term) (k : Deducer) : Deducer := fun Γ Φ ψ ↦ do
   let (L, R) ← Internal.eqParts (← Φ[h]?)
-  let (A', dA, _) ← Internal.eval K.G K.E 0 (K.rulesEx Φ h) 4096 .full Γ Φ (f L)
-  let (B', dB, _) ← Internal.eval K.G K.E 0 (K.rulesEx Φ h) 4096 .full Γ Φ (f R)
-  let (t, dAh, _) ← Internal.eval K.G K.E 0 [.hyp h] 4096 .weak Γ Φ (f L)
+  let (A', dA, _) ← Internal.evalC K.G K.E 0 (K.rulesEx Φ h) 4096 .full Γ Φ (f L)
+  let (B', dB, _) ← Internal.evalC K.G K.E 0 (K.rulesEx Φ h) 4096 .full Γ Φ (f R)
+  let (t, dAh, _) ← Internal.evalC K.G K.E 0 [.hyp h] 4096 .weak Γ Φ (f L)
   -- the rewriting by the equation reaches the right side's image, which the join requires
   if t != f R then none
   pure (nd (.cut (Term.eq A' B')) [nd (.convFrom (Term.eq (f L) (f R)))
@@ -1334,10 +1335,10 @@ def trueOf (k : Deducer) : Deducer := fun Γ Φ ψ ↦ do
   let (A', B') ← Internal.eqParts (← Φ[Φ.length - 1]?)
   let tt := Internal.Logic.tt K.P.o
   if B' != tt && A' == tt then
-    pure (nd (.cut B') [nd .conv [nd (.rwHyp (Φ.length - 1) true), Internal.Logic.trueI],
+    pure (nd (.cut B') [nd .conv [nd (.rwHyp (Φ.length - 1) true), Internal.Logic.trueIC],
       ← k Γ (Φ ++ [B']) ψ])
   else
-  let dB ← if B' == tt then some Internal.Logic.trueI else match Internal.eqParts B' with
+  let dB ← if B' == tt then some Internal.Logic.trueIC else match Internal.eqParts B' with
     | some (x, y) => if x == y then some (nd .join [nd .refl, nd .refl]) else none
     | none => none
   pure (nd (.cut A') [nd .conv [nd (.rwHyp (Φ.length - 1) false), dB], ← k Γ (Φ ++ [A']) ψ])

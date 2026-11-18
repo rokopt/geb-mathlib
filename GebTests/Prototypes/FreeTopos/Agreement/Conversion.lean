@@ -7,7 +7,7 @@ module
 
 public import GebTests.Prototypes.FreeTopos.Agreement.Literals
 public import GebTests.Prototypes.FreeTopos.Agreement.Machine
-public import GebTests.Prototypes.FreeTopos.Agreement.Prove
+public import GebTests.Prototypes.FreeTopos.Agreement.Provers
 public import Geb.Prototypes.FreeTopos.Internal.Conversion
 public import Geb.Prototypes.FreeTopos.Internal.Accelerate
 
@@ -75,36 +75,9 @@ open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
   GebTests.Prototypes.FreeTopos.Agreement.Language
   GebTests.Prototypes.FreeTopos.Agreement.Derivation
   GebTests.Prototypes.FreeTopos.Agreement.Prove
+  GebTests.Prototypes.FreeTopos.Agreement.Provers
 open Internal (Term Deriv NormRule ConvRule ConvDeriv)
 open scoped FinEnum
-
-/-- The position of a rule of the certificates, and its data: those of a rule of the language,
-and after the language's rules the normalization over its rules and its fuel, the reduction over
-its rules, its fuel and its depth, the application of a theorem over its index and objects, the
-evaluation at literals over its index, and the reduction by the machine over its fuel, the bound
-and the exceptions of the definitions it unfolds, the indices of the primitives of lists and its
-rules. -/
-def convData : ConvRule → ℕ × List Tree
-  | .base r => ruleData r
-  | .norm rs fuel => (37, [RoseTree.node 0 (rs.map encRule), leaf fuel])
-  | .eval rs fuel depth =>
-    (38, [RoseTree.node 0 (rs.map encRule), leaf fuel, leaf (encDepth depth)])
-  | .applyMatch j θ => (39, [leaf j, RoseTree.node 0 θ])
-  | .lit j => (40, [leaf j])
-  | .machine fuel m except kl kc rs =>
-    (41, [leaf fuel, leaf m, RoseTree.node 0 (except.map leaf), leaf kl, leaf kc,
-      RoseTree.node 0 (rs.map encRule)])
-
-/-- A certificate as the node of its rule's position over the node of the rule's data and its
-premises. -/
-def encConv : ConvDeriv → Tree :=
-  encWith (fun l ↦ (convData l).1) fun l ↦ RoseTree.node 0 (convData l).2
-
-/-- The encoding of a certificate's node. -/
-theorem encConv_node (l : ConvRule) (cs : List ConvDeriv) :
-    encConv (RoseTree.node l cs) =
-      RoseTree.node (convData l).1 (RoseTree.node 0 (convData l).2 :: cs.map encConv) :=
-  encWith_node _ _ l cs
 
 /-- Rules of the normalizer none of which is a prepared theorem, whose matching no tree
 encodes. -/
@@ -367,7 +340,7 @@ theorem convStep_eq (l : ConvRule) (hl : RulePlain l) (v : DV)
       List.map_map, Function.comp_def]
     exact hbase r
   | norm rs fuel =>
-    have hn := normalize_eq G E n _ rs (forall₂_rrel hl) fuel
+    have hn := normalizeD_eq G E n _ rs (forall₂_rrel hl) fuel
     simp only [«Conversion.convStep», label_eq, label_encConv, child_encConv, convData, lt_leaf,
       eq_leaf, label_ne_zero, ofBool_bne, children_eq, RoseTree.children_node, Nat.reduceLT,
       Nat.reduceBEq, decide_false, Bool.false_eq_true, ↓reduceIte,
@@ -380,7 +353,7 @@ theorem convStep_eq (l : ConvRule) (hl : RulePlain l) (v : DV)
       cases Internal.normalize G E n rs fuel Γ (Φ.map (Internal.weakenBy k)) t <;> rfl
     · rfl
   | eval rs fuel depth =>
-    have he := eval_eq G E n _ rs (forall₂_rrel hl) fuel
+    have he := evalD_eq G E n _ rs (forall₂_rrel hl) fuel
     simp only [«Conversion.convStep», label_eq, label_encConv, child_encConv, convData, lt_leaf,
       eq_leaf, label_ne_zero, ofBool_bne, children_eq, RoseTree.children_node, Nat.reduceLT,
       Nat.reduceBEq, decide_false, Bool.false_eq_true, ↓reduceIte,

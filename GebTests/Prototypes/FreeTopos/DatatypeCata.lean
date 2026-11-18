@@ -207,7 +207,7 @@ def rwHypRoot (i : ℕ) (k : Deducer) : Deducer := fun Γ Φ ψ ↦ do
   let (l, r) ← Internal.eqParts ψ
   let (l', R) ← Internal.eqParts (← Φ[i]?)
   if l != l' then none else
-  let d : Internal.Deriv := RoseTree.node .cong
+  let d : Internal.ConvDeriv := RoseTree.node .cong
     [RoseTree.node (.rwHyp i false) [], RoseTree.node .refl []]
   dRwBy (fun _ _ _ ↦ some (Term.eq R r, d)) k Γ Φ ψ
 
@@ -788,7 +788,7 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
         (decideIn K (fun Γ ↦ apps childT [c Γ, leafT (numeral 2)])
           (linkK K "cataWalk: no remaining children" noRest) rest)
         (refute "a field type remaining" hTy) Γ₀ Φ₀ ψ₀
-    let r₀ : Option Internal.Deriv := linkK K "cataWalk: no fields" nilCase
+    let r₀ : Option Internal.ConvDeriv := linkK K "cataWalk: no fields" nilCase
       (cataWalkCtx T).tail [] (Term.subst φ (Internal.instVar (Term.arr 0 [treeTy] Term.star)))
     -- the lengths' hypothesis of index h refuted, one comparison true by the comparisons of
     -- lengths at constructions
@@ -1135,7 +1135,7 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
                 (fun Γ Φ ψ ↦ consField flag false pX pF pT pR (Φ.length - 1) Γ Φ ψ)
                 (fun Γ Φ ψ ↦ consField flag true pX pF pT pR (Φ.length - 1) Γ Φ ψ)
                 Γ Φ ψ) Γ Φ ψ) Γ Φ ψ) Γ₁ Φ₁ ψ₁) Γ₀ Φ₀ ψ₀
-    let r₁ : Option Internal.Deriv := linkK K "cataWalk: a field" (introsAt o consBody)
+    let r₁ : Option Internal.ConvDeriv := linkK K "cataWalk: a field" (introsAt o consBody)
       (list treeTy :: treeTy :: (cataWalkCtx T).tail) [Internal.weakenElem φ]
       (Internal.listConsAt 1 treeTy φ)
     let some d₀ := r₀
@@ -1850,7 +1850,7 @@ def consCompat (P : Prog) (S : Defs) (T : Defs3) : Step :=
               h ∈ [sx, ex, sxs, exs] ∨ Φ₂.length ≤ h).reverse
           let auto : ℕ → Deducer := fun d ↦ d.rec (fun _ _ _ ↦ none) fun _ rec ↦ X.norm
             fun Γ Φ ψ ↦
-            if ψ == Internal.Logic.tt P.o then some Internal.Logic.trueI else
+            if ψ == Internal.Logic.tt P.o then some Internal.Logic.trueIC else
             match defnParts ψ with
             | some (i, _, _) =>
               if i = P.o + 1 then dConjI L rec rec Γ Φ ψ else

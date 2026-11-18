@@ -10,34 +10,35 @@ public import GebTests.Prototypes.FreeTopos.Stored
 
 set_option doc.verso true in
 /-!
-# The stored derivations' nodes by rule
+# The stored certificates' nodes by rule
 
-For each certificate of {lit}`bootstrap/certificates/`, the nodes of the derivations of the
-theorems its development declares, counted by rule, and the rewritings among them: the
-derivations a rule proving a formula takes as premises that rewrite a term, the two of
-{lit}`join` and the first of {lit}`conv` and of {lit}`convFrom`. A rewriting is built of the
-identity, composition, congruence and the rewriting rules at a term's root, and is a derivation
-that a checker with a step of conversion
-({lit}`Geb.FreeTopos.Internal.convCheck`) can replace by one step where the conversion it
-computes reaches the rewriting's result. The measurement decides which rules that step carries
-(the bootstrap chapter's section on the next phase).
+For each certificate of {lit}`bootstrap/certificates/`, the nodes of the certificates of the
+theorems its development declares, counted by rule, the rules of the language and the steps of
+conversion ({lit}`Geb.FreeTopos.Internal.ConvRule`), and the rewritings among them: the
+premises of a rule proving a formula that rewrite a term, the two of {lit}`join` and the first of
+{lit}`conv` and of {lit}`convFrom`. A rewriting a prover's reduction computes is the reduction's
+derivation, of the identity, composition, congruence and the rewriting rules at a term's root,
+where that has no more nodes than the provers' bound
+({lit}`Geb.FreeTopos.Internal.stepBound`), and one node past it, the step of conversion that
+names the reduction; a tactic composes rewritings of both.
 
-A derivation is counted as a tree, a node once for each path to it from the root, which is the
-number of steps the checker's fold takes; the certificate stores the table of its distinct nodes,
-whose length is counted beside it. The terms the rules name are counted apart, as
+A certificate is counted as a tree, a node once for each path to it from the root, which is the
+number of steps the checker's fold takes; the certificate's text stores the table of its distinct
+nodes, whose length is counted beside it. The terms the rules name are counted apart, as
 {name}`GebBench.Prototypes.FreeTopos.TranslationProofs.derivSize` counts them.
 
 ## Main definitions
 
-* {lit}`ruleName` — a rule's name.
-* {lit}`Counts`, {lit}`visit` — the counts of a derivation's nodes by rule, within rewritings and
-  in all, and their accumulation over a derivation.
-* {lit}`measure` — the counts of a development's derivations.
+* {lit}`ruleName`, {lit}`convRuleName` — the name of a rule of the language and of a rule of the
+  certificates.
+* {lit}`Counts`, {lit}`visit` — the counts of a certificate's nodes by rule, within rewritings and
+  in all, and their accumulation over a certificate.
+* {lit}`measure` — the counts of a development's certificates.
 * {lit}`run` — the measurements of the certificates.
 
 ## Tags
 
-internal language, derivation, conversion, certificate, measurement
+internal language, conversion, certificate, measurement
 -/
 
 set_option doc.verso true
@@ -50,7 +51,7 @@ open Geb Geb.FreeTopos
 open GebTests.Prototypes.FreeTopos
 open GebTests.Prototypes.FreeTopos.Translation (sizeM)
 open GebBench.Prototypes.FreeTopos.TranslationProofs (ruleTerms)
-open Internal (Rule Deriv Decl)
+open Internal (Rule ConvRule ConvDeriv ConvDecl)
 
 /-- A rule's name, its constructor's. -/
 def ruleName : Rule → String
@@ -67,9 +68,16 @@ def ruleName : Rule → String
   | .roseInd _ _ _ _ => "roseInd" | .roseIndHyp _ _ _ => "roseIndHyp"
   | .coprodInd _ _ => "coprodInd" | .zeroInd _ => "zeroInd" | .quotInd _ _ => "quotInd"
 
+/-- The name of a rule of the certificates: a rule of the language's, and a step's
+constructor's. -/
+def convRuleName : ConvRule → String
+  | .base r => ruleName r
+  | .norm _ _ => "norm" | .eval _ _ _ => "eval" | .applyMatch _ _ => "applyMatch"
+  | .lit _ => "lit" | .machine _ _ _ _ _ _ => "machine"
+
 /-- The positions of the premises of a rule that are rewritings: both of {lit}`join`'s, and the
 first of {lit}`conv`'s and of {lit}`convFrom`'s. -/
-def rewritingPremises : Rule → List ℕ
+def rewritingPremises : ConvRule → List ℕ
   | .join => [0, 1]
   | .conv | .convFrom _ => [0]
   | _ => []
@@ -78,7 +86,7 @@ def rewritingPremises : Rule → List ℕ
 def bump (a : Array ℕ) (i k : ℕ) : Array ℕ :=
   (if i < a.size then a else a ++ Array.replicate (i + 1 - a.size) 0).modify i (· + k)
 
-/-- The counts of derivations' nodes. -/
+/-- The counts of certificates' nodes. -/
 structure Counts where
   /-- The nodes of each rule, by the rule's position among the rules. -/
   nodes : Array ℕ := #[]
@@ -94,24 +102,24 @@ structure Counts where
   largest : ℕ := 0
 
 /-- The counts with a node of a rule added, within a rewriting when {lit}`inside`. -/
-def Counts.node (s : Counts) (l : Rule) (inside : Bool) : Counts :=
-  let k := (Stored.ruleData l).1
+def Counts.node (s : Counts) (l : ConvRule) (inside : Bool) : Counts :=
+  let k := (Stored.convRuleData l).1
   let names := if k < s.names.size then s.names else
     s.names ++ Array.replicate (k + 1 - s.names.size) ""
   { s with
     nodes := bump s.nodes k 1
     inRewritings := if inside then bump s.inRewritings k 1 else s.inRewritings
-    names := if names[k]!.isEmpty then names.set! k (ruleName l) else names
+    names := if names[k]!.isEmpty then names.set! k (convRuleName l) else names
     terms := bump s.terms k ((ruleTerms l).map sizeM).sum }
 
 /-- The counts with a rewriting of {lit}`n` nodes added. -/
 def Counts.rewriting (s : Counts) (n : ℕ) : Counts :=
   { s with rewritings := s.rewritings + 1, largest := max s.largest n }
 
-/-- The accumulation of a derivation's counts, within a rewriting when the argument holds: the
-derivation's nodes, each premise of a rule that is a rewriting, outside one, counted as one. The
-result is the derivation's number of nodes. -/
-def visit : Deriv → Bool → StateM Counts ℕ :=
+/-- The accumulation of a certificate's counts, within a rewriting when the argument holds: the
+certificate's nodes, each premise of a rule that is a rewriting, outside one, counted as one. The
+result is the certificate's number of nodes. -/
+def visit : ConvDeriv → Bool → StateM Counts ℕ :=
   RoseTree.elim fun l cs inside ↦ do
     modify (·.node l inside)
     let ns ← cs.zipIdx.mapM fun (c, i) ↦ do
@@ -121,9 +129,9 @@ def visit : Deriv → Bool → StateM Counts ℕ :=
       pure n
     pure (1 + ns.sum)
 
-/-- The counts of a development's derivations, those of its declarations of theorems. -/
-def measure (ds : List Decl) : Counts :=
-  ((ds.filterMap fun | .language _ d => some d | _ => none).mapM (visit · false)).run {} |>.2
+/-- The counts of a development's certificates, those of its declarations of theorems. -/
+def measure (ds : List ConvDecl) : Counts :=
+  ((ds.filterMap fun | .conv _ d => some d | _ => none).mapM (visit · false)).run {} |>.2
 
 /-- The number of distinct nodes the table a certificate's text stores has, its first number. -/
 def tableNodes (text : String) : ℕ := ((Stored.natsOfText text).bind List.head?).getD 0
@@ -155,7 +163,7 @@ def Counts.add (s t : Counts) : Counts where
   largest := max s.largest t.largest
 
 /-- The measurements of the certificates of a directory, printed: a row for each certificate, of
-its table's distinct nodes, its declarations, its derivations' nodes, the nodes of the terms their
+its table's distinct nodes, its declarations, its certificates' nodes, the nodes of the terms their
 rules name, its rewritings, their nodes and the nodes of the largest; then a row for each
 certificate and rule, of the rule's nodes, those within rewritings and the nodes of the terms the
 rule's nodes name; each table ending in the row of all the certificates together. An error when a
@@ -170,7 +178,7 @@ def report (dir : System.FilePath) : IO Unit := do
   let mut decls := 0
   for e in files do
     let text ← IO.FS.readFile e.path
-    let some ds := Stored.declsOfText text
+    let some ds := Stored.convDeclsOfText text
       | throw (IO.userError s!"{e.fileName}: the certificate does not read")
     let s := measure ds
     let name := e.path.fileStem.getD e.fileName
