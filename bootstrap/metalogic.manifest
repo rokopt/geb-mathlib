@@ -104,6 +104,7 @@
     Affine.check
     Literals.litEval
     Literals.ready
+    Conversion.machineRun
     Conversion.convCheck
     Conversion.thmConvChecks
     Conversion.checkConvDev))

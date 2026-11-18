@@ -168,10 +168,13 @@ Computation:
   ({ref "speed-and-second-host"}[Speed and a second host]): the evaluator
   and loader in Rust, reproducing the stage-0 and stage-1 fixed points,
   which is diverse double-compiling across hosts.
-* Ready. Accelerations ({ref "speed-and-second-host"}[Speed and a
-  second host]): native code bound by position
-  or builtin identifier, proved in Lean against the denotation and run
-  in shadow mode.
+* In progress. Accelerations ({ref "speed-and-second-host"}[Speed and a
+  second host]): native code bound to a definition by its name in the
+  Lean the compiler emits, proved in Lean equal to the definition, and
+  run beside it in a shadow mode that compares the two. The binding and
+  the acceleration of the conversion checker's reduction by the
+  environment machine are complete; that of the hash written in Geb is
+  ready.
 * Waiting on the choice of machine. The interaction-net target
   ({ref "speed-and-second-host"}[Speed and a second host]): a
   compiler written in Geb to the staged interaction system of the
@@ -1729,7 +1732,8 @@ section below opens with a table of the states of its parts.
   * {ref "speed-and-second-host"}[Speed and a second host]
   * In progress
   * The second host and the interaction-net target: waiting on the choice
-    of machine; accelerations: ready
+    of machine; accelerations: in progress, the binding and the
+    environment machine's complete and the hash's ready
 *
   * {ref "content-identity"}[Content identity]
   * Complete
@@ -3334,7 +3338,9 @@ tag := "speed-and-second-host"
   * Waiting on the choice of machine
 *
   * Accelerations
-  * Ready
+  * In progress: the binding, the shadow mode and the acceleration of
+    the conversion checker's reduction by the environment machine are
+    complete; that of the hash written in Geb is ready
 *
   * The compilers
   * In progress: the Lean backend is complete; the interaction-net
@@ -3347,11 +3353,24 @@ tag := "speed-and-second-host"
 
 * A systems-language host: the evaluator and loader ported from the
   Rust crate of the value-representation prototypes.
-* Lean and Geb: accelerations bound by position or builtin
-  identifier, each proved in Lean against the denotation of the term
-  it replaces, with the shadow mode that runs both. The conversion
-  checker's environment machine is one, the machine in Lean in place of
-  the machine written in Geb
+* Lean and Geb: accelerations bound to a definition by its name, each
+  proved in Lean equal to the definition it is run in place of, with the
+  shadow mode that runs both. A line of `bootstrap/accelerations` names
+  a definition, the Lean function run in its place, the function that
+  runs both and compares them, and the module declaring the two, and
+  `scripts/accelerate.py`, which `scripts/bootstrap.sh` applies to each
+  module of emitted Lean, binds the first to the definition
+  (`implemented_by`): the definition keeps the value the compiler
+  emits, which the loading of its program and the proofs about it read,
+  and compiled code runs the function bound, which is given the
+  definition's own code. The environment variable `GEB_ACCELERATION`
+  selects, when the Lean is emitted, the function that runs both
+  (`shadow`), which reports a difference on the standard error and
+  takes the definition's value, or no binding (`none`). The Lean
+  compiler does not check a binding; the proof that the function bound
+  is the definition is a theorem beside the definition's agreement. The
+  conversion checker's reduction by the environment machine is the first,
+  the machine in Lean in place of the machine written in Geb
   ({ref "conversion-continuation"}[Completing the checker with a step of
   conversion]).
 * Geb: compilers to the targets the choice of machine selects, emitting
@@ -6228,7 +6247,12 @@ is proved, which the row of the emitted Lean states.
     (`docs/rules/ci-and-workflow.md` § Loading modes). Tested for the
     compilers, the kernel's checker and evaluator and the proof runner:
     the fixed points and the comparison of the emitted Lean's bytes
-    (`scripts/bootstrap.sh check`, `scripts/authoring.sh check`)
+    (`scripts/bootstrap.sh check`, `scripts/authoring.sh check`). Where
+    a definition is bound to an acceleration, compiled code runs the
+    function bound, which Lean's compiler does not check and a theorem
+    proves equal to the definition: for the reduction by the environment
+    machine, `machineRun_accel` of
+    `GebTests/Prototypes/FreeTopos/Agreement/Conversion.lean`
 *
   * The metalogic's checker, translation, prover and tactics
   * Proved: the checker's soundness
@@ -8494,8 +8518,10 @@ What is ready, each item independent of the others except as stated:
   rewriting the folds that read their children's results twice
   ({ref "improvements"}[Improvements]).
 * Accelerations ({ref "speed-and-second-host"}[Speed and a second
-  host]), the hash written in Geb, which computes by arithmetic on
-  natural numbers, first among their uses.
+  host]), in progress: the binding and the conversion checker's
+  reduction by the environment machine are complete, and the hash
+  written in Geb, which computes by arithmetic on natural numbers, is
+  ready.
 * The Geb reader in constant depth, and the stage tests reading each
   compiler once ({ref "improvements"}[Improvements]); the
   serializer's list processing uses constant-depth data accumulators.
@@ -8596,7 +8622,9 @@ again in Geb, with its environment machine and its check of a
 development's declarations, and the checker written in Geb is proved in
 Lean to agree with it at every certificate none of whose steps names a
 prepared theorem, and its check of a development at every list of
-declarations with such certificates.
+declarations with such certificates. The Lean the compiler emits runs
+the machine in Lean in place of the machine written in Geb, by that
+agreement.
 No prover emits its steps, and no stored certificate uses them. This
 section states what is written, the order of the steps that remain, and
 the constraints each of them carries.
@@ -8667,6 +8695,29 @@ the constraints each of them carries.
   ({name}`Geb.FreeTopos.Internal.rootRewrite_checked`), under the
   hypotheses weakened past the binders passed. The step `machine` rests
   on it.
+* `Geb/Prototypes/FreeTopos/Internal/Encoding.lean` and
+  `Geb/Prototypes/FreeTopos/Internal/Accelerate.lean`: the acceleration
+  of the reduction by the machine
+  ({ref "speed-and-second-host"}[Speed and a second host]). The first
+  states the representation of the checker's data as trees of numbers,
+  at which the agreements of the programs written in Geb are stated, and
+  the reading of a tree as the datum it represents, which has a value
+  only at a representation
+  ({name}`Geb.FreeTopos.Internal.Encode.encTerm_of_decTerm`,
+  {name}`Geb.FreeTopos.Internal.Encode.encGlobals_of_decGlobals`,
+  {name}`Geb.FreeTopos.Internal.Encode.encEntry_of_decEntry`). The second
+  gives, for a reduction of trees, the function that is the machine in
+  Lean at the trees that represent the checker's data and the given
+  reduction elsewhere
+  ({name}`Geb.FreeTopos.Internal.Accelerate.machineRun`), which is the
+  given reduction where that agrees with the machine at the
+  representations
+  ({name}`Geb.FreeTopos.Internal.Accelerate.machineRun_eq`), and the
+  function that runs both and compares them
+  ({name}`Geb.FreeTopos.Internal.Accelerate.machineRunShadow`,
+  {name}`Geb.FreeTopos.Internal.Accelerate.machineRunShadow_eq`). The
+  reading of a step's rules has no value at a rule of the checker or a
+  prepared theorem, at which the reduction written in Geb runs.
 * `Geb/Prototypes/FreeTopos/Internal/ConvDevelopment.lean`: the
   developments whose theorems carry derivations of the base checker or
   certificates of the conversion checker, and whose records of the
@@ -8775,7 +8826,10 @@ the constraints each of them carries.
   `bootstrap/free-topos/prove.geb`), whose agreement is proved, and so
   compute the derivation they discard; the step of the machine replaces
   each of their reductions (step 3 below), so that reductions computing
-  their results alone are not written in Geb. The evaluation at literals
+  their results alone are not written in Geb. The step of the machine
+  calls the reduction at the data of the step, every argument a tree
+  (`machineRun`), the definition that `bootstrap/accelerations` binds
+  to the machine in Lean. The evaluation at literals
   represents a bitstring by the number it denotes, its index in the
   enumeration, which is the label whose numeral it is, so that it
   computes each definition by the kernel's primitives on labels and
@@ -8840,11 +8894,20 @@ the constraints each of them carries.
   theorem, and its check of a development gives the encoding of the
   state {name}`Geb.FreeTopos.Internal.checkConvDev` gives, at
   declarations with such certificates (`conversion_agree` of
+  `GebTests/Prototypes/FreeTopos/Agreement.lean`). The reduction at the
+  data of a step agrees with the machine in Lean at the representations
+  (`machineRun_agrees`), so that the function the emitted Lean binds to
+  it, and the function that runs both, are the reduction written in Geb
+  at every argument (`machineRun_accel`, `machineRun_shadow`), and so
+  the loaded program's reduction (`machineRun_agree` of
   `GebTests/Prototypes/FreeTopos/Agreement.lean`).
   `GebTests/Prototypes/FreeTopos/ConversionMirror.lean` tests the
   evaluation, the test of readiness, the machine within each depth of
   recursion below a bound, the checker's steps of the machine and the
-  check of a development against Lean's at the library's arithmetic.
+  check of a development against Lean's at the library's arithmetic, and
+  the function bound to the reduction against the reduction written in
+  Geb, with the reading of the encoded data on which the binding
+  depends.
 * `GebBench/Prototypes/FreeTopos/MachineMirror.lean` measures the time
   the two checkers take to accept a step of the machine at each side of
   the equation of a product and its value's numeral (step 2 below).
@@ -8854,27 +8917,41 @@ the constraints each of them carries.
 1. The datatype language's completion
    ({ref "datatype-completion"}[The datatype language's completion]),
    which precedes substantial authoring in Geb: complete.
-2. The acceleration of the environment machine. The machine written in
-   Geb does not keep the time of the machine in Lean: the library's
-   conditional takes its branches as arguments
+2. The acceleration of the environment machine: complete. The machine
+   written in Geb does not keep the time of the machine in Lean: the
+   library's conditional takes its branches as arguments
    ({name}`Geb.FreeTopos.Translation.condT`), so the machine written in
    Geb, which computes a delayed value where it builds the node, reduces
    both, and a recursion through the branches multiplies at each level.
-   In one run of `GebBench/Prototypes/FreeTopos/MachineMirror.lean` on one
-   machine, the checkers accept the equation of the product of a factor
-   with itself and its numeral, at the factors 1, 3, 7 and 15, in 0.3,
-   0.6, 1.7 and 3.5 milliseconds in Lean, and in 2.4, 8.0, 155 and 2093
-   written in Geb, thirteen or more times longer for each bit of the
-   factor past the second. A delay by an abstraction is not available to the
+   A delay by an abstraction is not available to the
    machine written in Geb: a value is a tree, which holds no function,
    and a delayed value computed where it is read is computed at the
    reader's depth of recursion, where the machine's is computed at the
    depth of the step that built it, so that the two differ where a depth
    is exhausted. The time is kept by an acceleration
-   ({ref "speed-and-second-host"}[Speed and a second host]): the Lean the
-   compiler emits takes the machine in Lean in place of the machine
-   written in Geb, by the agreement of the two (`machineReduce_eq` of
-   `GebTests/Prototypes/FreeTopos/Agreement/Machine.lean`).
+   ({ref "speed-and-second-host"}[Speed and a second host]): the
+   reduction at the data of a step, every argument a tree (`machineRun`
+   of `bootstrap/free-topos/conversion.geb`), is bound in the Lean the
+   compiler emits to the machine in Lean at the trees that represent the
+   checker's data
+   ({name}`Geb.FreeTopos.Internal.Accelerate.machineRun`), which is that
+   reduction at every argument by the agreement of the two machines
+   (`machineReduce_eq` of
+   `GebTests/Prototypes/FreeTopos/Agreement/Machine.lean`,
+   `machineRun_accel` of
+   `GebTests/Prototypes/FreeTopos/Agreement/Conversion.lean`). In one
+   run of `GebBench/Prototypes/FreeTopos/MachineMirror.lean` on one
+   machine, at the equation of the product of a factor with itself and
+   its numeral, at the factors 1, 3, 7 and 15: the checker in Lean
+   accepts it in 0.4, 0.7, 1.2 and 3.8 milliseconds; the reduction
+   written in Geb, with no function bound to it, reduces its two sides
+   in 5.8, 10, 199 and 2312, thirteen or more times longer for each bit
+   of the factor past the second; and the checker written in Geb, its
+   reduction bound, accepts it in 6.5, 5.4, 5.5 and 15, and at the
+   factor 4095 in 54 against 51 in Lean. The bound reduction reads the
+   encoded constants, entries and term at each step, about 5
+   milliseconds of a check of two steps at that development, which a
+   reading kept between the steps of one certificate would remove.
 3. The emission of the steps by the tactics, in Lean and in Geb
    together, so that
    `GebTests/Prototypes/FreeTopos/Agreement/Tactics.lean`, the proof that

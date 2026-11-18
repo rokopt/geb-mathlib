@@ -22,7 +22,9 @@ the bootstrap compiler emits, at the development of
 are those of {name}`Geb.FreeTopos.Literals.eval` and {name}`Geb.FreeTopos.Literals.ready`, the
 conversion checker written in Geb accepts the certificates of steps of the machine that
 {name}`Geb.FreeTopos.Internal.convCheck` accepts, the machine written in Geb reduces as the
-machine in Lean within each depth of recursion, and the check of a development's declarations
+machine in Lean within each depth of recursion, the function bound to the reduction written in
+Geb ({name}`Geb.FreeTopos.Internal.Accelerate.machineRun`) computes what that reduction computes,
+and the check of a development's declarations
 written in Geb ({lit}`bootstrap/free-topos/conversion.geb`) gives the state that
 {name}`Geb.FreeTopos.Internal.checkConvDev` gives.
 
@@ -33,6 +35,8 @@ written in Geb ({lit}`bootstrap/free-topos/conversion.geb`) gives the state that
 * {lit}`reduceGeb`, {lit}`reduceLean`, {lit}`reductions` — the encoded reduction of a term in a
   context by the machine written in Geb within a depth of recursion, and by the machine in Lean,
   and the two at each depth below a bound.
+* {lit}`runGeb`, {lit}`runBound` — the encoded reduction of a term by the reduction written in
+  Geb at the data of a step, and by the function bound to it.
 * {lit}`byMachineHyp`, {lit}`checksAlike` — a certificate whose step of the machine rewrites by a
   hypothesis, and whether the two checkers decide alike that a certificate proves a theorem.
 * {lit}`certified`, {lit}`devGeb`, {lit}`devLean` — a development with certificates, and the
@@ -138,6 +142,44 @@ def reductions (bound : ℕ) (Γ : List Tree) (t : Term) : List (Tree × Tree) :
 #guard reduceLean 29 [] (bin .add 2 3) == encOpt none
 #guard (reduceLean 30 [] (bin .add 2 3)).label == 1
 #guard (reduceLean 4 [] (Term.lam bitsTy (Term.fst (Term.pair (Term.var 0) (lit 1))))).label == 1
+
+/-- The trees of the data of a step of the machine within a depth of recursion: every definition
+of the library unfolded, the primitives of lists, and the rules it rewrites by. -/
+def machineData (fuel : ℕ) (rs : List Internal.NormRule) : List Tree :=
+  Internal.Accelerate.encMachineData ⟨fuel, lib.length, [], 0, 1, rs⟩
+
+/-- The encoded reduction of a term under hypotheses by the reduction written in Geb at the data
+of a step, in the Lean the compiler emits from it, to which no function is bound. -/
+def runGeb (fuel : ℕ) (rs : List Internal.NormRule) (Φ : List Term) (t : Tree) : Tree :=
+  «Conversion.machineRun$geb» (encGlobals G) (entries.toList.map encEntry) (leaf 0)
+    (machineData fuel rs) [] (Φ.map encTerm) t
+
+/-- The encoded reduction of a term under hypotheses by the function bound to the reduction
+written in Geb, the machine in Lean at the data the trees encode. -/
+def runBound (fuel : ℕ) (rs : List Internal.NormRule) (Φ : List Term) (t : Tree) : Tree :=
+  «Conversion.machineRun$accel» (encGlobals G) (entries.toList.map encEntry) (leaf 0)
+    (machineData fuel rs) [] (Φ.map encTerm) t
+
+-- the function bound to the reduction written in Geb computes what that reduction computes,
+-- within each depth of recursion, with and without a rule
+#guard [bin .add 2 3, bin .cmp 2 1, Term.fst (bin .divMod 5 2),
+    Term.lam bitsTy (Term.fst (Term.pair (Term.var 0) (lit 1)))].all fun t ↦
+  (List.range 36).all fun fuel ↦ runGeb fuel [] [] (encTerm t) == runBound fuel [] [] (encTerm t)
+#guard runGeb 64 [.hyp 0] [Term.eq (lit 5) (lit 7)] (encTerm (bin .add 2 3)) ==
+  runBound 64 [.hyp 0] [Term.eq (lit 5) (lit 7)] (encTerm (bin .add 2 3))
+#guard (runBound 64 [] [] (encTerm (bin .add 2 3))).label == 1
+-- as does the function that runs both and compares them
+#guard (List.range 36).all fun fuel ↦
+  Internal.Accelerate.machineRunShadow «Conversion.machineRun$geb» (encGlobals G)
+    (entries.toList.map encEntry) (leaf 0) (machineData fuel []) [] []
+    (encTerm (bin .add 2 3)) == runGeb fuel [] [] (encTerm (bin .add 2 3))
+-- it reads the trees as the data they encode, so that the machine in Lean runs
+#guard (Internal.Accelerate.decArgs (encGlobals G) (entries.toList.map encEntry) (leaf 0)
+  (machineData 64 [.hyp 0]) [encTerm (Term.eq (lit 5) (lit 7))] (encTerm (bin .add 2 3))).isSome
+-- and at a tree that encodes no term it takes the value of the reduction written in Geb
+#guard (Internal.Accelerate.decArgs (encGlobals G) (entries.toList.map encEntry) (leaf 0)
+  (machineData 64 []) [] (RoseTree.node 99 [])).isNone
+#guard runGeb 8 [] [] (RoseTree.node 99 []) == runBound 8 [] [] (RoseTree.node 99 [])
 
 /-- A certificate of an equation by a step of the machine at each side, the first rewriting its
 normal form by the first hypothesis. -/

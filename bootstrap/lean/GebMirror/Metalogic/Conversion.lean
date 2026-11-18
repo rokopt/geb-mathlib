@@ -1,6 +1,7 @@
 module
 
 public import GebMirror.Metalogic.Affine
+public import Geb.Prototypes.FreeTopos.Internal.Accelerate
 
 /-! Generated from a Geb program by `bootstrap/stage1/lean.geb`. -/
 
@@ -5534,6 +5535,106 @@ def «Conversion.machineReduceBy» :=
         x10);
     x11
 
+def «Conversion.machineRun$geb» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.List _root_.Geb.Kernel.Tree)
+    (x6 : _root_.Geb.Kernel.Tree) =>
+    let x7 : _root_.Geb.Kernel.Tree := (let x7 : _root_.List
+                                          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                          (_root_.GebMirror.Metalogic.«Prelude.at»
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 2));
+                                        _root_.GebMirror.Metalogic.«Conversion.machineReduceBy»
+                                          x0
+                                          x1
+                                          x2
+                                          (fun (x8 : _root_.Geb.Kernel.Tree) =>
+                                            _root_.GebMirror.Metalogic.«Prelude.and»
+                                              (_root_.Geb.Kernel.Const.lt
+                                                x8
+                                                (_root_.GebMirror.Metalogic.«Prelude.at»
+                                                  x3
+                                                  (_root_.Geb.Kernel.leaf 1)))
+                                              (_root_.GebMirror.Metalogic.«Base.not»
+                                                (_root_.GebMirror.Metalogic.«Base.anyT»
+                                                  (fun (x9 : _root_.Geb.Kernel.Tree) =>
+                                                    _root_.Geb.Kernel.Const.eq x9 x8)
+                                                  x7)))
+                                          (_root_.GebMirror.Metalogic.«Prelude.at»
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 3))
+                                          (_root_.GebMirror.Metalogic.«Prelude.at»
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 4))
+                                          (_root_.GebMirror.Metalogic.«Conversion.rulesOf»
+                                            (_root_.Geb.Kernel.Const.children
+                                              (_root_.GebMirror.Metalogic.«Prelude.at»
+                                                x3
+                                                (_root_.Geb.Kernel.leaf 5))))
+                                          (_root_.GebMirror.Metalogic.«Prelude.at»
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0))
+                                          x4
+                                          x5
+                                          x6);
+    x7
+
+def «Conversion.machineRun$accel» : type_of% «Conversion.machineRun$geb» :=
+  _root_.Geb.FreeTopos.Internal.Accelerate.machineRun «Conversion.machineRun$geb»
+
+@[implemented_by «Conversion.machineRun$accel»]
+def «Conversion.machineRun» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.List _root_.Geb.Kernel.Tree)
+    (x6 : _root_.Geb.Kernel.Tree) =>
+    let x7 : _root_.Geb.Kernel.Tree := (let x7 : _root_.List
+                                          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                          (_root_.GebMirror.Metalogic.«Prelude.at»
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 2));
+                                        _root_.GebMirror.Metalogic.«Conversion.machineReduceBy»
+                                          x0
+                                          x1
+                                          x2
+                                          (fun (x8 : _root_.Geb.Kernel.Tree) =>
+                                            _root_.GebMirror.Metalogic.«Prelude.and»
+                                              (_root_.Geb.Kernel.Const.lt
+                                                x8
+                                                (_root_.GebMirror.Metalogic.«Prelude.at»
+                                                  x3
+                                                  (_root_.Geb.Kernel.leaf 1)))
+                                              (_root_.GebMirror.Metalogic.«Base.not»
+                                                (_root_.GebMirror.Metalogic.«Base.anyT»
+                                                  (fun (x9 : _root_.Geb.Kernel.Tree) =>
+                                                    _root_.Geb.Kernel.Const.eq x9 x8)
+                                                  x7)))
+                                          (_root_.GebMirror.Metalogic.«Prelude.at»
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 3))
+                                          (_root_.GebMirror.Metalogic.«Prelude.at»
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 4))
+                                          (_root_.GebMirror.Metalogic.«Conversion.rulesOf»
+                                            (_root_.Geb.Kernel.Const.children
+                                              (_root_.GebMirror.Metalogic.«Prelude.at»
+                                                x3
+                                                (_root_.Geb.Kernel.leaf 5))))
+                                          (_root_.GebMirror.Metalogic.«Prelude.at»
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0))
+                                          x4
+                                          x5
+                                          x6);
+    x7
+
 def «Conversion.stepMachine» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -5544,61 +5645,32 @@ def «Conversion.stepMachine» :=
         _root_.Geb.Kernel.Tree →
           _root_.List _root_.Geb.Kernel.Tree →
             _root_.Geb.Kernel.Tree →
-              _root_.Geb.Kernel.Tree := (let x4 : _root_.List
-                                           _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                           (_root_.GebMirror.Metalogic.«Prelude.at»
-                                             x3
-                                             (_root_.Geb.Kernel.leaf 2));
-                                         let x5 : _root_.List
-                                           _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Conversion.rulesOf»
-                                           (_root_.Geb.Kernel.Const.children
-                                             (_root_.GebMirror.Metalogic.«Prelude.at»
-                                               x3
-                                               (_root_.Geb.Kernel.leaf 5)));
-                                         fun (x6 : _root_.Geb.Kernel.Tree)
+              _root_.Geb.Kernel.Tree := (fun (x4 : _root_.Geb.Kernel.Tree)
+                                           (x5 : _root_.List _root_.Geb.Kernel.Tree)
+                                           (x6 : _root_.Geb.Kernel.Tree)
                                            (x7 : _root_.List _root_.Geb.Kernel.Tree)
-                                           (x8 : _root_.Geb.Kernel.Tree)
-                                           (x9 : _root_.List _root_.Geb.Kernel.Tree)
-                                           (x10 : _root_.Geb.Kernel.Tree) =>
-                                           if (x6).label ≠ 0 then
-                                             _root_.Geb.Kernel.leaf 0
-                                           else
-                                             _root_.GebMirror.Metalogic.«Conversion.machineReduceBy»
-                                               x0
-                                               x1
-                                               x2
-                                               (fun (x11 : _root_.Geb.Kernel.Tree) =>
-                                                 _root_.GebMirror.Metalogic.«Prelude.and»
-                                                   (_root_.Geb.Kernel.Const.lt
-                                                     x11
-                                                     (_root_.GebMirror.Metalogic.«Prelude.at»
-                                                       x3
-                                                       (_root_.Geb.Kernel.leaf 1)))
-                                                   (_root_.GebMirror.Metalogic.«Base.not»
-                                                     (_root_.GebMirror.Metalogic.«Base.anyT»
-                                                       (fun (x12 : _root_.Geb.Kernel.Tree) =>
-                                                         _root_.Geb.Kernel.Const.eq x12 x11)
-                                                       x4)))
-                                               (_root_.GebMirror.Metalogic.«Prelude.at»
-                                                 x3
-                                                 (_root_.Geb.Kernel.leaf 3))
-                                               (_root_.GebMirror.Metalogic.«Prelude.at»
-                                                 x3
-                                                 (_root_.Geb.Kernel.leaf 4))
-                                               x5
-                                               (_root_.GebMirror.Metalogic.«Prelude.at»
-                                                 x3
-                                                 (_root_.Geb.Kernel.leaf 0))
-                                               x7
-                                               (if (_root_.GebMirror.Metalogic.«$436f6e76657273696f6e2f4561636852756c652e6973456d707479»
-                                                 x5).label ≠ 0 then
-                                                 ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                               else
-                                                 _root_.GebMirror.Metalogic.«Base.mapT»
-                                                   (fun (x11 : _root_.Geb.Kernel.Tree) =>
-                                                     _root_.GebMirror.Metalogic.«Derivation.weakenBy» x8 x11)
-                                                   x9)
-                                               x10);
+                                           (x8 : _root_.Geb.Kernel.Tree) =>
+      if (x4).label ≠ 0 then
+        _root_.Geb.Kernel.leaf 0
+      else
+        _root_.GebMirror.Metalogic.«Conversion.machineRun»
+          x0
+          x1
+          x2
+          x3
+          x5
+          (if (_root_.GebMirror.Metalogic.«Base.isEmpty»
+            (_root_.Geb.Kernel.Const.children
+              (_root_.GebMirror.Metalogic.«Prelude.at»
+                x3
+                (_root_.Geb.Kernel.leaf 5)))).label ≠ 0 then
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+          else
+            _root_.GebMirror.Metalogic.«Base.mapT»
+              (fun (x9 : _root_.Geb.Kernel.Tree) =>
+                _root_.GebMirror.Metalogic.«Derivation.weakenBy» x6 x9)
+              x7)
+          x8);
     x4
 
 def «Conversion.convStep» :=

@@ -16,12 +16,16 @@ For products of numerals of growing sizes, in the development of
 {lit}`GebTests.Prototypes.FreeTopos.Literals`, the time the conversion checker takes to accept a
 step of the environment machine at each side of the equation of the product and its value's
 numeral: by the checker in Lean ({name}`Geb.FreeTopos.Internal.convCheck`), whose machine delays a
-value and computes it when it is first read, and by the checker written in Geb
+value and computes it when it is first read; by the checker written in Geb
 ({lit}`bootstrap/free-topos/conversion.geb`), in the Lean the bootstrap compiler emits, whose
-machine computes a delayed value where it builds the node. The two machines are one function of
-the term reduced, so the checkers accept the same certificates; the table measures what computing
-each delayed value costs. The measurements stop after the first product at which the checker
-written in Geb takes longer than a bound.
+reduction by the machine is bound to the machine in Lean
+({name}`Geb.FreeTopos.Internal.Accelerate.machineRun`), which reads the encoded constants,
+entries and term at each step; and the time the reduction written in Geb takes at the two sides
+with no function bound to it, whose machine computes a delayed value where it builds the node.
+The machines are one function of the term reduced, so the checkers accept the same
+certificates; the table measures what reading the encoded data costs the bound reduction, and
+what computing each delayed value costs the reduction written in Geb. The measurements of the
+latter stop after the first product at which it takes longer than a bound.
 
 ## Main definitions
 
@@ -29,6 +33,8 @@ written in Geb takes longer than a bound.
   within a depth of recursion.
 * {lit}`provesLean`, {lit}`provesGeb` — whether the checker in Lean, and the checker written in
   Geb, accepts that certificate for an equation of closed terms.
+* {lit}`reducesGeb` — whether the reduction written in Geb, with no function bound to it, reduces
+  the sides of an equation of closed terms to one term.
 * {lit}`sizes` — the factors measured.
 * {lit}`run` — the measurements.
 
@@ -69,6 +75,17 @@ def provesGeb (fuel : ℕ) (t u : Term) : Bool :=
   («Conversion.thmConvChecks» (encGlobals G) (entries.toList.map encEntry) []
     (encThm ⟨0, [], [], Term.eq t u⟩) (encConv (byMachineAt fuel))).label != 0
 
+/-- Whether the reduction written in Geb at the data of a step, in the Lean the compiler emits
+from it, to which no function is bound, reduces the sides of an equation of closed terms to one
+term within a depth of recursion: what the checker written in Geb decides at the certificate of
+{name}`byMachineAt`, where the machine written in Geb runs. -/
+def reducesGeb (fuel : ℕ) (t u : Term) : Bool :=
+  let run (s : Term) : Tree :=
+    «Conversion.machineRun$geb» (encGlobals G) (entries.toList.map encEntry) (leaf 0)
+      (Internal.Accelerate.encMachineData ⟨fuel, Translation.lib.length, [], 0, 1, []⟩) [] []
+      (encTerm s)
+  (run t).label != 0 && run t == run u
+
 /-- The factors measured, each multiplied by itself: the numbers one less than the powers of
 two, of one bit more at each. -/
 def sizes : List ℕ := (List.range 12).map fun i ↦ 2 ^ (i + 1) - 1
@@ -81,25 +98,31 @@ def timeOnce (f : Unit → Bool) : IO (Bool × ℕ) := do
   pure (b, (t₁ - t₀) / 1000)
 
 set_option compiler.extract_closed false in
-/-- The measurements: each row the factor, whether the checkers accept, and the times of the two
-checkers, in microseconds, at a depth of recursion of the machine, until the checker written in
-Geb takes longer than a bound, in microseconds; an error where the checkers differ. Closed terms
-are not extracted, so that each check runs when it is timed rather than when the program
-starts. -/
+/-- The measurements: each row the factor, whether the checkers accept, the times of the checker
+in Lean and of the checker written in Geb, whose reduction is bound to the machine in Lean, and
+the time of the reduction written in Geb with no function bound to it, in microseconds, at a
+depth of recursion of the machine; the last is measured until it takes longer than a bound, in
+microseconds, and is empty after; an error where the three differ. Closed terms are not
+extracted, so that each check runs when it is timed rather than when the program starts. -/
 def run (fuel : ℕ := 256) (bound : ℕ := 2000000) : IO Unit := do
-  IO.println "factor,accepted,lean_machine_microseconds,geb_machine_microseconds"
+  IO.println ("factor,accepted,lean_checker_microseconds,geb_checker_microseconds," ++
+    "geb_machine_microseconds")
   (← IO.getStdout).flush
-  let mut go := true
+  let mut unbound := true
   for a in sizes do
-    if go then
-      let t := bin .mul a a
-      let u := lit (a * a)
-      let (okL, tL) ← timeOnce fun _ ↦ provesLean fuel t u
-      let (okG, tG) ← timeOnce fun _ ↦ provesGeb fuel t u
-      if okL != okG then throw (IO.userError s!"mul {a} {a}: the checkers differ ({okL} {okG})")
-      IO.println (",".intercalate ([toString a, toString okL, toString tL, toString tG]))
-      (← IO.getStdout).flush
-      if tG > bound then go := false
+    let t := bin .mul a a
+    let u := lit (a * a)
+    let (okL, tL) ← timeOnce fun _ ↦ provesLean fuel t u
+    let (okG, tG) ← timeOnce fun _ ↦ provesGeb fuel t u
+    if okL != okG then throw (IO.userError s!"mul {a} {a}: the checkers differ ({okL} {okG})")
+    let mut cell := ""
+    if unbound then
+      let (okM, tM) ← timeOnce fun _ ↦ reducesGeb fuel t u
+      if okL != okM then throw (IO.userError s!"mul {a} {a}: the machines differ ({okL} {okM})")
+      cell := toString tM
+      if tM > bound then unbound := false
+    IO.println (",".intercalate [toString a, toString okL, toString tL, toString tG, cell])
+    (← IO.getStdout).flush
 
 end GebBench.Prototypes.FreeTopos.MachineMirror
 

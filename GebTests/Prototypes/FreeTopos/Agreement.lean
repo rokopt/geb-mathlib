@@ -94,6 +94,8 @@ combinator prover's other agreements).
   Lean's, and the resolution inverts the printer.
 * {lit}`affineCheck_agree` — the loaded check of elementary-affine certificates written in Geb
   accepts as the check in Lean does, with the same instances.
+* {lit}`machineRun_agree` — the loaded reduction by the environment machine written in Geb is the
+  function the emitted Lean binds to it.
 * {lit}`conversion_agree` — the loaded conversion checker written in Geb decides as the conversion
   checker in Lean at the certificates none of whose steps names a prepared theorem, and checks a
   development's declarations as the check in Lean; the loaded evaluation at literals evaluates
@@ -542,17 +544,17 @@ declarations whose certificates are such, its check of a development gives the e
 state the check in Lean gives; the evaluation gives the encoded term of the value the evaluation
 in Lean gives, and its test of readiness the test in Lean. -/
 theorem conversion_agree : ∃ G' : List Glob, load metalogic = some G' ∧
-    (∃ f : Ty.den convCheckTy, G'[2175]? = some ⟨convCheckTy, f⟩ ∧
+    (∃ f : Ty.den convCheckTy, G'[2176]? = some ⟨convCheckTy, f⟩ ∧
       ∀ (G : Internal.Globals) (E : Array Internal.Entry) (R : List ℕ) (n : ℕ)
         (d : Internal.ConvDeriv), Plain d →
           DRel (f (encGlobals G) (E.toList.map encEntry) (R.map leaf) (leaf n) (encConv d))
             (Internal.convCheck G E R n d)) ∧
-    (∃ f : Ty.den thmConvChecksTy, G'[2176]? = some ⟨thmConvChecksTy, f⟩ ∧
+    (∃ f : Ty.den thmConvChecksTy, G'[2177]? = some ⟨thmConvChecksTy, f⟩ ∧
       ∀ (G : Internal.Globals) (E : Array Internal.Entry) (R : List ℕ) (a : Internal.Thm)
         (d : Internal.ConvDeriv), Plain d →
           f (encGlobals G) (E.toList.map encEntry) (R.map leaf) (encThm a) (encConv d) =
             ofBool (a.convChecks G E R d)) ∧
-    (∃ f : Ty.den checkConvDevTy, G'[2199]? = some ⟨checkConvDevTy, f⟩ ∧
+    (∃ f : Ty.den checkConvDevTy, G'[2200]? = some ⟨checkConvDevTy, f⟩ ∧
       ∀ (G : Internal.Globals) (E : Array Internal.Entry) (ds : List Internal.ConvDecl),
         (∀ d ∈ ds, DeclPlain d) →
           f (encGlobals G) (E.toList.map encEntry) (ds.map encConvDecl) =
@@ -572,6 +574,16 @@ theorem conversion_agree : ∃ G' : List Glob, load metalogic = some G' ∧
       fun G E ds hds ↦ checkConvDev_eq G E ds hds⟩,
     ⟨«Literals.litEval», metalogic_litEval, Literals.litEval_eq⟩,
     ⟨«Literals.ready», metalogic_ready, Literals.ready_eq⟩⟩
+
+/-- The reduction by the environment machine written in Geb is the function the Lean the compiler
+emits binds to it: the program loads to globals among which is the reduction at the data of a
+step, a function of its type, which the acceleration by the machine in Lean leaves as it is at
+every argument, and which is the function compiled code runs in its place. -/
+theorem machineRun_agree : ∃ G' : List Glob, load metalogic = some G' ∧
+    ∃ f : Ty.den machineRunTy, G'[2173]? = some ⟨machineRunTy, f⟩ ∧
+      Internal.Accelerate.machineRun f = f ∧ «Conversion.machineRun$accel» = f :=
+  ⟨_, metalogic.load_globals, «Conversion.machineRun», metalogic_machineRun,
+    Internal.Accelerate.machineRun_eq machineRun_agrees, machineRun_accel⟩
 
 end GebTests.Prototypes.FreeTopos.Agreement
 
