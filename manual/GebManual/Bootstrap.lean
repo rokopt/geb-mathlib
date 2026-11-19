@@ -111,7 +111,8 @@ waiting or deferred).
   the rest of Geb in, with diagnostics that name what fails. In
   progress. Closed bundles, content identity, datatype checking and
   modules with imports and exports support writing library code. A
-  downstream application exercises the remaining authoring requirements.
+  downstream application exercises the remaining authoring requirements,
+  and polymorphic definitions precede the library's modules.
 
 ## A Geb library and its downstream application
 %%%
@@ -140,7 +141,22 @@ these capabilities in a client maintained in its own repository.
    definition, edit the module, build, check its example and replay
    its theorem. CI uses the same manifest. The existing editor fixture uses
    the VS Code release pinned in `editors/vscode/package.json`.
-2. Report datatype errors and holes where they are written. Carry source
+   This library is the modules that exist, assembled and shared. The
+   library's own modules are written after step 4, in the forms it adds.
+2. Make a check take the time of what changed. The compiled compiler
+   takes seconds on the stage-1 compiler's program and more than a minute
+   on the proof runner's, more than in proportion to their lengths, and
+   keeps nothing between compilations. Each check of a source compiles
+   its program from the first source, which in a client includes the
+   library's ({ref "improvements"}[Improvements]). First divide the time among
+   the compiler's stages, which changes no source. Then make each stage's
+   time linear in the program, and compile a layer against the checked
+   bundle of the layers before it, kept by the digest of their sources.
+   A client's check then reads the library's checked layers where it now
+   compiles a vendored copy. Each step below that changes a compiler's
+   source regenerates and checks the committed artifacts at the
+   compiler's cost, so this step precedes them.
+3. Report datatype errors and holes where they are written. Carry source
    occurrences through module elaboration and datatype expansion. Ask the
    stage-1 checker for the expected and actual types before their erasure.
    For a branch returning `7` where the declared result is `Light`, the
@@ -149,7 +165,17 @@ these capabilities in a client maintained in its own repository.
    A well-typed filling checks. An open obligation prevents a completed build.
    The kernel checker and the obligations view provide the existing interfaces
    ({ref "editing"}[Editing]).
-3. Run the client and give it filesystem requests on the Lean host. First
+4. Add polymorphic definitions, before the library's modules are written
+   (the decision on polymorphic definitions). A definition, and a
+   datatype's declaration, takes type parameters of its own, supplied
+   where it is used. A function is then used at several types in one
+   scope with no import for each, a datatype's instances at equal
+   arguments are one type across modules, and a composition at two types
+   is one definition. The acceptance is a library module of lists and
+   optional values generic in their element type, used at several types
+   in one module of the client
+   ({ref "polymorphic-definitions"}[Polymorphic definitions]).
+5. Run the client and give it filesystem requests on the Lean host. First
    expose `geb-kernel run IMAGE ENTRY INPUT OUTPUT` from the selected project
    in the editor. That command already runs a pure byte transformation on
    files chosen by the caller. Then define versioned read and write requests
@@ -158,7 +184,7 @@ these capabilities in a client maintained in its own repository.
    missing file as a result, and writes the output. General step-bounded
    execution and resumption belong to the second-host work
    ({ref "files-editions"}[Files, editions and the host boundary]).
-4. Migrate the client and its first saved datatype value. Keep readable
+6. Migrate the client and its first saved datatype value. Keep readable
    `.geb` sources, their manifest and dependency revisions, and a checked
    record at each migration. Edition 0 changes with the compiler, and
    constructor tags are positions in a declaration. Give the saved value a
@@ -171,11 +197,16 @@ these capabilities in a client maintained in its own repository.
    ({ref "first-authoring"}[Writing a first Geb development]).
 
 The library and client, datatype feedback, editor indexing, and filesystem
-interpreter can start in parallel. Develop diagnostics and holes against
-the same source correspondence. Integrate the interpreter when the client
-can issue requests. Preservation work can start on the Roundtrip record
-and take up value migration when the client has a saved datatype. Changes
-to compiler sources regenerate committed images and merge one at a time.
+interpreter can start in parallel, as can the measurement of step 2 and
+the design of step 4, which change no source. Develop diagnostics and
+holes against the same source correspondence. Integrate the interpreter
+when the client can issue requests. Preservation work can start on the
+Roundtrip record and take up value migration when the client has a saved
+datatype. Changes to compiler sources regenerate committed images and
+merge one at a time, those of steps 2, 3 and 4 in that order. Step 2
+shortens the regeneration and the checks of the other two, and step 3
+serves the client while the form of step 4 is settled. Steps 1, 5 and 6
+change the host, the editor and the client, and proceed beside them.
 Start editor indexing and use of the proof cache with the library, since
 navigation of the compiler's sources already takes seconds per request
 ({ref "improvements"}[Improvements]). Other editors can reuse these
@@ -276,6 +307,11 @@ Computation:
   the fold counting the nodes still follows the tree's depth.
 * Ready. The Geb reader in constant depth, and the stage tests reading
   each compiler once, the section on improvements.
+* Ready. The compiler's time, the section on improvements: its division
+  among the compiler's stages, each stage's time linear in the program,
+  and the compilation of a layer against the checked bundle of the layers
+  before it ({ref "downstream-authoring"}[A Geb library and its
+  downstream application]).
 
 Logic ({ref "logic"}[The logic]), Gödel's T and then the metalogic, as
 the sections below detail:
@@ -493,6 +529,10 @@ Extension:
   A bounded typed enumerator accompanies a module with examples or
   specifications to search against. Geb-native refinement search follows
   the bootstrap.
+* Ready. {ref "polymorphic-definitions"}[Polymorphic definitions]:
+  definitions and datatypes' declarations with type parameters of their
+  own, checked opaquely and instantiated at elaboration, before the
+  library's modules are written.
 
 ## After the bootstrap
 
@@ -627,9 +667,10 @@ The following are fixed; the plan builds on them.
   is the initial algebra of its declaration, a type distinct from the
   type of trees, reaching them only through its representation, the
   unique algebra morphism into them, and its decoding by its recognizer;
-  generic code is a module parameterized by an interface, a theory, and a
-  model of it instantiates the code, so that abstraction needs no
-  construct of its own. Its types
+  generic code over an interface, a theory, is a module parameterized by
+  it, and a model of it instantiates the code; a definition generic in
+  types alone takes type parameters of its own (the decision on
+  polymorphic definitions). Its types
   denote objects of the category of recognized types over the functions
   the kernel defines, which has finite limits and finite coproducts;
   that category has no subobject classifier for propositions about
@@ -659,6 +700,17 @@ The following are fixed; the plan builds on them.
   topos's structure, the datatypes' codes in `2^T` and the subobjects' in
   `Ω^T`, each interpreted by membership; no universe interprets every
   object.
+* Polymorphic definitions. A definition takes type parameters of its
+  own, supplied where it is used, as the kernel's constants and its type
+  of lists take theirs, and a datatype's declaration likewise. They
+  precede the writing of the library's modules: a definition generic in
+  a type and its copies at each type are written differently, as are
+  their callers, and the conversion of the second into the first is by
+  hand. The parameters are sorts, checked opaquely and instantiated at
+  elaboration as a module's are, so that the kernel's types stay
+  monomorphic (the decision on layers), and a datatype's instances at
+  equal arguments are one type
+  ({ref "polymorphic-definitions"}[Polymorphic definitions]).
 * Concrete syntax. Geb specifies its abstract syntax, rose trees, and
   not a concrete syntax. Source is written in the syntaxes of
   {citet RFC9804}[]: its canonical encoding and the transport encoding of
@@ -1807,7 +1859,8 @@ section below opens with a table of the states of its parts.
     kernel diagnostics and holes, proof goals and replay, and the editor
     services described in {ref "editing"}[Editing]. The datatype language's
     completion clears the way for explicit assembly, datatype diagnostics
-    and holes. The downstream client supplies the consumer for filesystem
+    and holes, and polymorphic definitions, which precede the library's
+    modules. The downstream client supplies the consumer for filesystem
     requests and value migration ({ref "downstream-authoring"}[A Geb
     library and its downstream application]).
 *
@@ -3478,8 +3531,9 @@ committed Lean and the committed image byte for byte, which is
 `scripts/bootstrap.sh regen` regenerates both artifacts, and
 `scripts/bootstrap.sh check`, run by continuous integration and the
 pre-push checklist, checks every fixed point with the compiled
-executables. On one machine the compiled compiler emits its Lean in 0.5
-seconds, where its image run by the Lean evaluator takes 1.2 seconds.
+executables. In one run on one machine the compiled compiler emits its
+Lean in 8.0 seconds, where its image run by the Lean evaluator takes 12.9
+({ref "improvements"}[Improvements]).
 
 `scripts/bench-bootstrap.sh` times both compilers on the compiler's own
 source and the prover of Gödel's T on the files of theorems its tests
@@ -3817,6 +3871,10 @@ tag := "authoring-compatibility"
   * Hygienic elaboration, explicit assembly and patterns
   * Hygienic elaboration and patterns: complete. Explicit assembly: ready
 *
+  * Polymorphic definitions
+    ({ref "polymorphic-definitions"}[Polymorphic definitions])
+  * Ready, and before the library's modules are written
+*
   * Early in writing: holes in the datatype language, located diagnostics
     and the typed enumerator
   * Diagnostics at the line and column of a declaration or of a theorem,
@@ -3841,7 +3899,8 @@ tag := "authoring-compatibility"
   * Acceptance
   * The documented examples compile, convert and replay. The downstream
     milestone still requires project assembly, datatype feedback, a program
-    that requests files, and migration of its saved value
+    that requests files, and migration of its saved value. The library's
+    modules also require polymorphic definitions
     ({ref "downstream-authoring"}[A Geb library and its downstream application]).
 :::
 
@@ -4868,6 +4927,78 @@ tree. An instance whose certificate holds of the datatype's members
 alone requires the sort's instantiation at the datatype itself, which
 follows the bootstrap, where type parameters become parameters over
 internal universes.
+
+#### Polymorphic definitions
+%%%
+tag := "polymorphic-definitions"
+%%%
+
+Polymorphic definitions precede the library's modules (the decision on
+polymorphic definitions). A module's parameters are supplied at an
+import, so a function used at several types is imported once for each,
+as `bootstrap/stage1/typing.geb` imports `(Seq Tx)` and `(Seq Ty)` under
+names of their own. A template's instances are distinct types, so
+modules share a datatype such as `Option`'s by the export of one
+instance. And a definition relating two types has no module whose
+parameters are those of both: the combinator prover holds a copy of the
+composition of computations for each pair of types it composes
+({ref "improvements"}[Improvements]). A library of lists, optional
+values and maps written in those forms consists of such imports, exports
+and copies, as do its callers.
+
+A definition with type parameters of its own is used at several types in
+one scope, its type arguments supplied where it is used, as those of the
+kernel's constants are in `(nil A)` and `(foldr A B …)`. A datatype's
+declaration takes type parameters likewise, and its instances at equal
+arguments are one type wherever they are written, as `(List A)` is. The
+requirements:
+
+* A type parameter is a sort, as a module's is. The definition is
+  checked once at opaque sorts, as a template is
+  ({ref "datatype-completion"}[The datatype language's completion]), so
+  that a definition inspecting the trees of its parameter is rejected
+  though nothing uses it.
+* Instantiation is elaboration (the decision on layers). A use at given
+  arguments denotes an instance, a definition of the kernel at
+  monomorphic types, and uses at equal arguments denote one instance. A
+  definition is passed as an argument at an instance, so no term has a
+  quantified type, and the kernel, its checker and the image format are
+  unchanged.
+* A definition in a module with parameters takes the module's and then
+  its own.
+
+Two forms meet these, which differ in where the type arguments come
+from. Where each use writes them, the elaboration of modules can
+instantiate a definition as it instantiates a template at an import,
+before the typing. The change is then to `bootstrap/modules.geb` and
+`Geb/Prototypes/Kernel/Modules.lean` together, and the aim is that
+`bootstrap/stage1/typing.geb` and `bootstrap/stage1/datatype.geb`,
+sources of the program whose typing's soundness is proved, read the
+forms they read now. Where the typing infers them, the typing
+instantiates, which changes those sources and what the soundness states.
+The first version writes the arguments, as the kernel's forms do.
+Inference widens the sources admitted, a source with its arguments
+written remaining one, so it is available later
+({ref "compatibility-contract"}[The compatibility contract]), and follows
+if the library's writing shows the need. Whether the generic form of a
+template suffices as it is for a datatype's declaration with parameters
+is settled in the design.
+
+An instance is a definition its program compiles, as a template's is at
+each import, so instances add to a program's compile time
+({ref "improvements"}[Improvements]). Since uses at equal arguments
+denote one instance, a program compiles an instance for each distinct
+list of arguments, not for each use.
+
+The acceptance is that of {ref "authoring-sequence"}[The sequence and
+its acceptance]. The library's modules are written in these forms from
+the first. The sources under `bootstrap/` are converted to them
+afterwards, in a change of their own (the decision on conversion). That
+change renames and reorders the instances of the programs that the
+mirrors, the agreement proofs and the developments are about, sources of
+the program whose typing's soundness is proved among them, so it is
+followed by the regeneration of the mirrors and by
+`scripts/certificates.sh regen`.
 
 ### Documentation
 %%%
@@ -6167,8 +6298,9 @@ remains.
     case-split budgets of other search steps. The reader's stack grows
     with the input length. The serializer's list processing uses data
     accumulators, with the remaining node count following tree depth.
-    {ref "improvements"}[Improvements] gives the symbol-index measurements
-    and the editor operations to measure across a change of buffer.
+    {ref "improvements"}[Improvements] gives the compiler's time on the
+    bootstrap's programs, the symbol-index measurements and the editor
+    operations to measure across a change of buffer.
 *
   * Reflection
   * Representations of code are distinguished from ordinary data; which
@@ -6215,6 +6347,10 @@ Most remaining reports and indexes can be derived from the documents
 already kept. A downstream project must supply its dependency revisions
 and the meaning and version of the data it writes. Those choices enter
 the project when the library is shared or the first value is saved.
+Whether a definition is generic in a type is supplied by its author
+likewise, and its recovery from copies at each type is by hand, so
+polymorphic definitions precede the library's modules
+({ref "polymorphic-definitions"}[Polymorphic definitions]).
 
 #### The verification boundary
 %%%
@@ -6459,6 +6595,15 @@ about which the soundness development states its theorem.
     a source occurrence and preserve existing outputs; a pattern writes the
     `&` its declaration writes, and a field written `_` is not bound;
     named fields retain their bindings even when unused
+*
+  * Polymorphic definitions
+  * A module of lists and optional values generic in their element type
+    is used at several types in one module with no import for each; a
+    function of one module returns an optional value that another
+    consumes with no export of an instance; a composition at two types is
+    one definition; a definition inspecting the trees of a type parameter
+    is rejected though nothing uses it; and the stage-0 compiler and the
+    committed image reproduce themselves
 :::
 
 The sources are converted to the forms a step adds in one mechanical
@@ -8366,6 +8511,40 @@ the change that removes it.
   operand inside a rejected kernel declaration. The datatype checker
   still needs to report which expression failed and why
   ({ref "editing"}[Editing]).
+* Compile time. In one run on one machine the compiled compiler,
+  `geb-compile`, compiles the stage-0 compiler's program, of 115
+  kilobytes of source, in 2.0 seconds, the stage-1 compiler's, of 182,
+  in 8.0, the proof runner's, of 570, in 93, and the metalogic's, of
+  487, in 104; the stage-1 compiler's image run by the Lean evaluator
+  compiles its own source in 12.9. The modes `image`, `lean` and `check`
+  take the same time within the variation between runs, so the time is
+  that of the stages before the backend, and a program whose last
+  definition the typing rejects is reported in 6.6 seconds where the
+  program without the error compiles in 9.9. The time grows faster than
+  the program. Copies of `bootstrap/free-topos/theory.geb` under other
+  module names, after the four sources before it in the metalogic's
+  program, compile in 0.9, 2.6, 4.6, 9.7 and 24.6 seconds at 0, 1, 2, 4
+  and 8 copies: the first copy adds 1.7 seconds, and each of the fifth
+  to the eighth 3.7. The environments of the typing and of the expansion
+  are lists searched in order (`lookupName` in
+  `bootstrap/stage1/typing.geb`, `findCtor` in
+  `bootstrap/stage1/datatype.geb`), which would give such a growth; its
+  cause is not measured. Nothing is kept between compilations.
+  `geb-compile check` and `geb-author check` compile a program from its
+  first source to the source checked, and `scripts/bootstrap.sh`
+  compiles each layer of a manifest with the layers before it. Its
+  check, which compiles every manifest's program beside the fixed
+  points, takes 17.3 of the 40.0 minutes of `scripts/pre-push.sh` with
+  its build up to date ({ref "measurements"}[The measurements]). The
+  first measurement divides the time among the stages the host composes
+  (`GebHost/Compiler.lean`): the reading of S-expressions, the
+  elaboration of modules, the typing, the expansion, the recognizers,
+  the reader's resolution and the kernel's check. A stage's time linear
+  in the program, and a layer compiled against the checked bundle of the
+  layers before it, kept by the digest of their sources, make a check
+  take the time of the layers that changed
+  ({ref "downstream-authoring"}[A Geb library and its downstream
+  application]).
 * Editor latency. Each navigation request starts `geb-author`, reads
   the selected manifest's sources and proof imports, walks their forms
   and returns the declaration index (`editors/vscode/host.cjs`,
@@ -8453,8 +8632,8 @@ the change that removes it.
   its own: the combinator prover holds one for each pair of types it
   composes
   ({ref "datatype-completion"}[The datatype language's completion]).
-  Polymorphic definitions, or templates over the instances of another,
-  remove the copies.
+  Polymorphic definitions remove the copies, and precede the library's
+  modules ({ref "polymorphic-definitions"}[Polymorphic definitions]).
 * A bundle keeps definition names. The separate kernel annotation record
   relates binders and comments in the durable source to core vertices.
   Extend that correspondence through module and datatype elaboration
@@ -8505,7 +8684,12 @@ its downstream application]. Start the editor's proof-cache and index work
 alongside the library. Loading the compiler once per stage-test comparison
 shortens the feedback cycle for changes to the compiler itself. The
 constant-depth reader removes a stack limit as the sources grow
-({ref "improvements"}[Improvements]).
+({ref "improvements"}[Improvements]). The division of the compiler's time
+among its stages changes no source and precedes the changes to the
+compilers' sources, each of which regenerates and checks the committed
+artifacts at the compiler's cost. Polymorphic definitions precede the
+library's modules ({ref "polymorphic-definitions"}[Polymorphic
+definitions]).
 
 The proofs about the compiler's components are complete: the type
 checker's preservation of types by weakening and by substitution and the
@@ -8584,7 +8768,10 @@ integrated in sequence.
   {ref "searches-remaining"}[The searches' remaining time]).
 * The elementary-affine decorations, in progress, wait on
   rewriting the folds that read their children's results twice
-  ({ref "improvements"}[Improvements]).
+  ({ref "improvements"}[Improvements]). The rewriting changes `resolve`,
+  `typeIn` and `expandExpr`. Where the measurement of the compiler's time
+  locates a change in one of them, the definition is rewritten once, in
+  a form the affine search accepts.
 * Accelerations ({ref "speed-and-second-host"}[Speed and a second
   host]), in progress: the binding and the conversion checker's
   reduction by the environment machine are complete, and the hash
