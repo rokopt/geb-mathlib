@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const vscode = require('vscode');
 const { execFileSync } = require('node:child_process');
-const { readFileSync, writeFileSync, mkdtempSync, rmSync } = require('node:fs');
+const { existsSync, readFileSync, writeFileSync, mkdtempSync, rmSync } = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '../../..');
@@ -41,10 +41,13 @@ function checked(text) {
   return readFileSync(image);
 }
 
-// Save the buffer and run a task of the repository on it, to the task's exit status.
+// Save the buffer and run the extension's task of its workspace folder on it, to the task's
+// exit status.
 async function runTask(name, editor) {
-  const task = (await vscode.tasks.fetchTasks()).find(t => t.name === name);
-  assert.ok(task, `the repository task ${name} is available`);
+  const folder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+  const task = (await vscode.tasks.fetchTasks({ type: 'geb' })).find(t =>
+    t.name === name && t.scope?.uri?.toString() === folder?.uri.toString());
+  assert.ok(task, `the task ${name} of the file's folder is available`);
   await editor.document.save();
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -52,7 +55,8 @@ async function runTask(name, editor) {
       reject(new Error(`${name} timed out`));
     }, 30000);
     const listener = vscode.tasks.onDidEndTaskProcess(event => {
-      if (event.execution.task.name !== task.name) return;
+      if (event.execution.task.name !== task.name ||
+          event.execution.task.scope?.uri?.toString() !== folder.uri.toString()) return;
       clearTimeout(timer);
       listener.dispose();
       resolve(event.exitCode);
@@ -66,14 +70,14 @@ async function runTask(name, editor) {
 }
 
 async function formatTask(editor) {
-  const exitCode = await runTask('Geb: format saved file', editor);
+  const exitCode = await runTask('format saved file', editor);
   if (exitCode !== 0) throw new Error(`formatter task exited ${exitCode}`);
   return readFileSync(editor.document.uri.fsPath, 'utf8');
 }
 
 // The diagnostics the check task's problem matcher publishes for the buffer.
 async function checkTask(editor) {
-  const exitCode = await runTask('Geb: check saved file', editor);
+  const exitCode = await runTask('check saved file', editor);
   for (let i = 0; i < 50; i++) {
     const found = vscode.languages.getDiagnostics(editor.document.uri);
     if (found.length || exitCode === 0) return { exitCode, found };
@@ -183,6 +187,18 @@ exports.run = async () => {
       const { exitCode, found } = await checkTask(editor);
       assert.equal(exitCode, 0);
       assert.equal(found.length, 0);
+    });
+    await test('check task of a client folder runs in its toolchain directory', async () => {
+      const project = process.env.GEB_TEST_AUTHORING_PROJECT;
+      writeFileSync(path.join(project, 'Client.proofs.geb'), proofs(64)
+        .replace('(program fixture)', '(program pair)').replace('F.id F.other', 'Pair.first Pair.left'));
+      const document = await vscode.workspace.openTextDocument(path.join(project, 'Client.proofs.geb'));
+      const editor = await vscode.window.showTextDocument(document);
+      const { exitCode, found } = await checkTask(editor);
+      assert.equal(exitCode, 0);
+      assert.equal(found.length, 0);
+      // The cache of the check is the client's, beside its sources.
+      assert.ok(existsSync(path.join(project, '.lake/geb-proof-cache')));
     });
     for (const text of ['', '; comment ', '(def name "atom ']) {
       await test(`parenthesis completion at ${JSON.stringify(text)}`, async () => {

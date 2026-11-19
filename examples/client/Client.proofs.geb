@@ -1,0 +1,8 @@
+; The library's theorems, proved again against the client's program, and one of the client's own.
+
+(proofs 6 (program client) (import geb/library/Bytes.proofs.geb)
+  ; Mirroring a list of two elements, at every pair of elements.
+  (theorem mirror-pair
+    (forall ((x T) (y T))
+      (equal (Client.mirror (cons x (cons y (nil T)))) (cons x (cons y (cons y (cons x (nil T)))))))
+    (by (normalize 256))))

@@ -1110,8 +1110,9 @@ one otherwise than a derivation unfolds it, or so that a step's reduction
 no longer reaches the terms its derivation joins, the development does
 not replay, and nothing is written. The certificate read is left as it is.
 
-The task `Geb: check saved file` of `.vscode/tasks.json` and the command
-of `editors/efm-langserver/config.yaml` pass
+The task `Geb: check saved file`, which the editor extension contributes,
+passes `--cache` with its workspace folder's `.lake/geb-proof-cache`, and
+the command of `editors/efm-langserver/config.yaml` passes
 `--cache .lake/geb-proof-cache`, so that a document checked when it is
 saved is searched only where it changed. The cache's items, the three
 ways, the renumbering of entries and the places of definitions are in

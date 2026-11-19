@@ -35,6 +35,24 @@ file and select the `Geb` language if a previous file association
 overrides its extension. In a remote workspace, install the extension
 in the VS Code instance displaying the file.
 
+The extension runs the host executables of the Geb checkout that
+`geb.toolchainDirectory` names (§ Programs and commands). The default
+`lake build` builds the `Geb` library alone, and no executable; build
+those the extension and the preservation commands run with
+
+```sh
+lake build geb-author geb-kernel geb-fmt geb-compile geb-defs
+```
+
+`geb-author` compiles programs, checks their examples, proves and
+replays proof documents, and answers the editor's navigation, formatting
+and hole requests; `geb-kernel` lists a manifest's sources, reports
+kernel holes and runs an image's definition on a file; `geb-fmt` formats
+files; `geb-compile` and `geb-defs` are run by `scripts/preserve.py` for
+records. Commands and tasks build what they invoke through Lake, but
+navigation, Format Document and the obligations view run
+`.lake/build/bin/geb-author` as it was last built.
+
 The structural editor is Mike's Paredit, built from the upstream commit
 and [patch](patches/README.md) that `package.json` pins under
 `editorTest.paredit`. The build requires `git`, `patch` and network
@@ -71,7 +89,7 @@ escapes. It uses the selected program's toolchain, or the
 workspace's `geb.toolchainDirectory` when no program is selected.
 Formatting on save is disabled by default for Geb.
 
-The repository also retains the task `Geb: format saved file`, which
+The extension also contributes the task `Geb: format saved file`, which
 invokes `lake exe geb-fmt` on the active file and writes its layout.
 
 The formatter and the document type are described in the
@@ -79,8 +97,12 @@ The formatter and the document type are described in the
 
 ## Diagnostics
 
-The task `Geb: check saved file` runs `lake exe geb-author check` on the
-active file, and the command writes nothing. For a source of a program it
+The extension contributes, for each workspace folder, the task
+`Geb: check saved file`, which runs `lake exe geb-author check` on the
+active file in the folder's `geb.toolchainDirectory`, and the command
+writes nothing. Both file tasks are listed under Tasks: Run Task, and a
+`tasks.json` may refer to them as
+`{"type": "geb", "task": "check saved file"}`. For a source of a program it
 compiles the sources of the nearest manifest that lists the file, up to
 that file, or the file alone where no manifest lists it. It reports what
 rejects the program as `FILE:LINE:COLUMN: error: MESSAGE`, at the name of
@@ -93,9 +115,9 @@ or script does not read at the theorem's name, and a hole that a script
 leaves open, or a step of a script that does not prove its goal, at the
 hole or the step, with the goal on the diagnostic's line (the manual's
 chapter Writing a first Geb development, § Holes and goals). The task
-passes `--cache .lake/geb-proof-cache`, so that a proof document is
-resumed from the cache its last check left there and searched only where
-it changed (§ The cache of a development). The
+passes `--cache` with the folder's `.lake/geb-proof-cache`, so that a
+proof document is resumed from the cache its last check left there and
+searched only where it changed (§ The cache of a development). The
 extension contributes the problem matcher `$geb`,
 which the task names, so that the report appears in the Problems view and
 at its position in the file that holds it, which may be an earlier source
@@ -171,9 +193,13 @@ complete syntax and never consumes recovery results.
 ## Programs and commands
 
 The workspace settings list the programs available to the editor. This
-repository configures the Pair and Roundtrip examples and the Tree cases
-proof development. For another program, add an entry to `geb.programs`
-in the workspace folder's settings:
+repository configures the Pair and Roundtrip examples, the shared
+library under `library/` and the Tree cases proof development. The
+template under [`examples/client/`](../../examples/client/README.md) is a
+client kept in a repository of its own, with the Geb checkout as a
+submodule that its settings name as the toolchain directory. For another
+program, add an entry to `geb.programs` in the workspace folder's
+settings:
 
 ```json
 {

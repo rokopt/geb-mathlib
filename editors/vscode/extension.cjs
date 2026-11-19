@@ -46,6 +46,22 @@ function programs() {
   });
 }
 
+// The tasks on the active file run Lake in the workspace folder's toolchain directory, and keep
+// the proof cache in the folder itself.
+const fileTasks = {
+  'format saved file': () => ['exe', 'geb-fmt', '${file}'],
+  'check saved file': folder => ['exe', 'geb-author', 'check',
+    '--cache', path.join(folder, '.lake', 'geb-proof-cache'), '${file}'],
+};
+
+function fileTask(folder, name) {
+  const cwd = path.resolve(folder.uri.fsPath,
+    vscode.workspace.getConfiguration('geb', folder.uri).get('toolchainDirectory', '.'));
+  return new vscode.Task({ type: 'geb', task: name }, folder, name, 'Geb',
+    new vscode.ProcessExecution('lake', fileTasks[name](folder.uri.fsPath), { cwd }),
+    name === 'check saved file' ? ['$geb'] : []);
+}
+
 function invocation(action, p, record) {
   const proof = () => {
     if (!p.proofs) throw new Error(`${p.name}: configure proofs in geb.programs`);
@@ -208,6 +224,12 @@ exports.activate = context => {
     if (record) await context.workspaceState.update(`geb.record:${p.key}`, record);
   });
   for (const action of Object.keys(actions)) register(`geb.${action}`, destination => run(action, destination));
+  context.subscriptions.push(vscode.tasks.registerTaskProvider('geb', {
+    provideTasks: () => (vscode.workspace.workspaceFolders || []).flatMap(folder =>
+      Object.keys(fileTasks).map(name => fileTask(folder, name))),
+    resolveTask: task => Object.hasOwn(fileTasks, task.definition.task) && task.scope?.uri
+      ? fileTask(task.scope, task.definition.task) : undefined,
+  }));
   context.subscriptions.push(status, vscode.workspace.onDidChangeConfiguration(refresh),
     vscode.workspace.onDidChangeWorkspaceFolders(refresh));
   refresh();
