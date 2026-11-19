@@ -53,6 +53,10 @@ async function diagnostics(document, accept) {
     JSON.stringify(vscode.languages.getDiagnostics(document.uri)));
 }
 
+exports.command = command;
+exports.replace = replace;
+exports.diagnostics = diagnostics;
+
 exports.run = async test => {
   const project = process.env.GEB_TEST_AUTHORING_PROJECT;
   assert.ok(project);

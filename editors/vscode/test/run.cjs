@@ -11,7 +11,12 @@ async function main() {
   const root = path.resolve(extension, '../..');
   const cache = path.join(extension, 'node_modules/.cache/editor');
   mkdirSync(cache, { recursive: true });
-  const executable = await downloadAndUnzipVSCode({ version: editorTest.vscode, cachePath: cache });
+  // --client DIRECTORY runs test/client.cjs in VS Code Insiders on a client's folder, with the
+  // packages its submodule geb/ built installed (scripts/tests/client-acceptance.sh).
+  const clientAt = process.argv.indexOf('--client');
+  const client = clientAt < 0 ? undefined : path.resolve(process.argv[clientAt + 1]);
+  const executable = await downloadAndUnzipVSCode({
+    version: client ? 'insiders' : editorTest.vscode, cachePath: cache });
   const [cli, ...args] = resolveCliArgsFromVSCodeExecutablePath(executable, { reuseMachineInstall: true });
   const state = mkdtempSync(path.join(cache, 'run-'));
   // --paredit installs the build of the pinned patch, which patches/build.sh writes,
@@ -24,9 +29,20 @@ async function main() {
     : [path.join(extension, `paredit-${pin.version}.vsix`), pin.version];
   // The build gets a fresh extension directory, so it cannot reuse the installed
   // Marketplace release or replace it for subsequent comparison runs.
-  const extensions = paredit && !release ? path.join(state, 'extensions')
+  const extensions = (paredit && !release) || client ? path.join(state, 'extensions')
     : path.join(cache, 'extensions');
+  const install = source => execFileSync(cli, [...args, '--extensions-dir', extensions,
+    '--user-data-dir', state, '--install-extension', source, '--force'], {
+    stdio: 'inherit', env: { ...process.env, DONT_PROMPT_WSL_INSTALL: '1' },
+  });
   try {
+    mkdirSync(path.join(state, 'User'));
+    writeFileSync(path.join(state, 'User/settings.json'), JSON.stringify({
+      'extensions.autoUpdate': false,
+      'extensions.autoCheckUpdates': false,
+      'update.mode': 'none',
+    }));
+    if (client) return await runClient(client, executable, state, extensions, install);
     // A separate workspace folder exercises explicit manifests and distinct project/toolchain roots.
     const project = path.join(state, 'authoring λ with spaces');
     mkdirSync(path.join(project, '.vscode'), { recursive: true });
@@ -55,18 +71,7 @@ async function main() {
     }));
     const workspace = path.join(state, 'editor.code-workspace');
     writeFileSync(workspace, JSON.stringify({ folders: [{ path: root }, { path: project }] }));
-    mkdirSync(path.join(state, 'User'));
-    writeFileSync(path.join(state, 'User/settings.json'), JSON.stringify({
-      'extensions.autoUpdate': false,
-      'extensions.autoCheckUpdates': false,
-      'update.mode': 'none',
-    }));
-    if (paredit) {
-      execFileSync(cli, [...args, '--extensions-dir', extensions, '--user-data-dir', state,
-        '--install-extension', pareditSource, '--force'], {
-        stdio: 'inherit', env: { ...process.env, DONT_PROMPT_WSL_INSTALL: '1' },
-      });
-    }
+    if (paredit) install(pareditSource);
     await runTests({
       vscodeExecutablePath: executable,
       extensionDevelopmentPath: extension,
@@ -81,6 +86,28 @@ async function main() {
   } finally {
     rmSync(state, { recursive: true, force: true });
   }
+}
+
+// The client's extensions are the installed packages, so the development extension the test
+// runner requires is an empty one.
+async function runClient(client, executable, state, extensions, install) {
+  const packages = path.join(client, 'geb/editors/vscode');
+  const { editorTest: pinned } = require(path.join(packages, 'package.json'));
+  install(path.join(packages, 'geb-language.vsix'));
+  install(path.join(packages, `paredit-${pinned.paredit.version}.vsix`));
+  const stub = path.join(state, 'stub');
+  mkdirSync(stub);
+  writeFileSync(path.join(stub, 'package.json'), JSON.stringify({
+    name: 'geb-client-acceptance', publisher: 'geb-mathlib', version: '0.0.0',
+    engines: { vscode: '*' } }));
+  await runTests({
+    vscodeExecutablePath: executable,
+    extensionDevelopmentPath: stub,
+    extensionTestsPath: path.join(__dirname, 'editor.cjs'),
+    extensionTestsEnv: { GEB_TEST_CLIENT: client },
+    launchArgs: [client, '--extensions-dir', extensions, '--user-data-dir', state,
+      '--disable-gpu', '--skip-welcome', '--skip-release-notes', '--disable-workspace-trust'],
+  });
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -117,6 +117,11 @@ exports.run = async () => {
     }
   }
   try {
+    if (process.env.GEB_TEST_CLIENT) {
+      await require('./client.cjs').run(test, checkTask);
+      if (failures.length) throw new AggregateError(failures, 'Client acceptance failed');
+      return;
+    }
     if (process.env.GEB_TEST_NAVIGATION_ONLY) {
       await require('./navigation.cjs').run(test);
       if (failures.length) throw new AggregateError(failures, 'Navigation acceptance failed');
