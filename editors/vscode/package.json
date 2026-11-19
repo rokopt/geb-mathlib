@@ -2,7 +2,7 @@
   "name": "geb-language",
   "displayName": "Geb",
   "description": "Geb source editing, compilation, proofs and development records",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "geb-mathlib",
   "private": true,
   "license": "Apache-2.0",
@@ -123,9 +123,13 @@
     },
     "taskDefinitions": [{
       "type": "geb",
-      "required": ["gebExecution"],
       "properties": {
-        "gebExecution": { "type": "string", "description": "Identity of a command invocation." }
+        "gebExecution": { "type": "string", "description": "Identity of a command invocation." },
+        "task": {
+          "type": "string",
+          "enum": ["format saved file", "check saved file"],
+          "description": "A task on the active file, run in the toolchain directory."
+        }
       }
     }],
     "configuration": {
@@ -208,7 +212,7 @@
     }
   },
   "main": "./extension.cjs",
-  "activationEvents": ["onLanguage:geb"],
+  "activationEvents": ["onLanguage:geb", "onTaskType:geb"],
   "extensionKind": ["workspace"],
   "capabilities": {
     "untrustedWorkspaces": {

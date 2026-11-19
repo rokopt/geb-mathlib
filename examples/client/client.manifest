@@ -1,0 +1,5 @@
+; The library's sources, from the Geb checkout at geb/, in its manifest's order, precede the
+; application that imports them.
+(program client (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (layers (library geb/library/seq.geb geb/library/Bytes.geb) (application Client.geb))
+  (entries Client.mirror Client.run))

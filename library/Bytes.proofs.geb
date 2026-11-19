@@ -1,0 +1,13 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Theorems about the reversal of lists of bytes. A client's proof document imports this one and
+; is proved against the client's program.
+
+(proofs 6 (program library)
+  ; Reversing a list of two elements exchanges them, at every pair of elements.
+  (theorem reverse-pair
+    (forall ((x T) (y T))
+      (equal (Bytes.reverse (cons x (cons y (nil T)))) (cons y (cons x (nil T)))))
+    (by (normalize 256))))

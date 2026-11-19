@@ -1,0 +1,8 @@
+{
+  "geb.toolchainDirectory": "geb",
+  "geb.programs": [{
+    "name": "Client",
+    "manifest": "client.manifest",
+    "proofs": "Client.proofs.geb"
+  }]
+}

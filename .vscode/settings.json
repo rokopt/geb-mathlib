@@ -18,6 +18,10 @@
     "proofs": "examples/roundtrip/Roundtrip.proofs.geb",
     "record": "examples/roundtrip/record"
   }, {
+    "name": "Library",
+    "manifest": "library/library.manifest",
+    "proofs": "library/Bytes.proofs.geb"
+  }, {
     "name": "Tree cases",
     "manifest": "bootstrap/expansion.manifest",
     "proofs": "bootstrap/proofs/tree-cases.proofs.geb"

@@ -127,20 +127,30 @@ with a checked example, a theorem written in Geb and a record whose
 certificate replays after relocation. The next milestone combines
 these capabilities in a client maintained in its own repository.
 
-1. Assemble and share the first library. Give one module a public interface,
-   a checked example and a theorem. Pin the Geb and library revisions in the
-   client. Make the library sources available under its manifest directory,
-   in explicit dependency order. A vendored copy at a known revision suffices.
-   Document the host executable targets as well as the default `lake build`,
-   which builds the Geb library. The extension reads `geb.programs` and
-   `geb.toolchainDirectory`, but the saved-file tasks run Lake in the
-   workspace folder (`.vscode/tasks.json`). Make checking and building
-   use the selected toolchain from the client folder.
-   From a fresh clone, install the repository's Geb and patched Paredit
+1. In progress. Assemble and share the first library. The library is
+   `library/`: its manifest lists `seq.geb`, the bootstrap's source by a
+   symbolic link, and `Bytes.geb`, whose module `Bytes` exports the
+   reversal of a list of bytes and of a file, with a checked example, and
+   whose proof document `Bytes.proofs.geb` holds a theorem. The client
+   template `examples/client/` is the root of a repository whose Git
+   submodule `geb/` pins the Geb and library revisions, the library being
+   a directory of the Geb repository, and places the library's sources
+   below the client's manifest, which lists them in the order of the
+   library's. Its proof document imports the library's and is proved
+   against the client's program. Its settings name the submodule as
+   `geb.toolchainDirectory`; the extension contributes the saved-file
+   tasks, which run Lake in the workspace folder's toolchain directory
+   and keep the proof cache in the folder. The extension's README
+   documents the host executable targets beside the default `lake build`,
+   which builds the Geb library. `scripts/tests/test-client.sh` checks
+   the library, and the template outside the repository by its
+   `check.sh`, which the template's own workflow runs on the same
+   manifest. Remaining: from a fresh clone of a client repository made
+   from the template, install the repository's Geb and patched Paredit
    extensions in VS Code Insiders, follow an import to its library
    definition, edit the module, build, check its example and replay
-   its theorem. CI uses the same manifest. The existing editor fixture uses
-   the VS Code release pinned in `editors/vscode/package.json`.
+   its theorem. The existing editor fixture uses the VS Code release
+   pinned in `editors/vscode/package.json`.
    This library is the modules that exist, assembled and shared. The
    library's own modules are written after step 4, in the forms it adds.
 2. Make a check take the time of what changed. The compiled compiler
@@ -5114,8 +5124,8 @@ editor's recognition of other brackets or reader macros never defines
 Geb syntax. The Geb extension supplies Format Document and disables
 formatting on save by default.
 
-The extension is in `editors/vscode/`, with a task for
-formatting a saved file in `.vscode/tasks.json`. Its commands select a
+The extension is in `editors/vscode/`, and contributes a task for
+formatting a saved file. Its commands select a
 program by its manifest in workspace settings and invoke the host's
 compilation, proof search, certificate replay, kernel-hole reporting and
 development preservation. The selection is remembered, source and imported
@@ -8562,10 +8572,10 @@ the change that removes it.
   location and cancellation never restores an old result.
 * Repeated proof search and example checking. The saved-file check task
   passes `--cache` to `geb-author`. The editor's Prove Statements command
-  invokes `prove` without it (`.vscode/tasks.json`,
-  `editors/vscode/extension.cjs`). Pass a cache directory for the selected
-  project and check that repeating an unchanged proof searches no theorem
-  and produces the same replayable certificate. As the library acquires
+  invokes `prove` without it (`editors/vscode/extension.cjs`). Pass a
+  cache directory for the selected project and check that repeating an
+  unchanged proof searches no theorem and produces the same replayable
+  certificate. As the library acquires
   examples, measure the cost of `checkExamples` in `GebHost/Authoring.lean`,
   which recompiles the program with each example's two expressions.
 * The equivalence of the word-level codec with

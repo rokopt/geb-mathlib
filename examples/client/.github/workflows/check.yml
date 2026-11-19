@@ -1,0 +1,27 @@
+name: Check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          submodules: true
+      # The Geb checkout pinned at geb/ supplies the toolchain and the library.
+      - uses: leanprover/lean-action@ba3fdfe5c4476c925da13bf11a005ddb47e47aee  # v1
+        with:
+          lake-package-directory: geb
+          build: false
+          test: false
+          lint: false
+      - name: build the host executables
+        run: lake -d geb build geb-author geb-kernel
+      - name: compile, check examples, prove and replay
+        run: bash check.sh

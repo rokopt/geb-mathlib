@@ -1,0 +1,9 @@
+; A file followed by its reversal, from the library's {geb}`Bytes.reverse` and the instance of
+; its parameterized module {lit}`Seq` at trees.
+
+(module Client (export mirror run) (import Bytes) (import (Seq T) as Ts)
+  ; The elements of a list followed by the same elements in the opposite order.
+  (defn mirror ((xs (List T))) (List T) (Ts.append xs (Bytes.reverse xs)))
+  ; The file of the bytes of a file followed by the same bytes in the opposite order.
+  (note (example (Client.run (quote (0 (7) (8)))) (quote (0 (7) (8) (8) (7)))))
+  (defn run ((f T)) T (node 0 (mirror (children f)))))
