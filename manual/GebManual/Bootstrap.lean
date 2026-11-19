@@ -61,10 +61,11 @@ written in Geb and is not part of the bootstrap. The road map therefore
 has two parts: the bootstrap, whose end point is stated first, and the
 work written in Geb after it.
 
-Each item opens with its state, one of the five the section on status
-defines: complete, in progress, ready, waiting or deferred. Each names
-the section or file that details it, and the items of a list are in the
-order of dependence.
+{ref "downstream-authoring"}[A Geb library and its downstream application]
+gives the order of work for developing in Geb on the Lean host. The
+bootstrap inventory that follows gives the dependencies of the full
+bootstrap and the state of each item (complete, in progress, ready,
+waiting or deferred).
 
 ## The bootstrap's end point
 
@@ -108,10 +109,78 @@ order of dependence.
 * Extension. A program is extended by definitions whose identity
   survives edits, and the datatype language is complete enough to write
   the rest of Geb in, with diagnostics that name what fails. In
-  progress: closed bundles, the datatype language and its completion,
-  content identity and modules are complete, and the steps of the
-  authoring sequence that waited on the completion are ready with those
-  independent of it.
+  progress. Closed bundles, content identity, datatype checking and
+  modules with imports and exports support writing library code. A
+  downstream application exercises the remaining authoring requirements.
+
+## A Geb library and its downstream application
+%%%
+tag := "downstream-authoring"
+%%%
+
+A library can be written in Geb on the Lean host. `bootstrap/seq.geb` supplies
+the parameterized modules `Seq` and `Option`. An application can include that
+source in its manifest, import `(Seq T)` and reverse the bytes of a file.
+`examples/roundtrip/` assembles a library and client in separate layers
+with a checked example, a theorem written in Geb and a record whose
+certificate replays after relocation. The next milestone combines
+these capabilities in a client maintained in its own repository.
+
+1. Assemble and share the first library. Give one module a public interface,
+   a checked example and a theorem. Pin the Geb and library revisions in the
+   client. Make the library sources available under its manifest directory,
+   in explicit dependency order. A vendored copy at a known revision suffices.
+   Document the host executable targets as well as the default `lake build`,
+   which builds the Geb library. The extension reads `geb.programs` and
+   `geb.toolchainDirectory`, but the saved-file tasks run Lake in the
+   workspace folder (`.vscode/tasks.json`). Make checking and building
+   use the selected toolchain from the client folder.
+   From a fresh clone, install the repository's Geb and patched Paredit
+   extensions in VS Code Insiders, follow an import to its library
+   definition, edit the module, build, check its example and replay
+   its theorem. CI uses the same manifest. The existing editor fixture uses
+   the VS Code release pinned in `editors/vscode/package.json`.
+2. Report datatype errors and holes where they are written. Carry source
+   occurrences through module elaboration and datatype expansion. Ask the
+   stage-1 checker for the expected and actual types before their erasure.
+   For a branch returning `7` where the declared result is `Light`, the
+   diagnostic should select `7` and name the two types. Replacing it with
+   a named hole should display its context and expected type in the editor.
+   A well-typed filling checks. An open obligation prevents a completed build.
+   The kernel checker and the obligations view provide the existing interfaces
+   ({ref "editing"}[Editing]).
+3. Run the client and give it filesystem requests on the Lean host. First
+   expose `geb-kernel run IMAGE ENTRY INPUT OUTPUT` from the selected project
+   in the editor. That command already runs a pure byte transformation on
+   files chosen by the caller. Then define versioned read and write requests
+   and their results in Geb, with an interpreter in the host. The acceptance
+   program reads an index, chooses another path from its contents, handles a
+   missing file as a result, and writes the output. General step-bounded
+   execution and resumption belong to the second-host work
+   ({ref "files-editions"}[Files, editions and the host boundary]).
+4. Migrate the client and its first saved datatype value. Keep readable
+   `.geb` sources, their manifest and dependency revisions, and a checked
+   record at each migration. Edition 0 changes with the compiler, and
+   constructor tags are positions in a declaration. Give the saved value a
+   versioned encoding that identifies its datatype. Exercise a change with
+   an old record and input. Migrate the documents and value, compare the
+   elaborated definitions or justify their change, replay the proof and run
+   the application on the migrated input. Also admit a program without a
+   proof document to the record workflow. The existing migrations cover
+   proof-source version 1 to 2 and the image's explicit kernel profile
+   ({ref "first-authoring"}[Writing a first Geb development]).
+
+The library and client, datatype feedback, editor indexing, and filesystem
+interpreter can start in parallel. Develop diagnostics and holes against
+the same source correspondence. Integrate the interpreter when the client
+can issue requests. Preservation work can start on the Roundtrip record
+and take up value migration when the client has a saved datatype. Changes
+to compiler sources regenerate committed images and merge one at a time.
+Start editor indexing and use of the proof cache with the library, since
+navigation of the compiler's sources already takes seconds per request
+({ref "improvements"}[Improvements]). Other editors can reuse these
+services through a general protocol. Network storage and the choice of
+machine follow their own acceptance conditions.
 
 ## The bootstrap
 
@@ -408,35 +477,22 @@ Extension:
   records the versioned profile of its syntax, the schema of its notes and
   its prose, its notes holding examples and links. Comments are read as
   the recorded subset of Verso's markup, and every reference in them and
-  in the notes' links resolves, as `geb-doc` checks. The forms `let*` and `cond`, expanded in module
-  elaboration, are complete, the sources under `bootstrap/` being written in them, as is the `geb`
-  editor language with Mike's
-  Paredit, built from a pinned commit and patch, and the checker of holes
-  in programs with the display of their obligations. The syntax of
-  statements and proof scripts is complete over the kernel's types and
-  over the internal language's, in object variables, with contexts,
-  hypotheses, citations of earlier theorems, those of imported documents
-  among them, and the tactics of reduction, search, extensionality, the
-  induction and case analysis of lists, the case analysis of coproducts
-  and trees and the rewriting under a test, in which the development of
-  the lemmas of trees is written in Geb source, and, in its version 4,
-  the natural numbers and the definitions that a development declares, in
-  which that of the evaluator's fundamental lemma is begun; as are holes
-  in proof
-  scripts, each reported with its goal, as each step of a script that
-  fails is, the cache of a development, from which a development is
-  resumed with no search for a theorem whose statement and script the
-  cache has, proved, and the record of
-  elaborated definitions for the first program outside the compilers;
-  documentation as literate pages has a first inclusion. Source binders are
-  renamed before datatype expansion, emitted Lean references are qualified
-  and names escaped injectively; patterns repeat `&` and accept `_` for an
-  ignored field, retaining named bindings even when unused. Remaining:
-  explicit assembly; holes in the datatype language; and diagnostics with
-  locations of its typing. The typed enumerator accompanies the first
-  substantial module. The rest, the store
-  and a language server among it, waits on its consumers;
-  the Geb-native refinement search follows the bootstrap.
+  in the notes' links resolves, as `geb-doc` checks. Module elaboration
+  expands `let*` and `cond` and renames binders before datatype expansion.
+  Emitted Lean qualifies references and escapes names injectively. Patterns
+  repeat `&` and use `_` for an ignored field. The editor supports structural
+  editing, formatting and navigation on unsaved buffers, scoped completion
+  and kernel obligations ({ref "editing"}[Editing]). Proof documents state
+  theorems over kernel types and the internal language, import earlier
+  theorems, report goals at holes and failed steps, and replay saved
+  certificates. Version 6 expresses the proof of the evaluator's fundamental
+  lemma. The authoring tools cache proved theorems and retain a development's
+  documents, elaborated definitions and certificate. The first literate
+  inclusion renders its documentation. The next work follows
+  {ref "downstream-authoring"}[A Geb library and its downstream application].
+  A bounded typed enumerator accompanies a module with examples or
+  specifications to search against. Geb-native refinement search follows
+  the bootstrap.
 
 ## After the bootstrap
 
@@ -613,12 +669,13 @@ The following are fixed; the plan builds on them.
   document type, which keeps comments and empty lines, and each printer is
   a section of its parser, so conversion among them preserves the
   document, and the four share code as far as their grammars allow
-  ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]). Identifiers are
-  its tokens, and a name beyond ASCII is a quoted atom in Unicode's
-  normalization form C. The strict printers write numerals and `&`
+  ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]). Identifiers may
+  be quoted atoms. A name beyond ASCII is quoted, and the reader keeps
+  its bytes. The intended identifier convention is Unicode normalization
+  form C. The strict printers write numerals and `&`
   quoted, `"0"` and `"&"`. A hole is the form `(hole name)` in every
-  syntax, `(hole name T)` giving an expected type. The present sources'
-  syntax, the kernel reader's, is converted into the authoring profile.
+  syntax, `(hole name T)` giving an expected type. The bootstrap sources
+  use the authoring profile.
   In a quoted datum, an atom that is not a numeral contributes the leaves
   of its bytes to the list it is in, so `(quote (0 let))` is
   `(quote (0 108 101 116))`.
@@ -690,9 +747,9 @@ The following are fixed; the plan builds on them.
   definitions, and documentation renders as literate pages generated from
   Geb source, not as docstrings in the emitted Lean
   ({ref "documentation"}[Documentation]).
-* Editor. The editor is a `geb` language with Mike's Paredit as the
-  structural editor; parinfer is optional, through the `geb` extension
-  ({ref "editing"}[Editing]).
+* Editor. The `geb` extension supplies the language services. A pinned,
+  patched Mike's Paredit supplies structural editing. The parinfer fixture
+  checks the formatter's output ({ref "editing"}[Editing]).
 * Metalogic. The metalogic is the free topos with the inductive types
   the bootstrap uses, natural numbers and rose trees, and its
   equivalence with the free topos with a natural numbers object is
@@ -871,9 +928,10 @@ Kernel programs are pure. The host driver alone reads and writes
 files, presenting each input file as a tree of byte labels and writing
 each output tree back as bytes. The compiler is then a function from
 input trees to output trees, and the host services are a fixed, small
-set, to which primitives are added and never renamed. Running a
-program with a step bound returns a value, an error, or a resumable
-state; exhausting the bound is neither falsity nor divergence.
+set, to which primitives are added and never renamed. The first application
+that selects its files needs explicit requests and results interpreted by
+the Lean host. The planned step-bounded runner returns a value, an error
+or a resumable state on exhaustion.
 
 # Survey
 
@@ -1745,17 +1803,13 @@ section below opens with a table of the states of its parts.
 *
   * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
   * In progress
-  * Checked contextual-hole filling, source documents with their
-    formatter, the formatter's adoption, the authoring profile read by the
-    seed and the Geb reader, and the canonical, basic transport and
-    advanced encodings: complete; modules: complete but for the parts that
-    follow their consumers; diagnostics naming the failing definition at its
-    line and column, the markup of comments, the `geb` editor language, the checker of holes
-    in programs, holes in proof scripts with the report of goals and the cache of a
-    development: complete; the other steps
-    of the sequence independent of the datatype language's
-    completion: ready; the steps after it: waiting on it; the
-    parts that follow their consumers: waiting on them
+  * Complete for readable and strict documents, module imports and exports,
+    kernel diagnostics and holes, proof goals and replay, and the editor
+    services described in {ref "editing"}[Editing]. The datatype language's
+    completion clears the way for explicit assembly, datatype diagnostics
+    and holes. The downstream client supplies the consumer for filesystem
+    requests and value migration ({ref "downstream-authoring"}[A Geb
+    library and its downstream application]).
 *
   * {ref "goedel-t"}[Gödel's T]
   * Complete
@@ -3665,14 +3719,13 @@ tag := "authoring-compatibility"
   * Complete
 *
   * Manifests with editions
-  * Complete, but for the dependencies stated in the comments of the
-    stage-1 sources of the program whose typing's soundness is proved,
-    whose list is its manifest, `bootstrap/datatype-soundness.manifest`
+  * Complete. The soundness development reads its ordered sources from
+    `bootstrap/datatype-soundness.manifest` in
+    `GebTests/Prototypes/FreeTopos/DatatypeBase.lean`.
 *
   * A durable document with versioned profiles
-  * Complete, but for the sources a test reads by `include_str` rather
-    than through its manifest, those of the program whose typing's
-    soundness is proved among them, which hold no notes
+  * Complete for manifest-based developments. Some stage tests read
+    individual source fragments with `include_str`.
 *
   * The markup and conventions of comments
   * Complete
@@ -3706,15 +3759,14 @@ tag := "authoring-compatibility"
     compare a goal with one and cite a theorem as a hypothesis, in which
     the evaluator's fundamental lemma is stated and proved
     ({ref "reduction-scripts"}[Reductions and cited theorems in formula
-    proofs]). Statements over datatypes wait on the datatype language's
-    completion, and the development of the datatype language's soundness
-    remains Lean deducers
+    proofs]). Exposing the datatype language's types in statements is ready.
+    The soundness deductions remain to be ported from Lean to Geb scripts.
 *
   * `let*` and `cond`, expanded in the elaboration of modules, and the
     sources written in them
   * Complete
 *
-  * The syntax of holes, the suspending checker of holes in programs and
+  * The syntax of holes, the suspending checker of holes in kernel programs and
     the display of their obligations
   * Complete
 *
@@ -3774,10 +3826,11 @@ tag := "authoring-compatibility"
     and located diagnostics of its typing: ready; the typed enumerator:
     ready
 *
-  * When their consumers exist: digests and the store, the attachment of
-    annotations and hover text, a language server, tree-sitter, the export
-    to canonical S-expressions, and the Geb-native refinement search
-  * Waiting on their consumers
+  * Navigation and its index
+  * Complete for definitions, hover, outlines, workspace symbols, scoped
+    completion and recovery on unsaved authoring documents. Reusing the
+    index across requests is ready. A general Language Server Protocol
+    interface and tree-sitter support wait on clients that need them.
 *
   * The further requirements
     ({ref "further-requirements"}[Further requirements])
@@ -3786,7 +3839,10 @@ tag := "authoring-compatibility"
     development, and no remainder is information a source supplies
 *
   * Acceptance
-  * Not met
+  * The documented examples compile, convert and replay. The downstream
+    milestone still requires project assembly, datatype feedback, a program
+    that requests files, and migration of its saved value
+    ({ref "downstream-authoring"}[A Geb library and its downstream application]).
 :::
 
 Programs written during the bootstrap require preservation of their
@@ -3851,15 +3907,12 @@ written. The work to do first:
    ({ref "compatibility-contract"}[The compatibility contract],
    {ref "verification-boundary"}[The verification boundary]).
 
-Content storage, a network of identifiers, a language server,
-tree-sitter, richer holes and synthesis derive from the source and
-follow; each section below states its present obligation, usually none or
-a reserved character. Two prototypes implement first steps: source
-documents that keep comments, with a verified formatter, in
-`Geb/Prototypes/Kernel/Document.lean`, its tests and the executable
-`geb-fmt`, run by `lake exe geb-fmt` (`GebFmtMain.lean`); and the checked
-filling of one contextual
-hole, in `Geb/Prototypes/Kernel/Hole.lean`.
+Content storage, a network of identifiers and additional editor protocols
+derive from the source and follow their consumers. The editor already
+derives navigation and hover from the document.
+`Geb/Prototypes/Kernel/Document.lean` supplies the document type and the
+verified formatter used by `geb-fmt`. `Geb/Prototypes/Kernel/Hole.lean`
+supplies checked filling of a contextual hole.
 
 ### The compatibility contract
 %%%
@@ -3908,11 +3961,11 @@ much after, and extensions the reverse, so the grammar is made as narrow
 as present code requires. And a feature may be deferred when its data is
 a function of the document.
 
-Until the bootstrap completes, no source is kept unchanged for its own
-sake (the decision on conversion): Geb is built from scratch and has no
-users to keep compatible, so whatever is preferable is adopted
-everywhere, every source converted to it, mechanically where the contract
-above permits and by hand where it does not. And the languages admit
+Until the bootstrap completes, a change to edition 0 converts the
+bootstrap sources with it (the decision on conversion). A separate
+project pins the revision it builds with and retains its documents and
+checked artifacts for comparison when it adopts the change. Conversion
+is mechanical where the contract above permits it. The languages admit
 exactly what the mathematics states: no implicit coercion, no silent
 conversion, no convenience that makes a term differ from the mathematical
 object it denotes. Editions and importers exist
@@ -4002,15 +4055,17 @@ limitations:
 *
   * The kernel reader, `Geb/Prototypes/Kernel/Reader.lean`, and its Geb
     counterpart, `bootstrap/reader.geb`
-  * Resolve definition names to positions in the bundle and binders to
-    de Bruijn indices; expand abbreviations; discard comments. An atom is
-    any run of characters other than whitespace, parentheses and `;`,
-    one character per byte; there are no strings and no program printer.
+  * Read the authoring profile, including quoted atoms, resolve definition
+    names to bundle positions and binders to de Bruijn indices, and expand
+    abbreviations. The term and program printers have retraction laws
+    ({ref "kernel-in-lean"}[The kernel runs in Lean]).
 *
   * Source documents, `Geb/Prototypes/Kernel/Document.lean`
   * Read comments and empty lines into a document conservatively over the
     kernel reader, and print it at any layout with a proved retraction.
-    Binder names at the level of kernel terms are not yet kept.
+    `Geb/Prototypes/Kernel/SourceAnnotation.lean` associates binder names
+    and comments with kernel declarations. Full correspondence through
+    module and datatype elaboration remains.
 *
   * Canonical S-expressions, `Geb/Prototypes/CanonicalSExpr.lean`
   * Proved retractions for the presentations of trees over a finite
@@ -4039,16 +4094,16 @@ limitations:
     variables are named by depth, and author documentation and source
     spans are not carried.
 *
-  * Contextual hole filling, `Geb/Prototypes/Kernel/Hole.lean`
-  * Checks and fills one explicitly typed contextual hole, with theorems
-    for the result's typing and denotation; a Lean interface, not a
-    surface or editor feature.
+  * Contextual hole filling and checking, `Geb/Prototypes/Kernel/Hole.lean`
+    and `Geb/Prototypes/Kernel/Holes.lean`
+  * Lean checks and fills a contextual hole with theorems for its typing
+    and denotation. The kernel hole checker reports obligations to the CLI
+    and editor ({ref "typed-holes"}[Typed holes]).
 :::
 
-The syntax prototypes' retractions do not yet certify the migration of
-bootstrap programs: the connection needs arbitrary atom bytes, the
-program grammar, name resolution and the document. The following was
-measured at revision `b3aa139a`.
+The following observations describe the sources and reader at revision
+`b3aa139a`, before the authoring profile, manifests and content identity.
+They identify what the importer had to preserve.
 
 * The 21 files under `bootstrap/`, of about 250 kilobytes:
   * use atoms from `[A-Za-z0-9.&-]` only, each a numeral, an identifier
@@ -4062,14 +4117,14 @@ measured at revision `b3aa139a`.
     markup is a single `_`;
   * form programs, joined as the host driver joins a manifest's sources,
     without a duplicated name.
-* The reader resolves a duplicated definition name to the first
+* That reader resolved a duplicated definition name to the first
   definition, and a duplicated `deftype` or `defnum` to the latest, and
-  it substitutes numeral abbreviations into binder names, `expandNums`
-  running before resolution. No source relies on these; a migration
-  replays them.
-* Dependencies between files are recorded in prose only ("Requires the
+  it substituted numeral abbreviations into binder names, `expandNums`
+  running before resolution. No source in that corpus relied on these
+  rules.
+* Dependencies between files were recorded in prose only ("Requires the
   prelude, the reader and the checker").
-* Content identity is designed: the node-digest rule, the migration from
+* The design for content identity specified the node-digest rule, the migration from
   positions to digests and the annotation tables keyed by vertex
   ({ref "content-identity"}[Content identity]), with identifiers as CIDs
   whose multihashes are of BLAKE3 (the decision on identity).
@@ -4180,9 +4235,10 @@ construct parinfer cannot lay out stably: the prototype prints the
 closing parenthesis of such a list at the start of a line, which
 parinfer rejects, and no file has one.
 
-One thing is left open: the attachment of comments to the definitions
-they document, which hover text and a store need, a redecoration not yet
-written ({ref "documents-annotations"}[Documents and annotations]).
+`GebHost/Navigation.lean` finds the comments preceding a declaration or
+its note and displays them on hover. Relating source annotations to core
+vertices through datatype expansion is a separate step
+({ref "documents-annotations"}[Documents and annotations]).
 
 ### The syntaxes of RFC 9804
 %%%
@@ -4287,13 +4343,12 @@ tests compare the two on programs with quoted atoms and their escapes,
 comments, holes, the spellings the profile does not admit, and reserved
 and repeated names.
 
-Identifiers are tokens of {citet RFC9804}[]: ASCII letters, digits and
-`- . / _ : * + =`, not beginning with a digit. Every identifier of the
-present sources is one already. A name beyond ASCII is a quoted atom,
-readable in the authoring profile, whose quoted strings admit UTF-8.
-Names are compared byte for byte, and since no reader normalizes, a
-quoted name not already in Unicode's normalization form C is rejected,
-so that equal-looking names are equal.
+An identifier can be written bare when it is a token of {citet RFC9804}[].
+A name beyond ASCII is a quoted atom. The authoring reader keeps its UTF-8
+bytes and resolution compares names byte for byte. A precomposed letter
+and its decomposed spelling can therefore name distinct definitions.
+Requiring Unicode normalization form C for identifiers would be a
+restriction of the edition's accepted sources.
 
 Numerals, which no token spells, are bare runs of digits in the
 authoring profile, unambiguous against the advanced grammar, in which a
@@ -4440,8 +4495,9 @@ and semantic dependencies are references to definitions.
   (program NAME (edition N) (document …) (sources PATH…) (entries NAME…))
   ```
 
-  is read by the host driver, the tests and the formatter, and by a
-  language server when one exists (`Geb/Prototypes/Kernel/Manifest.lean`).
+  is read by the host driver, the tests, the formatter and the editor's
+  navigation host (`Geb/Prototypes/Kernel/Manifest.lean`,
+  `GebHost/Navigation.lean`).
   The programs' manifests are `bootstrap/*.manifest`. A program compiled a
   part at a time writes `(layers (NAME PATH…)…)` in place of its sources,
   as the metalogic does. The grammar is as narrow as present programs
@@ -4497,12 +4553,11 @@ and semantic dependencies are references to definitions.
   then follows the new reader's rules, duplicates rejected; no present
   source has one.
 
-Interaction with the operating system stays a pure interface of requests
-and results with an interpreter in the host. Byte encoding, framing of
-input and output, errors and exhaustion of resources have explicit
-contracts, which a later interface of effects implements. Paths, clocks,
-environment variables and the width of machine integers are never hidden
-semantic inputs.
+The current driver reads one input file and writes one output file,
+both chosen by the caller. For the downstream application the Lean host
+will interpret file requests chosen by Geb and return their results.
+The protocol must specify the encoding of paths and bytes, framing and
+errors. OS inputs remain explicit in the program's semantics.
 
 The manifest records an edition per program, as Racket's `#lang`, Rust's
 editions and Go's `go` directive do. An edition fixes the reader, its
@@ -4519,17 +4574,13 @@ Mixing
 editions in one program needs an interface between the environments of
 elaborators, such as declarations of constructors; that is its cost.
 
-Elaboration is pinned as syntax is. The higher-level source is kept
-beside its resolved core, the rules of expansion and name resolution are
-versioned by edition, and generated names are hygienic. For each program,
-the elaborated definitions that `lake exe geb-defs` writes are committed,
-regenerated in continuous integration and compared: any change of
-expansion or resolution that alters existing code is then detected,
-before digests exist, as `bootstrap/compiler.img` detects it for the
-compiler alone. The encoding of the datatype language is stated in this
-manual as part of the first edition. A specification of the expansion in
-Lean, as the checkers have, would free its meaning from one Geb program;
-that is larger and can follow.
+A development record pins the elaborator as well as keeping the source
+and its profile. The Pair and Roundtrip records keep the elaborated
+definitions that `geb-defs` writes. Regenerating or comparing them
+detects a change of expansion or name resolution, as comparing
+`bootstrap/compiler.img` does for the compiler. The datatype encoding
+is specified in {ref "datatype-completion"}[The datatype language's completion].
+A separate Lean specification of expansion can follow.
 
 ### Modules
 %%%
@@ -4719,9 +4770,9 @@ the element type, imported as `(import (Lists RR) as RRs)` and used as
 `RRs.tail`.
 
 A whole module written as one block is one form, so an unbalanced
-parenthesis inside it leaves the block unreadable; the kernel's reader
-already rejects an unbalanced text as a whole, and a language server's
-recovery from errors, not the reader, answers it. The block's closing
+parenthesis inside it leaves the block unreadable to the compiler.
+The navigation host recovers its readable prefix and completed children
+for the editor ({ref "editing"}[Editing]). The block's closing
 parenthesis ends the line of its last definition, so appending a
 definition changes that line too.
 
@@ -4797,16 +4848,15 @@ later, where narrowing the grammar is not
 text is then not the whole of its theory, and an export list names no
 theorem.
 
-The step is merged after the datatype language's completion. A
+Proposition parameters follow their first consumer. A
 template's generic form, `(%generic …)` over the declarations
 `(%sort S)` and `(%postulate P A)`, is read by
 `bootstrap/stage1/typing.geb` and `bootstrap/stage1/datatype.geb`,
 sources of the program whose typing's soundness is proved, which a
 declaration added to that form for a certificate would change; and the
-change of `bootstrap/modules.geb` regenerates the committed images in
-either case, which before the completion makes the step one of those
-merged one at a time ({ref "authoring-sequence"}[The sequence and its
-acceptance]).
+change of `bootstrap/modules.geb` regenerates the committed images.
+Such changes merge one at a time
+({ref "downstream-authoring"}[A Geb library and its downstream application]).
 
 The first version covers operation parameters and certificates. A
 theorem about a module is instantiated at an import with each sort
@@ -4868,16 +4918,11 @@ outside the subset and a reference that resolves to nothing, naming the
 file and the declaration the comment stands before
 ({name}`Geb.Kernel.Markup.check`).
 
-Documentation renders as a literate page per Geb file, generated from its
-document: top-level comments become prose and forms become code blocks
-of a `geb` expander (Verso supports `@[code_block]` expanders, as its
-`InlineLean` shows), which reads each block, fails the build of
-documentation on one that does not read, and anchors each definition;
-Lean may still check its examples. The page shows the Geb source,
-rendered as the repository's literate Lean modules are, and the compiler
-is unchanged. One implementation writes each Geb file as a generated
-literate module holding only its prose and `geb` blocks, which a chapter
-includes by `includeLiterate` as it includes any literate module.
+{ref "first-authoring"}[Writing a first Geb development] includes
+the Pair development with `gebProgram` from `manual/GebManual/Geb.lean`.
+The manual renders its source and prose, checks examples and references,
+and replays the certificate. Generating a page for each library module
+in a downstream manifest would extend this inclusion as the library grows.
 
 The alternative, docstrings in the emitted Lean, would render Geb's
 prose beside the Lean denotations, generated artifacts, rather than the
@@ -4935,8 +4980,8 @@ undo are tested in VS Code; formatting is tested by comparing the parsed
 documents, annotations included, before and after, and structural edits
 by their intended change of the tree with the checker run again. An
 editor's recognition of other brackets or reader macros never defines
-Geb syntax. Formatting on save, through `pucelle.run-on-save` calling
-`geb-fmt`, stays off until the fixture passes.
+Geb syntax. The Geb extension supplies Format Document and disables
+formatting on save by default.
 
 The extension is in `editors/vscode/`, with a task for
 formatting a saved file in `.vscode/tasks.json`. Its commands select a
@@ -4996,7 +5041,7 @@ editors that use tree-sitter need it, from tree-sitter-scheme as a base,
 and its recovery from errors never supplies trusted input to the
 compiler. Nothing is needed now.
 
-Diagnostics come before a language server. The executable `geb-compile`
+The executable `geb-compile`
 reports what rejects a program as `FILE:LINE:COLUMN: error: MESSAGE`, at
 the first failing declaration's name where a stage determines one, at the
 name of the module among whose forms the modules do not elaborate, at an
@@ -5022,13 +5067,13 @@ reports the failing vertex and an expected type, delegating typing
 decisions to the compiled checker. The separate, untrusted pass maps that
 vertex through the source correspondence to the original expression,
 including under binders, `let`, `defn` and modules. Prefixes containing
-datatype declarations retain declaration diagnostics; locating their
-typing failures follows the completion. A language service then needs
-the services the survey lists,
-of which the existing checker serves behind it; the server tracks
-versions of buffers, cancels stale checks, and translates offsets of
-bytes into the position encoding the editor negotiates, which reliable
-diagnostics after Unicode edits require.
+datatype declarations retain declaration diagnostics. Stage-1 typing
+can supply a source type at the offending expression before erasure.
+The next editor work is to expose that information and datatype holes,
+and to reuse the navigation index across requests. The existing VS Code
+client already tracks buffer versions, cancels requests and translates
+byte positions. A client using the Language Server Protocol would need
+an adapter for its negotiated position encoding.
 
 ### Typed holes
 %%%
@@ -6013,10 +6058,10 @@ remains.
     certificates and the caches: a change of a certificate's encoding is
     detected by the replay of the committed records
     (`scripts/authoring.sh check`, `scripts/tests/test-preservation.sh`),
-    and a cache is no durable artifact. A stored value's reference to
-    its datatype's declaration waits on the first stored value of
-    another datatype; `scripts/preserve.py` migrates neither an edition
-    nor a datatype's representation.
+    and a cache is disposable. The downstream application's first saved
+    datatype supplies the consumer for a reference to its declaration,
+    a versioned value encoding and an executable migration. The existing
+    record migration covers proof-source version 1 to 2.
 *
   * Library behavior
   * Dependencies are frozen; an implementation is replaced only with
@@ -6033,9 +6078,9 @@ remains.
     every input ({ref "logic"}[The logic]), and the prover's contract
     with its clients is stated
     ({ref "compatibility-contract"}[The compatibility contract]).
-    Remaining: a manifest and an import name a path and no digest, so
-    that a dependency is frozen in a record and not where it is used;
-    references by digest wait on the store.
+    The external client needs a reproducible library checkout or vendored
+    sources beneath its manifest. Published references by digest wait on
+    the store and the freezing of the identity-bearing format.
 *
   * Verification boundary
   * Which steps of parsing, elaboration, serialization, code generation
@@ -6064,7 +6109,9 @@ remains.
     definitions and the certificate are files of their own in a record.
     The corpus is the committed records of `examples/authoring/` and
     `examples/roundtrip/` and the compilers' image and emitted Lean,
-    each regenerated or replayed in continuous integration.
+    each regenerated or replayed in continuous integration. A record
+    currently requires a proof document. Recording a code-only program
+    is ready as an extension of the same workflow.
 *
   * Diagnostics
   * A structured result of success or error with its source occurrence;
@@ -6074,13 +6121,11 @@ remains.
     the declaration, the theorem, the hole or the step concerned, exit
     with a nonzero status and leave an existing output in place
     ({ref "editing"}[Editing], {ref "proof-holes"}[Holes and goals]).
-    Remaining: the occurrence inside a declaration and the reason its
-    typing gives, by a checker that reports the failing vertex, ready
-    for the kernel's typing and for the datatype language's; and the
-    report as a value
-    that an entry point of the compiler returns, the entry points
-    giving a program they reject the empty tree
-    ({ref "improvements"}[Improvements]), ready.
+    For kernel prefixes the host already maps the failing vertex to the
+    original operand and reports its expected and actual types where
+    available. The analogous datatype report and a structured rejection
+    returned by the compiled entry point are ready
+    ({ref "improvements"}[Improvements]).
 *
   * Editing and recovery
   * Incomplete documents, obligations of holes and unattached annotations
@@ -6099,8 +6144,9 @@ remains.
     that does not read is no document, the editors' recovery of its
     readable parts serving navigation alone; a certificate, an image
     and emitted Lean are written in place; and no update of several
-    artifacts but a record's is atomic. These wait on their consumers,
-    the store and a language server.
+    artifacts but a record's is atomic. A store that publishes coordinated
+    updates or an editor service that persists drafts would consume those
+    guarantees.
 *
   * Performance and limits
   * Exhaustion of resources is distinct from falsity and from
@@ -6118,11 +6164,11 @@ remains.
     `scripts/bench-bootstrap.sh`. Failed `normalize` and `reduce` steps now
     distinguish a reached reduction-fuel boundary from an unequal result
     at the requested depth. Remaining: reporting exhaustion of the
-    case-split budgets of other search steps, ready; the stack
-    the Geb reader and serializer take in proportion to a program's
-    length is among the improvements
-    ({ref "improvements"}[Improvements]); and the editors' operations
-    are not measured, ready.
+    case-split budgets of other search steps. The reader's stack grows
+    with the input length. The serializer's list processing uses data
+    accumulators, with the remaining node count following tree depth.
+    {ref "improvements"}[Improvements] gives the symbol-index measurements
+    and the editor operations to measure across a change of buffer.
 *
   * Reflection
   * Representations of code are distinguished from ordinary data; which
@@ -6157,19 +6203,18 @@ remains.
     define; a failure is a message on standard error and a nonzero
     status, the output left in place; a label is a natural number, so
     that no contract names a machine word; and the table of primitives
-    is only extended. Remaining: a manifest states no type of an entry
-    point, and an entry point of another type, the proof runner's among
-    them, is called through the Lean the compiler emits and by no
-    protocol; and a run bounded in steps that returns a value, an error
-    or a resumable state (the decision on input and output) is not
-    constructed. These wait on the second host.
+    is only extended. Ready on the Lean host are the editor command for
+    the existing byte runner and a versioned protocol for program-selected
+    file reads and writes. The latter specifies path and byte encodings
+    and how read and write errors return to Geb. General typed entry
+    points and step-bounded execution with resumption wait on the second
+    host. The proof runner uses its own entry through emitted Lean.
 :::
 
-No remainder is information that a person supplies in a source. Each
-is a version, a reference or a report that a program computes from the
-sources as they are written, a contract of a host, or a proof about the
-programs that read them, so that by the criterion of this section none
-bears on what is written now.
+Most remaining reports and indexes can be derived from the documents
+already kept. A downstream project must supply its dependency revisions
+and the meaning and version of the data it writes. Those choices enter
+the project when the library is shared or the first value is saved.
 
 #### The verification boundary
 %%%
@@ -6292,26 +6337,16 @@ is proved, which the row of the emitted Lean states.
 tag := "authoring-sequence"
 %%%
 
-Before most Geb code is written, in this order. The order follows the
-criterion of {ref "authoring-compatibility"}[Authoring across bootstrap
-revisions]: source in the authoring profile keeps names and comments in its
-text, so what precedes writing is what a program cannot compute from a text
-written without it, a recorded version, explicit references in prose and
-the form of proof scripts, beside the tools that writing uses at once.
+The table gives the acceptance conditions for the authoring language
+and tools. The order of the remaining work on the Lean host is given in
+{ref "downstream-authoring"}[A Geb library and its downstream application].
+The source records its profile, names, comments, explicit references
+in prose and proof scripts so that later tools can recover them.
 
-The steps before the datatype language's completion change no source of the
-program whose typing's soundness is proved, `programText` of
-`GebTests/Prototypes/FreeTopos/DatatypeBase.lean`: the prelude, the reader,
-the kernel's checker, the lists, the stage-1 typing and expansion, the
-recognizers, the traversal of kernel terms and the evaluator. They therefore
-proceed beside the completion, and steps with no dependence stated between
-them proceed side by side. The steps after the completion change those
-sources, a change of which changes what the soundness states. A step that
-changes a source of a compiler regenerates the committed images, so such
-steps are merged one at a time.
-
-Substantial authoring follows the completion. A program declares its
-datatypes by `data`.
+The datatype language's completion establishes the basis for substantial
+authoring. Programs declare their datatypes by `data`. A change to a source
+listed in `bootstrap/datatype-soundness.manifest` changes the program
+about which the soundness development states its theorem.
 
 :::table +header
 *
@@ -6352,9 +6387,8 @@ datatypes by `data`.
   * The pinned extensions pass the profile's fixture
 *
   * Manifests with editions
-  * The build and tests read manifests, but for the list of the program
-    whose typing's soundness is proved, which is converted when the
-    completion is merged
+  * The build and tests read the manifests of their programs, including
+    the program whose typing's soundness is proved
 *
   * A durable document with versioned profiles
   * Declaration and binder names, prose, examples, links and unknown
@@ -6430,21 +6464,11 @@ datatypes by `data`.
 The sources are converted to the forms a step adds in one mechanical
 change, as they are to `let*` and `cond` ({ref "modules"}[Modules]).
 
-Early in writing, alongside the first substantial module where it helps:
-holes in the datatype language, whose types the stage-1 typing reports, the
-kernel's erasing the datatypes; diagnostics with locations inside a
-declaration; and the typed enumerator. When their consumers
-exist: digests and the store, `attach` and hover text, a language
-server, tree-sitter and the
-export to canonical S-expressions. The Geb-native refinement search
-follows the bootstrap.
-The library then written in Geb drives content storage, richer language
-services, adapters to solvers and optimization of the runtime; none of
-them may discard the document, binding or dependency information already
-kept. The limits that more Geb code meets are among the improvements
-({ref "improvements"}[Improvements]): the Geb reader's stack in
-proportion to a program's length, about 480 bytes of memory per byte of
-input, and the tests that a change of a Geb source rebuilds.
+The first library supplies examples and specifications for the bounded
+typed enumerator. Documentation hover and canonical document conversion
+already consume the source. A content store, a general annotation attachment
+operation, other editor protocols and solver adapters follow their respective
+consumers. Geb-native refinement search follows the bootstrap.
 
 Acceptance: a documented module survives conversion among the syntaxes
 of RFC 9804 and the authoring profile, retaining names, comments,
@@ -8338,10 +8362,33 @@ the change that removes it.
   with status 1 and leaves the output in place. That report is host code
   composing the stages of the compiled compiler, with the seed's message for
   modules; an entry point of the compiler returning the report as a value
-  would serve a second host without restating it. It reports the line and
-  column of the declaration, found from the sources as written, and not an
-  occurrence inside the declaration, nor why the typing rejects it
+  would serve a second host without restating it. The host locates an
+  operand inside a rejected kernel declaration. The datatype checker
+  still needs to report which expression failed and why
   ({ref "editing"}[Editing]).
+* Editor latency. Each navigation request starts `geb-author`, reads
+  the selected manifest's sources and proof imports, walks their forms
+  and returns the declaration index (`editors/vscode/host.cjs`,
+  `GebHost/Navigation.lean`). On one machine the median of three
+  fresh host processes requesting workspace symbols was 54 milliseconds
+  for Roundtrip, 2.66 seconds for Tree cases, and 7.71 seconds for the
+  stage-1 compiler. These were index requests with line and column zero,
+  recovery enabled and an empty list of open buffers. The first two used
+  their configured proof documents, the last used `bootstrap/stage1.manifest`
+  alone. These timings exclude the editor. Retain parsed documents and
+  their index across requests, invalidate scopes affected by a changed
+  buffer or import, and return only the data the operation needs.
+  Measure repeated hover and completion before and after an edit as well
+  as the first query. Check that an edited import resolves at its new
+  location and cancellation never restores an old result.
+* Repeated proof search and example checking. The saved-file check task
+  passes `--cache` to `geb-author`. The editor's Prove Statements command
+  invokes `prove` without it (`.vscode/tasks.json`,
+  `editors/vscode/extension.cjs`). Pass a cache directory for the selected
+  project and check that repeating an unchanged proof searches no theorem
+  and produces the same replayable certificate. As the library acquires
+  examples, measure the cost of `checkExamples` in `GebHost/Authoring.lean`,
+  which recompiles the program with each example's two expressions.
 * The equivalence of the word-level codec with
   {name}`Geb.RoseTree.wire`, tested and not proved, which is the first
   of the decision gates of the value-representation chapter.
@@ -8360,9 +8407,9 @@ the change that removes it.
   into one function and the step returns it, a loop inside a closure
   over the argument not being typable. The sources proper to the metalogic
   are written in those forms, but for the conversion checker's step at the
-  application of a theorem; the compilers' sources wait on the datatype
-  language's completion, and the requirement that the bootstrap's programs
-  be decorated waits on their rewriting
+  application of a theorem. Rewriting the rejected compiler folds is
+  ready. Checking the decorations of whole bootstrap programs in the
+  build depends on those rewrites
   ({ref "interaction-net-affine-certificates"}[Elementary-affine
   certificates]).
 * Depth of the Geb reader. The reader's tokenizer is a right fold whose
@@ -8408,10 +8455,10 @@ the change that removes it.
   ({ref "datatype-completion"}[The datatype language's completion]).
   Polymorphic definitions, or templates over the instances of another,
   remove the copies.
-* Only the names of definitions are kept beside a bundle; the names of
-  bound variables and comments are not. The source documents keep the
-  comments, and the durable document of the authoring sequence keeps
-  both ({ref "documents-annotations"}[Documents and annotations]).
+* A bundle keeps definition names. The separate kernel annotation record
+  relates binders and comments in the durable source to core vertices.
+  Extend that correspondence through module and datatype elaboration
+  ({ref "documents-annotations"}[Documents and annotations]).
 * Proof time. The prover finds the weakening proof in about a minute
   and the checker checks it in half of one, most of both normalizing the
   checker afresh at each of the label's cases, whose cost is the
@@ -8453,6 +8500,13 @@ the change that removes it.
 tag := "the-next-phase"
 %%%
 
+Begin on the Lean host with {ref "downstream-authoring"}[A Geb library and
+its downstream application]. Start the editor's proof-cache and index work
+alongside the library. Loading the compiler once per stage-test comparison
+shortens the feedback cycle for changes to the compiler itself. The
+constant-depth reader removes a stack limit as the sources grow
+({ref "improvements"}[Improvements]).
+
 The proofs about the compiler's components are complete: the type
 checker's preservation of types by weakening and by substitution and the
 identity of the datatype language's expansion on programs of kernel forms
@@ -8493,7 +8547,9 @@ simulation transfers the sequential adequacy theorem to graph execution:
 every schedule of an accepted closed tree-to-tree application terminates,
 and every normal result reads back its denotation.
 
-What is ready, each item independent of the others except as stated:
+The following work can proceed in parallel with the external client.
+Where the work changes a compiler source, its generated artifacts are
+integrated in sequence.
 
 * Stronger checkers ({ref "metalogic-and-checker"}[The metalogic and its
   checker]), in progress, described below: the measurement that decides
@@ -8513,17 +8569,19 @@ What is ready, each item independent of the others except as stated:
   the logarithm. The steps in their order, and what remains of them,
   are stated in {ref "conversion-continuation"}[Completing the checker
   with a step of conversion].
-* The datatype language's completion
-  ({ref "datatype-completion"}[The datatype language's completion]),
-  complete, a step of the authoring sequence
-  ({ref "authoring-sequence"}[The sequence and its acceptance]), which
-  precedes substantial authoring in Geb; the soundness of its typing is
-  proved with the prover written in Geb. Its searches take from seconds
-  to about eight minutes each, compiled; a search that takes much longer
-  is measured as {ref "searches-remaining"}[The searches' remaining time]
-  states. The steps of the sequence after it in the sequence's order,
-  which change sources of the program whose soundness is proved, are
-  ready with those before it.
+* The proof-sketch checker in Lean already produces conditional
+  conversion certificates. Its transcription into Geb can proceed
+  independently of holes in the datatype language ({ref "typed-holes"}[Typed holes]).
+* Expose datatype statements in Geb proof documents and port the
+  datatype-soundness deductions from their Lean drivers. The soundness
+  of typing is already proved with the prover written in Geb
+  ({ref "datatype-completion"}[The datatype language's completion]).
+  Before the bulk of the port, measure rule selection, matching and
+  traversal in the reduction. Compare search times with and without
+  the check of each declaration as it is stored, retaining the
+  independent check of each saved certificate. Passing searches are
+  cached by their inputs (`scripts/pre-push.sh`,
+  {ref "searches-remaining"}[The searches' remaining time]).
 * The elementary-affine decorations, in progress, wait on
   rewriting the folds that read their children's results twice
   ({ref "improvements"}[Improvements]).
@@ -8532,9 +8590,11 @@ What is ready, each item independent of the others except as stated:
   reduction by the environment machine are complete, and the hash
   written in Geb, which computes by arithmetic on natural numbers, is
   ready.
-* The Geb reader in constant depth, and the stage tests reading each
-  compiler once ({ref "improvements"}[Improvements]); the
-  serializer's list processing uses constant-depth data accumulators.
+* Benchmark the first-stage graph runtime against the kernel denotation.
+  The stage-2 development of closed-function nets can proceed alongside
+  that benchmark and the elementary-affine work. The comparison of
+  machines precedes the production runtime and the Rust host
+  ({ref "interaction-net-stage-two"}[Stage 2: closed-function nets]).
 
 The admission of stronger checkers rests on the checker written in Geb
 and its agreement, and two are required by the bootstrap. The provers
