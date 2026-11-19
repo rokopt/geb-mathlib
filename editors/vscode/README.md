@@ -309,6 +309,19 @@ directories under `editors/vscode/node_modules/.cache/editor`. It does
 not install extensions into the user's editor. The first run requires
 network access.
 
+`scripts/tests/client-acceptance.sh WORKDIR [REVISION]` accepts a client
+of the shared library from a fresh clone. It makes a client repository
+from [the template](../../examples/client/README.md) with its submodule
+at a revision of this repository, clones it from a bare repository,
+follows the template README's build and packaging steps in the clone,
+and runs `node editors/vscode/test/run.cjs --client DIRECTORY`. That
+mode installs the clone's packaged Geb and patched Paredit extensions
+into VS Code Insiders and runs `test/client.cjs` in the clone's folder.
+The tests follow an import into the library, compile after edits of the
+library's module, prove, replay and check saved files. From an empty
+Lake directory the run builds the host executables, which takes an hour
+or more, and it is not part of CI.
+
 The grammar tests use VS Code's TextMate and Oniguruma libraries. The
 integration tests invoke the formatter task, the check task and its
 problem matcher, bracket matching and pair completion in VS Code. Their

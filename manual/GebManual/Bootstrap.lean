@@ -127,7 +127,7 @@ with a checked example, a theorem written in Geb and a record whose
 certificate replays after relocation. The next milestone combines
 these capabilities in a client maintained in its own repository.
 
-1. In progress. Assemble and share the first library. The library is
+1. Complete. Assemble and share the first library. The library is
    `library/`: its manifest lists `seq.geb`, the bootstrap's source by a
    symbolic link, and `Bytes.geb`, whose module `Bytes` exports the
    reversal of a list of bytes and of a file, with a checked example, and
@@ -145,12 +145,14 @@ these capabilities in a client maintained in its own repository.
    which builds the Geb library. `scripts/tests/test-client.sh` checks
    the library, and the template outside the repository by its
    `check.sh`, which the template's own workflow runs on the same
-   manifest. Remaining: from a fresh clone of a client repository made
-   from the template, install the repository's Geb and patched Paredit
-   extensions in VS Code Insiders, follow an import to its library
-   definition, edit the module, build, check its example and replay
-   its theorem. The existing editor fixture uses the VS Code release
-   pinned in `editors/vscode/package.json`.
+   manifest. `scripts/tests/client-acceptance.sh` makes a client
+   repository from the template, with a bare repository as its remote,
+   and follows the template's README from a fresh clone: it builds the
+   host executables and packages the Geb and patched Paredit extensions,
+   which it installs in VS Code Insiders. There the tests of
+   `editors/vscode/test/client.cjs` follow an import to its library
+   definition, edit the module, compile the program, checking its
+   examples, and prove and replay its theorems.
    This library is the modules that exist, assembled and shared. The
    library's own modules are written after step 4, in the forms it adds.
 2. Make a check take the time of what changed. The compiled compiler

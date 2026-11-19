@@ -53,7 +53,7 @@ With Lean's `elan` and Node.js 22 or later installed:
 ```sh
 git clone --recurse-submodules URL client
 cd client
-lake -d geb exe cache get
+(cd geb && lake exe cache get)
 lake -d geb build geb-author geb-kernel geb-fmt geb-compile geb-defs
 ```
 
@@ -93,6 +93,10 @@ client's files where they are.
 An edit of a library module is an edit of the submodule's working tree,
 which the client's checks read at once. It is kept by a commit of the
 Geb repository and a new pin of the submodule.
+
+The Geb repository's `scripts/tests/client-acceptance.sh` follows these
+steps from a fresh clone of a repository made from this template, in
+VS Code Insiders.
 
 ## Continuous integration
 
