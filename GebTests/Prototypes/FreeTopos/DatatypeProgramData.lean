@@ -311,7 +311,8 @@ datatype's atom, the constructors' entries, the pending forms after, the forms t
 the states and the recognizers' environment. -/
 def markerSkipped (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("markerSkipped", fun ix E ↦ do
-    let K : Kit := ⟨markerProg P, S, E, ix, ["eraseMarker", "recAtMarker"] ++ lookupEqNames⟩
+    let K : Kit := ⟨markerProg P, S, E, ix, ["eraseMarker", "recAtMarker", "refsOccRec"] ++
+      lookupEqNames⟩
     let L := K.L
     let o := P.o
     let Ls := list treeTy
@@ -620,7 +621,8 @@ body, the characters of the datatype's atom, the constructors' entries, the pend
 after, the forms that remain, the states and the recognizers' environment. -/
 def markerReadAt (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("markerReadAt", fun ix E ↦ do
-    let K : Kit := ⟨markerProg P, S, E, ix, ["eraseMarker", "recAtMarker"] ++ lookupEqNames⟩
+    let K : Kit := ⟨markerProg P, S, E, ix, ["eraseMarker", "recAtMarker", "refsOccRec"] ++
+      lookupEqNames⟩
     let L := K.L
     let o := P.o
     let Ls := list treeTy
@@ -1155,7 +1157,8 @@ context of the body, the characters of the datatype's atom, the constructors' en
 forms that remain, the states and the recognizers' environment. -/
 def blockEndAt (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("blockEndAt", fun ix E ↦ do
-    let K : Kit := ⟨markerProg P, S, E, ix, ["eraseMarker", "recAtMarker"] ++ lookupEqNames⟩
+    let K : Kit := ⟨markerProg P, S, E, ix, ["eraseMarker", "recAtMarker", "refsOccRec"] ++
+      lookupEqNames⟩
     let L := K.L
     let o := P.o
     let Ls := list treeTy
@@ -1230,7 +1233,8 @@ denotes a function deciding membership ({name}`recognizerAt`), and the reader ha
 constructors' entries, the forms that remain, the states and the recognizers' environment. -/
 def blockEnd (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("blockEnd", fun ix E ↦ do
-    let K : Kit := ⟨markerProg P, S, E, ix, ["eraseMarker", "recAtMarker"] ++ lookupEqNames⟩
+    let K : Kit := ⟨markerProg P, S, E, ix, ["eraseMarker", "recAtMarker", "refsOccRec"] ++
+      lookupEqNames⟩
     let L := K.L
     let Ls := list treeTy
     let nil := nilT treeTy

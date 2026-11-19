@@ -26,7 +26,9 @@ The step at a kind shows that the states the passes' steps leave at a form of it
 invariant, which includes the recognizers' agreement with membership: it is kept where a
 definition is read because the definition's name occurs in the program's kernel forms and each
 recognizer those forms refer to is among the names the reader has, so that the name, which is
-fresh, is no recognizer's. A definition and a function share the step at a form at which the
+fresh, is no recognizer's. The insertion tests a recognizer's atom among the atoms of the forms
+that end with {lit}`.member`, collected once, where the invariant states its occurrence in the
+forms; the two agree. A definition and a function share the step at a form at which the
 expansion writes a definition, whose body is a source form sound at expanded forms; the
 hypotheses at the states are preserved by a definition written before pending forms, as the
 definitions a datatype's declaration writes are. The step at a datatype's declaration is that
@@ -61,6 +63,9 @@ abbreviations.
 * {lit}`stepDefined` — the step at a form at which the expansion writes a definition.
 * {lit}`cohAt`, {lit}`aliasExtend` — a type the typing reads coheres with the expansion of its
   aliases, and the aliases' coherence is kept where a type abbreviation is declared.
+* {lit}`memberAtomsOcc`, {lit}`refsOccRec` — an atom that ends with {lit}`.member` occurs among
+  the atoms of a form, or of a list of forms, that end with {lit}`.member` where it occurs in
+  them, as the recognizers' insertion tests a recognizer's atom.
 * {lit}`formKind` — a form at which the expansion's step does not fail is of a kind.
 * {lit}`passesForms` — the soundness at all states, by induction on the forms.
 * {lit}`programFormsThm`, {lit}`programForms` — the soundness of a program, its statement
@@ -89,12 +94,20 @@ open scoped FinEnum
 open Internal (Term)
 open GebTests.Prototypes.FreeTopos.Normalization
 
+/-- The atoms of a list of forms that end with {lit}`.member`, as the recognizers' insertion
+collects them: those of each form ({lit}`Recognize.memberAtoms`) concatenated. -/
+def refsT (P : Prog) (fs : Term) : Term :=
+  let Ls := list treeTy
+  foldrT treeTy Ls (Term.lam treeTy (Term.lam Ls
+    (pc P "Prelude.append" [pc P "Recognize.memberAtoms" [v 1], v 0]))) (nilT treeTy) fs
+
 /-- The forms the recognizers' insertion gives for kernel forms, each optional: the markers
-{lit}`mk` and the forms {lit}`fs` of the whole program, the forms {lit}`l` mapped. -/
+{lit}`mk` and the forms {lit}`fs` of the whole program, among whose atoms that end with
+{lit}`.member` ({name}`refsT`) a recognizer's occurrence is tested, the forms {lit}`l` mapped. -/
 def recMap (P : Prog) (mk fs l : Term) : Term :=
   let Ls := list treeTy
   foldrT treeTy Ls (Term.lam treeTy (Term.lam Ls (consT treeTy
-    (pc P "Recognize.recognizersAt" [sh 2 mk, sh 2 fs, v 1]) (v 0)))) (nilT treeTy) l
+    (pc P "Recognize.recognizersAt" [sh 2 mk, sh 2 (refsT P fs), v 1]) (v 0)))) (nilT treeTy) l
 
 /-- The reader's test that every optional tree of a list is present, with their values. -/
 def optFold (P : Prog) (xs : Term) : Term :=
@@ -540,13 +553,14 @@ def formsOk (P : Prog) (S : Defs) (es : Term) : List Term :=
   [S.allL (Term.lam treeTy
     (parts.dropLast.foldr (Internal.Logic.conj P.o) (parts.getLastD Term.star))) es]
 
-/-- The program with the passes' steps kept folded, and with them the erasure of a form and the
+/-- The program with the passes' steps kept folded, and with them the erasure of a form, the
 recognizers' insertion at a form, whose values at a definition's form are equations
-({lit}`eraseDefForm`, {lit}`recAtThree`). -/
+({lit}`eraseDefForm`, {lit}`recAtThree`), and the atoms of a form that end with {lit}`.member`
+({lit}`refsOccRec`). -/
 def passProg (P : Prog) : Prog :=
   { P with folded := P.folded ++ ["Typing.checkStep", "Datatype.xpStep", "Datatype.genericStep",
       "Reader.progStep", "Datatype.eraseForm", "Recognize.recognizersAt",
-      "Recognize.occurs"] }
+      "Recognize.occurs", "Recognize.memberAtoms"] }
 
 /-- An equation of a function kept folded at arguments, in the normal forms of the passes'
 rules: the function's value there, by its unfolding. -/
@@ -2975,6 +2989,280 @@ def programRecsDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 def programOccursDev (P : Prog) (S : Defs) : List Step :=
   [occInAppend P S, occSelf P S, allSnoc P S] ++ occursRebuild P ++
     [occursKids P S, occursDefName P S]
+
+/-! ## The atoms that end with .member -/
+
+/-- The value of the fold of {lit}`Recognize.memberEnd` at the characters of a name that ends
+with {lit}`.member`: the node of label 0 over no children. -/
+def endedT : Term := node0 (nilT treeTy)
+
+/-- The characters of a recognizer's atom end with {lit}`.member`: the fold of
+{lit}`Recognize.memberEnd` at them is {name}`endedT`, by induction on the characters of the
+datatype's atom, the fold's step keeping that value at each character before them. In the
+context of the characters. -/
+def memberEndRec (P : Prog) (S : Defs) : Step :=
+  ("memberEndRec", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let rec_ := memberAtomT P (pc P "Typing.atomName" [nodeT (Term.pair (numeral 1) (v 0))])
+    let φ := Term.eq (pc P "Recognize.memberEnd" [call D.children [] [rec_]]) endedT
+    listInduction "memberEndRec" φ K.byNorm (normLastK K K.byNorm))
+
+/-- An atom occurs in a form of the concatenation of two lists of forms where it occurs in a form
+of either: by induction on the first, the head's test decided. In the context of the first list,
+under the second and the atom. -/
+def occInApp (P : Prog) (S : Defs) : Step :=
+  ("occInApp", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let L := K.L
+    let o := P.o
+    let Ls := list treeTy
+    let app (xs ys : Term) : Term := pc P "Prelude.append" [xs, ys]
+    -- under the quantifiers: the atom v0, the second list v1, the first v2
+    let φ := Internal.Logic.all o Ls (Term.lam Ls (Internal.Logic.all o treeTy (Term.lam treeTy
+      (Term.eq (occInT P (v 0) (app (v 2) (v 1)))
+        (pc P "Prelude.or" [occInT P (v 0) (v 2), occInT P (v 0) (v 1)])))))
+    let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
+    -- a construction: the head v(0), the tail v(1), the second list v(2), the atom v(3)
+    let step : Deducer := dAllI L <| dAllI L <| dAllE L K.G K.E 0 (v 1) fun Γ Φ ψ ↦
+      dAllE L K.G K.E (Φ.length - 1) (v 0) (normLastK K <|
+        decideIn K (fun Γ ↦ occT P (at_ 3 Γ) (at_ 0 Γ))
+          (stage "occInApp: not in the head" (K.solve 3))
+          (stage "occInApp: in the head" (K.solve 3))) Γ Φ ψ
+    listInduction "occInApp" φ (dAllI L (dAllI L K.byNorm)) step)
+
+/-- The rebuilding of a tree by the fold of {lit}`Recognize.memberAtoms` ({name}`foldRebuild`),
+and the children it rebuilds ({name}`foldKids`). -/
+def memberAtomsRebuild (P : Prog) (S : Defs) : List Step :=
+  foldRebuild P "ma" "Recognize.memberAtoms" [treeTy] ++
+    [foldKids P S "ma" "Recognize.memberAtoms" [treeTy]]
+
+/-- The atom of the recognizer of the datatype whose atom has the characters {lit}`cs`. -/
+def recAtomT (P : Prog) (cs : Term) : Term :=
+  memberAtomT P (pc P "Typing.atomName" [nodeT (Term.pair (numeral 1) cs)])
+
+/-- The alternative of the kernel's conditional, the value where its test fails: the second
+argument of the fold of the test's bits that selects between two arguments. -/
+def condElse (t : Term) : Option Term := match t.label, t.children with
+  | .app, [f, u] => match f.label, f.children with
+    | .app, [g, _] => if g.label == .listRec then some u else none
+    | _, _ => none
+  | _, _ => none
+
+/-- An equation of the alternative of a fold kept as the kernel's conditional at a node, in the
+normal form of a kit's rules ({name}`condElse`), with a term of the node's children: by
+induction on the children. In the context of the children and the variables {lit}`Γ`; the
+node's label is the variable after them. -/
+def nodeElseEq (P : Prog) (S : Defs) (name : String) (more : List String) (Γ : List Tree)
+    (atNode : Term → Term) (rhs : Term) : Step :=
+  (name, fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, more⟩
+    let rs := K.rules []
+    let Γn := Γ ++ [bitsTy]
+    let n := nodeT (Term.pair (v Γ.length) (v 0))
+    let some t := nfE K.G K.E rs Γn (atNode n) | dbgTrace s!"{name}: no normal form" fun _ ↦ none
+    let some u := condElse t | dbgTrace s!"{name}: no conditional {showT t}" fun _ ↦ none
+    let some r := nfE K.G K.E rs Γ rhs | dbgTrace s!"{name}: right" fun _ ↦ none
+    let some d := Internal.byListIndHyp P.G E 0 0 1 rs 4096 Γ [] u r
+      | dbgTrace s!"{name}: {(firstDiff u r).map fun (x, y) ↦
+          s!"{showT x}\n  vs {showT y}"}" fun _ ↦ none
+    pure (⟨0, Γ, [], Term.eq u r⟩, d))
+
+/-- The atoms that end with {lit}`.member` of a node's children, concatenated at the node by
+{lit}`Recognize.memberAtoms`, are those of the children's list ({name}`refsT`). In the context
+of the children. -/
+def memberAtomsFus (P : Prog) (S : Defs) : Step :=
+  nodeElseEq P S "maFus" ["maFst", "maKids"] [list treeTy]
+    (fun n ↦ pc P "Recognize.memberAtoms" [n]) (refsT P (v 0))
+
+/-- An atom occurs in a child of a node, as {lit}`Recognize.occurs` tests it at the node, where
+it occurs in a form of the children's list ({name}`occInT`). In the context of the children and
+the atom. -/
+def occursFus (P : Prog) (S : Defs) : Step :=
+  nodeElseEq P S "ocFus" ["ocFst", "ocKids"] [list treeTy, treeTy]
+    (fun n ↦ occT P (v 1) n) (occInT P (v 1) (v 0))
+
+/-- Whether a tree is an atom that ends with {lit}`.member`, as {lit}`Recognize.memberAtoms`
+tests a node: its label the atoms', and the fold of {lit}`Recognize.memberEnd` at its children
+{name}`endedT`. -/
+def keepT (P : Prog) (t : Term) : Option Term := do
+  let eqT ← primT Kernel.Prim.eq
+  let labelT ← primT Kernel.Prim.label
+  let equalT ← primT Kernel.Prim.equal
+  pure (pc P "Prelude.and" [apps eqT [apps labelT [t], leafT (numeral 1)],
+    apps equalT [pc P "Recognize.memberEnd" [call D.children [] [t]], endedT]])
+
+/-- A recognizer's atom is an atom that ends with {lit}`.member` ({name}`keepT`): its label the
+atoms', and its characters' fold {name}`endedT` ({name}`memberEndRec`). In the context of the
+characters of the datatype's atom. -/
+def keepRec (P : Prog) (S : Defs) : Step :=
+  ("keepRec", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let keep ← keepT P (recAtomT P (v 0))
+    let a : Internal.Thm := ⟨0, [list treeTy], [], truth P.o keep⟩
+    let some d := (K.cutThm "memberEndRec" (fun _ ↦ [v 0]) <| normLastK K <|
+        stage "keepRec" (K.solve 3)) a.ctx a.hyps a.concl
+      | dbgTrace "keepRec: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- The formula of {lit}`memberAtomsOcc` at a tree, the variable of index 0: an atom that ends
+with {lit}`.member` ({name}`keepT`) occurs among the tree's atoms that end with {lit}`.member`
+where it occurs in the tree. -/
+def memberAtomsOccφ (P : Prog) : Option Term := do
+  let keep ← keepT P (v 0)
+  pure (Internal.Logic.all P.o treeTy (Term.lam treeTy (Internal.Logic.imp P.o (truth P.o keep)
+    (Term.eq (occInT P (v 0) (pc P "Recognize.memberAtoms" [v 1])) (occT P (v 0) (v 1))))))
+
+/-- An atom that ends with {lit}`.member` occurs among the atoms that end with {lit}`.member` of
+a list of forms ({name}`refsT`) where it occurs in a form of the list, given, at each form, the
+formula {name}`memberAtomsOccφ`, or that formula's lemma {lit}`memberAtomsOcc` where
+{lit}`fromLemma`: by induction on the forms, the head's atoms by its formula and the
+concatenation by {name}`occInApp`. In the context of the forms, under the atom. -/
+def refsOccWith (P : Prog) (S : Defs) (name : String) (fromLemma : Bool) : Step :=
+  (name, fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let L := K.L
+    let o := P.o
+    let keep ← keepT P (v 0)
+    let φt ← memberAtomsOccφ P
+    -- under the quantifier: the atom v0, the forms v1
+    let concl := Internal.Logic.all o treeTy (Term.lam treeTy (Internal.Logic.imp o
+      (truth o keep) (Term.eq (occInT P (v 0) (refsT P (v 1))) (occInT P (v 0) (v 1)))))
+    let φ := if fromLemma then concl
+      else Internal.Logic.imp o (S.allL (Term.lam treeTy φt) (v 0)) concl
+    let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
+    -- a construction: the head v(0), the tail v(1), the atom v(2)
+    let (g, t, a) := (at_ 0, at_ 1, at_ 2)
+    let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
+    -- the hypothesis of index hIH, the statement at the tail; the head's formula by k
+    let close (hIH : ℕ) (head : Deducer → Deducer) : Deducer :=
+      dAllI L <| dImpI L <| last fun hKeep ↦
+      dAllE L K.G K.E hIH (v 0) <| K.impE (K.byHyp hKeep) <| normLastK K <|
+      head <| K.impE (K.byHyp hKeep) <| normLastK K <|
+      K.cutThm "occInApp" (fun Γ ↦ [pc P "Recognize.memberAtoms" [g Γ]]) <|
+      K.allEΓ (fun Γ ↦ refsT P (t Γ)) <| K.allEΓ a <| normLastK K <|
+      stage s!"{name}: the construction" (K.solve 3)
+    let step : Deducer := if fromLemma then
+        close 0 fun k ↦ K.cutThm "memberAtomsOcc" (fun Γ ↦ [g Γ]) <| K.allEΓ a k
+      else dImpI L <| last fun hAll ↦ normHyps K [hAll] <| K.conjE <| fun Γ₁ Φ₁ ψ₁ ↦
+        let (hHead, hRest) := (Φ₁.length - 2, Φ₁.length - 1)
+        (dImpE L 0 (K.byHyp hRest) <| last fun hIH ↦
+          close hIH fun k ↦ fun Γ Φ ψ ↦ dAllE L K.G K.E hHead (a Γ) k Γ Φ ψ) Γ₁ Φ₁ ψ₁
+    let base : Deducer := if fromLemma then dAllI L (dImpI L K.byNorm)
+      else dImpI L (dAllI L (dImpI L K.byNorm))
+    listInduction name φ base step)
+
+/-- An atom's occurrence in a form of a list, where it holds, is the leaf of label 1, the value
+of the prelude's disjunction where it holds: by induction on the list, the head's occurrence
+decided. In the context of the list, under the atom. -/
+def occInOne (P : Prog) (S : Defs) : Step :=
+  ("occInOne", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, []⟩
+    let L := K.L
+    let o := P.o
+    -- under the quantifier: the atom v0, the list v1
+    let φ := Internal.Logic.all o treeTy (Term.lam treeTy (Internal.Logic.imp o
+      (truth o (occInT P (v 0) (v 1))) (Term.eq (occInT P (v 0) (v 1)) (leafT (numeral 1)))))
+    let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
+    let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
+    -- a construction: the head v(0), the tail v(1), the atom v(2)
+    let step : Deducer := dAllI L <| dImpI L <| last fun hT ↦
+      decideIn K (fun Γ ↦ occT P (at_ 2 Γ) (at_ 0 Γ))
+        (dAllE L K.G K.E 0 (v 0) <| K.impE (stage "occInOne: the rest" (K.byHyp hT)) <|
+          normLastK K <| stage "occInOne: not in the head" (K.solve 3))
+        (stage "occInOne: in the head" (K.solve 3))
+    listInduction "occInOne" φ (dAllI L (dImpI L (lastFalse K))) step)
+
+/-- The statement of {name}`refsOccWith` under the formula at each form, by its hypothesis. -/
+def refsOccAll (P : Prog) (S : Defs) : Step := refsOccWith P S "refsOccAll" false
+
+/-- The formula of {name}`memberAtomsOccφ` at each of a list of trees from its holding at each,
+as the hypothesis of induction on trees states it ({lit}`roseAllFor`). -/
+def memberAtomsOccAll (P : Prog) (S : Defs) : Step :=
+  match memberAtomsOccφ P with
+  | some φ => roseAllFor P S "maOccAll" φ
+  | none => ("maOccAll", fun _ _ ↦ none)
+
+/-- An atom that ends with {lit}`.member` occurs among a tree's atoms that end with
+{lit}`.member` where it occurs in the tree ({name}`memberAtomsOccφ`): by induction on trees. At
+a node, the atoms of the children are those of their list ({name}`memberAtomsFus`) and the
+atom's occurrences in them are in the children's list ({name}`occursFus`), equal by the
+induction hypothesis ({name}`refsOccAll`); the node's own test and its equality with the atom
+decided, the node is the atom only where its test holds, as the atom's does. -/
+def memberAtomsOcc (P : Prog) (S : Defs) : Step :=
+  ("memberAtomsOcc", fun ix E ↦ do
+    let K : Kit := ⟨P, S, E, ix, ["maFst", "maKids", "maFus", "ocFst", "ocKids", "ocFus"]⟩
+    let L := K.L
+    let φ ← memberAtomsOccφ P
+    let equalT ← primT Kernel.Prim.equal
+    let kids (Γ : List Tree) : Term := v (Γ.length - 2)
+    let lab (Γ : List Tree) : Term := v (Γ.length - 1)
+    let n (Γ : List Tree) : Term := nodeT (Term.pair (lab Γ) (kids Γ))
+    let keep (t : Term) : Term := (keepT P t).getD Term.star
+    let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
+    -- the atom, the variable the quantifier introduces after the children and the label
+    let a (Γ : List Tree) : Term := v (Γ.length - 3)
+    -- the atom the node, against the node's test failing, the hypothesis hD, where the atom's
+    -- holds, the hypothesis hKeep: the atom's test rewritten to the node's by the equation of the
+    -- atom with the node, and that by hD, alone, so that no other equation rewrites the node
+    let refute (hKeep hD : ℕ) : Deducer :=
+      K.cutThm "equalSymm" (fun Γ ↦ [a Γ, n Γ]) <|
+      K.impE (stage "memberAtomsOcc: the equality symmetric" (K.solve 3)) <| last fun iS ↦
+      K.cutThm "equalSound" (fun Γ ↦ [a Γ]) <| K.allEΓ n <|
+      K.impE (stage "memberAtomsOcc: the equality sound" (K.byHyp iS)) <|
+      last fun hEq ↦ stage "memberAtomsOcc: the atom's test the node's" fun Γ Φ ψ ↦
+        dRwHyp (evalRw K.G K.E (K.rules [] ++ [.hyp hEq, .hyp hD]) .full) hKeep
+          (dFalse K.L dHyp) Γ Φ ψ
+    let body (hKeep : ℕ) : Deducer :=
+      decideIn K (fun Γ ↦ keep (n Γ))
+        (last fun hD ↦ decideIn K (fun Γ ↦ apps equalT [n Γ, a Γ])
+          (stage "memberAtomsOcc: no test, not the atom" (K.solve 3))
+          (stage "memberAtomsOcc: no test, the atom" (refute hKeep hD)))
+        (decideIn K (fun Γ ↦ apps equalT [n Γ, a Γ])
+          (decideIn K (fun Γ ↦ occInT P (a Γ) (kids Γ))
+            (stage "memberAtomsOcc: the test, not the atom, not in the children" (K.solve 3))
+            (stage "memberAtomsOcc: the test, not the atom, in the children" <|
+              K.cutThm "occInOne" (fun Γ ↦ [kids Γ]) <| K.allEΓ a <| K.impE (K.solve 3) <|
+              normLastK K <| K.solve 3))
+          (stage "memberAtomsOcc: the test, the atom" (K.solve 3)))
+    let node : Deducer :=
+      K.cutThm "maOccAll" (fun Γ ↦ [kids Γ]) <| K.impE dHyp <| last fun hAll ↦
+      K.cutThm "refsOccAll" (fun Γ ↦ [kids Γ]) <| K.impE (K.byHyp hAll) <| last fun hR ↦
+      dAllI L <| dImpI L <| last fun hKeep ↦ dAllE L K.G K.E hR (v 0) <|
+      K.impE (K.byHyp hKeep) <| normLastK K <| stage "memberAtomsOcc: node" (body hKeep)
+    let some d := node [list treeTy, bitsTy] [Internal.roseHyp 0 1 φ]
+        (Internal.roseNodeAt 2 treeTy bitsTy φ)
+      | dbgTrace "memberAtomsOcc: not proved" fun _ ↦ none
+    pure (⟨0, [treeTy], [], φ⟩, nd (.roseIndHyp 2 0 1) [d]))
+
+/-- The statement of {name}`refsOccWith` at every list of forms, each form's formula by
+{name}`memberAtomsOcc`. -/
+def refsOcc (P : Prog) (S : Defs) : Step := refsOccWith P S "refsOcc" true
+
+/-- A recognizer's atom occurs in a list of forms where it occurs among their atoms that end
+with {lit}`.member` ({name}`refsOcc`, {name}`keepRec`), the sides in the normal form of the
+passes' rules ({name}`passProg`), as the recognizers' insertion at a marker has them: a rule of
+those normal forms. In the context of the characters of the datatype's atom and the forms. -/
+def refsOccRec (P : Prog) (S : Defs) : Step :=
+  ("refsOccRec", fun ix E ↦ do
+    let K : Kit := ⟨passProg P, S, E, ix, []⟩
+    let Γ := [list treeTy, list treeTy]
+    let nf (t : Term) : Option Term := nfE K.G K.E (K.rules []) Γ t
+    let A := recAtomT P (v 0)
+    let some l := nf (occInT P A (refsT P (v 1))) | dbgTrace "refsOccRec: left" fun _ ↦ none
+    let some r := nf (occInT P A (v 1)) | dbgTrace "refsOccRec: right" fun _ ↦ none
+    let a : Internal.Thm := ⟨0, Γ, [], Term.eq l r⟩
+    let some d := (K.cutThm "refsOcc" (fun _ ↦ [v 1]) <| K.allEΓ (fun _ ↦ A) <|
+        K.impE (stage "refsOccRec: keep" (K.cutThm "keepRec" (fun _ ↦ [v 0]) dHyp)) <|
+        normLastK K (stage "refsOccRec: by the instance" K.byNorm)) a.ctx a.hyps a.concl
+      | dbgTrace "refsOccRec: not proved" fun _ ↦ none
+    pure (a, d))
+
+/-- The development of the occurrences of the recognizers' atoms among the atoms of a program's
+forms that end with {lit}`.member`, as the recognizers' insertion tests them. -/
+def programRefsDev (P : Prog) (S : Defs) : List Step :=
+  [memberEndRec P S, occInApp P S] ++ memberAtomsRebuild P S ++
+    [memberAtomsFus P S, occursFus P S, keepRec P S, memberAtomsOccAll P S, refsOccAll P S,
+      occInOne P S, memberAtomsOcc P S, refsOcc P S, refsOccRec P S]
 
 end GebTests.Prototypes.FreeTopos.Datatypes
 

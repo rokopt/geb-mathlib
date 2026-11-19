@@ -57,6 +57,7 @@ def programSoundGroups (P : Prog) (S : Defs) (T : Defs3) : List (String × List 
       ("datatype-program-forms", [eraseDefForm P S, recAtThree P S, eraseOther P S]),
       ("datatype-program-recs", programRecsDev P S T),
       ("datatype-program-occurs", programOccursDev P S),
+      ("datatype-program-refs", programRefsDev P S),
       ("datatype-program-nums", programNumsDev P S),
       ("datatype-program-alias",
         foldRebuild P "rt" "Typing.readTy" [treeTy, T.envTy] ++
