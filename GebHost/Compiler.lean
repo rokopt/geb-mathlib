@@ -25,11 +25,15 @@ writes nothing, the sources of a program up to one of them: those of the nearest
 lists it, or the source alone where none does; and {lit}`check --manifest MANIFEST` a manifest's
 program.
 
-The compiler's entry points return the empty tree for a program they reject. The driver then
-reports on standard error what rejects it, exits with status 1 and leaves the output file
-untouched, so that an empty output is never written for a failure. It finds what rejects the
-program by running the compiler's stages in the order of {lit}`Compile.bundleOf`, each stage's
-definitions being those the compiled compiler holds.
+The driver composes the compiler's front end {lit}`Compile.bundleOf`, the kernel's check and a
+backend as the entry points {lit}`main` and {lit}`mainLean` compose them through
+{lit}`Compile.compileWith`, so that the bundle the backend writes is also the one whose
+definitions' names it checks. For a program the compiler rejects, the driver reports on standard
+error what rejects it, exits with status 1 and leaves the output file untouched, so that an empty
+output is never written for a failure. It finds what rejects the program by running the compiler's
+stages in the order of {lit}`Compile.bundleOf`, each stage's definitions being those the compiled
+compiler holds. {lit}`lake exe geb-compile profile [--manifest] INPUT` prints the time of each of
+those stages ({lit}`GebHost.Compiler.stageTimes`).
 
 A failure is reported as a diagnostic, {lit}`FILE:LINE:COLUMN: error: MESSAGE`, the line and
 the column those of the occurrence the failure concerns in the source that holds it, each from
@@ -46,6 +50,7 @@ decides nothing about it.
 * {lit}`GebHost.Compiler.Diagnostic`: a failure with its source occurrence.
 * {lit}`GebHost.Compiler.compileManifest`: compile a manifest and check its entry points.
 * {lit}`GebHost.Compiler.checkSource`: compile the program a source belongs to, up to it.
+* {lit}`GebHost.Compiler.stageTimes`: the time of each stage of the compiler on a program.
 
 ## Tags
 
@@ -255,11 +260,20 @@ def diagnostic (input : String) (sources : List Source) (r : Rejection) : Diagno
   | some (p, sp, msg) => ⟨p, some sp, msg⟩
   | none => ⟨input, none, r.message⟩
 
-/-- The definitions of a program the compiler reads. -/
-def definedNames (file : Tree) : List String :=
+/-- A program's bundle, where the compiler reads it and the kernel checks its terms, as
+{lit}`Compile.compileWith` composes {lit}`Compile.bundleOf` and {lit}`Check.checkProgram`. -/
+def checkedBundle (file : Tree) : Option Tree :=
   let b := GebBoot.«Compile.bundleOf» file
-  if (GebBoot.«Prelude.isSome» b).label = 0 then []
-  else (((GebBoot.«Prelude.get» b).children.getD 1 (mk 0 [])).children).filterMap nameString?
+  if (GebBoot.«Prelude.isSome» b).label = 0 then none
+  else
+    let g := GebBoot.«Prelude.get» b
+    let terms := (g.children.getD 0 (mk 0 [])).children
+    if (GebBoot.«Prelude.isSome» (GebBoot.«Check.checkProgram» terms)).label = 0 then none
+    else some g
+
+/-- The names of the definitions of a bundle. -/
+def definedNames (b : Tree) : List String :=
+  ((b.children.getD 1 (mk 0 [])).children).filterMap nameString?
 
 /-- What a driver compiles: the bytes the compiler reads, the sources they are read from, and
 the check of the names the program defines. -/
@@ -285,46 +299,49 @@ def Input.ofManifest (path : String) : IO Input := do
   let paths := Manifest.sourcePaths path m
   return { ← Input.ofFiles paths with checkNames := m.checkEntries }
 
-/-- An entry point's output, or the diagnostic of what rejects the program of a named input, the
-check of its definitions' names included. -/
-def compiled (entry : Tree → Tree) (input : String) (sources : List Source)
+/-- A backend's output on the checked bundle of the program of a named input, as
+{lit}`Compile.compileWith` gives it, or the diagnostic of what rejects the program, the check of
+its definitions' names included. The bundle is computed once, for the backend and the names. -/
+def compiled (back : Tree → Tree) (input : String) (sources : List Source)
     (checkNames : List String → Except String Unit) (file : Tree) : Except String Tree := do
-  let out := entry file
-  if out == mk 0 [] then throw (diagnostic input sources (rejectionOf file)).render
-  (checkNames (definedNames file)).mapError fun msg ↦ (Diagnostic.mk input none msg).render
+  let reject := fun _ : Unit ↦ (diagnostic input sources (rejectionOf file)).render
+  let some b := checkedBundle file | throw (reject ())
+  let out := back b
+  if out == mk 0 [] then throw (reject ())
+  (checkNames (definedNames b)).mapError fun msg ↦ (Diagnostic.mk input none msg).render
   return out
 
-/-- Compile an input through an entry point, reporting a failure on standard error. -/
-def compileInput (name : String) (entry : Tree → Tree) (input output : String)
+/-- Compile an input through a backend, reporting a failure on standard error. -/
+def compileInput (name : String) (back : Tree → Tree) (input output : String)
     (load : IO Input) : IO UInt32 := do
   try
     let i ← load
-    Command.runBytes name (compiled entry input i.sources i.checkNames) i.bytes output
+    Command.runBytes name (compiled back input i.sources i.checkNames) i.bytes output
     return 0
   catch e =>
     IO.eprintln e
     return 1
 
-/-- Compile a source file through an entry point, its notes erased. -/
-def compileFile (name : String) (entry : Tree → Tree) (input output : String) : IO UInt32 :=
-  compileInput name entry input output (Input.ofFile input)
+/-- Compile a source file through a backend, its notes erased. -/
+def compileFile (name : String) (back : Tree → Tree) (input output : String) : IO UInt32 :=
+  compileInput name back input output (Input.ofFile input)
 
-/-- Compile the program of a manifest through an entry point. -/
-def compileManifest (name : String) (entry : Tree → Tree) (path output : String) : IO UInt32 :=
-  compileInput name entry path output (Input.ofManifest path)
+/-- Compile the program of a manifest through a backend. -/
+def compileManifest (name : String) (back : Tree → Tree) (path output : String) : IO UInt32 :=
+  compileInput name back path output (Input.ofManifest path)
 
 /-! ## Checking a source -/
 
-/-- The compiler without a backend: a program's checked bundle, or the empty tree. -/
-def checked (file : Tree) : Tree := GebBoot.«Compile.compileWith» (fun b ↦ b) file
+/-- The backend of a check: the checked bundle itself. -/
+def checked (b : Tree) : Tree := b
 
-/-- Compile an input through an entry point and write nothing, reporting a failure on standard
+/-- Compile an input through a backend and write nothing, reporting a failure on standard
 error. -/
-def checkInput (entry : Tree → Tree) (input : String) (load : IO Input) : IO UInt32 := do
+def checkInput (back : Tree → Tree) (input : String) (load : IO Input) : IO UInt32 := do
   try
     let i ← load
     discard <| IO.ofExcept
-      (compiled entry input i.sources i.checkNames (ofBytes i.bytes))
+      (compiled back input i.sources i.checkNames (ofBytes i.bytes))
     return 0
   catch e =>
     IO.eprintln e
@@ -365,12 +382,81 @@ def sourcesUpTo (source : System.FilePath) : IO (List System.FilePath) := do
   return [source]
 
 /-- Compile the program a source belongs to, up to the source, and write nothing. -/
-def checkSource (entry : Tree → Tree) (source : String) : IO UInt32 :=
-  checkInput entry source do Input.ofFiles (← sourcesUpTo source)
+def checkSource (back : Tree → Tree) (source : String) : IO UInt32 :=
+  checkInput back source do Input.ofFiles (← sourcesUpTo source)
 
 /-- Compile a manifest's program and write nothing. -/
-def checkManifest (entry : Tree → Tree) (path : String) : IO UInt32 :=
-  checkInput entry path (Input.ofManifest path)
+def checkManifest (back : Tree → Tree) (path : String) : IO UInt32 :=
+  checkInput back path (Input.ofManifest path)
+
+/-! ## The time of each stage -/
+
+/-- A value computed in {name}`IO`, with the milliseconds its computation took. -/
+def timed {α : Type} (f : Unit → α) : IO (α × Nat) := do
+  let t0 ← IO.monoNanosNow
+  let a ← IO.lazyPure f
+  let t1 ← IO.monoNanosNow
+  return (a, (t1 - t0) / 1000000)
+
+/-- The stages of {lit}`Compile.compileWith` composed as {lit}`Compile.bundleOf` and
+{lit}`Datatype.expandChecked` compose them, each stage's milliseconds and the number of trees it
+gives, or the name of the first stage that rejects the program. The expansion of the datatype
+language is divided into the decoding of the forms by their recognizer, the expansion with their
+datatypes, the typing and the erasure. -/
+def stageTimes (file : Tree) : IO (List (String × Nat × Nat) × Option String) := do
+  let mut rows : List (String × Nat × Nat) := []
+  let (sx, t) ← timed fun _ ↦ GebBoot.«Reader.readSExps» file.children
+  if (GebBoot.«Prelude.isSome» sx).label = 0 then return (rows, some "read")
+  let es := (GebBoot.«Prelude.get» sx).children
+  rows := rows ++ [("read", t, es.length)]
+  let (u, t) ← timed fun _ ↦ GebBoot.«Compile.userSource» (GebBoot.«Prelude.get» sx)
+  rows := rows ++ [("reserved", t, 1)]
+  if u.label = 0 then return (rows, some "reserved")
+  let (mx, t) ← timed fun _ ↦ GebBoot.«Modules.expandModules» es
+  if (GebBoot.«Prelude.isSome» mx).label = 0 then return (rows, some "modules")
+  let ms := (GebBoot.«Prelude.get» mx).children
+  rows := rows ++ [("modules", t, ms.length)]
+  let (d, t) ← timed fun _ ↦ GebBoot.«Typing.Tx.member» (mk 2 ms)
+  rows := rows ++ [("decode", t, 1)]
+  if d.label = 0 then return (rows, some "decode")
+  let (x, t) ← timed fun _ ↦ GebBoot.«Datatype.expandTyped» ms
+  rows := rows ++ [("expand", t, x.2.length)]
+  if x.1.label = 0 then return (rows, some "expand")
+  let (c, t) ← timed fun _ ↦ GebBoot.«Typing.checkForms» (GebBoot.«Datatype.markersFirst» x.2)
+  rows := rows ++ [("typing", t, 1)]
+  if c.label = 1 then return (rows, some "typing")
+  let (ks, t) ← timed fun _ ↦ GebBoot.«Datatype.kernelForms» x.2
+  rows := rows ++ [("erase", t, ks.length)]
+  let (rx, t) ← timed fun _ ↦ GebBoot.«Recognize.insertRecognizers» ks
+  if (GebBoot.«Prelude.isSome» rx).label = 0 then return (rows, some "recognizers")
+  let fs := (GebBoot.«Prelude.get» rx).children
+  rows := rows ++ [("recognizers", t, fs.length)]
+  let (b, t) ← timed fun _ ↦ GebBoot.«Reader.readProgram» fs
+  if (GebBoot.«Prelude.isSome» b).label = 0 then return (rows, some "resolve")
+  let terms := ((GebBoot.«Prelude.get» b).children.getD 0 (mk 0 [])).children
+  rows := rows ++ [("resolve", t, terms.length)]
+  let (k, t) ← timed fun _ ↦ GebBoot.«Check.checkProgram» terms
+  rows := rows ++ [("kernel", t, terms.length)]
+  if (GebBoot.«Prelude.isSome» k).label = 0 then return (rows, some "kernel")
+  return (rows, none)
+
+/-- Print the time of each stage of the compiler on an input, one line a stage: its name, its
+milliseconds and the number of trees it gives. -/
+def profileInput (input : String) (load : IO Input) : IO UInt32 := do
+  try
+    let i ← load
+    let (rows, rejected) ← stageTimes (ofBytes i.bytes)
+    for (name, ms, n) in rows do
+      IO.println s!"{name}\t{ms}\t{n}"
+    IO.println s!"total\t{(rows.map (·.2.1)).sum}"
+    match rejected with
+    | some s =>
+      IO.eprintln s!"{input}: the stage {s} rejects the program"
+      return 1
+    | none => return 0
+  catch e =>
+    IO.eprintln e
+    return 1
 
 end GebHost.Compiler
 
