@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Kernel.Basic
+public import Geb.Prototypes.FreeTopos.Internal.Encoding
 
 set_option doc.verso true in
 /-!
@@ -49,6 +50,8 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.Agreement.Fold
 
 open Geb Geb.Kernel
+
+export Geb.FreeTopos.Internal.Encode (encWith encWith_node)
 
 /-- The fold at a node is its step at the node's label and its children's results. -/
 theorem fold_node {α : Type} (f : Tree → List α → α) (a : ℕ) (cs : List Tree) :
@@ -96,19 +99,6 @@ theorem elim_eq_para {α β : Type} (f : α → List β → β) (t : RoseTree α
     (fun a cs ih ↦ by
       rw [RoseTree.elim_node, RoseTree.para_node, List.map_map]
       exact congrArg (f a) (List.map_congr_left ih)) t
-
-/-- A rose tree of labels as a tree of numbers: each node the node of its label's position over
-the tree of the label's data and the children. -/
-def encWith {L : Type} (tag : L → ℕ) (dat : L → Tree) : RoseTree L → Tree :=
-  RoseTree.elim fun l cs ↦ RoseTree.node (tag l) (dat l :: cs)
-
-/-- The encoding of a node is the node of its label's position over the label's data and the
-children's encodings. -/
-@[simp] theorem encWith_node {L : Type} (tag : L → ℕ) (dat : L → Tree) (l : L)
-    (cs : List (RoseTree L)) :
-    encWith tag dat (RoseTree.node l cs) =
-      RoseTree.node (tag l) (dat l :: cs.map (encWith tag dat)) :=
-  RoseTree.elim_node _ l cs
 
 /-- Nodes are equal exactly when their labels and their children are. -/
 theorem node_inj {L : Type} {a b : L} {cs ds : List (RoseTree L)} :

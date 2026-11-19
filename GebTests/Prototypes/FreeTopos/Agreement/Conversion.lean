@@ -9,6 +9,7 @@ public import GebTests.Prototypes.FreeTopos.Agreement.Literals
 public import GebTests.Prototypes.FreeTopos.Agreement.Machine
 public import GebTests.Prototypes.FreeTopos.Agreement.Prove
 public import Geb.Prototypes.FreeTopos.Internal.Conversion
+public import Geb.Prototypes.FreeTopos.Internal.Accelerate
 
 set_option doc.verso true in
 /-!
@@ -266,6 +267,58 @@ theorem machineReduceBy_eq (unf' : Tree → Tree) (unfold : ℕ → Bool)
     exact Machine.machineReduce_eq (P := ⟨encGlobals G, leaf n, unf', leaf kl, leaf kc, _⟩)
       ⟨rfl, rfl, hunf, rfl, rfl, fun _ _ _ ↦ rfl⟩ fuel Γ t
 
+/-- Whether a number is the label of a leaf of a list of numbers' leaves. -/
+theorem any_leaf_eq (j : ℕ) (R : List ℕ) :
+    R.any ((fun x : Tree ↦ x.label == j) ∘ leaf) = R.contains j :=
+  List.rec rfl (fun r R ih ↦ by
+    have e : (r == j) = (j == r) := by
+      by_cases h : r = j
+      · subst h
+        rfl
+      · rw [beq_false_of_ne h, beq_false_of_ne (Ne.symm h)]
+    simp only [List.any_cons, List.contains_cons, Function.comp_apply, label_leaf, ih, e]) R
+
+/-- The mirror's reduction by the machine at the data of a step, every argument encoded: the
+machine's reduction unfolding the definitions of an index below the bound but those excepted, at
+rules none of which is a prepared theorem. -/
+theorem machineRun_eq (fuel m : ℕ) (except : List ℕ) (kl kc : ℕ) (rs : List NormRule)
+    (hrs : Unprepared rs) (Γ : List Tree) (Φ : List Term) (t : Term) :
+    «Conversion.machineRun» (encGlobals G) (E.toList.map encEntry) (leaf n)
+        [leaf fuel, leaf m, RoseTree.node 0 (except.map leaf), leaf kl, leaf kc,
+          RoseTree.node 0 (rs.map encRule)] Γ (Φ.map encTerm) (encTerm t) =
+      encOpt ((Internal.machineReduceBy G E n (fun j ↦ decide (j < m) && !except.contains j)
+        kl kc rs fuel Γ Φ t).map encTerm) := by
+  have hunf : ∀ j : ℕ, «Prelude.and» (Const.lt (leaf j) (leaf m))
+      («Base.not» («Base.anyT» (fun x ↦ Const.eq x (leaf j)) (except.map leaf))) =
+      ofBool (decide (j < m) && !except.contains j) := fun j ↦ by
+    rw [(anyT_eq (fun x ↦ Const.eq x (leaf j)) (fun x ↦ x.label == j) _ fun x _ ↦ rfl).trans
+      (congrArg ofBool (List.any_map.trans (any_leaf_eq j except)))]
+    mirror_simp []
+  simp only [«Conversion.machineRun», at_eq, List.getD_cons_zero, List.getD_cons_succ,
+    children_eq, RoseTree.children_node, rulesOf_eq]
+  exact machineReduceBy_eq G E n _ _ hunf kl kc rs hrs fuel Γ Φ t
+
+/-- The mirror's reduction by the machine agrees with the machine in Lean at the
+representations of the checker's data. -/
+theorem machineRun_agrees : Internal.Accelerate.Agrees «Conversion.machineRun» :=
+  fun G E n d hd Γ Φ t ↦ by
+    have h := machineRun_eq G E.toArray n d.fuel d.bound d.except d.kl d.kc d.rules hd Γ Φ t
+    rw [List.toList_toArray] at h
+    exact h
+
+/-- The function the Lean the compiler emits binds to the reduction by the machine, the machine
+in Lean at the representations of the checker's data, is the mirror's reduction: compiled code
+that runs it computes what the reduction written in Geb computes, at every argument. -/
+theorem machineRun_accel : «Conversion.machineRun$accel» = «Conversion.machineRun» :=
+  Internal.Accelerate.machineRun_eq machineRun_agrees
+
+/-- The function bound to the reduction by the machine where the two are to be compared
+({name}`Geb.FreeTopos.Internal.Accelerate.machineRunShadow`) is the mirror's reduction as
+well. -/
+theorem machineRun_shadow :
+    Internal.Accelerate.machineRunShadow «Conversion.machineRun» = «Conversion.machineRun» :=
+  Internal.Accelerate.machineRunShadow_eq machineRun_agrees
+
 /-! The step of the checker. -/
 
 /-- The label of an encoded certificate's node is its rule's position. -/
@@ -278,17 +331,6 @@ theorem child_encConv (l : ConvRule) (cs : List ConvDeriv) :
     Const.child (encConv (RoseTree.node l cs)) (leaf 0) = RoseTree.node 0 (convData l).2 := by
   rw [encConv_node, child_node]
   rfl
-
-/-- Whether a number is the label of a leaf of a list of numbers' leaves. -/
-theorem any_leaf_eq (j : ℕ) (R : List ℕ) :
-    R.any ((fun x : Tree ↦ x.label == j) ∘ leaf) = R.contains j :=
-  List.rec rfl (fun r R ih ↦ by
-    have e : (r == j) = (j == r) := by
-      by_cases h : r = j
-      · subst h
-        rfl
-      · rw [beq_false_of_ne h, beq_false_of_ne (Ne.symm h)]
-    simp only [List.any_cons, List.contains_cons, Function.comp_apply, label_leaf, ih, e]) R
 
 /-- The mirror's hypotheses weakened past a number of new innermost variables. -/
 theorem mapT_weakenBy (k : ℕ) (Φ : List Term) :
@@ -378,19 +420,11 @@ theorem convStep_eq (l : ConvRule) (hl : RulePlain l) (v : DV)
       Literals.litEval_eq, Internal.convFastStep, Internal.convStep]
     cases R.contains j <;> simp [Option.map_map, none_eq, Function.comp_def]
   | machine fuel m except kl kc rs =>
-    have hunf : ∀ j : ℕ, «Prelude.and» (Const.lt (leaf j) (leaf m))
-        («Base.not» («Base.anyT» (fun x ↦ Const.eq x (leaf j)) (except.map leaf))) =
-        ofBool (decide (j < m) && !except.contains j) := fun j ↦ by
-      rw [(anyT_eq (fun x ↦ Const.eq x (leaf j)) (fun x ↦ x.label == j) _ fun x _ ↦ rfl).trans
-        (congrArg ofBool (List.any_map.trans (any_leaf_eq j except)))]
-      mirror_simp []
-    have hemp : «$436f6e76657273696f6e2f4561636852756c652e6973456d707479»
-        (rs.map encRule) = ofBool rs.isEmpty := by
-      simp only [template, isEmpty_eq, List.isEmpty_map]
     simp only [«Conversion.convStep», label_eq, label_encConv, child_encConv, convData, lt_leaf,
       eq_leaf, label_ne_zero, ofBool_bne, children_eq, RoseTree.children_node, Nat.reduceLT,
       Nat.reduceBEq, decide_false, Bool.false_eq_true, ↓reduceIte,
-      «Conversion.stepMachine», at_eq, List.getD_cons_zero, List.getD_cons_succ, rulesOf_eq, hemp]
+      «Conversion.stepMachine», at_eq, List.getD_cons_zero, List.getD_cons_succ, isEmpty_eq,
+      List.isEmpty_map]
     refine ⟨fun Γ k Φ t ↦ ?_, fun Γ Φ φ ↦ rfl⟩
     have hΦ : (if rs.isEmpty = true then []
         else «Base.mapT» (fun h ↦ «Derivation.weakenBy» (leaf k) h) (Φ.map encTerm)) =
@@ -400,7 +434,7 @@ theorem convStep_eq (l : ConvRule) (hl : RulePlain l) (v : DV)
       · exact mapT_weakenBy k Φ
     simp only [label_leaf, bne_self_eq_false, Bool.false_eq_true, ↓reduceIte, hΦ,
       Internal.convFastStep, Internal.convStep, ConvRule.hyps]
-    exact machineReduceBy_eq G E n _ _ hunf kl kc rs hl fuel Γ _ t
+    exact machineRun_eq G E n fuel m except kl kc rs hl Γ _ t
 
 /-! The checker. -/
 

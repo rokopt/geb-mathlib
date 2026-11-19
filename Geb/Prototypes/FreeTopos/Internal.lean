@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.FreeTopos.Internal.Accelerate
 public import Geb.Prototypes.FreeTopos.Internal.ByMachine
 public import Geb.Prototypes.FreeTopos.Internal.Compile
 public import Geb.Prototypes.FreeTopos.Internal.Completeness
@@ -14,6 +15,7 @@ public import Geb.Prototypes.FreeTopos.Internal.Composition
 public import Geb.Prototypes.FreeTopos.Internal.ConvDevelopment
 public import Geb.Prototypes.FreeTopos.Internal.Derivation
 public import Geb.Prototypes.FreeTopos.Internal.Development
+public import Geb.Prototypes.FreeTopos.Internal.Encoding
 public import Geb.Prototypes.FreeTopos.Internal.Holes
 public import Geb.Prototypes.FreeTopos.Internal.Holes.Closed
 public import Geb.Prototypes.FreeTopos.Internal.Inversion
@@ -53,8 +55,10 @@ agrees, in every model, with unfolding the language's definitions and compiling;
 of formulas under hypotheses, their checker and a prover, the proofs that the checker is sound
 and, citing certificates of the combinators, complete, and that the prover's rewritings check,
 with the checker with a step of conversion admitted by them; its connectives, defined from
-equality, with their rules derived, their meaning in every model, and description; and the
-representation of Lean's functions by its terms in the topos of types and functional relations.
+equality, with their rules derived, their meaning in every model, and description; the
+representation of Lean's functions by its terms in the topos of types and functional relations;
+and the representation of its data as trees of numbers, with the environment machine run in
+place of the machine written in Geb at those representations.
 -/
 
 set_option doc.verso true

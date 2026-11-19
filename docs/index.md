@@ -4600,6 +4600,19 @@ import-direction rules above are enforced by
   (`Geb.FreeTopos.Internal.devByMachine`); the translation is checked
   rather than trusted, and `GebBench/Prototypes/FreeTopos/ByMachine.lean`
   times the stored developments against their translations.
+  `Encoding.lean` states the representation of the language's terms,
+  rules, constants and entries as trees of numbers, at which the
+  agreements of the programs written in Geb are stated, with the reading
+  of a tree as the datum it represents, which has a value only at a
+  representation (`Geb.FreeTopos.Internal.Encode.encTerm_of_decTerm`),
+  and `Accelerate.lean` the reduction by the machine in Lean in place of
+  a reduction of trees: the machine at the trees that represent the
+  checker's data and the given reduction elsewhere
+  (`Geb.FreeTopos.Internal.Accelerate.machineRun`), equal to the given
+  reduction where that agrees with the machine at the representations
+  (`Geb.FreeTopos.Internal.Accelerate.machineRun_eq`), and the function
+  that runs both and compares them
+  (`Geb.FreeTopos.Internal.Accelerate.machineRunShadow`).
   `GebBench/Prototypes/FreeTopos/Profile.lean` divides the base checker's
   time on a stored development among its derivations' rules.
   `GebTests/Prototypes/FreeTopos/Literals.lean` proves the equations by
@@ -4635,7 +4648,9 @@ import-direction rules above are enforced by
   input. At every development, its constants, entries and declarations
   encoded, the loaded check gives the encoding of the Lean checker's
   state, without `Classical.choice`; the tests' encodings are the
-  proof's (`Agreement/Encode.lean`). The program's lists, optional values
+  proof's (`Agreement/Encode.lean`, those of terms, rules, constants and
+  entries the library's of `Internal/Encoding.lean`). The program's
+  lists, optional values
   and the combinator prover's computations are instances of templates,
   whose copies of a definition the mirror emits each as a Lean function
   of its own: `Agreement/Templates.lean` states each such definition
@@ -4675,12 +4690,19 @@ import-direction rules above are enforced by
   to `Geb.FreeTopos.Internal.convCheck` at every encoded certificate none
   of whose steps names a prepared theorem, and its check of a development
   equal to `Geb.FreeTopos.Internal.checkConvDev` (`conversion_agree`).
+  The checker's reduction by the machine at the data of a step, every
+  argument a tree, is bound in the emitted Lean to the machine in Lean
+  (`bootstrap/accelerations`, `scripts/accelerate.py`), and
+  `Agreement/Conversion.lean` proves the function bound, and the
+  function that runs both, equal to the reduction written in Geb at
+  every argument (`machineRun_accel`, `machineRun_shadow`).
   `GebTests/Prototypes/FreeTopos/ConversionMirror.lean` tests the
   evaluation, the machine within each depth of recursion, the checker's
-  steps of the machine and the check of a development against Lean's at
-  the library's arithmetic, and
-  `GebBench/Prototypes/FreeTopos/MachineMirror.lean` measures the two
-  machines' times.
+  steps of the machine, the function bound to the reduction and the
+  check of a development against Lean's at the library's arithmetic, and
+  `GebBench/Prototypes/FreeTopos/MachineMirror.lean` measures the
+  checkers' times and that of the reduction written in Geb with no
+  function bound.
   Depends on the modules of `Geb/Prototypes/FreeTopos/` above and
   `Geb.Prototypes.PartialHorn.Completeness`.
 - `Geb/Prototypes/FreeTopos/Translation.lean` — the translation of the

@@ -1,0 +1,6 @@
+# The accelerations of the programs written in Geb (the manual's Bootstrap chapter, Speed and a
+# second host): on each line, the name of a definition, the Lean function run in its place, the
+# Lean function that runs both and compares them, each given the definition's own code, and the
+# module declaring the two. scripts/accelerate.py binds them in the Lean the bootstrap compiler
+# emits.
+Conversion.machineRun _root_.Geb.FreeTopos.Internal.Accelerate.machineRun _root_.Geb.FreeTopos.Internal.Accelerate.machineRunShadow Geb.Prototypes.FreeTopos.Internal.Accelerate

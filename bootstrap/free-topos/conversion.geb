@@ -24,7 +24,8 @@
 ; indices where the evaluation at literals is ready there.
 
 (module Conversion
-  (export CK toRule ruleOf applyInst machineReduceBy convStep convCheck thmConvChecks Indices
+  (export CK toRule ruleOf applyInst machineReduceBy machineRun convStep convCheck thmConvChecks
+    Indices
     indices
     ConvState
     convState
@@ -140,21 +141,28 @@
           fuel
           g
           t))))
-  ; a step of the machine, unfolding the definitions of an index below a bound but those of a
-  ; list, under the hypotheses weakened past k new innermost variables where it has rules
+  ; the reduction by the machine at the data of a step, every argument a tree, so that an
+  ; acceleration is bound to it: the definitions of an index below a bound unfolded but those of
+  ; a list, the normal form rewritten by the rules the data name
+  (defn machineRun ((G Globals) (E (List Entry)) (n T) (dt Ts) (g Ts) (hs Ts) (t T)) T
+    (let ex Ts (children (at dt 2))
+      (machineReduceBy G E n
+        (lam ((j T)) (and (lt j (at dt 1)) (not (anyT (lam ((x T)) (eq x j)) ex))))
+        (at dt 3)
+        (at dt 4)
+        (rulesOf (children (at dt 5)))
+        (at dt 0)
+        g
+        hs
+        t)))
+  ; a step of the machine, under the hypotheses weakened past k new innermost variables where it
+  ; has rules
   (defn stepMachine ((G Globals) (E (List Entry)) (n T) (dt Ts)) CK
-    (let* ((ex Ts (children (at dt 2))) (rs NRs (rulesOf (children (at dt 5)))))
-      (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
-        (if md 0
-          (machineReduceBy G E n
-            (lam ((j T)) (and (lt j (at dt 1)) (not (anyT (lam ((x T)) (eq x j)) ex))))
-            (at dt 3)
-            (at dt 4)
-            rs
-            (at dt 0)
-            g
-            (if (EachRule.isEmpty rs) (nil T) (mapT (lam ((h T)) (weakenBy k h)) hs))
-            t)))))
+    (lam ((md T) (g Ts) (k T) (hs Ts) (t T))
+      (if md 0
+        (machineRun G E n dt g
+          (if (isEmpty (children (at dt 5))) (nil T) (mapT (lam ((h T)) (weakenBy k h)) hs))
+          t))))
 
   ; one step of the checker, at a node of a rule from its premises' results
   (defn convStep ((G Globals) (E (List Entry)) (R Ts) (n T) (nd T) (rs CKs)) CK

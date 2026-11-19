@@ -90,7 +90,13 @@ own requires a prior `lake build`.
 - `scripts/bootstrap.sh check`: the bootstrap's committed image and
   emitted Lean regenerate byte for byte, and the compiler built from
   the emitted Lean reproduces both (the manual's Bootstrap chapter,
-  § Speed and a second host); every source under `bootstrap/` is a
+  § Speed and a second host), each module of the programs' emitted Lean
+  with the definitions of `bootstrap/accelerations` bound to the Lean
+  functions run in their place (`scripts/accelerate.py`); the
+  environment variable `GEB_ACCELERATION` selects another binding for
+  an experiment (`shadow`, which runs both and compares them, or
+  `none`), and the committed Lean is that of the variable unset; every
+  source under `bootstrap/` is a
   fixed point of `geb-fmt --chains`, formatted with each sequence of
   bindings a `let*` and each of tests a `cond` (§ Modules), and, where
   the release pinned in `scripts/parinfer/` is installed, of both of
@@ -149,7 +155,8 @@ fixtures:
   `scripts/tests/test-geb-compile.sh`,
   `scripts/tests/test-holes.sh`,
   `scripts/tests/test-manifest.sh`,
-  `scripts/tests/test-geb-doc.sh`.
+  `scripts/tests/test-geb-doc.sh`,
+  `scripts/tests/test-accelerate.sh`.
 - `scripts/tests/test-mathlib-bump-detect.sh`,
   `scripts/tests/test-jj-bump-detect.sh`,
   `scripts/tests/test-regenerate-integration.sh`,

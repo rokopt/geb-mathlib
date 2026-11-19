@@ -10,7 +10,9 @@
 # with a Lean function is proved, and from the program the datatype
 # language's soundness is stated in, each under bootstrap/lean/GebMirror/
 # in a namespace of its own; the metalogic's, a module per layer, beside the
-# loading of its program through each layer, checked by the kernel.
+# loading of its program through each layer, checked by the kernel. In each
+# of those modules a definition that bootstrap/accelerations names is bound
+# to the Lean function run in its place (scripts/accelerate.py).
 #
 # The programs' sources are those of their manifests, bootstrap/*.manifest.
 # The stage-1 compiler's source S is the text of its manifest's program, as
@@ -81,6 +83,7 @@ mirror() {
   [ -s "$tmp/$name.raw" ] || fail "the image's mainLean rejects the mirror $name"
   sed "s/^namespace GebBoot$/namespace GebMirror.$name/; s/^end GebBoot$/end GebMirror.$name/; s/_root_\.GebBoot\.«/_root_.GebMirror.$name.«/g" \
     "$tmp/$name.raw" > "$out"
+  python3 scripts/accelerate.py "$out"
 }
 
 # The metalogic's modules, written under the directory $1, its layers those of its manifest, each
@@ -111,6 +114,7 @@ layered() {
       }
       /^end GebBoot$/ { print "end GebMirror.Metalogic"; tail = 1; next }
       tail || n > skip { print }' "$tmp/layer.raw" > "$out/GebMirror/Metalogic/$name.lean"
+    python3 scripts/accelerate.py "$out/GebMirror/Metalogic/$name.lean"
     count=$(grep -c '^def «' "$tmp/layer.raw")
     {
       printf 'module\n\npublic import GebMirror.Metalogic.%s\n' "$name"

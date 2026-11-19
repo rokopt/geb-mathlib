@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import GebMirror.Metalogic
-public import GebTests.Prototypes.FreeTopos.Agreement.Encode
+public import GebTests.Prototypes.FreeTopos.Agreement.Encode -- shake: keep; the names it exports
 public import GebTests.Prototypes.FreeTopos.Agreement.TemplateEquations
 public import GebTests.Prototypes.FreeTopos.Agreement.Templates
 public import GebTests.Prototypes.CheckMirror
