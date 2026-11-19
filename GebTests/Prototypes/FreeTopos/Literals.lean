@@ -48,7 +48,7 @@ open Geb.FreeTopos.Literals (Sym Val bitsT num val lemmas ready)
 open GebTests.Prototypes.FreeTopos.Translation (baseRules value)
 open GebTests.Prototypes.FreeTopos.TranslationProofs (deltas develop rebuild lcaseRebuild listInd
   sides)
-open Internal (Term Thm Entry Decl NormRule ConvDeriv)
+open Internal (Term Thm Entry ConvDecl NormRule ConvDeriv)
 
 /-- The constants: the library's definitions. -/
 def G : Internal.Globals := globals []
@@ -70,9 +70,9 @@ def rulesR : List NormRule :=
 
 /-- The development: the rebuildings, by induction on bitstrings, and then the equations, by
 normalization with the rebuildings. -/
-def development : Option (List Decl) := do
+def development : Option (List ConvDecl) := do
   let rbs ← rebuilds
-  let ind (a : Thm) (E : Array Entry) : Option Internal.Deriv := match a.arity with
+  let ind (a : Thm) (E : Array Entry) : Option Internal.ConvDeriv := match a.arity with
     | 0 => listInd G (consT bitTy (v 1) (v 0)) rs 256 a E
     | _ => Internal.byListInd G E 2 0 1 (consT X₀ (v 1) (v 0)) rs 256 a.ctx a.hyps (sides a).1
       (sides a).2
@@ -90,14 +90,14 @@ def entries : Array Entry :=
 
 -- the development proves each of its theorems
 #guard development.any fun ds ↦ ds.length = first + lemmas.length &&
-  (Internal.checkDev G #[] ds).isSome
+  (Internal.checkConvDev G #[] ds).isSome
 
 -- the equations are its theorems from the first index on, and the evaluation is ready there
 #guard ready G entries first
 #guard !ready G entries 0
 
 /-- The development followed by the record that the evaluation is ready at an index. -/
-def recorded (j : ℕ) : List Internal.ConvDecl := (development.getD []).map .base ++ [.ready j]
+def recorded (j : ℕ) : List Internal.ConvDecl := development.getD [] ++ [.ready j]
 
 -- the record at the first equation is accepted and kept, and the record at another index is not
 #guard (Internal.checkConvDev G #[] (recorded first)).any fun st ↦ st.2.2 = [first]

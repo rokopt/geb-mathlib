@@ -78,7 +78,7 @@ def neqMore (P : Prog) : List Step :=
   let neq (n : ℕ) : Internal.Thm :=
     nfThm P rs [bitsTy] (call D.eqB [] [n.rec (sc (v 0)) fun _ t ↦ sc t, numeral n]) bnilT
   let byBit (n : ℕ) (a : Internal.Thm) (ix : String → ℕ) (E : Array Internal.Entry) :
-      Option Internal.Deriv :=
+      Option Internal.ConvDeriv :=
     let rules := (List.range n).map (fun k ↦ Internal.NormRule.thm (ix s!"neq{k}") []) ++
       rebRules ix ++ foldedRules P
     let p : Internal.Prover := fun Γ Φ t u ↦ byMode .full P.G E 0 rules Γ Φ t u

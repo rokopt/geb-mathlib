@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Regenerate or check the proof-source runner and the recorded authoring example.
-# The runner extends the existing metalogic mirror; its preceding definitions must agree.
+# The runner extends the existing metalogic mirror; its preceding definitions must agree, each
+# definition that bootstrap/accelerations binds read as the compiler emits it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
@@ -26,10 +27,17 @@ def definitions(text):
     body = text.split('\nend ', 1)[0]
     return re.findall(r'^def «.*?(?=^def «|\Z)', body, re.M | re.S)
 
+def unbound(text):
+    # scripts/accelerate.py's binding of a definition, undone: its code under the name NAME$geb,
+    # the function bound to it and the attribute naming that function are removed.
+    return re.sub(r'^def «([^»]*)\$geb» :=\n.*?\n\ndef «\1\$accel» [^\n]*\n[^\n]*\n\n'
+                  r'@\[implemented_by «\1\$accel»\]\n', '', text, flags=re.M | re.S)
+
 full = Path(sys.argv[1]).read_text().replace('_root_.GebBoot.«', '_root_.GebMirror.Metalogic.«')
 base = []
-for layer in ('Checker', 'Translation', 'Prover', 'Tactics'):
-    base.extend(definitions(Path(f'bootstrap/lean/GebMirror/Metalogic/{layer}.lean').read_text()))
+for layer in ('Checker', 'Translation', 'Prover', 'Conversion', 'Tactics'):
+    base.extend(definitions(unbound(
+        Path(f'bootstrap/lean/GebMirror/Metalogic/{layer}.lean').read_text())))
 parts = definitions(full)
 if [p.strip() for p in parts[:len(base)]] != [p.strip() for p in base]:
     raise SystemExit('authoring: the compiler changed the preceding metalogic definitions')

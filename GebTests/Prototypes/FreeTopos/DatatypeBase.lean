@@ -509,7 +509,7 @@ def mapFold (T : Defs3) (k : ℕ) (R : Tree) (tys : List Tree) : Term :=
 /-- The fusion of the map of the fold of index k at the children, applied to the parameters, with
 the map of the fold's definition, by induction on the children; or the reason it fails. -/
 def fusion (P : Prog) (T : Defs3) (k : ℕ) (ix : String → ℕ) (E : Array Internal.Entry) :
-    Except String (Internal.Thm × Internal.Deriv) := do
+    Except String (Internal.Thm × Internal.ConvDeriv) := do
   let some f := (allFoldSpecs P T.envTy)[k]? | throw "no fold"
   let some (_, d, C, st, _, F) := foldDefn P f (T.argIdx k)
     | throw "no definition"
@@ -520,7 +520,7 @@ def fusion (P : Prog) (T : Defs3) (k : ℕ) (ix : String → ℕ) (E : Array Int
   let lhs := call D.mapApp θ [Term.listRec (nilT C) (consT C (Term.roseRec C st (v 1)) (v 0))
     (v 0), F]
   let some l := nfE P.G E rs Γ lhs
-    | let bare := (Internal.eval P.G E 0 [] 4096 .full Γ [] lhs).map fun (t, _) ↦ showT t
+    | let bare := (Internal.evalC P.G E 0 [] 4096 .full Γ [] lhs).map fun (t, _) ↦ showT t
       -- the shortest prefix of the rules without a normal form, and its last rule
       let n := ((List.range (rs.length + 1)).find? fun n ↦
         (nfE P.G E (rs.take n) Γ lhs).isNone).getD 0
@@ -725,7 +725,7 @@ def atomEqs (P : Prog) (T : Defs3) : List Step :=
   (atomSpecs P T.envTy).zipIdx.map fun ((Γ, t), k) ↦ (s!"atom{k}", fun ix E ↦ do
     let rs := vRules3 P ix E.size
     let some l := nfE P.G E rs Γ t | dbgTrace s!"atom{k}: left" fun _ ↦ none
-    let some (r, d, _) := Internal.eval P.G E 0 (rs ++ [.delta (T.argIdx k)]) 4096 .full Γ [] l
+    let some (r, d, _) := Internal.evalC P.G E 0 (rs ++ [.delta (T.argIdx k)]) 4096 .full Γ [] l
       | dbgTrace s!"atom{k}: right" fun _ ↦ none
     pure (⟨0, Γ, [], Term.eq l r⟩, nd .join [d, nd .refl]))
 
@@ -864,7 +864,7 @@ def listFoldEqs (P : Prog) (tag name : String) (Γ : List Tree) (elem : Tree)
     (args : Term → List Term) : List Step :=
   let rsU := vBase P ++ [.delta (P.idx name)]
   let nf (G : Internal.Globals) (E : Array Internal.Entry) (Γ : List Tree) (t : Term) :
-      Option Term := (Internal.eval G E 0 rsU 4096 .full Γ [] t).map Prod.fst
+      Option Term := (Internal.evalC G E 0 rsU 4096 .full Γ [] t).map Prod.fst
   let ΓN := Γ.drop 2
   let lower (t : Term) : Term := Term.subst t fun i ↦ v (i - 2)
   [(s!"{tag}Nil", fun _ E ↦ do
@@ -1252,7 +1252,7 @@ def atomCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
           (evalRw K.G K.E (K.rules Φ) .full Γ Φ t).map Prod.fst
         let apps := (ks.flatMap fun j ↦ nfs.flatMap (appsOf K.G j)).eraseDups
         let cheap := eqHyps Φ ++ base ++ ks.map .delta
-        let cuts := apps.filterMap fun a ↦ (Internal.eval K.G K.E 0 cheap 4096 .full Γ Φ a).map
+        let cuts := apps.filterMap fun a ↦ (Internal.evalC K.G K.E 0 cheap 4096 .full Γ Φ a).map
           fun (r, d, _) ↦ (Term.eq a r, nd .join [d, nd .refl])
         cuts.foldr (fun (e, d) k ↦ dCut e d k) k Γ Φ ψ
       eqs.foldr (fun i k ↦ dRwHyp (evalRw K.G K.E base .full) i k) main Γ₀ Φ₀ ψ₀
@@ -1466,7 +1466,7 @@ def handlerAtom3 (P : Prog) (T : Defs3) : Step :=
       (nilT treeTy)))) (v 0)
     let rs := vRules3 P ix E.size
     let some l := nfE P.G E rs Γ t | dbgTrace "handlerAtom3: left" fun _ ↦ none
-    let some (r, dv, _) := Internal.eval P.G E 0 (rs ++ [.delta (T.argIdx 3)]) 4096 .full Γ [] l
+    let some (r, dv, _) := Internal.evalC P.G E 0 (rs ++ [.delta (T.argIdx 3)]) 4096 .full Γ [] l
       | dbgTrace "handlerAtom3: right" fun _ ↦ none
     pure (⟨0, Γ, [], Term.eq l r⟩, nd .join [dv, nd .refl]))
 
@@ -1495,13 +1495,13 @@ def atomDev3 (P : Prog) (S : Defs) (T : Defs3) : List Step :=
     [atomCase P S T]
 
 /-- The checker with its failures reported, for diagnosis: each node whose rewriting or proof
-fails, printed with its rule's position among the rules ({name}`Stored.ruleData`), its goal, and,
-at a proof, the positions of the hypotheses that are not formulas, the deepest first. -/
+fails, printed with its rule's position among the rules ({name}`Stored.convRuleData`), its goal,
+and, at a proof, the positions of the hypotheses that are not formulas, the deepest first. -/
 def checkTraced (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ) :
-    Internal.Deriv → Internal.Checks :=
+    Internal.ConvDeriv → Internal.Checks :=
   RoseTree.para fun l cs ↦
-    let c := Internal.checkStep G E n l cs
-    let r := (Stored.ruleData l).1
+    let c := Internal.convStep G E [] n l cs
+    let r := (Stored.convRuleData l).1
     (fun Γ Φ t ↦ (c.1 Γ Φ t).orElse fun _ ↦
         dbgTrace s!"the rewriting of rule {r} fails at {showT t}" fun _ ↦ none,
       fun Γ Φ ψ ↦ c.2 Γ Φ ψ ||
@@ -1513,16 +1513,16 @@ def checkTraced (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ) :
 /-- A development's declarations, each checked after those before it, given the entries before
 them; the first that does not, named, its failures reported by {name}`checkTraced`. -/
 def checkAfter (G : Internal.Globals) (E : Array Internal.Entry) (names : List String)
-    (ds : List Internal.Decl) : Except String Unit := do
-  let _ ← names.zip ds |>.foldlM (fun (st : Internal.Globals × Array Internal.Entry)
-      (nm, d) ↦ match d.step st.1 st.2 with
+    (ds : List Internal.ConvDecl) : Except String Unit := do
+  let _ ← names.zip ds |>.foldlM (fun (st : Internal.ConvState)
+      (nm, d) ↦ match d.step st.1 st.2.1 st.2.2 with
     | some st' => Except.ok st'
     | none =>
       let proves := match d with
-        | .language a der => (checkTraced st.1 st.2 a.arity der).2 a.ctx a.hyps a.concl
+        | .language a der => (checkTraced st.1 st.2.1 a.arity der).2 a.ctx a.hyps a.concl
         | _ => false
       Except.error s!"the lemma {nm} does not check{if proves then
-        ", its statement not well formed" else ""}") (G, E)
+        ", its statement not well formed" else ""}") (G, E, [])
 
 /-- A development found after the declarations of the given names, as a certificate of the given
 name: the search's declarations entered in their table, which ends their use before the check, and
@@ -1532,8 +1532,9 @@ def certifyFound (G : Internal.Globals) (names : List String) (E : Array Interna
     (cert : String) (steps : List Step) : Except String (List Stored.Cert) := do
   let (_, _, ds) ← developAfter names E steps
   let count := ds.length
-  let some table := Stored.declsToNats ds | throw s!"{cert}: a declaration is not of a theorem"
-  let some read := Stored.declsOfNats table | throw s!"{cert}: the table does not read"
+  let some table := Stored.convDeclsToNats ds
+    | throw s!"{cert}: a declaration is not of a theorem"
+  let some read := Stored.convDeclsOfNats table | throw s!"{cert}: the table does not read"
   checkAfter G E (steps.map (·.1)) read
   pure [⟨cert, count, table⟩]
 

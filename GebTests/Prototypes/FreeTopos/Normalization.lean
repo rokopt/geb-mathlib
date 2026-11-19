@@ -41,7 +41,7 @@ its type by the lemmas of {lit}`NormalizationRel`.
 
 The derivation is found by deducers over the theorems of the developments before it. The
 developments' declarations are stored in the certificates under {lit}`bootstrap/certificates/`,
-whose check by the internal language's checker ({name}`Geb.FreeTopos.Internal.checkDev`)
+whose check by the internal language's checker ({name}`Geb.FreeTopos.Internal.checkConvDev`)
 {lit}`GebTests.Prototypes.FreeTopos.Certified.Normalization` states.
 
 ## References
@@ -63,13 +63,13 @@ open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.T
 open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Weakening
 open Geb.FreeTopos.Tactics (nthOf)
-open Internal (Term NormRule Entry Deriv Decl Definition)
+open Internal (Term NormRule Entry ConvDeriv ConvDecl Definition)
 open scoped FinEnum
 
 /-- The derivation of the fundamental lemma's induction step, found by deducers over the
 theorems of the developments before it, each with its name, where they find one. -/
 def fundamentalDeriv (P : Prog) (S : Defs) (base : List (String × Internal.Thm)) :
-    Option Deriv :=
+    Option ConvDeriv :=
   let G := P.G
   let E : Array Entry := (base.map fun (_, a) ↦ Entry.language a).toArray
   let names := base.map (·.1)
@@ -90,7 +90,7 @@ def fundamentalDeriv (P : Prog) (S : Defs) (base : List (String × Internal.Thm)
       (dFalse L dHyp) Γ Φ ψ
   let refuteT : Deducer := fun Γ Φ ψ ↦ (refuteF Γ Φ ψ).orElse fun _ ↦
     let h := ((Φ[hT]?).bind fun ψ ↦ evalRw G E (rsV Φ ++ [.delta (P.idx "Check.checkNode")])
-      .head Γ Φ ψ).map fun (p : Internal.Term × Deriv) ↦ showT p.1
+      .head Γ Φ ψ).map fun (p : Internal.Term × ConvDeriv) ↦ showT p.1
     dbgTrace s!"refute: {h}" fun _ ↦ none
   let arity (valid : Deducer) : ℕ → Internal.Term → Deducer := fun k ↦ k.rec
     (fun X ↦ dListCase L G E (ix "listCases") treeTy X valid refuteT)
@@ -104,8 +104,8 @@ def fundamentalDeriv (P : Prog) (S : Defs) (base : List (String × Internal.Thm)
       | _ => true
   let norm : Deducer → Deducer := fun k Γ Φ ψ ↦ dRwBy (evalRw G E (rules Φ) .full) k Γ Φ ψ
   let byNorm : Deducer := fun Γ Φ ψ ↦ (dEq (byMode .full G E 0 (rules Φ)) Γ Φ ψ).orElse fun _ ↦
-    let nf (t : Internal.Term) : String := ((Internal.eval G E 0 (rules Φ) 4096 .full Γ Φ t).map
-      fun (r : Internal.Term × Deriv × Bool) ↦ showT r.1).getD "none"
+    let nf (t : Internal.Term) : String := ((Internal.evalC G E 0 (rules Φ) 4096 .full Γ Φ t).map
+      fun (r : Internal.Term × ConvDeriv × Bool) ↦ showT r.1).getD "none"
     match Internal.eqParts ψ with
     | some (a, b) => dbgTrace s!"unequal: {nf a}\n  vs {nf b}" fun _ ↦ none
     | none => none
@@ -163,7 +163,7 @@ def fundamentalDeriv (P : Prog) (S : Defs) (base : List (String × Internal.Thm)
   let split := splitWith false
   -- truth, conjunctions and equations, after normalization
   let solve : ℕ → Deducer := fun d ↦ d.rec (fun _ _ _ ↦ none) fun _ rec ↦ norm fun Γ Φ ψ ↦
-    if ψ == Internal.Logic.tt P.o then some Internal.Logic.trueI else
+    if ψ == Internal.Logic.tt P.o then some Internal.Logic.trueIC else
     match defnParts ψ with
     | some (i, _, _) => if i = P.o + 1 then dConjI L rec rec Γ Φ ψ else none
     | none => byNorm Γ Φ ψ
@@ -172,9 +172,9 @@ def fundamentalDeriv (P : Prog) (S : Defs) (base : List (String × Internal.Thm)
     let (L₀, R₀) ← Internal.eqParts (← Φ[0]?)
     let A := nthOf L₀ p
     let B := nthOf R₀ p
-    let (A', dA, _) ← Internal.eval G E 0 (rules Φ) 4096 .full Γ Φ A
-    let (B', dB, _) ← Internal.eval G E 0 (rules Φ) 4096 .full Γ Φ B
-    let (_, dAh, _) ← Internal.eval G E 0 [.hyp 0] 4096 .weak Γ Φ A
+    let (A', dA, _) ← Internal.evalC G E 0 (rules Φ) 4096 .full Γ Φ A
+    let (B', dB, _) ← Internal.evalC G E 0 (rules Φ) 4096 .full Γ Φ B
+    let (_, dAh, _) ← Internal.evalC G E 0 [.hyp 0] 4096 .weak Γ Φ A
     let i₁ := Φ.length
     let q ← k Γ (Φ ++ [Term.eq A' B', A']) ψ
     pure (nd (.cut (Term.eq A' B')) [nd (.convFrom (Term.eq A B))
@@ -532,7 +532,7 @@ def fundamentalDeriv (P : Prog) (S : Defs) (base : List (String × Internal.Thm)
           dbgTrace s!"arity failed: {bs.map Oitavem.rank}" fun _ ↦ none
       | none =>
         let h := ((Φ[hT]?).bind fun ψ ↦ evalRw G E (rsV Φ ++ [.delta (P.idx "Check.checkNode")])
-          .head Γ Φ ψ).map fun (p : Internal.Term × Deriv) ↦ showT p.1
+          .head Γ Φ ψ).map fun (p : Internal.Term × ConvDeriv) ↦ showT p.1
         dbgTrace s!"not refuted: {bs.map Oitavem.rank} {h}" fun _ ↦ none
   let intros : Deducer → Deducer := fun k ↦ dAllI L (dAllI L (dAllI L (dAllI L
     (dImpI L (dImpI L (dImpI L k))))))
@@ -547,7 +547,7 @@ def fundamentalThm (P : Prog) (S : Defs) : Internal.Thm := ⟨0, [treeTy], [], f
 certificate: the base, the convergence lemmas, the constants' relations, and the lemma itself, by
 induction on rose trees, each proved after the theorems of those before it; the reason where a
 lemma is not proved. -/
-def certificates (P : Prog) (S : Defs) : Except String (List (String × List Decl)) := do
+def certificates (P : Prog) (S : Defs) : Except String (List (String × List ConvDecl)) := do
   let some base := baseDev P S | throw "the base is not stated"
   let (n₁, E₁, ds₁) ← developAfter [] #[] base
   let (n₂, E₂, ds₂) ← developAfter n₁ E₁ (constDev P S)
@@ -555,7 +555,7 @@ def certificates (P : Prog) (S : Defs) : Except String (List (String × List Dec
   let thms := n₃.zip (E₃.toList.filterMap Entry.language?)
   let some d := fundamentalDeriv P S thms | throw "the fundamental lemma is not proved"
   pure [("normalization-base", ds₁), ("normalization-const", ds₂), ("normalization-rel", ds₃),
-    ("normalization", [Decl.language (fundamentalThm P S) (nd (.roseIndHyp 2 0 1) [d])])]
+    ("normalization", [ConvDecl.language (fundamentalThm P S) (nd (.roseIndHyp 2 0 1) [d])])]
 
 end GebTests.Prototypes.FreeTopos.Normalization
 

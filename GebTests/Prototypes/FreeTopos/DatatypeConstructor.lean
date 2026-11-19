@@ -139,7 +139,7 @@ there by the environment's relation to the context, whose entry's name is the at
 the atom's denotation at its value and its further hypotheses are given. -/
 def boundRel (T : Defs3) (thm : Internal.Thm) (name rule : String)
     (Ev cx form : List Tree → Term) (notNum : Kit → Deducer) (nMore : ℕ)
-    (σ : List Tree → List Term) (K : Kit) : Option Internal.Deriv :=
+    (σ : List Tree → List Term) (K : Kit) : Option Internal.ConvDeriv :=
   let P := K.P
   let L := K.L
   let nAt (Γ : List Tree) : Term := atomNameT (form Γ)

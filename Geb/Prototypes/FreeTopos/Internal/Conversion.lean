@@ -67,7 +67,8 @@ rewriting by a derivation the step does not construct.
 ## Main definitions
 
 * {lit}`ConvRule`, {lit}`ConvDeriv` — the rules of the conversion checker's certificates, and
-  its certificates.
+  its certificates, each rule of the language's derivations a rule of the certificates under its
+  name ({lit}`ConvRule.refl` and those beside it).
 * {lit}`applyInst` — the instance of a theorem whose conclusion matches a formula.
 * {lit}`convCheck`, {lit}`Thm.convChecks` — the conversion checker, and the test that a
   certificate proves a theorem.
@@ -141,6 +142,125 @@ inductive ConvRule where
 
 /-- A certificate of the conversion checker. -/
 abbrev ConvDeriv : Type := RoseTree ConvRule
+
+/-- A derivation as a certificate of the conversion checker, each node its rule. -/
+def liftDeriv : Deriv → ConvDeriv := RoseTree.map ConvRule.base
+
+/-! The rules of the language's derivations as rules of the certificates, each under the name of
+the language's rule, so that a certificate's node of a rule of the language is written as a
+derivation's node of it. -/
+
+@[inherit_doc Rule.refl, match_pattern]
+abbrev ConvRule.refl : ConvRule := .base .refl
+
+@[inherit_doc Rule.trans, match_pattern]
+abbrev ConvRule.trans : ConvRule := .base .trans
+
+@[inherit_doc Rule.cong, match_pattern]
+abbrev ConvRule.cong : ConvRule := .base .cong
+
+@[inherit_doc Rule.beta, match_pattern]
+abbrev ConvRule.beta : ConvRule := .base .beta
+
+@[inherit_doc Rule.fstPair, match_pattern]
+abbrev ConvRule.fstPair : ConvRule := .base .fstPair
+
+@[inherit_doc Rule.sndPair, match_pattern]
+abbrev ConvRule.sndPair : ConvRule := .base .sndPair
+
+@[inherit_doc Rule.pairEta, match_pattern]
+abbrev ConvRule.pairEta : ConvRule := .base .pairEta
+
+@[inherit_doc Rule.unitEta, match_pattern]
+abbrev ConvRule.unitEta : ConvRule := .base .unitEta
+
+@[inherit_doc Rule.delta, match_pattern]
+abbrev ConvRule.delta : ConvRule := .base .delta
+
+@[inherit_doc Rule.natZero, match_pattern]
+abbrev ConvRule.natZero (k : ℕ) : ConvRule := .base (.natZero k)
+
+@[inherit_doc Rule.natSucc, match_pattern]
+abbrev ConvRule.natSucc (k : ℕ) : ConvRule := .base (.natSucc k)
+
+@[inherit_doc Rule.listNil, match_pattern]
+abbrev ConvRule.listNil (k : ℕ) : ConvRule := .base (.listNil k)
+
+@[inherit_doc Rule.listCons, match_pattern]
+abbrev ConvRule.listCons (k : ℕ) : ConvRule := .base (.listCons k)
+
+@[inherit_doc Rule.roseNode, match_pattern]
+abbrev ConvRule.roseNode (kn kl kc : ℕ) : ConvRule := .base (.roseNode kn kl kc)
+
+@[inherit_doc Rule.caseInl, match_pattern]
+abbrev ConvRule.caseInl (kc kl : ℕ) : ConvRule := .base (.caseInl kc kl)
+
+@[inherit_doc Rule.caseInr, match_pattern]
+abbrev ConvRule.caseInr (kc kr : ℕ) : ConvRule := .base (.caseInr kc kr)
+
+@[inherit_doc Rule.thm, match_pattern]
+abbrev ConvRule.thm (j : ℕ) (θ : List Tree) (σ : List Term) (flip : Bool) : ConvRule :=
+  .base (.thm j θ σ flip)
+
+@[inherit_doc Rule.rwHyp, match_pattern]
+abbrev ConvRule.rwHyp (i : ℕ) (flip : Bool) : ConvRule := .base (.rwHyp i flip)
+
+@[inherit_doc Rule.join, match_pattern]
+abbrev ConvRule.join : ConvRule := .base .join
+
+@[inherit_doc Rule.natInd, match_pattern]
+abbrev ConvRule.natInd (kz ks : ℕ) (s : Term) : ConvRule := .base (.natInd kz ks s)
+
+@[inherit_doc Rule.listInd, match_pattern]
+abbrev ConvRule.listInd (kn kc : ℕ) (s : Term) : ConvRule := .base (.listInd kn kc s)
+
+@[inherit_doc Rule.hyp, match_pattern]
+abbrev ConvRule.hyp (i : ℕ) : ConvRule := .base (.hyp i)
+
+@[inherit_doc Rule.cut, match_pattern]
+abbrev ConvRule.cut (φ : Term) : ConvRule := .base (.cut φ)
+
+@[inherit_doc Rule.conv, match_pattern]
+abbrev ConvRule.conv : ConvRule := .base .conv
+
+@[inherit_doc Rule.convFrom, match_pattern]
+abbrev ConvRule.convFrom (φ : Term) : ConvRule := .base (.convFrom φ)
+
+@[inherit_doc Rule.propExt, match_pattern]
+abbrev ConvRule.propExt : ConvRule := .base .propExt
+
+@[inherit_doc Rule.funExt, match_pattern]
+abbrev ConvRule.funExt : ConvRule := .base .funExt
+
+@[inherit_doc Rule.apply, match_pattern]
+abbrev ConvRule.apply (j : ℕ) (θ : List Tree) (σ : List Term) : ConvRule := .base (.apply j θ σ)
+
+@[inherit_doc Rule.natIndHyp, match_pattern]
+abbrev ConvRule.natIndHyp (kz ks : ℕ) : ConvRule := .base (.natIndHyp kz ks)
+
+@[inherit_doc Rule.listIndHyp, match_pattern]
+abbrev ConvRule.listIndHyp (kn kc : ℕ) : ConvRule := .base (.listIndHyp kn kc)
+
+@[inherit_doc Rule.cert, match_pattern]
+abbrev ConvRule.cert (c : Tree) : ConvRule := .base (.cert c)
+
+@[inherit_doc Rule.certSeq, match_pattern]
+abbrev ConvRule.certSeq (c : Tree) : ConvRule := .base (.certSeq c)
+
+@[inherit_doc Rule.roseInd, match_pattern]
+abbrev ConvRule.roseInd (kn kl kc : ℕ) (s : Term) : ConvRule := .base (.roseInd kn kl kc s)
+
+@[inherit_doc Rule.roseIndHyp, match_pattern]
+abbrev ConvRule.roseIndHyp (kn kl kc : ℕ) : ConvRule := .base (.roseIndHyp kn kl kc)
+
+@[inherit_doc Rule.coprodInd, match_pattern]
+abbrev ConvRule.coprodInd (kl kr : ℕ) : ConvRule := .base (.coprodInd kl kr)
+
+@[inherit_doc Rule.zeroInd, match_pattern]
+abbrev ConvRule.zeroInd (i : ℕ) : ConvRule := .base (.zeroInd i)
+
+@[inherit_doc Rule.quotInd, match_pattern]
+abbrev ConvRule.quotInd (kq : ℕ) (θ : List Tree) : ConvRule := .base (.quotInd kq θ)
 
 /-- The rule of the language's derivations a rule of the certificates stands for at a
 congruence's choice of contexts: itself for a rule of the language, and one other than the

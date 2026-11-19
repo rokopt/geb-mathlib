@@ -19,7 +19,7 @@ and used as a rewriting rule, the induction hypothesis among them; the instances
 that equates functions, at arguments; the hypotheses at the children of an induction on rose
 trees; the case analysis of a list variable that a hypothesis mentions, the hypothesis reverted;
 and the introduction and elimination of implications equal to truth, the connectives' definitions
-and their rules at given indices ({name}`Geb.FreeTopos.Internal.Logic.impI`).
+and their rules at given indices ({name}`Geb.FreeTopos.Internal.Logic.impIC`).
 
 ## Main definitions
 
@@ -44,7 +44,7 @@ namespace Geb.FreeTopos.Tactics
 
 open Geb.PartialHorn (Tree)
 open Geb.FreeTopos.Translation
-open Internal (Term NormRule Entry Deriv)
+open Internal (Term NormRule Entry ConvDeriv)
 open scoped FinEnum
 
 /-- The proof of an equation with the hypotheses of the given indices, equations, cut in in weak
@@ -52,10 +52,10 @@ normal form and used as rewriting rules before those given to {lit}`k`. -/
 def withWeakHyps (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule)
     (is : List ℕ) (k : List NormRule → Internal.Prover) (m : Internal.Depth := .weak) :
     Internal.Prover := fun Γ Φ t u ↦
-  (is.foldr (fun i (acc : List Term → List NormRule → Option Deriv) Φ₁ extra ↦ do
+  (is.foldr (fun i (acc : List Term → List NormRule → Option ConvDeriv) Φ₁ extra ↦ do
       let (a, b) ← Internal.eqParts (← Φ₁[i]?)
-      let (a', da, _) ← Internal.eval G E n rs 4096 m Γ Φ₁ a
-      let (b', db, _) ← Internal.eval G E n rs 4096 m Γ Φ₁ b
+      let (a', da, _) ← Internal.evalC G E n rs 4096 m Γ Φ₁ a
+      let (b', db, _) ← Internal.evalC G E n rs 4096 m Γ Φ₁ b
       let ψ := Term.eq a' b'
       let rest ← acc (Φ₁ ++ [ψ]) (extra ++ [.hyp Φ₁.length])
       pure (RoseTree.node (.cut ψ) [RoseTree.node (.convFrom (Term.eq a b))
@@ -82,7 +82,7 @@ def byBitsIndHyp (G : Internal.Globals) (E : Array Entry) (rs : List NormRule)
 
 /-- A derivation rewriting the function of an application to arguments by the hypothesis of
 index {lit}`i`. -/
-def rwFun (i : ℕ) : ℕ → Deriv :=
+def rwFun (i : ℕ) : ℕ → ConvDeriv :=
   Nat.rec (RoseTree.node (.rwHyp i false) []) fun _ d ↦
     RoseTree.node .cong [d, RoseTree.node .refl []]
 
@@ -93,7 +93,7 @@ def instEqs (F H : Term) (αs : List (List Term)) : List Term :=
 /-- The derivation {lit}`rest` under the equations of the applications of two functions to each
 list of arguments, each cut in, derived from the equation of the functions, the hypothesis of
 index {lit}`i`, by rewriting the functions. -/
-def cutInsts (F H : Term) (i : ℕ) (αs : List (List Term)) (rest : Deriv) : Deriv :=
+def cutInsts (F H : Term) (i : ℕ) (αs : List (List Term)) (rest : ConvDeriv) : ConvDeriv :=
   αs.foldr (fun α r ↦ RoseTree.node (.cut (Term.eq (apps F α) (apps H α)))
     [RoseTree.node .join [rwFun i α.length, RoseTree.node .refl []], r]) rest
 
@@ -122,12 +122,12 @@ def withChildHyps (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List 
     (h : ℕ) (kids : List ℕ) (args : ℕ → List (List Term)) (k' : List ℕ → Internal.Prover) :
     Internal.Prover := fun Γ Φ t u ↦ do
   let (L₀, R₀) ← Internal.eqParts (← Φ[h]?)
-  (kids.foldr (fun p (acc : List Term → List ℕ → Option Deriv) Φ₁ insts ↦ do
+  (kids.foldr (fun p (acc : List Term → List ℕ → Option ConvDeriv) Φ₁ insts ↦ do
       let A := nthOf L₀ p
       let B := nthOf R₀ p
-      let (A', dA, _) ← Internal.eval G E n rs 4096 .weak Γ Φ₁ A
-      let (B', dB, _) ← Internal.eval G E n rs 4096 .weak Γ Φ₁ B
-      let (_, dAh, _) ← Internal.eval G E n [.hyp h] 4096 .weak Γ Φ₁ A
+      let (A', dA, _) ← Internal.evalC G E n rs 4096 .weak Γ Φ₁ A
+      let (B', dB, _) ← Internal.evalC G E n rs 4096 .weak Γ Φ₁ B
+      let (_, dAh, _) ← Internal.evalC G E n [.hyp h] 4096 .weak Γ Φ₁ A
       let (F, H) ← Internal.eqParts A'
       let i₁ := Φ₁.length
       let i₂ := i₁ + 1
@@ -178,16 +178,16 @@ def revertCase (G : Internal.Globals) (n o logicBase i h : ℕ) (pNil pCons : In
   let qc := Internal.listConsAt 1 a q₁
   let (tc, uc) ← Internal.eqParts qc
   let dc ← pCons (c :: a :: Γ) (Φc ++ [ψc]) tc uc
-  let dχ₁ := RoseTree.node (.listIndHyp 0 1) [Internal.Logic.impI logicBase Φ'.length ψ₀ q₀ d₀,
-    Internal.Logic.impI logicBase Φc.length ψc qc dc]
+  let dχ₁ := RoseTree.node (.listIndHyp 0 1) [Internal.Logic.impIC logicBase Φ'.length ψ₀ q₀ d₀,
+    Internal.Logic.impIC logicBase Φc.length ψc qc dc]
   let dFun := RoseTree.node .funExt [RoseTree.node .conv [RoseTree.node .cong
     [RoseTree.node .beta [], RoseTree.node .beta []],
-    RoseTree.node .propExt [Internal.Logic.trueI, dχ₁]]]
+    RoseTree.node .propExt [Internal.Logic.trueIC, dχ₁]]]
   let dχ := RoseTree.node (.cut (Term.eq Fχ (Term.lam c tt))) [dFun,
     RoseTree.node (.convFrom (Term.app Fχ (v i))) [RoseTree.node .beta [],
       RoseTree.node .conv [RoseTree.node .trans [RoseTree.node .cong
         [RoseTree.node (.rwHyp Φ.length false) [], RoseTree.node .refl []],
-        RoseTree.node .beta []], Internal.Logic.trueI]]]
+        RoseTree.node .beta []], Internal.Logic.trueIC]]]
   pure (RoseTree.node (.apply (logicBase + 4) [] [q, ψ]) [dχ, RoseTree.node (.hyp h) []])
 
 /-- The proof of an equation whose sides reduce, at their heads, to an implication of an
@@ -196,16 +196,16 @@ introduced, its conclusion's sides proved by {lit}`p` under the hypotheses, trut
 antecedent. -/
 def byImpI (G : Internal.Globals) (E : Array Entry) (o logicBase : ℕ) (p : Internal.Prover) :
     Internal.Prover := fun Γ Φ t u ↦ do
-  let (t', dt, _) ← Internal.eval G E 0 [.rule .beta] 4096 .head Γ Φ t
-  let (u', du, _) ← Internal.eval G E 0 [.rule .beta] 4096 .head Γ Φ u
+  let (t', dt, _) ← Internal.evalC G E 0 [.rule .beta] 4096 .head Γ Φ t
+  let (u', du, _) ← Internal.evalC G E 0 [.rule .beta] 4096 .head Γ Φ u
   match t'.label, t'.children, u'.label with
   | .defn k _, [q, a], .defn k' _ =>
     if k = o + 2 ∧ k' = o then do
       let (l, r) ← Internal.eqParts q
       let d ← p Γ (Φ ++ [Internal.Logic.tt o, a]) l r
-      pure (Internal.Logic.nd .conv [Internal.Logic.nd .cong [dt, du],
-        Internal.Logic.nd .propExt [Internal.Logic.trueI,
-          Internal.Logic.impI logicBase (Φ.length + 1) a q d]])
+      pure (Internal.Logic.cnd .conv [Internal.Logic.cnd .cong [dt, du],
+        Internal.Logic.cnd .propExt [Internal.Logic.trueIC,
+          Internal.Logic.impIC logicBase (Φ.length + 1) a q d]])
     else none
   | _, _, _ => none
 
@@ -215,16 +215,16 @@ ponens and used as a rewriting rule before those given to {lit}`k`; the connecti
 from the index {lit}`o`. -/
 def withImpElim (o logicBase h : ℕ) (is : List ℕ) (k : List NormRule → Internal.Prover) :
     Internal.Prover := fun Γ Φ t u ↦
-  (is.foldr (fun i (acc : List Term → List NormRule → Option Deriv) Φ₁ extra ↦ do
+  (is.foldr (fun i (acc : List Term → List NormRule → Option ConvDeriv) Φ₁ extra ↦ do
       let (l, _) ← Internal.eqParts (← Φ₁[i]?)
       match l.label, l.children with
       | .defn k' _, [q, a] =>
         if k' = o + 2 then do
           let rest ← acc (Φ₁ ++ [q]) (extra ++ [.hyp Φ₁.length])
-          let dImp := Internal.Logic.nd .conv
-            [Internal.Logic.nd (.rwHyp i false), Internal.Logic.trueI]
-          pure (Internal.Logic.nd (.cut q) [Internal.Logic.nd (.apply (logicBase + 4) [] [q, a])
-            [dImp, Internal.Logic.nd (.hyp h)], rest])
+          let dImp := Internal.Logic.cnd .conv
+            [Internal.Logic.cnd (.rwHyp i false), Internal.Logic.trueIC]
+          pure (Internal.Logic.cnd (.cut q) [Internal.Logic.cnd (.apply (logicBase + 4) [] [q, a])
+            [dImp, Internal.Logic.cnd (.hyp h)], rest])
         else none
       | _, _ => none)
     (fun Φ₁ extra ↦ k extra Γ Φ₁ t u)) Φ []
@@ -236,7 +236,7 @@ def hypIndex : NormRule → Option ℕ
 
 /-- The rewriting of an application's argument, backward by the theorem of index {lit}`j`, to
 the theorem's left side {lit}`l` at the last two variables, with its derivation. -/
-def succPredRw (j : ℕ) (l s : Term) : Option (Term × Deriv) := match s.label, s.children with
+def succPredRw (j : ℕ) (l s : Term) : Option (Term × ConvDeriv) := match s.label, s.children with
   | .app, [f, _] => some (Term.app f (Internal.instTerm [] [v 1, v 0] l),
       RoseTree.node .cong [RoseTree.node .refl [], RoseTree.node (.thm j [] [v 1, v 0] true) []])
   | _, _ => none

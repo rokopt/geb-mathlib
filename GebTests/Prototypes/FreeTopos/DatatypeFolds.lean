@@ -190,7 +190,7 @@ def ltSuccs (P : Prog) (ns : List ℕ) (depth : ℕ) : List Step :=
   let lt (n : ℕ) : Internal.Thm :=
     nfThm P rs [bitsTy] (call D.ltB [] [numeral n, n.rec (sc (v 0)) fun _ t ↦ sc t]) trueT
   let byBit (a : Internal.Thm) (ix : String → ℕ) (E : Array Internal.Entry) :
-      Option Internal.Deriv :=
+      Option Internal.ConvDeriv :=
     let p : Internal.Prover := fun Γ Φ t u ↦ byWeak P.G E 0 (rulesNth P ix) Γ Φ t u
     byBits P.G p depth 0 a.ctx [] (TranslationProofs.sides a).1 (TranslationProofs.sides a).2
   ns.map fun n ↦ step s!"ltSucc{n}" (lt n) (byBit (lt n))
@@ -286,7 +286,7 @@ def constCore (P : Prog) (S : Defs) (T : Defs3) (c : ConstForm) : Step :=
       let t := pc P "charsFixed" [fn, call D.children [] [pc P c.kw []]]
       let (l, _) ← evalRw K.G K.E (K.rules Φ) .full Γ Φ t
       let rs := K.rules Φ ++ (W.ks ++ [P.idx "charsFixed"]).map Internal.NormRule.delta
-      let (r, d, _) ← Internal.eval K.G K.E 0 rs 4096 .full Γ Φ l
+      let (r, d, _) ← Internal.evalC K.G K.E 0 rs 4096 .full Γ Φ l
       dCut (Term.eq l r) (nd .join [d, nd .refl]) k Γ Φ ψ
     let decisions : Deducer :=
       eqs <| kwChars <| types fun tys ks ↦ related tys ks fun iRel ↦

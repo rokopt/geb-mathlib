@@ -67,7 +67,7 @@ namespace GebTests.Prototypes.FreeTopos.Weakening
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
 open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Translation (baseRules)
-open Internal (Term NormRule Entry Deriv Decl Definition)
+open Internal (Term NormRule Entry ConvDeriv ConvDecl Definition)
 open scoped FinEnum
 
 /-! The program. -/
@@ -120,7 +120,7 @@ def baseNorm (P : Prog) : List NormRule := baseRules ++ [.unitVar, .deltaBelow P
 
 /-- The weak normal form of a term in a context, in object variables, by rules, or the term. -/
 def weakNF (P : Prog) (rs : List NormRule) (n : ℕ) (Γ : List Tree) (t : Term) : Term :=
-  ((Internal.eval P.G #[] n rs 4096 .weak Γ [] t).map Prod.fst).getD t
+  ((Internal.evalC P.G #[] n rs 4096 .weak Γ [] t).map Prod.fst).getD t
 
 /-- A theorem in object variables and a context whose sides are stated in weak normal form. -/
 def weakThm (P : Prog) (n : ℕ) (Γ : List Tree) (t u : Term) : Internal.Thm :=
@@ -130,19 +130,19 @@ def weakThm (P : Prog) (n : ℕ) (Γ : List Tree) (t u : Term) : Internal.Thm :=
 
 /-- A development's entry: its name, and its theorem with its proof from the index of each named
 entry and the entries before it. -/
-abbrev Step : Type := String × ((String → ℕ) → Array Entry → Option (Internal.Thm × Deriv))
+abbrev Step : Type := String × ((String → ℕ) → Array Entry → Option (Internal.Thm × ConvDeriv))
 
 /-- An entry of a theorem stated beforehand. -/
-def step (name : String) (a : Internal.Thm) (p : (String → ℕ) → Array Entry → Option Deriv) :
+def step (name : String) (a : Internal.Thm) (p : (String → ℕ) → Array Entry → Option ConvDeriv) :
     Step :=
   (name, fun ix E ↦ (p ix E).map (a, ·))
 
 /-- A development's derivations, each computed with the entries before it, or the name of the
 first theorem whose proof is not found. -/
-def developNamed (xs : List Step) : Except String (List Decl) :=
+def developNamed (xs : List Step) : Except String (List ConvDecl) :=
   let ix (name : String) : ℕ := (xs.findIdx? (·.1 == name)).getD 0
-  (xs.foldlM (fun (acc : Array Entry × List Decl) (x : Step) ↦ match x.2 ix acc.1 with
-    | some (a, d) => Except.ok (acc.1.push (Entry.language a), acc.2 ++ [Decl.language a d])
+  (xs.foldlM (fun (acc : Array Entry × List ConvDecl) (x : Step) ↦ match x.2 ix acc.1 with
+    | some (a, d) => Except.ok (acc.1.push (Entry.language a), acc.2 ++ [ConvDecl.language a d])
     | none => Except.error x.1) (#[], [])).map Prod.snd
 
 /-- The index of the connectives' first rule among the development's theorems, after the lemmas
@@ -152,7 +152,8 @@ def logicBase : ℕ := 3
 /-- The connectives' introduction and elimination rules, following the lemmas on the unfolding of
 trees. -/
 def logicThms (P : Prog) : List Step :=
-  (Internal.Logic.theorems P.o logicBase).map fun (a, d) ↦ step "logic" a (fun _ _ ↦ some d)
+  (Internal.Logic.theorems P.o logicBase).map fun (a, d) ↦
+    step "logic" a (fun _ _ ↦ some (Internal.liftDeriv d))
 
 /-- The lemmas on the unfolding of trees: the fold of a list by construction, the fusion of the
 rebuilding with the unfolding, and Lambek's lemma. -/
@@ -171,8 +172,8 @@ def pointwise (P : Prog) (rules : (String → ℕ) → List NormRule) (m : Inter
     let Γ := a :: b.ctx
     let F' := Term.app (Internal.weaken1 F) (v 0)
     let H' := Term.app (Internal.weaken1 H) (v 0)
-    let (f, dF, _) ← Internal.eval P.G E b.arity (rules ix) 4096 m Γ [] F'
-    let (h, dH, _) ← Internal.eval P.G E b.arity (rules ix) 4096 m Γ [] H'
+    let (f, dF, _) ← Internal.evalC P.G E b.arity (rules ix) 4096 m Γ [] F'
+    let (h, dH, _) ← Internal.evalC P.G E b.arity (rules ix) 4096 m Γ [] H'
     let σ := (List.range b.ctx.length).map fun j ↦ v (j + 1)
     pure (⟨b.arity, Γ, [], Term.eq f h⟩, RoseTree.node (.convFrom (Term.eq F' H'))
       [RoseTree.node .cong [dF, dH], RoseTree.node .join [RoseTree.node .cong
@@ -322,8 +323,8 @@ def foldLemmas (P : Prog) : Option (List Step) := do
     step "lbl" lbl (fun ix E ↦ do
       let F := (sides lblAbs).1
       let H := (sides lblAbs).2
-      let (_, dF, _) ← Internal.eval P.G E 0 rs 4096 .weak lbl.ctx [] (Term.app F (v 1))
-      let (_, dH, _) ← Internal.eval P.G E 0 rs 4096 .weak lbl.ctx [] (Term.app H (v 1))
+      let (_, dF, _) ← Internal.evalC P.G E 0 rs 4096 .weak lbl.ctx [] (Term.app F (v 1))
+      let (_, dH, _) ← Internal.evalC P.G E 0 rs 4096 .weak lbl.ctx [] (Term.app H (v 1))
       pure (RoseTree.node (.convFrom (Term.eq (Term.app F (v 1)) (Term.app H (v 1))))
         [RoseTree.node .cong [dF, dH], RoseTree.node .join [RoseTree.node .cong
           [RoseTree.node (.thm (ix "lblAbs") [] [v 0] false) [], RoseTree.node .refl []],
@@ -488,7 +489,7 @@ def numLemmas (P : Prog) : Option (List Step) := do
   -- automatic prover; at a bit before a list by case analysis of the bit, then of the first
   -- number, then of its first bit, each case with the induction hypothesis's instances
   let byInd (names : List String) (a : Internal.Thm) (ix : String → ℕ) (E : Array Entry) :
-      Option Deriv :=
+      Option ConvDeriv :=
     let rules := names.map (fun nm ↦ NormRule.thm (ix nm) []) ++ rsC ix
     let leaf := byAuto P.G E 0 rules 2 .open
     let bit (i : ℕ) (p : Internal.Prover) : Internal.Prover := bySplit2 3 4 i p p
@@ -516,7 +517,7 @@ def numLemmas (P : Prog) : Option (List Step) := do
   -- induction on the innermost number, as functions of the next variable, each premise by the
   -- automatic prover
   let byIndAuto (names : List String) (a : Internal.Thm) (ix : String → ℕ) (E : Array Entry) :
-      Option Deriv :=
+      Option ConvDeriv :=
     let rules := names.map (fun nm ↦ NormRule.thm (ix nm) ((List.range a.arity).map x)) ++ rsC ix
     Internal.byListIndWith P.G a.arity 0 1
       (Internal.byFunExt P.G a.arity (byAuto P.G E a.arity rules 4 .open))
@@ -659,16 +660,16 @@ def program : Option Prog := do
 /-- The development proving the statement in a translated program: the lemmas, each with its
 derivation, and the statement, with the derivation found by induction on rose trees; the reason
 where a lemma or the statement is not proved. -/
-def certificate (P : Prog) : Except String (List Decl) := do
+def certificate (P : Prog) : Except String (List ConvDecl) := do
   let some dev := development P | throw "the development is not stated"
   let decls ← (developNamed dev).mapError fun name ↦ s!"the lemma {name} is not proved"
-  let some (_, E) := Internal.checkDev P.G #[] decls
+  let some (_, E, _) := Internal.checkConvDev P.G #[] decls
     | throw "the development does not check"
   let ix (name : String) : ℕ := (dev.findIdx? (·.1 == name)).getD 0
   let a := weakening P
   let some d := Internal.byRoseIndHyp 2 0 1 (byLabels P ix E) a.ctx [] (sides a).1 (sides a).2
     | throw "the statement is not proved"
-  pure (decls ++ [Decl.language a d])
+  pure (decls ++ [ConvDecl.language a d])
 
 end GebTests.Prototypes.FreeTopos.Weakening
 

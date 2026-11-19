@@ -270,7 +270,7 @@ def repCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
       let t := pc P "charsFixed" [fnOf Γ, call D.children [] [pc P kw []]]
       let (l, _) ← evalRw K.G K.E (K.rules Φ) .full Γ Φ t
       let rs := K.rules Φ ++ (W.ks ++ [P.idx "charsFixed"]).map Internal.NormRule.delta
-      let (r, d, _) ← Internal.eval K.G K.E 0 rs 4096 .full Γ Φ l
+      let (r, d, _) ← Internal.evalC K.G K.E 0 rs 4096 .full Γ Φ l
       dCut (Term.eq l r) (nd .join [d, nd .refl]) (K.treeNode (atPos 0 Γ) fun Γ Φ ψ ↦
         let (lPos, csPos) := (Γ.length - 2, Γ.length - 1)
         dBits L K.G K.E (ix "listCases") (ix "bitCases") (fun bs ↦

@@ -191,17 +191,18 @@ form cut in after the hypotheses, so that the fold selects its case before the c
 normalized, the reduction resumed from the weak head normal form; with the derivation of the
 term's equation with its normal form. -/
 def lazyNf (G : Internal.Globals) (E : Array Internal.Entry) (rs : List Internal.NormRule)
-    (Γ : List Tree) (fuel : ℕ) (Φ : List Term) (l : Term) : Option (Term × Internal.Deriv) :=
+    (Γ : List Tree) (fuel : ℕ) (Φ : List Term) (l : Term) : Option (Term × Internal.ConvDeriv) :=
   -- the term reached and its reduction from the term given
-  let full (Φ : List Term) (t : Term) (dt : Internal.Deriv) : Option (Term × Internal.Deriv) := do
-    let (r, d, _) ← Internal.eval G E 0 (rs ++ eqHyps Φ) 4096 .full Γ Φ t
+  let full (Φ : List Term) (t : Term) (dt : Internal.ConvDeriv) :
+      Option (Term × Internal.ConvDeriv) := do
+    let (r, d, _) ← Internal.evalC G E 0 (rs ++ eqHyps Φ) 4096 .full Γ Φ t
     pure (r, nd .join [nd .trans [dt, d], nd .refl])
-  (Nat.rec (motive := fun _ ↦ List Term → Term → Internal.Deriv →
-      Option (Term × Internal.Deriv)) full (fun _ rec Φ t dt ↦ do
-    let (w, dw, _) ← Internal.eval G E 0 (rs ++ eqHyps Φ) 4096 .head Γ Φ t
+  (Nat.rec (motive := fun _ ↦ List Term → Term → Internal.ConvDeriv →
+      Option (Term × Internal.ConvDeriv)) full (fun _ rec Φ t dt ↦ do
+    let (w, dw, _) ← Internal.evalC G E 0 (rs ++ eqHyps Φ) 4096 .head Γ Φ t
     let dw := nd .trans [dt, dw]
     let some X := blockedDatum w | full Φ w dw
-    let (X', dX, _) ← Internal.eval G E 0 (rs ++ eqHyps Φ) 4096 .full Γ Φ X
+    let (X', dX, _) ← Internal.evalC G E 0 (rs ++ eqHyps Φ) 4096 .full Γ Φ X
     if X' == X || (List.range Γ.length).any (Term.occurs X') then full Φ w dw else
     let (r, d) ← rec (Φ ++ [Term.eq X X']) w dw
     pure (r, nd (.cut (Term.eq X X')) [nd .join [dX, nd .refl], d])) fuel) Φ l (nd .refl)

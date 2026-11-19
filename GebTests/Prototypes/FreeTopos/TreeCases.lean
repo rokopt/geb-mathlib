@@ -57,7 +57,7 @@ namespace GebTests.Prototypes.FreeTopos.TreeCases
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
 open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Weakening
-open Internal (Term NormRule Entry Deriv Decl Definition)
+open Internal (Term NormRule Entry ConvDeriv ConvDecl Definition)
 open scoped FinEnum
 
 /-- The program: the prelude, the reader, the type checker and the expansion of the datatype
@@ -67,7 +67,7 @@ def programText : String := include_manifest "bootstrap/expansion.manifest"
 /-! The lemmas. -/
 
 /-- The proof of a theorem's equation by a prover, in its context and without hypotheses. -/
-def side (a : Internal.Thm) (p : Internal.Prover) : Option Deriv :=
+def side (a : Internal.Thm) (p : Internal.Prover) : Option ConvDeriv :=
   p a.ctx [] (sides a).1 (sides a).2
 
 /-- The lemmas of conditionals on bitstrings: a conditional between two lists with one head is
@@ -154,7 +154,7 @@ def program : Option Prog := do
 
 /-- The development in a translated program; the name of the first lemma not proved, where one is
 not. -/
-def certificate (P : Prog) : Except String (List Decl) := do
+def certificate (P : Prog) : Except String (List ConvDecl) := do
   let some dev := development P | throw "the development is not stated"
   (developNamed dev).mapError fun name ↦ s!"the lemma {name} is not proved"
 

@@ -57,7 +57,7 @@ def checkSteps : Bool := false
 sequents, a failure reported with a message. -/
 def verifyK (K : Kit) (msg : String) (k : Deducer) : Deducer := fun Γ Φ ψ ↦
   (k Γ Φ ψ).map fun d ↦
-    if !checkSteps || Internal.Thm.checks K.G K.E ⟨0, Γ, Φ, ψ⟩ d then d else
+    if !checkSteps || Internal.Thm.convChecks K.G K.E [] ⟨0, Γ, Φ, ψ⟩ d then d else
       dbgTrace s!"{msg}: does not check" fun _ ↦ d
 
 /-- A term generalized: a new variable equal to its normal form, the equation after the
@@ -111,9 +111,10 @@ def unfoldApps (K : Kit) (ks hs : List ℕ) (k : Deducer) (rounds : ℕ := 6)
     if apps.isEmpty then k Γ Φ ψ else
     let rules := K.rules (if foldedValues then Φ.take Φ₀.length else Φ) ++ ks.map .delta
     let cuts := apps.filterMap fun a ↦
-      (Internal.eval K.G K.E 0 rules 4096 .weak Γ Φ a).map fun (r, d, _) ↦
+      (Internal.evalC K.G K.E 0 rules 4096 .weak Γ Φ a).map fun (r, d, _) ↦
         let d' := nd .join [d, nd .refl]
-        let _ := if !checkSteps || Internal.Thm.checks K.G K.E ⟨0, Γ, Φ, Term.eq a r⟩ d' then ()
+        let _ := if !checkSteps ||
+            Internal.Thm.convChecks K.G K.E [] ⟨0, Γ, Φ, Term.eq a r⟩ d' then ()
           else
           dbgTrace s!"unfoldApps: a cut does not check: {showT a}" fun _ ↦ ()
         (Term.eq a r, d')
@@ -128,9 +129,9 @@ def ihAt (K : Kit) (h p : ℕ) (k : Deducer) : Deducer := fun Γ Φ ψ ↦ do
   let (L₀, R₀) ← Internal.eqParts (← Φ[h]?)
   let A := nthOf L₀ p
   let B := nthOf R₀ p
-  let (A', dA, _) ← Internal.eval K.G K.E 0 (K.rules Φ) 4096 .full Γ Φ A
-  let (B', dB, _) ← Internal.eval K.G K.E 0 (K.rules Φ) 4096 .full Γ Φ B
-  let (_, dAh, _) ← Internal.eval K.G K.E 0 [.hyp h] 4096 .weak Γ Φ A
+  let (A', dA, _) ← Internal.evalC K.G K.E 0 (K.rules Φ) 4096 .full Γ Φ A
+  let (B', dB, _) ← Internal.evalC K.G K.E 0 (K.rules Φ) 4096 .full Γ Φ B
+  let (_, dAh, _) ← Internal.evalC K.G K.E 0 [.hyp h] 4096 .weak Γ Φ A
   let i₁ := Φ.length
   let q ← k Γ (Φ ++ [Term.eq A' B', A']) ψ
   pure (nd (.cut (Term.eq A' B')) [nd (.convFrom (Term.eq A B))
@@ -287,7 +288,7 @@ def kwEqs (P : Prog) (T : Defs3) (kw : String) (n : ℕ) (form : Term := kwForm 
     let used := (List.range Γ₁.length).filter (Term.occurs l₁)
     let Γ := used.map (Γ₁.getD · treeTy)
     let l := Term.rename l₁ fun i ↦ used.idxOf i
-    let some (r, d, _) := Internal.eval P.G E 0 (rs ++ unfold.map .delta) 4096 .weak Γ [] l
+    let some (r, d, _) := Internal.evalC P.G E 0 (rs ++ unfold.map .delta) 4096 .weak Γ [] l
       | dbgTrace s!"{kwEqName kw n k}: right" fun _ ↦ none
     -- an equation of a term with itself would rewrite it to itself without end
     if l == r then none else
@@ -305,7 +306,7 @@ def rawAt (P : Prog) (T : Defs3) (name : String) (label : ℕ) (unfold : List �
       (nodeT (Term.pair (numeral label) (v 0))))) Term.star)
     let rs := vRules3 P ix E.size
     let some l := nfE P.G E rs Γ t | dbgTrace s!"{name}: left" fun _ ↦ none
-    let some (r, d, _) := Internal.eval P.G E 0 (rs ++ (T.argIdx 1 :: unfold).map .delta) 4096
+    let some (r, d, _) := Internal.evalC P.G E 0 (rs ++ (T.argIdx 1 :: unfold).map .delta) 4096
         .full Γ [] l
       | dbgTrace s!"{name}: right" fun _ ↦ none
     if l == r then none else
@@ -333,7 +334,7 @@ def rawAtomR (P : Prog) (T : Defs3) : Step :=
     -- it, the first component's rebuilding no longer applying
     let some l := (nfE P.G E rs Γ (T.foldAt 4 ps atomT)).map Term.fst
       | dbgTrace "rawAtomR: left" fun _ ↦ none
-    let some (r, d, _) := Internal.eval P.G E 0
+    let some (r, d, _) := Internal.evalC P.G E 0
         (rs ++ [.delta (T.argIdx 4), .delta (P.idx "Reader.resolveAtom")]) 4096 .full Γ [] l
       | dbgTrace "rawAtomR: right" fun _ ↦ none
     if l == r then none else
@@ -353,7 +354,7 @@ def srcNode (P : Prog) (T : Defs3) : Step :=
     let rs := vRules3 P ix E.size
     let some l := nfE P.G E rs Γ (T.foldAt 5 ps (nodeT (Term.pair (v 1) (v 0))))
       | dbgTrace "srcNode: left" fun _ ↦ none
-    let some (r, d, _) := Internal.eval P.G E 0 (rs ++ [.delta (T.argIdx 5)]) 4096 .full Γ [] l
+    let some (r, d, _) := Internal.evalC P.G E 0 (rs ++ [.delta (T.argIdx 5)]) 4096 .full Γ [] l
       | dbgTrace "srcNode: right" fun _ ↦ none
     if l == r then none else
     pure (⟨0, Γ, [], Term.eq l r⟩, nd .join [d, nd .refl]))
@@ -628,7 +629,7 @@ def evalTools (K : Kit) (Φ₀ : List Term) (keep : List ℕ) (extra : List Inte
   let norm (k : Deducer) : Deducer := fun Γ Φ ψ ↦ dRwBy (evalRw K.G K.E (rs Φ) .full) k Γ Φ ψ
   { rs, norm
     byNorm := norm fun _ _ ψ ↦
-      if ψ == Internal.Logic.tt K.P.o then some Internal.Logic.trueI else
+      if ψ == Internal.Logic.tt K.P.o then some Internal.Logic.trueIC else
       match Internal.eqParts ψ with
       | some (a, b) => if a == b then some (nd .join [nd .refl, nd .refl]) else none
       | none => none
@@ -666,7 +667,7 @@ def pairCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
         dRwBy (evalRw K.G K.E (rs Φ) .full) k Γ Φ ψ
       -- an equation by normalizing it whole: truth, or an equation of a term with itself
       let byNormE : Deducer := normE fun _ _ ψ ↦
-        if ψ == Internal.Logic.tt P.o then some Internal.Logic.trueI else
+        if ψ == Internal.Logic.tt P.o then some Internal.Logic.trueIC else
         match Internal.eqParts ψ with
         | some (a, b) => if a == b then some (nd .join [nd .refl, nd .refl]) else none
         | none => none
@@ -1504,7 +1505,7 @@ def consCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
               h ∈ [sx, ex, sxs, exs, Φ₁.length - 1] ∨ Φ₁.length ≤ h).reverse
           let auto : ℕ → Deducer := fun d ↦ d.rec (fun _ _ _ ↦ none) fun _ rec ↦ X.norm
             fun Γ Φ ψ ↦
-            if ψ == Internal.Logic.tt P.o then some Internal.Logic.trueI else
+            if ψ == Internal.Logic.tt P.o then some Internal.Logic.trueIC else
             match defnParts ψ with
             | some (i, _, _) =>
               if i = P.o + 1 then dConjI L rec rec Γ Φ ψ else

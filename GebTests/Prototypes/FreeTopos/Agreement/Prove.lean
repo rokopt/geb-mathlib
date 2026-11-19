@@ -15,9 +15,11 @@ set_option doc.verso true in
 The functions of {lit}`bootstrap/free-topos/prove.geb`, in the Lean the bootstrap compiler emits
 ({lit}`GebMirror.Metalogic`), agree with the Lean prover of the internal language
 ({name}`Geb.FreeTopos.Internal.normalize`) at every encoded input: the matching of patterns, the
-rewriting at a term's root by the normalizer's rules, normalization innermost first, the
-reduction to a depth, and the proofs of an equation, so that the prover written in Geb
-constructs exactly the derivations the Lean prover constructs.
+rewriting at a term's root by the normalizer's rules, normalization innermost first and the
+reduction to a depth, each with the derivation it computes, so that the reductions written in
+Geb construct exactly the derivations the Lean reductions construct. The provers, which name a
+reduction by a step of conversion in place of its derivation, are related in
+{lit}`GebTests.Prototypes.FreeTopos.Agreement.Provers`.
 
 The mirror's reduction to a depth is that of {name}`Geb.FreeTopos.Internal.evalFast`: it reduces
 under the hypotheses as stated with the number of variables past which they are weakened, by a
@@ -31,8 +33,8 @@ reduction as it is defined.
 
 * {lit}`encDB`, {lit}`encTDB`, {lit}`encOT`, {lit}`encDepth` — a rewriting's derivation with
   its mark, a term with it, an optional term of an assignment, and a depth of reduction.
-* {lit}`MRel`, {lit}`RRel`, {lit}`NRel`, {lit}`ERel`, {lit}`PRel` — the relations of the
-  mirror's matchings, rules, normalizations, reductions to a depth and provers to the prover's.
+* {lit}`MRel`, {lit}`RRel`, {lit}`NRel`, {lit}`ERel` — the relations of the mirror's
+  matchings, rules, normalizations and reductions to a depth to the prover's.
 * {lit}`WRel`, {lit}`EKRel` — the relations of the mirror's rewritings at the root and reductions
   under weakened hypotheses to the prover's.
 * {lit}`encPH` — an equation among the hypotheses as the mirror prepares it.
@@ -49,15 +51,9 @@ reduction as it is defined.
   the reduction of a list of jobs is the image of the reduction of a job.
 * {lit}`stStart_eq`, {lit}`evalJ_rel` — the rounds of the state a job starts in are the step of
   the reduction, and the reduction of a job is the reduction under weakened hypotheses.
-* {lit}`evalK_eq`, {lit}`eval_eq` — the reductions to a depth, under weakened hypotheses and as
+* {lit}`normalizeD_eq` — the normalizations innermost first agree.
+* {lit}`evalK_eq`, {lit}`evalD_eq` — the reductions to a depth, under weakened hypotheses and as
   defined, agree.
-
-* {lit}`byNorm_eq`, {lit}`byNormW_eq` — the proofs by normalization, innermost first and through
-  weak head normal forms, agree.
-* {lit}`byNatInd_eq`, {lit}`byListInd_eq`, {lit}`byNatIndHyp_eq`, {lit}`byListIndHyp_eq`,
-  {lit}`byRoseInd_eq` — the proofs by induction, each premise by normalization, agree.
-* {lit}`byFunExt_eq`, {lit}`bySplit_eq`, {lit}`byListIndWith_eq`, {lit}`byRoseIndHyp_eq` — the
-  proofs of an equation from proofs of others agree at related provers.
 
 ## Tags
 
@@ -1010,9 +1006,9 @@ theorem normStep_eq (rs' : List Tree) (rs : List NormRule)
       rfl
 
 /-- The mirror's normalization innermost first within a depth of fuel, at related rules. -/
-theorem normalize_eq (rs' : List Tree) (rs : List NormRule)
+theorem normalizeD_eq (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) :
-    NRel («Prover.normalize» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+    NRel («Prover.normalizeD» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (leaf fuel))
       (Internal.normalize G E n rs fuel) := by
   intro Γ Φ t
@@ -1020,39 +1016,8 @@ theorem normalize_eq (rs' : List Tree) (rs : List NormRule)
       normJ (encGlobals G) (E.toList.map encEntry) (leaf n) rs' fuel (encJob 0 Γ 0 Φ t) =
         encOpt ((Internal.normalize G E n rs fuel Γ Φ t).map encTDB) :=
     Nat.rec (fun _ _ _ ↦ rfl) fun k ih Γ Φ t ↦ normStep_eq G E n rs' rs hrs _ _ ih Γ Φ t
-  simp only [«Prover.normalize», template, normB_eq]
+  simp only [«Prover.normalizeD», template, normB_eq]
   exact h fuel Γ Φ t
-
-/-- The mirror's proof of an equation by reducing both sides, by related reductions, to one
-term. -/
-theorem joinBy_eq (v : List Tree → List Tree → Tree → Tree)
-    (w : List Tree → List Term → Term → Option (Term × Deriv × Bool)) (h : NRel v w)
-    (Γ : List Tree) (Φ : List Term) (t u : Term) :
-    «Prover.joinBy» v Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((do
-        let (v₁, d₁, _) ← w Γ Φ t
-        let (v₂, d₂, _) ← w Γ Φ u
-        if v₁ = v₂ then some (RoseTree.node Internal.Rule.join [d₁, d₂]) else none).map
-          encDeriv) := by
-  simp only [«Prover.joinBy», template, h Γ Φ t, h Γ Φ u, bindO_eq]
-  rcases w Γ Φ t with _ | ⟨v₁, d₁, b₁⟩
-  · rfl
-  rcases w Γ Φ u with _ | ⟨v₂, d₂, b₂⟩
-  · rfl
-  have hj := dNode_eq .join [d₁, d₂]
-  simp only [ruleData, List.map_cons, List.map_nil] at hj
-  by_cases hv : v₁ = v₂ <;>
-    simp [hv, encTDB, encDB, p1_eq, p2_eq, encTerm_eq_iff, hj, «Theory.l2»,
-      none_eq, some_eq]
-
-/-- The mirror's proof of an equation by normalizing both sides to one term. -/
-theorem byNorm_eq (rs' : List Tree) (rs : List NormRule)
-    (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree) (Φ : List Term) (t u : Term) :
-    «Prover.byNorm» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf fuel) Γ
-        (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((Internal.byNorm G E n rs fuel Γ Φ t u).map encDeriv) := by
-  rw [«Prover.byNorm», joinBy_eq _ _ (normalize_eq G E n rs' rs hrs fuel)]
-  rfl
 
 /-! Induction. -/
 
@@ -1086,37 +1051,6 @@ theorem snocHyp_eq (Φ : List Term) (φ : Term) :
     «Prelude.append» (Φ.map encTerm) [encTerm φ] = (Φ ++ [φ]).map encTerm := by
   simp
 
-/-- The simplification of a case of the mirror's induction: the options, lists and pairs of the
-program, the checker's instances, and the given lemmas, the maps of encodings left unfused so
-that the proofs by normalization apply. -/
-local macro "ind_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(tactic|
-  simp only [bindO_eq, mapO_eq, children_eq, RoseTree.children_node, lcase_cons, lcase_nil,
-    lowerHyps_eq, natSuccAt_eq, listConsAt_eq, weakenElem_eq, instAt_eq, subst_atVar0, mEq_eq,
-    single_eq, length_eq, mapT_weaken2, mapT_weaken1, snocHyp_eq, p1_encTDB, p2_encTDB,
-    p1_encDB, p2_encDB, Option.bind_eq_bind, Option.pure_def, Option.map_bind, Option.bind_map,
-    Option.map_map, Option.elim_some, Option.elim_none, Option.map_some, Option.map_none,
-    Option.bind_some, Option.bind_none, Function.comp_def, none_eq, some_eq, elim_encOpt,
-    «Theory.l3», «Theory.l2», encDeriv_node, ruleData,
-    «Prover.dNode», «Language.mNode», node_leaf, List.map_cons, List.map_nil,
-    $ls,*])
-
-/-- The mirror's proof of an equation by induction on a natural number variable with a step,
-each premise by normalization. -/
-theorem byNatInd_eq (kz ks : ℕ) (s : Term) (rs' : List Tree)
-    (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree)
-    (Φ : List Term) (t u : Term) :
-    «Prover.byNatInd» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kz)
-        (leaf ks) (encTerm s) rs' (leaf fuel) Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((Internal.byNatInd G E n kz ks s rs fuel Γ Φ t u).map encDeriv) := by
-  rcases Γ with _ | ⟨c, Γ'⟩
-  · rfl
-  simp only [«Prover.byNatInd», template, Internal.byNatInd]
-  ind_simp [byNorm_eq G E n rs' rs hrs]
-  rcases Internal.lowerHyps G n Γ' Φ with _ | Φ'
-  · rfl
-  ind_simp [byNorm_eq G E n rs' rs hrs]
-  simp only [Option.map_eq_bind, Function.comp_def]
-
 /-- The mirror's rules followed by the rewriting by the hypothesis of an index. -/
 theorem withHyp_eq (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (i : ℕ) :
@@ -1130,90 +1064,6 @@ theorem withHyp_eq (rs' : List Tree) (rs : List NormRule)
       rfl
   rw [h]
   exact List.rel_append hrs (List.Forall₂.cons rfl List.Forall₂.nil)
-
-/-- The mirror's proof of an equation by induction on a list variable with a step, each premise
-by normalization. -/
-theorem byListInd_eq (kn kc : ℕ) (s : Term) (rs' : List Tree)
-    (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree)
-    (Φ : List Term) (t u : Term) :
-    «Prover.byListInd» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kn)
-        (leaf kc) (encTerm s) rs' (leaf fuel) Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((Internal.byListInd G E n kn kc s rs fuel Γ Φ t u).map encDeriv) := by
-  rcases Γ with _ | ⟨c, Γ'⟩
-  · rfl
-  simp only [«Prover.byListInd», template, Internal.byListInd, listPart_eq]
-  ind_simp []
-  rcases Internal.listPart c with _ | a
-  · rfl
-  ind_simp [byNorm_eq G E n rs' rs hrs]
-  rcases Internal.lowerHyps G n Γ' Φ with _ | Φ'
-  · rfl
-  ind_simp [byNorm_eq G E n rs' rs hrs]
-  simp only [Option.map_eq_bind, Function.comp_def]
-
-/-- The mirror's proof of an equation by induction on a natural number variable with the
-induction hypothesis. -/
-theorem byNatIndHyp_eq (kz ks : ℕ) (rs' : List Tree)
-    (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree)
-    (Φ : List Term) (t u : Term) :
-    «Prover.byNatIndHyp» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kz)
-        (leaf ks) rs' (leaf fuel) Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((Internal.byNatIndHyp G E n kz ks rs fuel Γ Φ t u).map encDeriv) := by
-  rcases Γ with _ | ⟨c, Γ'⟩
-  · rfl
-  have hN : ∀ Γ Φ t, «Prover.normalize» (encGlobals G) (E.toList.map encEntry)
-      (leaf n) rs' (leaf fuel) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.normalize G E n rs fuel Γ Φ t).map encTDB) :=
-    normalize_eq G E n rs' rs hrs fuel
-  have hW := byNorm_eq G E n _ _ (withHyp_eq rs' rs hrs (Φ.length + 1)) fuel
-  simp only [«Prover.byNatIndHyp», template, Internal.byNatIndHyp]
-  ind_simp [byNorm_eq G E n rs' rs hrs]
-  rcases Internal.lowerHyps G n Γ' Φ with _ | Φ'
-  · rfl
-  ind_simp [byNorm_eq G E n rs' rs hrs, hN, List.length_map, List.length_append,
-    List.length_singleton, hW]
-  rcases Internal.byNorm G E n rs fuel Γ' Φ'
-    (t.subst (Internal.instVar (Term.arr kz [] Term.star)))
-    (u.subst (Internal.instVar (Term.arr kz [] Term.star))) with _ | p₀
-  · rfl
-  ind_simp [hN, hW, List.length_map, List.length_append, List.length_singleton]
-  rcases Internal.normalize G E n rs fuel (c :: Γ') (Φ ++ [t.eq u]) (t.eq u) with _ | ⟨ψ, dψ, b⟩
-  · rfl
-  ind_simp [hN, hW, List.length_map, List.length_append, List.length_singleton]
-
-/-- The mirror's proof of an equation by induction on a list variable with the induction
-hypothesis. -/
-theorem byListIndHyp_eq (kn kc : ℕ) (rs' : List Tree)
-    (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree)
-    (Φ : List Term) (t u : Term) :
-    «Prover.byListIndHyp» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kn)
-        (leaf kc) rs' (leaf fuel) Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((Internal.byListIndHyp G E n kn kc rs fuel Γ Φ t u).map encDeriv) := by
-  rcases Γ with _ | ⟨c, Γ'⟩
-  · rfl
-  have hN : ∀ Γ Φ t, «Prover.normalize» (encGlobals G) (E.toList.map encEntry)
-      (leaf n) rs' (leaf fuel) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.normalize G E n rs fuel Γ Φ t).map encTDB) :=
-    normalize_eq G E n rs' rs hrs fuel
-  simp only [«Prover.byListIndHyp», template, Internal.byListIndHyp, listPart_eq]
-  ind_simp []
-  rcases Internal.listPart c with _ | a
-  · rfl
-  ind_simp [byNorm_eq G E n rs' rs hrs]
-  rcases Internal.lowerHyps G n Γ' Φ with _ | Φ'
-  · rfl
-  have hW := byNorm_eq G E n _ _ (withHyp_eq rs' rs hrs (Φ'.length + 1)) fuel
-  ind_simp [byNorm_eq G E n rs' rs hrs]
-  rcases Internal.byNorm G E n rs fuel Γ' Φ'
-    (t.subst (Internal.instVar (Term.arr kn [a] Term.star)))
-    (u.subst (Internal.instVar (Term.arr kn [a] Term.star))) with _ | p₀
-  · rfl
-  ind_simp [hN, hW, List.length_map, List.length_append, List.length_singleton]
-  rcases Internal.normalize G E n rs fuel (c :: a :: Γ')
-    (Φ'.map Internal.weaken2 ++ [Internal.weakenElem (t.eq u)]) (Internal.weakenElem (t.eq u))
-    with _ | ⟨ψ, dψ, b⟩
-  · rfl
-  ind_simp [hN, hW, List.length_map, List.length_append, List.length_singleton]
 
 /-! The reduction to a depth. -/
 
@@ -2507,9 +2357,9 @@ theorem evalK_eq (rw' : List Tree → Tree → List Tree → Tree → Tree) (rw 
 /-- The mirror's reduction to a depth within a depth of fuel, at related rules: the reduction
 under weakened hypotheses by the index of the rules and the prepared hypotheses, which
 {name}`Geb.FreeTopos.Internal.evalK_eq` relates to the reduction. -/
-theorem eval_eq (rs' : List Tree) (rs : List NormRule)
+theorem evalD_eq (rs' : List Tree) (rs : List NormRule)
     (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) :
-    ERel («Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
+    ERel («Prover.evalD» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
         (leaf fuel))
       (Internal.eval G E n rs fuel) := by
   intro dp Γ Φ t
@@ -2520,151 +2370,7 @@ theorem eval_eq (rs' : List Tree) (rs : List NormRule)
   have h := evalK_eq G n Φ _ _ hw fuel dp Γ 0 t
   rw [Internal.evalK_eq G E n rs Φ _ (fun _ _ _ ↦ rfl) fuel dp Γ 0 t,
     Internal.map_weakenBy_zero] at h
-  simpa only [«Prover.eval»] using h
-
-/-- The mirror's normal form reached through weak head normal forms, at related rules. -/
-theorem normalizeW_eq (rs' : List Tree)
-    (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) :
-    NRel («Prover.normalizeW» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
-        (leaf fuel))
-      (Internal.normalizeW G E n rs fuel) :=
-  eval_eq G E n rs' rs hrs fuel .full
-
-/-- The mirror's proof of an equation by normalizing both sides, weak head normal forms first,
-to one term. -/
-theorem byNormW_eq (rs' : List Tree) (rs : List NormRule)
-    (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree) (Φ : List Term) (t u : Term) :
-    «Prover.byNormW» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf fuel)
-        Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((Internal.byNormW G E n rs fuel Γ Φ t u).map encDeriv) := by
-  rw [«Prover.byNormW», joinBy_eq _ _ (normalizeW_eq G E n rs' rs hrs fuel)]
-  rfl
-
-/-! Provers of equations. -/
-
-/-- The mirror's prover and a prover are related when they agree at every context, encoded
-hypotheses and encoded sides. -/
-def PRel (v : List Tree → List Tree → Tree → Tree → Tree) (w : Internal.Prover) : Prop :=
-  ∀ Γ Φ t u, v Γ (Φ.map encTerm) (encTerm t) (encTerm u) = encOpt ((w Γ Φ t u).map encDeriv)
-
-/-- The mirror's abstraction of an encoded term over a variable. -/
-@[simp] theorem abstractVar_eq (i : ℕ) (c : Tree) (t : Term) :
-    «Prover.abstractVar» (leaf i) c (encTerm t) =
-      encTerm (Internal.abstractVar i c t) := by
-  simp only [«Prover.abstractVar», template, weaken1_eq, Internal.abstractVar]
-  rw [subst_eq _ _ (fun j ↦ if j = i + 1 then Term.var 0 else Term.var j) fun j ↦ by
-    mirror_simp [beq_iff_eq]
-    split <;> rfl, mLam_eq]
-
-/-- The mirror's proof of an equation of functions by extensionality, at a related prover. -/
-theorem byFunExt_eq (p' : List Tree → List Tree → Tree → Tree → Tree) (p : Internal.Prover)
-    (hp : PRel p' p) :
-    PRel («Prover.byFunExt» (encGlobals G) (leaf n) p') (Internal.byFunExt G n p) := by
-  have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p Γ Φ t u).map encDeriv) := hp
-  intro Γ Φ f g
-  simp only [«Prover.byFunExt», template, Internal.byFunExt, typeIn_eq]
-  ind_simp [expParts_eq]
-  rcases Internal.typeIn G n Γ f with _ | c
-  · rfl
-  ind_simp [expParts_eq]
-  rcases Internal.expParts c with _ | ⟨a, b⟩
-  · rfl
-  ind_simp [p1_eq, weaken1_eq, mApp_eq, mVar_eq, hp']
-  simp only [Option.map_eq_bind, Function.comp_def]
-
-/-- The mirror's proof of an equation by case analysis on a variable of a coproduct, at a
-related prover. -/
-theorem bySplit_eq (kl kr i : ℕ) (p' : List Tree → List Tree → Tree → Tree → Tree)
-    (p : Internal.Prover) (hp : PRel p' p) :
-    PRel («Prover.bySplit» (leaf kl) (leaf kr) (leaf i) p')
-      (Internal.bySplit kl kr i p) := by
-  have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p Γ Φ t u).map encDeriv) := hp
-  intro Γ Φ t u
-  simp only [«Prover.bySplit», template, Internal.bySplit]
-  ind_simp [nth_eq]
-  rcases Γ[i]? with _ | c
-  · rfl
-  ind_simp [coprodParts_eq]
-  rcases Internal.coprodParts c with _ | ⟨a, b⟩
-  · rfl
-  ind_simp [p1_eq, p2_eq, abstractVar_eq, weaken1_eq, mApp_eq, mArr_eq, mVar_eq, hp',
-    List.length_map]
-  rfl
-
-/-- The mirror's proof of an equation by induction on a list variable with the induction
-hypothesis, each premise by its related prover. -/
-theorem byListIndWith_eq (kn kc : ℕ) (p₀' p₁' : List Tree → List Tree → Tree → Tree → Tree)
-    (p₀ p₁ : Internal.Prover) (hp₀ : PRel p₀' p₀) (hp₁ : PRel p₁' p₁) :
-    PRel («Prover.byListIndWith» (encGlobals G) (leaf n) (leaf kn) (leaf kc) p₀' p₁')
-      (Internal.byListIndWith G n kn kc p₀ p₁) := by
-  have hp₀' : ∀ Γ Φ t u, p₀' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p₀ Γ Φ t u).map encDeriv) := hp₀
-  have hp₁' : ∀ Γ Φ t u, p₁' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p₁ Γ Φ t u).map encDeriv) := hp₁
-  intro Γ Φ t u
-  rcases Γ with _ | ⟨c, Γ'⟩
-  · rfl
-  simp only [«Prover.byListIndWith», template, Internal.byListIndWith, listPart_eq]
-  ind_simp []
-  rcases Internal.listPart c with _ | a
-  · rfl
-  ind_simp []
-  rcases Internal.lowerHyps G n Γ' Φ with _ | Φ'
-  · rfl
-  ind_simp [hp₀', hp₁']
-  simp only [Option.map_eq_bind, Function.comp_def]
-
-/-- The mirror's proof of an equation in a context of a rose tree alone by the uniqueness of the
-fold, each premise by normalization. -/
-theorem byRoseInd_eq (kn kl kc : ℕ) (s : Term)
-    (rs' : List Tree) (rs : List NormRule)
-    (hrs : List.Forall₂ RRel rs' rs) (fuel : ℕ) (Γ : List Tree) (t u : Term) :
-    «Prover.byRoseInd» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf kn)
-        (leaf kl) (leaf kc) (encTerm s) rs' (leaf fuel) Γ (encTerm t) (encTerm u) =
-      encOpt ((Internal.byRoseInd G E n kn kl kc s rs fuel Γ t u).map encDeriv) := by
-  have hB : ∀ Γ t u, «Prover.byNorm» (encGlobals G) (E.toList.map encEntry) (leaf n)
-      rs' (leaf fuel) Γ [] (encTerm t) (encTerm u) =
-      encOpt ((Internal.byNorm G E n rs fuel Γ [] t u).map encDeriv) :=
-    fun Γ t u ↦ byNorm_eq G E n rs' rs hrs fuel Γ [] t u
-  rcases Γ with _ | ⟨r, _ | ⟨r', Γ'⟩⟩ <;>
-    simp only [«Prover.byRoseInd», template, Internal.byRoseInd]
-  · rfl
-  · mirror_simp [roseLabel_eq, typeIn_eq, Theory.mirror_list, «Theory.l4»,
-      «Theory.l2», Option.bind_eq_bind]
-    rcases Internal.roseParts r with _ | ⟨a, f⟩
-    · rfl
-    rcases Internal.typeIn G n [r] t with _ | C
-    · rfl
-    ind_simp [roseNodeAt_eq, roseMapAt_eq, hB]
-    simp only [Option.map_eq_bind, Function.comp_def]
-  · mirror_simp [beq_iff_eq, Nat.reduceEqDiff, none_eq]
-
-/-- The mirror's proof of an equation in a context of a rose tree alone by induction with the
-hypothesis at each child, at a related prover. -/
-theorem byRoseIndHyp_eq (kn kl kc : ℕ) (p' : List Tree → List Tree → Tree → Tree → Tree)
-    (p : Internal.Prover) (hp : PRel p' p) :
-    PRel («Prover.byRoseIndHyp» (leaf kn) (leaf kl) (leaf kc) p')
-      (Internal.byRoseIndHyp kn kl kc p) := by
-  have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p Γ Φ t u).map encDeriv) := hp
-  intro Γ Φ t u
-  rcases Γ with _ | ⟨r, Γ'⟩ <;> rcases Φ with _ | ⟨φ, Φ⟩ <;>
-    simp only [«Prover.byRoseIndHyp», template, Internal.byRoseIndHyp]
-  · mirror_simp [none_eq, List.isEmpty_nil, Bool.not_true, Bool.false_and]
-  · mirror_simp [none_eq, List.isEmpty_nil, Bool.not_true, Bool.false_and]
-  · mirror_simp [roseLabel_eq, Theory.mirror_list, «Theory.l3», Option.bind_eq_bind,
-      List.isEmpty_nil, List.isEmpty_cons, Bool.not_false, Bool.true_and, List.getD_cons_zero,
-      List.tail_cons]
-    rcases Internal.roseParts r with _ | ⟨a, f⟩
-    · rfl
-    have h := hp' (list r :: a :: Γ') [Internal.roseHyp kl kc (Term.eq t u)]
-      (Internal.roseNodeAt kn r a t) (Internal.roseNodeAt kn r a u)
-    simp only [List.map_cons, List.map_nil] at h
-    ind_simp [roseNodeAt_eq, roseHyp_eq, mEq_eq, h]
-    simp only [Option.map_eq_bind, Function.comp_def]
-  · mirror_simp [none_eq, List.isEmpty_cons, Bool.and_false]
+  simpa only [«Prover.evalD»] using h
 
 end GebTests.Prototypes.FreeTopos.Agreement.Prove
 

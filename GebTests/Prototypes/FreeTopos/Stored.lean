@@ -32,9 +32,13 @@ tree instead visits a node once for each path to it from the root, and a derivat
 larger than its table by orders of magnitude.
 
 A certificate of the conversion checker ({name}`Geb.FreeTopos.Internal.ConvDeriv`) is stored as a
-derivation is, each rule of the base checker at its own position and a step of the environment
-machine at the position after them, so that the text of a derivation of the base checker reads as
-the certificate of its rules.
+derivation is, each rule of the base checker at its own position and the steps of conversion, the
+application of a theorem at the instance that matches, the evaluation at literals and the step of
+the environment machine at the positions after them, so that the text of a derivation of the base
+checker reads as the certificate of its rules. A step's rules of the prover's normalizer are
+stored as trees, a theorem whose matching is prepared as the theorem, since a matching is a
+function, which no text stores; a development's record that the evaluation at literals is ready
+at an index is stored beside its theorems.
 
 ## Main definitions
 
@@ -47,6 +51,8 @@ the certificate of its rules.
 * {lit}`Table`, {lit}`treeToNats`, {lit}`declsToNats` — the table of a tree's distinct nodes, of
   declarations', as natural numbers.
 * {lit}`natsOfText`, {lit}`declsOfText` — the numbers and the declarations a text stores.
+* {lit}`normRuleTree`, {lit}`depthN` — a rule of the prover's normalizer and a depth of
+  reduction as trees.
 * {lit}`convRuleData`, {lit}`convDeclsToNats`, {lit}`convDeclsOfText` — the same for theorems
   with certificates of the conversion checker, a rule of the base checker at its own position.
 
@@ -186,6 +192,14 @@ structure Reading (ρ : Type) where
   decl : Option (Thm × RoseTree ρ)
   /-- The node's children as theorems with their derivations. -/
   decls : Option (List (Thm × RoseTree ρ))
+  /-- The node as a rule of the prover's normalizer. -/
+  normRule : Option NormRule
+  /-- The node's children as rules of the prover's normalizer. -/
+  normRules : Option (List NormRule)
+  /-- The node as the record of an index at which the evaluation at literals is ready. -/
+  ready : Option ℕ
+  /-- The node's children as theorems with their derivations and records of indices. -/
+  entries : Option (List (Thm × RoseTree ρ ⊕ ℕ))
 
 /-- The rule of a position, read off the data, each a node's tree and readings: the rule and the
 data after them. -/
@@ -270,6 +284,20 @@ def read {ρ : Type} (rule : ℕ → List (Tree × Reading ρ) → Option (ρ ×
     | [a, d] => do pure (← a.2.thm, ← d.2.deriv)
     | _ => none
   decls := cs.mapM (·.2.decl)
+  normRule := match k, cs with
+    | 0, p :: ds => (ruleOf p.1.label ds).bind fun (r, rest) ↦
+        if rest.isEmpty then some (.rule r) else none
+    | 1, [j] => some (.delta j.1.label)
+    | 2, [m, ks] => some (.deltaBelow m.1.label (ks.1.children.map (·.label)))
+    | 3, [] => some .unitVar
+    | 4, [j, θ] => some (.thm j.1.label θ.1.children)
+    | 6, [i] => some (.hyp i.1.label)
+    | _, _ => none
+  normRules := cs.mapM (·.2.normRule)
+  ready := match k, cs with
+    | 1, [j] => some j.1.label
+    | _, _ => none
+  entries := cs.mapM fun c ↦ (c.2.decl.map Sum.inl).orElse fun _ ↦ c.2.ready.map Sum.inr
 
 /-! Trees as tables of their distinct nodes. -/
 
@@ -411,56 +439,96 @@ def declsOfText (s : String) : Option (List Decl) :=
 
 /-! Certificates of the conversion checker. -/
 
-/-- A rule of the prover a step of the machine rewrites by, as a tree: a theorem at objects and a
-hypothesis; nothing for a rule of another kind. -/
-def normRuleTree : NormRule → Option Tree
-  | .thm j θ => some (RoseTree.node 0 [leafN j, listT θ])
-  | .hyp i => some (RoseTree.node 1 [leafN i])
+/-- A rule of the prover's normalizer as a tree, the node of its constructor's position over its
+fields: a rule of the checker over its position and data, the unfolding of a definition, of the
+definitions below an index but a list, the terminal type's element, a theorem at objects, a
+prepared theorem as the theorem, whose matching the reader of a certificate prepares again, and a
+hypothesis. -/
+def normRuleTree : NormRule → Tree
+  | .rule r => RoseTree.node 0 (leafN (ruleData r).1 :: (ruleData r).2)
+  | .delta k => RoseTree.node 1 [leafN k]
+  | .deltaBelow m ks => RoseTree.node 2 [leafN m, listT (ks.map leafN)]
+  | .unitVar => RoseTree.node 3 []
+  | .thm j θ | .thmAt j θ _ _ _ => RoseTree.node 4 [leafN j, listT θ]
+  | .hyp i => RoseTree.node 6 [leafN i]
+
+/-- The position of a depth of reduction among the depths. -/
+def depthN : Internal.Depth → ℕ
+  | .head => 0
+  | .weak => 1
+  | .open => 2
+  | .full => 3
+
+/-- The depth of reduction of a position, where it is one's. -/
+def depthOf : ℕ → Option Internal.Depth
+  | 0 => some .head
+  | 1 => some .weak
+  | 2 => some .open
+  | 3 => some .full
   | _ => none
 
-/-- The rule of the prover a tree is, where it is one by {name}`normRuleTree`. -/
-def normRuleOfTree (t : Tree) : Option NormRule := match t.label, t.children with
-  | 0, [j, θ] => some (.thm j.label θ.children)
-  | 1, [i] => some (.hyp i.label)
-  | _, _ => none
-
 /-- A rule of the conversion checker's position among the rules and its data, as trees: a rule of
-the language's as {name}`ruleData` gives it, and a step of the machine rewriting by theorems and
-hypotheses after them; a rule of another kind at a position {lit}`convRuleOf` reads as none, so
-that a text storing it does not read. -/
+the language's as {name}`ruleData` gives it, and after the language's rules the normalization
+over its rules and its fuel, the reduction over its rules, its fuel and its depth, the
+application of a theorem over its index and objects, the evaluation at literals over the index of
+its equations, and the reduction by the machine over its fuel, the bound and the exceptions of
+the definitions it unfolds, the indices of the primitives of lists and its rules. -/
 def convRuleData : ConvRule → ℕ × List Tree
   | .base r => ruleData r
-  | .machine fuel m except kl kc rs => match rs.mapM normRuleTree with
-    | some ts => (37, [leafN fuel, leafN m, listT (except.map leafN), leafN kl, leafN kc, listT ts])
-    | none => (38, [])
-  | _ => (38, [])
+  | .norm rs fuel => (37, [listT (rs.map normRuleTree), leafN fuel])
+  | .eval rs fuel depth => (38, [listT (rs.map normRuleTree), leafN fuel, leafN (depthN depth)])
+  | .applyMatch j θ => (39, [leafN j, listT θ])
+  | .lit j => (40, [leafN j])
+  | .machine fuel m except kl kc rs =>
+    (41, [leafN fuel, leafN m, listT (except.map leafN), leafN kl, leafN kc,
+      listT (rs.map normRuleTree)])
 
 /-- The rule of the conversion checker of a position, read off the data, each a node's tree and
 readings: the rule and the data after them. -/
 def convRuleOf {ρ : Type} (k : ℕ) (ts : List (Tree × Reading ρ)) :
     Option (ConvRule × List (Tree × Reading ρ)) := match k, ts with
-  | 37, fuel :: m :: except :: kl :: kc :: rs :: rest => do
+  | 37, rs :: fuel :: rest => do pure (.norm (← rs.2.normRules) fuel.1.label, rest)
+  | 38, rs :: fuel :: depth :: rest => do
+    pure (.eval (← rs.2.normRules) fuel.1.label (← depthOf depth.1.label), rest)
+  | 39, j :: θ :: rest => some (.applyMatch j.1.label θ.1.children, rest)
+  | 40, j :: rest => some (.lit j.1.label, rest)
+  | 41, fuel :: m :: except :: kl :: kc :: rs :: rest => do
     pure (.machine fuel.1.label m.1.label (except.1.children.map (·.label)) kl.1.label
-      kc.1.label (← rs.1.children.mapM normRuleOfTree), rest)
+      kc.1.label (← rs.2.normRules), rest)
   | k, ts => (ruleOf k ts).map fun (r, rest) ↦ (.base r, rest)
 
 /-- The index of a declaration's tree among the distinct nodes: a theorem of the base checker's
-as {name}`internDecl` enters it, and a theorem with a certificate of the conversion checker with
-its rules' trees of {name}`convRuleData`; nothing for a declaration of another kind. -/
+as {name}`internDecl` enters it, a theorem with a certificate of the conversion checker with
+its rules' trees of {name}`convRuleData`, and the record of an index at which the evaluation at
+literals is ready as the node of label one over the index; nothing for a declaration of another
+kind. -/
 def internConvDecl : ConvDecl → Option (StateM Table ℕ)
   | .base d => internDecl d
   | .conv a c => some (internThm convRuleData a c)
-  | .ready _ => none
+  | .ready j => some do internNode 1 [← intern (leafN j)]
 
-/-- Declarations of theorems as a list of natural numbers, each declaration entered in turn by
+/-- Declarations as a list of natural numbers, each declaration entered in turn by
 {name}`internConvDecl`; nothing where one is of another kind. -/
 def convDeclsToNats (ds : List ConvDecl) : Option (List ℕ) := entriesToNats internConvDecl ds
 
-/-- The theorems a text stores with their certificates of the conversion checker, where it stores
-them, a derivation of the base checker read as the certificate of its rules. -/
+/-- A development with certificates under the certificate's name, as a table; the reason where a
+declaration is neither of a theorem nor the record of an index. -/
+def convCertOf (name : String) (ds : List ConvDecl) : Except String Cert :=
+  match convDeclsToNats ds with
+  | some table => .ok ⟨name, ds.length, table⟩
+  | none => .error s!"{name}: a declaration is neither of a theorem nor the record of an index"
+
+/-- The declarations a table of their tree stores, where it stores them: theorems with their
+certificates of the conversion checker, a derivation of the base checker read as the certificate
+of its rules, and records of indices at which the evaluation at literals is ready. -/
+def convDeclsOfNats (ns : List ℕ) : Option (List ConvDecl) :=
+  paraOfNats (read convRuleOf) ns |>.bind (·.2.entries) |>.map (·.map fun
+    | .inl (a, c) => .conv a c
+    | .inr j => .ready j)
+
+/-- The declarations a text stores, the table of their tree, where it stores them. -/
 def convDeclsOfText (s : String) : Option (List ConvDecl) :=
-  (natsOfText s).bind (paraOfNats (read convRuleOf)) |>.bind (·.2.decls) |>.map
-    (·.map fun (a, c) ↦ .conv a c)
+  (natsOfText s).bind convDeclsOfNats
 
 end GebTests.Prototypes.FreeTopos.Stored
 

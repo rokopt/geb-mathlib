@@ -563,17 +563,17 @@ subterms in normal form, not to be reduced at each of their copies. The children
 their own, those of abstractions and the starts and steps of folds, are left in place, their
 reductions, delayed, not computed. -/
 def reduceInnermost (sel : Term → Bool)
-    (ev : Term → Option (Term × Internal.Deriv × Bool)) (t : Term) :
-    Option (Term × Internal.Deriv × Bool) :=
-  RoseTree.para (fun l (cs : List (Term × (Unit → Option (Term × Internal.Deriv × Bool)))) _ ↦
+    (ev : Term → Option (Term × Internal.ConvDeriv × Bool)) (t : Term) :
+    Option (Term × Internal.ConvDeriv × Bool) :=
+  RoseTree.para (fun l (cs : List (Term × (Unit → Option (Term × Internal.ConvDeriv × Bool)))) _ ↦
     do
       let rs ← cs.zipIdx.mapM fun ((u, r), i) ↦
-        if Internal.keepsWeak l i then some (u, Internal.dRefl) else r ()
+        if Internal.keepsWeak l i then some (u, Internal.cRefl) else r ()
       let t₁ := RoseTree.node l (rs.map Prod.fst)
-      let d₁ := Internal.dCong (rs.map Prod.snd)
+      let d₁ := Internal.cCong (rs.map Prod.snd)
       if sel t₁ then
         let (t₂, d₂) ← ev t₁
-        pure (t₂, Internal.dTrans d₁ d₂)
+        pure (t₂, Internal.cTrans d₁ d₂)
       else pure (t₁, d₁)) t ()
 
 /-- The distinct subterms of a term that a test selects, outside the children in contexts of their
@@ -1021,7 +1021,7 @@ def decodeCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
         | .hyp j => !excluded j
         | _ => true
       let raw := W.inΓ formΓ Γ kT
-      let (t₀, d₀, b₀) ← Internal.eval K.G K.E 0 r₀ 4096 .full Γ (rwHyps r₀ Φ) raw
+      let (t₀, d₀, b₀) ← Internal.evalC K.G K.E 0 r₀ 4096 .full Γ (rwHyps r₀ Φ) raw
       -- the atoms' expansions decided by the hypotheses, the reader's step folded: the rules but
       -- the equations at the resolution's fold, with the abbreviations' step unfolded
       let res4 := [("Reader.kwLet", 4), ("Reader.kwIf", 3)].map fun (k, n) ↦
@@ -1029,7 +1029,7 @@ def decodeCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
       let r₁ := (rs.filter fun r ↦ match r with
         | .thm j _ => !res4.contains j
         | _ => true) ++ [.delta (T.argIdx 3)]
-      let (t₁, d₁, b₁) ← Internal.eval K.G K.E 0 r₁ 4096 .full Γ (rwHyps rs Φ) t₀
+      let (t₁, d₁, b₁) ← Internal.evalC K.G K.E 0 r₁ 4096 .full Γ (rwHyps rs Φ) t₀
       -- then the reader's step and its case of lists unfolded
       let r₂ := rs ++ [.delta (T.argIdx 3), .delta (T.argIdx 4),
         .delta (P.idx "Reader.resolveList")]
@@ -1043,12 +1043,12 @@ def decodeCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
           | _, _ => false
         | _, _ => false
       let (tW, d₂, b₂) ← reduceInnermost isStep
-        (Internal.eval K.G K.E 0 r₂ 4096 .full Γ (rwHyps rs Φ)) t₁
+        (Internal.evalC K.G K.E 0 r₂ 4096 .full Γ (rwHyps rs Φ)) t₁
       -- then the resolution at the top
-      let (tU, d₃, b₃) ← Internal.eval K.G K.E 0 r₂ 4096 .full Γ (rwHyps rs Φ) tW
+      let (tU, d₃, b₃) ← Internal.evalC K.G K.E 0 r₂ 4096 .full Γ (rwHyps rs Φ) tW
       let d := nd .join
-        [(Internal.dTrans (d₀, b₀) (Internal.dTrans (d₁, b₁)
-          (Internal.dTrans (d₂, b₂) (d₃, b₃)))).1, Internal.dRefl.1]
+        [(Internal.cTrans (d₀, b₀) (Internal.cTrans (d₁, b₁)
+          (Internal.cTrans (d₂, b₂) (d₃, b₃)))).1, Internal.cRefl.1]
       -- the resolutions of the atoms the resolution meets, the decoded tree's name and the
       -- recognizer's, which its tests leave folded, each unfolded once by the rules, as equations
       let jA := P.idx "Reader.resolveAtom"
@@ -1069,10 +1069,10 @@ def decodeCase (P : Prog) (S : Defs) (T : Defs3) : Step :=
           | _ => false
         | _ => false
       let atomEqs ← (collectOutside isAtomRes tU).mapM fun a ↦ do
-        let (w, dw, _) ← Internal.eval K.G K.E 0
+        let (w, dw, _) ← Internal.evalC K.G K.E 0
           (rs ++ [if closedAt a then .deltaBelow (jA + 1) [] else .delta jA]) 4096 .full Γ
           (rwHyps rs Φ) a
-        pure (Term.eq a w, nd .join [dw, Internal.dRefl.1])
+        pure (Term.eq a w, nd .join [dw, Internal.cRefl.1])
       -- the resolution's equation after them, in the normal form by the rules and them
       atomEqs.foldr (fun (φ, dφ) k Γ Φ ψ ↦ dCut φ dφ k Γ Φ ψ) (fun Γ Φ ψ ↦
         let h := Φ.length

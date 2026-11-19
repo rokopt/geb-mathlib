@@ -34,10 +34,12 @@
 ; hypothesis whose normal form is falsity ({geb}`Formula.refuteHypothesis`), cut in the
 ; conclusion of an earlier theorem ({geb}`Formula.obtainTheorem`) and read a goal as a formula;
 ; and its (holds h (g) SCRIPT) takes a hypothesis that equates a formula with truth.
-; Statements and scripts are read before any proof is searched; every derivation
-; is checked by {geb}`Derivation.declStep`, the step of the checker of developments, as it is
-; found, and replay checks a saved development by {geb}`Derivation.checkDev`. A theorem whose
-; script leaves a hole open, or does not prove it, is reported with the goals of its holes and
+; Statements and scripts are read before any proof is searched; a proof is a certificate of the
+; checker with a step of conversion, a reduction whose derivation is past the prover's bound
+; named by the step that computes it, and every certificate is checked by {geb}`Conversion.certStep`, the step of the check of developments
+; with certificates, as it is found, and replay checks a saved development by
+; {geb}`Conversion.checkCertDev`. A theorem whose script leaves a hole open, or does not prove
+; it, is reported with the goals of its holes and
 ; of its steps that fail, and the theorems after it are proved under it; such a development has
 ; no certificate. A development is resumed from the cache of an earlier run
 ; ({geb}`Authoring.resume`): a theorem whose statement and script the cache has, proved, is not
@@ -52,6 +54,7 @@
   (import Derivation)
   (import Translation)
   (import Prover)
+  (import Conversion as Conv)
   (import Tactics)
   (import Logic)
   (import Formula as F)
@@ -2230,7 +2233,7 @@
   ; innermost. A name is an atom that a variable may take, of no definition of the program, of
   ; no theorem and of no definition before it. The definitions of a development follow the
   ; connectives' among the constants, in the order of their forms, each read and checked with
-  ; those before it ({geb}`Derivation.declStep`). In the forms after a definition's, of its
+  ; those before it ({geb}`Conversion.certStep`). In the forms after a definition's, of its
   ; document and of the documents after it, its name stands for it
   ; ({geb}`Authoring.withNames`): a term applies it to a term for each of its parameters, and
   ; the reductions keep it folded unless a rule (unfold NAME) names it.
@@ -2275,7 +2278,7 @@
                         (and (bindable v name) (not (has (Source.nameOf name) defs))))
                       (case (readDefinition v gt defs f) ((OLDefn.nothing) fail)
                         ((OLDefn.just d)
-                         (case (declStep G (nil Entry) (declDef d)) ((ODevState.nothing) fail)
+                         (case (Conv.certStep G (nil Entry) (declDef d)) ((ODevState.nothing) fail)
                            ((ODevState.just s)
                             (case s
                               ((devState G2 el)
@@ -2367,7 +2370,7 @@
   (import (Option EntryList) as OEntries)
   ; The entries after a declaration, where the checker of developments admits it.
   (defn admit ((G Globals) (E (List Entry)) (d Decl)) OEntries.Maybe
-    (case (declStep G E d) ((ODevState.nothing) OEntries.nothing)
+    (case (Conv.certStep G E d) ((ODevState.nothing) OEntries.nothing)
       ((ODevState.just st) (case st ((devState G2 es) (OEntries.just es))))))
   (defn derive
     ((manner T) (G Globals) (E (List Entry)) (rs NRs) (eb T) (gt Ts) (defs Ts) (thms Ts)
@@ -2446,7 +2449,7 @@
   (defn declaredGlobals ((G Globals) (dd Results)) Globals
     (case dd
       ((results dn & dds)
-       (case (checkDev G (nil Entry) dds) ((ODevState.nothing) G)
+       (case (Conv.checkCertDev G (nil Entry) dds) ((ODevState.nothing) G)
          ((ODevState.just st) (case st ((devState G2 el) G2)))))))
   ; The certificate of a development: its results with the declarations of its definitions, under
   ; their names, after the connectives' rules and before the theorems' declarations.
@@ -2484,17 +2487,24 @@
         (and (equal (child here 1) (rep (requestThm q))) (equal (child here 5) sides)))))
   ; A derivation with the entries its rules cite renumbered: the rewriting by a theorem and the
   ; application of one, the rules of positions 16 and 27, cite the theorem's entry by the first
-  ; of their data. A node's premises are its children after the node of its rule's data, which
-  ; is kept as it is, so that no datum but those is renumbered.
+  ; of their data, and a step of the prover's reductions, of positions 37 and 38, by the rules it
+  ; names, the first of its data, a theorem at objects by the first of its fields. A node's
+  ; premises are its children after the node of its rule's data, which is otherwise kept as it
+  ; is.
+  (defn datumAt ((g (Arrow T T)) (i T) (ds Ts)) Ts
+    (append (take i ds) (cons (g (at ds i)) (drop (add i 1) ds))))
+  (defn firstBy ((g (Arrow T T)) (x T)) T (node (label x) (datumAt g 0 (children x))))
+  (defn reciteRules ((f (Arrow T T)) (rs T)) T
+    (node 0 (mapT (lam ((r T)) (if (eq (label r) 4) (firstBy f r) r)) (children rs))))
   (defn recite ((f (Arrow T T)) (d T)) T
     (para T
       (lam ((nd T) (rs Ts))
-        (let data T (child nd 0)
-          (node (label nd)
+        (let* ((l T (label nd)) (data T (child nd 0)))
+          (node l
             (cons
-              (if (or (eq (label nd) 16) (eq (label nd) 27))
-                (node 0 (cons (f (child data 0)) (tail (children data))))
-                data)
+              (cond ((or (eq l 16) (eq l 27)) (firstBy f data))
+                ((or (eq l 37) (eq l 38)) (firstBy (reciteRules f) data))
+                (else data))
               (tail rs)))))
       d))
   ; The entry of the present development that an entry cited in a cache's denotes: an entry
@@ -2543,11 +2553,18 @@
   ; hold terms are the terms of a theorem's instance, the third datum of the rules of positions
   ; 16 and 27; the step of an induction, the third datum of those of positions 19 and 20 and the
   ; fourth of that of position 32; and the formula of a cut and of a conversion, the datum of
-  ; those of positions 22 and 24. The other data are types and the indices of primitives, of
-  ; entries, of hypotheses and of variables, which name no definition, and a certificate of the
-  ; combinators, which is kept as it is.
-  (defn datumAt ((g (Arrow T T)) (i T) (ds Ts)) Ts
-    (append (take i ds) (cons (g (at ds i)) (drop (add i 1) ds))))
+  ; those of positions 22 and 24. The first datum of a step of the prover's reductions, of
+  ; positions 37 and 38, is the node of its rules, which name a definition in the unfolding of
+  ; one and in the unfolding of those below an index but those excepted. The index of the
+  ; runner's rules is that of the first connective, whose place is the first connective's after
+  ; the present definitions, so that the rule at the places is the one the runner gives the
+  ; present program. The other data are types and the indices of primitives, of entries, of
+  ; hypotheses and of variables, which name no definition, and a certificate of the combinators,
+  ; which is kept as it is.
+  (defn transportRule ((f (Arrow T T)) (r T)) T
+    (cond ((eq (label r) 1) (node 1 (single (f (child r 0)))))
+      ((eq (label r) 2) (node 2 (l2 (f (child r 0)) (node 0 (mapT f (children (child r 1)))))))
+      (else r)))
   (defn transportData ((f (Arrow T T)) (l T) (ds Ts)) Ts
     (cond
       ((or (eq l 16) (eq l 27))
@@ -2555,6 +2572,8 @@
       ((or (eq l 19) (eq l 20)) (datumAt (transportTerm f) 2 ds))
       ((eq l 32) (datumAt (transportTerm f) 3 ds))
       ((or (eq l 22) (eq l 24)) (datumAt (transportTerm f) 0 ds))
+      ((or (eq l 37) (eq l 38))
+       (datumAt (lam ((rs T)) (node 0 (mapT (transportRule f) (children rs)))) 0 ds))
       (else ds)))
   ; A derivation with the definitions its rules' data name at the places a function gives; the
   ; leaf that stands for no derivation is kept.
@@ -2592,27 +2611,46 @@
   (defn thmRefs ((a T)) T
     (joinRefs (cons (termRefs (child a 3)) (mapT termRefs (children (child a 2))))))
   ; A citation may introduce terms that no other datum of the derivation names. Include its
-  ; statement, but not its proof: entries are assumptions of the derivation being checked.
-  ; Combinator certificates have a different grammar and fall back to checking after changes.
+  ; statement, but not its proof: entries are assumptions of the derivation being checked. A
+  ; step of the prover's reductions cites by its rules: the theorem a rule rewrites by, whose
+  ; statement is included, and the definition a rule unfolds; the definitions below an index
+  ; that a rule unfolds are among those the reduced term names, which the closure under bodies
+  ; reaches. Combinator certificates have a different grammar, and a step of another kind, or one
+  ; whose rules hold a rule of the checker past the computation rules, is not analysed; each
+  ; falls back to checking after changes.
+  (defn ruleRefs ((E (List Entry)) (r T)) T
+    (let l T (label r)
+      (cond ((eq l 1) (some (node 0 (single (child r 0)))))
+        ((eq l 4)
+         (case (thmAt E (child r 0)) ((OThm.nothing) none)
+           ((OThm.just a) (some (thmRefs (rep a))))))
+        ((eq l 0) (if (lt (label (child r 0)) 16) (some noNode) none))
+        (else (some noNode)))))
+  (defn rulesRefs ((E (List Entry)) (rs T)) T
+    (let xs Ts (mapT (ruleRefs E) (children rs))
+      (if (allT isSome xs) (some (joinRefs (mapT get xs))) none)))
   (defn derivRefs ((E (List Entry)) (d T)) T
     (if (eq (arity d) 0) (some noNode)
       (para T
         (lam ((nd T) (rs Ts))
           (let* ((l T (label nd)) (data Ts (children (child nd 0))))
-            (cond ((or (eq l 30) (or (eq l 31) (lt 36 l))) none)
+            (cond ((or (eq l 30) (or (eq l 31) (lt 38 l))) none)
               ((allT isSome (tail rs))
                (let local T
-                 (if (or (eq l 16) (eq l 27))
-                   (case (thmAt E (at data 0)) ((OThm.nothing) none)
-                     ((OThm.just a)
-                      (some
-                        (joinRefs
-                          (cons (thmRefs (rep a)) (mapT termRefs (children (at data 2))))))))
-                   (some
-                     (cond ((or (eq l 19) (eq l 20)) (termRefs (at data 2)))
-                       ((eq l 32) (termRefs (at data 3)))
-                       ((or (eq l 22) (eq l 24)) (termRefs (at data 0)))
-                       (else noNode))))
+                 (cond
+                   ((or (eq l 16) (eq l 27))
+                    (case (thmAt E (at data 0)) ((OThm.nothing) none)
+                      ((OThm.just a)
+                       (some
+                         (joinRefs
+                           (cons (thmRefs (rep a)) (mapT termRefs (children (at data 2)))))))))
+                   ((lt 36 l) (rulesRefs E (at data 0)))
+                   (else
+                     (some
+                       (cond ((or (eq l 19) (eq l 20)) (termRefs (at data 2)))
+                         ((eq l 32) (termRefs (at data 3)))
+                         ((or (eq l 22) (eq l 24)) (termRefs (at data 0)))
+                         (else noNode)))))
                  (if (isSome local) (some (joinRefs (cons (get local) (mapT get (tail rs)))))
                    none)))
               (else none))))
@@ -2711,7 +2749,8 @@
   ; is aligned with the empty prefix of any cache. Each item separately checks its dependencies.
   (defn begin ((G Globals) (v T) (o T) (same T)) Progress
     (let ds (List Decl) (rulesFor v o 0)
-      (case (checkDev G (nil Entry) ds) ((ODevState.nothing) (stuck 6 unnamed noNode noNode noNode))
+      (case (Conv.checkCertDev G (nil Entry) ds)
+        ((ODevState.nothing) (stuck 6 unnamed noNode noNode noNode))
         ((ODevState.just st)
          (case st
            ((devState G2 el)
@@ -2982,7 +3021,8 @@
                            (tail (children (rep dd))))
                          (matches v xs (Decls.drop (add eb d) decls)
                            (drop (add eb d) (children ns)))))
-                     (case (checkDev (globalsFor v ds) (nil Entry) decls) ((ODevState.nothing) 0)
+                     (case (Conv.checkCertDev (globalsFor v ds) (nil Entry) decls)
+                       ((ODevState.nothing) 0)
                        ((ODevState.just st) 1))
                      0)))))
             0))))))

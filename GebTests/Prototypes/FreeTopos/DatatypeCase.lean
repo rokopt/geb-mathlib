@@ -1634,7 +1634,7 @@ def walk (P : Prog) (S : Defs) (T : Defs3) : Step :=
       K.listCase treeTy (fts Γ₀)
         (decideIn K (fun Γ ↦ apps childT [c Γ, leafT (numeral 2)]) noRest rest)
         (refute "a field type remaining" hTy) Γ₀ Φ₀ ψ₀
-    let r₀ : Option Internal.Deriv := linkK K "walk: no fields" nilCase (walkCtx T).tail []
+    let r₀ : Option Internal.ConvDeriv := linkK K "walk: no fields" nilCase (walkCtx T).tail []
       (Term.subst φ (Internal.instVar (Term.arr 0 [treeTy] Term.star)))
     -- a fixed field and the rest: in the context after the quantifiers, the relation's context at
     -- position 0 to the body's erasure at 9, the field's variable at 10 and the rest at 11, then
@@ -2076,7 +2076,7 @@ def walk (P : Prog) (S : Defs) (T : Defs3) : Step :=
       K.listCase treeTy (fts Γ₀) (refute "no field type for the variable" cTy)
         (fun Γ Φ ψ ↦ fieldCase (Γ.length - 2) Γ Φ ψ) Γ₀ Φ₀ ψ₀
     let consCase : Deducer := intros o consBody
-    let r₁ : Option Internal.Deriv := linkK K "walk: a field" consCase
+    let r₁ : Option Internal.ConvDeriv := linkK K "walk: a field" consCase
         (list treeTy :: treeTy :: (walkCtx T).tail) [Internal.weakenElem φ]
         (Internal.listConsAt 1 treeTy φ)
     let consProved := r₁.isSome

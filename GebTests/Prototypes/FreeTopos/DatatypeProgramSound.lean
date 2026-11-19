@@ -143,9 +143,9 @@ def programSoundCertificates (P : Prog) (S : Defs) (T : Defs3) (before : List In
     Except String (List Stored.Cert) := do
   let some names := programSoundNames P S T | throw "the base is not stated"
   let thmsOf (c : Stored.Cert) : Except String (List Internal.Thm) :=
-    match Stored.declsOfNats c.table with
+    match Stored.convDeclsOfNats c.table with
     | some ds => pure (ds.filterMap fun
-      | .language a _ => some a
+      | .conv a _ => some a
       | _ => none)
     | none => throw s!"{c.name} does not read back"
   let (_, _, certs) ← (programSoundGroups P S T).foldlM

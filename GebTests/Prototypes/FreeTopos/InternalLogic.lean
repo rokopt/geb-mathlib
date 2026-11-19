@@ -38,9 +38,9 @@ namespace GebTests.Prototypes.FreeTopos.InternalLogic
 
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Sorts
 open GebTests.Prototypes.FreeTopos.Internal
-open Geb.FreeTopos.Internal (Term Thm Deriv Entry Decl Rule byNatIndHyp byListIndHyp checkThms
-  compileDefs)
-open Geb.FreeTopos.Internal.Logic (nd tt imp all impI allI)
+open Geb.FreeTopos.Internal (Term Thm ConvDeriv Entry ConvDecl Rule byNatIndHyp byListIndHyp
+  checkConvThms compileDefs)
+open Geb.FreeTopos.Internal.Logic (cnd tt imp all impIC allIC)
 
 /-- The constants: the primitive arrows, and appending, addition and the connectives. -/
 def GL : Internal.Globals :=
@@ -57,12 +57,13 @@ def GL : Internal.Globals :=
 /-- The theorems, each with its proof from the theorems before it: the connectives' rules, a
 formula's implication of itself, the reflexivity of equality under a universal quantifier, and
 the two inductions. -/
-def theorems : List (Thm × (Array Entry → Option Deriv)) :=
-  (Internal.Logic.theorems 2 0).map (fun (a, d) ↦ (a, fun _ ↦ some d)) ++ [
+def theorems : List (Thm × (Array Entry → Option ConvDeriv)) :=
+  (Internal.Logic.theorems 2 0).map
+    (fun (a, d) ↦ (a, fun _ ↦ some (Internal.liftDeriv d))) ++ [
   (⟨0, [omega], [], imp 2 (Term.var 0) (Term.var 0)⟩,
-    fun _ ↦ some (impI 0 0 (Term.var 0) (Term.var 0) (nd (.hyp 0)))),
+    fun _ ↦ some (impIC 0 0 (Term.var 0) (Term.var 0) (cnd (.hyp 0)))),
   (⟨1, [], [], all 2 (x 0) (Term.lam (x 0) (Term.eq (Term.var 0) (Term.var 0)))⟩,
-    fun _ ↦ some (allI (nd .join [nd .refl, nd .refl]))),
+    fun _ ↦ some (allIC (cnd .join [cnd .refl, cnd .refl]))),
   (⟨0, [nat], [], Term.eq (addT zeroT (Term.var 0)) (Term.var 0)⟩,
     fun E ↦ byNatIndHyp GL E 0 2 3 (InternalDerivation.eqns ++ [.delta 1]) 64 [nat] []
       (addT zeroT (Term.var 0)) (Term.var 0)),
@@ -71,13 +72,13 @@ def theorems : List (Thm × (Array Entry → Option Deriv)) :=
       (appendT (Term.var 0) nilT) (Term.var 0))]
 
 /-- The development: each theorem with its derivation, from those before it. -/
-def development : Option (List Decl) :=
+def development : Option (List ConvDecl) :=
   (theorems.foldl (fun acc (a, p) ↦ acc.bind fun (E, ds) ↦
     (p E).map fun d ↦ (E.push (.language a), ds ++ [.language a d])) (some (#[], []))).map
     Prod.snd
 
 -- every theorem is proved, and the development checks
-#guard development.any fun ds ↦ ds.length == theorems.length && checkThms GL ds #[]
+#guard development.any fun ds ↦ ds.length == theorems.length && checkConvThms GL ds #[]
 
 end GebTests.Prototypes.FreeTopos.InternalLogic
 

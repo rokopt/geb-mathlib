@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebTests.Prototypes.FreeTopos.Agreement.Prove
+public import GebTests.Prototypes.FreeTopos.Agreement.Provers
 public import GebTests.Prototypes.FreeTopos.Agreement.Translation
 public import Geb.Prototypes.FreeTopos.Tactics
 
@@ -59,7 +59,8 @@ open Geb Geb.Kernel Geb.FreeTopos GebTests.Prototypes.FreeTopos.Agreement.Encode
   GebTests.Prototypes.FreeTopos.Agreement.Language
   GebTests.Prototypes.FreeTopos.Agreement.Derivation
   GebTests.Prototypes.FreeTopos.Agreement.Prove
-open Internal (Term Deriv NormRule)
+  GebTests.Prototypes.FreeTopos.Agreement.Provers
+open Internal (Term NormRule ConvRule ConvDeriv)
 open scoped FinEnum
 
 /-- The mirror's bindings of optional values are the base's of optional trees. -/
@@ -138,17 +139,17 @@ trees. -/
   mDefn_eq (o + 2) [] [q, p]
 
 /-- The mirror's proof of truth. -/
-@[simp] theorem trueI_eq : «Tactics.trueI» = encDeriv Internal.Logic.trueI := by
-  simp only [«Tactics.trueI», template, Internal.Logic.trueI, Internal.Logic.nd, encDeriv_node,
-    ruleData, «Prover.dNode», «Theory.l2», «Language.mNode»,
+@[simp] theorem trueI_eq : «Tactics.trueI» = encConv Internal.Logic.trueIC := by
+  simp only [«Tactics.trueI», template, Internal.Logic.trueIC, Internal.Logic.cnd, encConv_node,
+    convData, ruleData, «Prover.dNode», «Theory.l2», «Language.mNode»,
     single_eq, List.map_cons, List.map_nil, node_leaf]
 
 /-- The mirror's introduction of an implication. -/
-@[simp] theorem impI_eq (j n : ℕ) (p q : Term) (d : Deriv) :
-    «Tactics.impI» (leaf j) (leaf n) (encTerm p) (encTerm q) (encDeriv d) =
-      encDeriv (Internal.Logic.impI j n p q d) := by
-  simp only [«Tactics.impI», template, Internal.Logic.impI, Internal.Logic.nd, encDeriv_node,
-    ruleData, «Prover.dNode», «Theory.l2», «Theory.l3»,
+@[simp] theorem impI_eq (j n : ℕ) (p q : Term) (d : ConvDeriv) :
+    «Tactics.impI» (leaf j) (leaf n) (encTerm p) (encTerm q) (encConv d) =
+      encConv (Internal.Logic.impIC j n p q d) := by
+  simp only [«Tactics.impI», template, Internal.Logic.impIC, Internal.Logic.cnd, encConv_node,
+    convData, ruleData, «Prover.dNode», «Theory.l2», «Theory.l3»,
     «Prelude.single», «Language.mNode», List.map_cons, List.map_nil,
     node_leaf, add_leaf]
 
@@ -170,7 +171,7 @@ theorem byMode_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array Interna
     PRel («Tactics.byMode» (leaf (encDepth m)) (encGlobals G) (E.toList.map encEntry)
         (leaf n) rs')
       (Tactics.byMode m G E n rs) := fun Γ Φ t u ↦
-  joinBy_eq _ _ (eval_eq G E n rs' rs hrs 4096 m) Γ Φ t u
+  joinBy_eq _ _ (evalC_eq G E n rs' rs hrs 4096 m) Γ Φ t u
 
 /-- The mirror's proof by reducing both sides to one weak normal form. -/
 theorem byWeak_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
@@ -186,8 +187,8 @@ local macro "tac_simp" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic => `(
   simp only [bindO_eq, mapO_eq, children_eq, RoseTree.children_node, lcase_cons, lcase_nil,
     Option.bind_eq_bind, Option.pure_def, Option.map_bind, Option.bind_map, Option.map_map,
     Option.elim_some, Option.elim_none, Option.map_some, Option.map_none, Option.bind_some,
-    Option.bind_none, Function.comp_def, none_eq, some_eq, elim_encOpt, p1_encTDB, p2_encTDB,
-    p1_encDB, p2_encDB, encDeriv_node, ruleData, «Prover.dNode»,
+    Option.bind_none, Function.comp_def, none_eq, some_eq, elim_encOpt, p1_encTCB, p2_encTCB,
+    p1_encCB, p2_encCB, encConv_node, convData, ruleData, «Prover.dNode»,
     «Language.mNode», «Theory.l2», «Theory.l3»,
     «Theory.l4», single_eq, node_leaf, List.map_cons, List.map_nil, mapT_weaken1,
     mapT_weaken2, length_eq, List.length_map, mApp_eq, mVar_eq, weaken1_eq, weaken2_eq, mEq_eq,
@@ -203,16 +204,16 @@ theorem byNF_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
         (leaf (encDepth m)) p')
       (Tactics.byNF G E n rs m p) := by
   have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p Γ Φ t u).map encDeriv) := hp
+      encOpt ((p Γ Φ t u).map encConv) := hp
   have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
       (leaf 4096) (leaf (encDepth m)) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.eval G E n rs 4096 m Γ Φ t).map encTDB) :=
-    eval_eq G E n rs' rs hrs 4096 m
+      encOpt ((Internal.evalC G E n rs 4096 m Γ Φ t).map encTCB) :=
+    evalC_eq G E n rs' rs hrs 4096 m
   intro Γ Φ t u
   simp only [«Tactics.byNF», template, Tactics.byNF, hE]
-  rcases Internal.eval G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
+  rcases Internal.evalC G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
   · rfl
-  rcases Internal.eval G E n rs 4096 m Γ Φ u with _ | ⟨u', du, _⟩
+  rcases Internal.evalC G E n rs 4096 m Γ Φ u with _ | ⟨u', du, _⟩
   · tac_simp []
   tac_simp [hp']
   rcases p Γ Φ t' u' <;> rfl
@@ -263,7 +264,7 @@ theorem byListIndWeak_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : 
       (Tactics.byListIndWeak G E n s rs) := by
   have hW : ∀ Γ Φ t u, «Tactics.byWeak» (encGlobals G) (E.toList.map encEntry)
       (leaf n) rs' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((Tactics.byWeak G E n rs Γ Φ t u).map encDeriv) := byWeak_eq G E n rs' rs hrs
+      encOpt ((Tactics.byWeak G E n rs Γ Φ t u).map encConv) := byWeak_eq G E n rs' rs hrs
   intro Γ Φ t u
   rcases Γ with _ | ⟨c, Γ'⟩
   · rfl
@@ -283,7 +284,7 @@ theorem byRoseIndWith_eq (G : Internal.Globals) (n : ℕ) (s : Term)
     (p' : List Tree → List Tree → Tree → Tree → Tree) (p : Internal.Prover) (hp : PRel p' p) :
     PRel («Tactics.byRoseIndWith» (encGlobals G) (leaf n) (encTerm s) p')
       (Tactics.byRoseIndWith G n s p) := by
-  have hp' : ∀ Γ t u, p' Γ [] (encTerm t) (encTerm u) = encOpt ((p Γ [] t u).map encDeriv) :=
+  have hp' : ∀ Γ t u, p' Γ [] (encTerm t) (encTerm u) = encOpt ((p Γ [] t u).map encConv) :=
     fun Γ t u ↦ hp Γ [] t u
   intro Γ Φ t u
   rcases Γ with _ | ⟨r, _ | ⟨r', Γ'⟩⟩ <;>
@@ -301,9 +302,9 @@ theorem byRoseIndWith_eq (G : Internal.Globals) (n : ℕ) (s : Term)
 
 /-- The mirror's derivation of an equation from the equation of its sides' abstractions over a
 term, by applying them to the term. -/
-theorem applyAbs_eq (x : Term) (k : ℕ) (F H : Term) (d : Deriv) :
-    «Tactics.applyAbs» (encTerm x) (leaf k) (encTerm F) (encTerm H) (encDeriv d) =
-      encDeriv (RoseTree.node (.cut (Term.eq F H)) [d, RoseTree.node
+theorem applyAbs_eq (x : Term) (k : ℕ) (F H : Term) (d : ConvDeriv) :
+    «Tactics.applyAbs» (encTerm x) (leaf k) (encTerm F) (encTerm H) (encConv d) =
+      encConv (RoseTree.node (.cut (Term.eq F H)) [d, RoseTree.node
         (.convFrom (Term.eq (Term.app F x) (Term.app H x)))
         [RoseTree.node .cong [RoseTree.node .beta [], RoseTree.node .beta []],
           RoseTree.node .join [RoseTree.node .cong [RoseTree.node (.rwHyp k false) [],
@@ -320,7 +321,7 @@ theorem byListSplit_eq (G : Internal.Globals) (n i : ℕ)
       (Tactics.byListSplit G n i p₀ p₁) := by
   have hL : ∀ Γ Φ t u, «Prover.byListIndWith» (encGlobals G) (leaf n) (leaf 0) (leaf 1)
       p₀' p₁' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((Internal.byListIndWith G n 0 1 p₀ p₁ Γ Φ t u).map encDeriv) :=
+      encOpt ((Internal.byListIndWith G n 0 1 p₀ p₁ Γ Φ t u).map encConv) :=
     byListIndWith_eq G n 0 1 _ _ _ _ hp₀ hp₁
   intro Γ Φ t u
   simp only [«Tactics.byListSplit», template, Tactics.byListSplit]
@@ -337,9 +338,9 @@ theorem bySplit2_eq (kl kr i : ℕ) (p₀' p₁' : List Tree → List Tree → T
     PRel («Tactics.bySplit2» (leaf kl) (leaf kr) (leaf i) p₀' p₁')
       (Tactics.bySplit2 kl kr i p₀ p₁) := by
   have hp₀' : ∀ Γ Φ t u, p₀' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p₀ Γ Φ t u).map encDeriv) := hp₀
+      encOpt ((p₀ Γ Φ t u).map encConv) := hp₀
   have hp₁' : ∀ Γ Φ t u, p₁' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p₁ Γ Φ t u).map encDeriv) := hp₁
+      encOpt ((p₁ Γ Φ t u).map encConv) := hp₁
   intro Γ Φ t u
   simp only [«Tactics.bySplit2», template, Tactics.bySplit2]
   tac_simp []
@@ -410,8 +411,8 @@ def KRel (k' : List Tree →
 /-- The mirror's derivations from hypotheses and added rules and derivations from them are
 related when they agree at every list of encoded hypotheses and related added rules. -/
 def ARel (a' : List Tree → List Tree → Tree)
-    (a : List Term → List NormRule → Option Deriv) : Prop :=
-  ∀ Φ₁ ex' ex, List.Forall₂ RRel ex' ex → a' (Φ₁.map encTerm) ex' = encOpt ((a Φ₁ ex).map encDeriv)
+    (a : List Term → List NormRule → Option ConvDeriv) : Prop :=
+  ∀ Φ₁ ex' ex, List.Forall₂ RRel ex' ex → a' (Φ₁.map encTerm) ex' = encOpt ((a Φ₁ ex).map encConv)
 
 /-- The mirror's rule of the hypothesis of an index. -/
 theorem hypRule_rel (i : ℕ) : RRel («Tactics.hypRule» (leaf i)) (.hyp i) := rfl
@@ -426,14 +427,14 @@ from them are related: both fail, or the mirror's cuts around the prover's deriv
 collects, whose rules are related, are the derivation. -/
 def WHRel (k : List NormRule → Internal.Prover) (Γ : List Tree) (t u : Term)
     (a' : List Tree → List Tree → Tree)
-    (a : List Term → List NormRule → Option Deriv) : Prop :=
+    (a : List Term → List NormRule → Option ConvDeriv) : Prop :=
   ∀ Φ₁ ex' ex, List.Forall₂ RRel ex' ex →
     (a' (Φ₁.map encTerm) ex' = encOpt none ∧ a Φ₁ ex = none) ∨
       ∃ (Φ₂ : List Term) (ex₂' : List Tree) (ex₂ : List NormRule) (fs : List Tree),
         a' (Φ₁.map encTerm) ex' = encOpt (some («Tactics.wh» («Derivation.terms» (Φ₂.map encTerm))
           («Tactics.rules» ex₂') («Tactics.frames» fs))) ∧
         List.Forall₂ RRel ex₂' ex₂ ∧
-        (a Φ₁ ex).map encDeriv = ((k ex₂ Γ Φ₂ t u).map encDeriv).map (wrapFrames fs)
+        (a Φ₁ ex).map encConv = ((k ex₂ Γ Φ₂ t u).map encConv).map (wrapFrames fs)
 
 /-- The mirror's hypotheses cut in in normal form, with the rules that rewrite by them, and the
 proof that gives them to a prover, at related rules. -/
@@ -450,12 +451,12 @@ theorem weakHyps_rel (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
         encOpt (some («Tactics.wh» («Derivation.terms» (Φ₂.map encTerm))
           («Tactics.rules» ex₂') («Tactics.frames» fs))) ∧
       List.Forall₂ RRel ex₂' ex₂ ∧
-      (Tactics.withWeakHyps G E n rs is k m Γ Φ t u).map encDeriv =
-        ((k ex₂ Γ Φ₂ t u).map encDeriv).map (wrapFrames fs) := by
+      (Tactics.withWeakHyps G E n rs is k m Γ Φ t u).map encConv =
+        ((k ex₂ Γ Φ₂ t u).map encConv).map (wrapFrames fs) := by
   have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
       (leaf 4096) (leaf (encDepth m)) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.eval G E n rs 4096 m Γ Φ t).map encTDB) :=
-    eval_eq G E n rs' rs hrs 4096 m
+      encOpt ((Internal.evalC G E n rs 4096 m Γ Φ t).map encTCB) :=
+    evalC_eq G E n rs' rs hrs 4096 m
   simp only [«Tactics.weakHyps», Tactics.withWeakHyps, foldr_eq]
   refine (?_ : WHRel k Γ t u _ _) Φ [] [] .nil
   refine List.rel_foldr (R := fun (i' : Tree) (i : ℕ) ↦ i' = leaf i)
@@ -472,10 +473,10 @@ theorem weakHyps_rel (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
     rcases Internal.eqParts φ with _ | ⟨a₀, b₀⟩
     · exact .inl ⟨rfl, rfl⟩
     tac_simp [p1_eq, p2_eq, hE]
-    rcases Internal.eval G E n rs 4096 m Γ Φ₁ a₀ with _ | ⟨a₁, da, _⟩
+    rcases Internal.evalC G E n rs 4096 m Γ Φ₁ a₀ with _ | ⟨a₁, da, _⟩
     · exact .inl ⟨rfl, rfl⟩
     tac_simp [hE]
-    rcases Internal.eval G E n rs 4096 m Γ Φ₁ b₀ with _ | ⟨b₁, db, _⟩
+    rcases Internal.evalC G E n rs 4096 m Γ Φ₁ b₀ with _ | ⟨b₁, db, _⟩
     · exact .inl ⟨rfl, rfl⟩
     have hr := ha (Φ₁ ++ [Term.eq a₁ b₁]) _ _
       (List.rel_append hex (.cons (hypRule_rel Φ₁.length) .nil))
@@ -489,18 +490,18 @@ theorem weakHyps_rel (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
       rw [h1]
       refine ⟨Φ₂, e₂', e₂, «Language.pr» (encTerm (a₁.eq b₁)) (RoseTree.node 24
         [RoseTree.node 0 [encTerm (a₀.eq b₀)],
-          RoseTree.node 2 [RoseTree.node 0 [], encDeriv da, encDeriv db],
+          RoseTree.node 2 [RoseTree.node 0 [], encConv da, encConv db],
           RoseTree.node 21 [RoseTree.node 0 [leaf i]]]) :: fs, ?_, h3, ?_⟩
       · mirror_simp [«Tactics.wh», «Tactics.frames», «Tactics.rules», label_some, child_some]
-      · have h5 : ∀ o : Option Deriv, (o.bind fun a ↦ some (RoseTree.node 22
+      · have h5 : ∀ o : Option ConvDeriv, (o.bind fun a ↦ some (RoseTree.node 22
             [RoseTree.node 0 [encTerm (a₁.eq b₁)], RoseTree.node 24
               [RoseTree.node 0 [encTerm (a₀.eq b₀)],
-                RoseTree.node 2 [RoseTree.node 0 [], encDeriv da, encDeriv db],
-                RoseTree.node 21 [RoseTree.node 0 [leaf i]]], encDeriv a])) =
-            (o.map encDeriv).map fun r ↦ RoseTree.node 22
+                RoseTree.node 2 [RoseTree.node 0 [], encConv da, encConv db],
+                RoseTree.node 21 [RoseTree.node 0 [leaf i]]], encConv a])) =
+            (o.map encConv).map fun r ↦ RoseTree.node 22
               [RoseTree.node 0 [encTerm (a₁.eq b₁)], RoseTree.node 24
                 [RoseTree.node 0 [encTerm (a₀.eq b₀)],
-                  RoseTree.node 2 [RoseTree.node 0 [], encDeriv da, encDeriv db],
+                  RoseTree.node 2 [RoseTree.node 0 [], encConv da, encConv db],
                   RoseTree.node 21 [RoseTree.node 0 [leaf i]]], r] := fun o ↦ by
           cases o <;> rfl
         rw [h5, h4]
@@ -565,7 +566,7 @@ theorem byBitsIndHyp_eq (G : Internal.Globals) (E : Array Internal.Entry)
 
 /-- The mirror's rewriting of the function of an application to arguments by a hypothesis. -/
 @[simp] theorem rwFun_eq (i k : ℕ) :
-    «Tactics.rwFun» (leaf i) (leaf k) = encDeriv (Tactics.rwFun i k) := by
+    «Tactics.rwFun» (leaf i) (leaf k) = encConv (Tactics.rwFun i k) := by
   simp only [«Tactics.rwFun», template, iter_leaf, Tactics.rwFun]
   exact Nat.rec (by tac_simp []; rfl) (fun k ih ↦ by
     rw [Nat.repeat, ih]
@@ -586,10 +587,10 @@ arguments. -/
   List.length_map _
 
 /-- The mirror's derivation under the equations of the instances, each cut in. -/
-@[simp] theorem cutInsts_eq (F H : Term) (i : ℕ) (αs : List (List Term)) (rest : Deriv) :
+@[simp] theorem cutInsts_eq (F H : Term) (i : ℕ) (αs : List (List Term)) (rest : ConvDeriv) :
     «Tactics.cutInsts» (encTerm F) (encTerm H) (leaf i) (αs.map (·.map encTerm))
-        (encDeriv rest) =
-      encDeriv (Tactics.cutInsts F H i αs rest) := by
+        (encConv rest) =
+      encConv (Tactics.cutInsts F H i αs rest) := by
   simp only [«Tactics.cutInsts», template, foldr_eq, Tactics.cutInsts]
   exact αs.rec rfl fun α αs ih ↦ by
     simp only [List.map_cons, List.foldr_cons, ih]
@@ -643,8 +644,8 @@ first first. -/
 
 /-- The mirror's derivations from hypotheses and indices of instances and derivations from them
 are related when they agree at every list of encoded hypotheses and indices. -/
-def IRel (a' : List Tree → List Tree → Tree) (a : List Term → List ℕ → Option Deriv) : Prop :=
-  ∀ Φ₁ is, a' (Φ₁.map encTerm) (is.map leaf) = encOpt ((a Φ₁ is).map encDeriv)
+def IRel (a' : List Tree → List Tree → Tree) (a : List Term → List ℕ → Option ConvDeriv) : Prop :=
+  ∀ Φ₁ is, a' (Φ₁.map encTerm) (is.map leaf) = encOpt ((a Φ₁ is).map encConv)
 
 /-- The mirror's proof with the hypotheses at the children of an induction on rose trees and
 their instances, at related rules, arguments and prover from indices of instances. -/
@@ -660,12 +661,12 @@ theorem withChildHyps_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : 
       (Tactics.withChildHyps G E n rs h kids args k) := by
   have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n)
       rs' (leaf 4096) (leaf 1) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.eval G E n rs 4096 .weak Γ Φ t).map encTDB) :=
-    eval_eq G E n rs' rs hrs 4096 .weak
+      encOpt ((Internal.evalC G E n rs 4096 .weak Γ Φ t).map encTCB) :=
+    evalC_eq G E n rs' rs hrs 4096 .weak
   have hEh : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n)
       [«Tactics.hypRule» (leaf h)] (leaf 4096) (leaf 1) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.eval G E n [.hyp h] 4096 .weak Γ Φ t).map encTDB) :=
-    eval_eq G E n _ _ (.cons (hypRule_rel h) .nil) 4096 .weak
+      encOpt ((Internal.evalC G E n [.hyp h] 4096 .weak Γ Φ t).map encTCB) :=
+    evalC_eq G E n _ _ (.cons (hypRule_rel h) .nil) 4096 .weak
   intro Γ Φ t u
   simp only [«Tactics.withChildHyps», template, Tactics.withChildHyps, foldr_eq]
   tac_simp [eqParts_eq]
@@ -682,11 +683,11 @@ theorem withChildHyps_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : 
   subst hp
   intro Φ₁ is
   tac_simp [nthOf_eq, hE, hEh]
-  rcases Internal.eval G E n rs 4096 .weak Γ Φ₁ (Tactics.nthOf L₀ p) with _ | ⟨A', dA, _⟩
+  rcases Internal.evalC G E n rs 4096 .weak Γ Φ₁ (Tactics.nthOf L₀ p) with _ | ⟨A', dA, _⟩
   · rfl
-  rcases Internal.eval G E n rs 4096 .weak Γ Φ₁ (Tactics.nthOf R₀ p) with _ | ⟨B', dB, _⟩
+  rcases Internal.evalC G E n rs 4096 .weak Γ Φ₁ (Tactics.nthOf R₀ p) with _ | ⟨B', dB, _⟩
   · rfl
-  rcases Internal.eval G E n [.hyp h] 4096 .weak Γ Φ₁ (Tactics.nthOf L₀ p) with _ | ⟨_, dAh, _⟩
+  rcases Internal.evalC G E n [.hyp h] 4096 .weak Γ Φ₁ (Tactics.nthOf L₀ p) with _ | ⟨_, dAh, _⟩
   · rfl
   tac_simp [eqParts_eq]
   rcases Internal.eqParts A' with _ | ⟨F, H⟩
@@ -717,9 +718,9 @@ theorem revertCase_eq (G : Internal.Globals) (n o lb i h : ℕ)
         (leaf h) pNil' pCons')
       (Tactics.revertCase G n o lb i h pNil pCons) := by
   have hN' : ∀ Γ Φ t u, pNil' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((pNil Γ Φ t u).map encDeriv) := hN
+      encOpt ((pNil Γ Φ t u).map encConv) := hN
   have hC' : ∀ Γ Φ t u, pCons' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((pCons Γ Φ t u).map encDeriv) := hC
+      encOpt ((pCons Γ Φ t u).map encConv) := hC
   intro Γ Φ t u
   simp only [«Tactics.revertCase», template, Tactics.revertCase]
   tac_simp [listPart_eq]
@@ -765,17 +766,17 @@ theorem byImpI_eq (G : Internal.Globals) (E : Array Internal.Entry) (o lb : ℕ)
     PRel («Tactics.byImpI» (encGlobals G) (E.toList.map encEntry) (leaf o) (leaf lb) p')
       (Tactics.byImpI G E o lb p) := by
   have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p Γ Φ t u).map encDeriv) := hp
+      encOpt ((p Γ Φ t u).map encConv) := hp
   have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf 0)
       «Tactics.betaRule» (leaf 4096) (leaf 0) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.eval G E 0 [.rule .beta] 4096 .head Γ Φ t).map encTDB) :=
-    eval_eq G E 0 _ _ betaRule_rel 4096 .head
+      encOpt ((Internal.evalC G E 0 [.rule .beta] 4096 .head Γ Φ t).map encTCB) :=
+    evalC_eq G E 0 _ _ betaRule_rel 4096 .head
   intro Γ Φ t u
   simp only [Tactics.byImpI]
-  rcases ht : Internal.eval G E 0 [.rule .beta] 4096 .head Γ Φ t with _ | ⟨t', dt, _⟩
+  rcases ht : Internal.evalC G E 0 [.rule .beta] 4096 .head Γ Φ t with _ | ⟨t', dt, _⟩
   · simp only [«Tactics.byImpI», template, hE, ht]
     rfl
-  rcases hu : Internal.eval G E 0 [.rule .beta] 4096 .head Γ Φ u with _ | ⟨u', du, _⟩
+  rcases hu : Internal.evalC G E 0 [.rule .beta] 4096 .head Γ Φ u with _ | ⟨u', du, _⟩
   · simp only [«Tactics.byImpI», template, hE, ht, hu]
     rfl
   obtain ⟨l, ts, rfl⟩ : ∃ l ts, t' = RoseTree.node l ts :=
@@ -786,7 +787,7 @@ theorem byImpI_eq (G : Internal.Globals) (E : Array Internal.Entry) (o lb : ℕ)
   split
   · rename_i k θ q a k' θ'
     simp only [«Tactics.byImpI», template, hE, ht, hu]
-    mirror_simp [p1_encTDB, p2_encTDB, mIs_eq, labelData, mD_eq, mArg_eq, beq_iff_eq,
+    mirror_simp [p1_encTCB, p2_encTCB, mIs_eq, labelData, mD_eq, mArg_eq, beq_iff_eq,
       label_encTerm, RoseTree.label_node, Bool.and_eq_true]
     by_cases hk : k = o + 2 ∧ k' = o
     · have hp2 := hp' Γ (Φ ++ [Internal.Logic.tt o, a])
@@ -795,13 +796,13 @@ theorem byImpI_eq (G : Internal.Globals) (E : Array Internal.Entry) (o lb : ℕ)
       tac_simp [eqParts_eq]
       rcases Internal.eqParts q with _ | ⟨l₀, r₀⟩
       · rfl
-      tac_simp [p1_eq, p2_eq, ttL_eq, hp2, trueI_eq, impI_eq, Internal.Logic.nd]
+      tac_simp [p1_eq, p2_eq, ttL_eq, hp2, trueI_eq, impI_eq, Internal.Logic.cnd]
       simp only [Option.map_eq_bind, Function.comp_def]
     · simp only [hk, ↓reduceIte, Option.map_none]
       rfl
   · rename_i hne
     simp only [«Tactics.byImpI», template, hE, ht, hu]
-    mirror_simp [p1_encTDB, mIs_eq, label_encTerm, RoseTree.label_node, Bool.and_eq_true,
+    mirror_simp [p1_encTCB, mIs_eq, label_encTerm, RoseTree.label_node, Bool.and_eq_true,
       beq_iff_eq]
     split
     · rename_i hc
@@ -846,7 +847,7 @@ theorem withImpElim_eq (o lb h : ℕ) (is : List ℕ)
       mirror_simp [p1_eq, p2_eq, mIs_eq, labelData, mD_eq, mArg_eq, beq_iff_eq, Bool.and_eq_true,
         RoseTree.label_node, RoseTree.children_node]
       by_cases hk : k₀ = o + 2
-      · tac_simp [hk, appendNR_eq, append_eq, hr, trueI_eq, Internal.Logic.nd, add_leaf,
+      · tac_simp [hk, appendNR_eq, append_eq, hr, trueI_eq, Internal.Logic.cnd, add_leaf,
           ↓reduceIte, Option.bind_assoc]
         simp only [Option.map_eq_bind, Function.comp_def]
         rfl
@@ -875,7 +876,7 @@ theorem hypIndex_eq (r' : Tree) (r : NormRule)
 /-- The mirror's rewriting of an application's argument backward by a theorem. -/
 theorem succPredRw_eq (j : ℕ) (l s : Term) :
     «Tactics.succPredRw» (leaf j) (encTerm l) (encTerm s) =
-      encOpt ((Tactics.succPredRw j l s).map encTD) := by
+      encOpt ((Tactics.succPredRw j l s).map encTC) := by
   obtain ⟨lab, cs, rfl⟩ : ∃ l cs, s = RoseTree.node l cs :=
     ⟨s.label, s.children, (RoseTree.node_label_children s).symm⟩
   by_cases hc : (labelData lab).1 = 6 ∧ cs.length = 2
@@ -902,7 +903,7 @@ theorem bySuccPred_eq (E : Array Internal.Entry) (j : ℕ)
     PRel («Tactics.bySuccPred» (E.toList.map encEntry) (leaf j) p')
       (Tactics.bySuccPred E j p) := by
   have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p Γ Φ t u).map encDeriv) := hp
+      encOpt ((p Γ Φ t u).map encConv) := hp
   intro Γ Φ t u
   simp only [«Tactics.bySuccPred», template, Tactics.bySuccPred]
   tac_simp [Array.getElem?_toList, entryLanguage_eq]
@@ -916,7 +917,7 @@ theorem bySuccPred_eq (E : Array Internal.Entry) (j : ℕ)
     · rfl
     rcases Tactics.succPredRw j l u with _ | ⟨u', du⟩
     · rfl
-    tac_simp [p1_encTD, p2_encTD, hp']
+    tac_simp [p1_encTC, p2_encTC, hp']
     simp only [Option.map_eq_bind, Function.comp_def]
   · rfl
 
@@ -1258,12 +1259,12 @@ theorem instArgs_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array Inter
     obtain ⟨a, rfl⟩ := (labelData_eq_lam l).mp hl
     match cs, h1 with
     | [b], _ =>
-      have he := eval_eq G E n rs' rs hrs 4096 m (a :: Γ) (Φ.map Internal.weaken1) b
+      have he := evalC_eq G E n rs' rs hrs 4096 m (a :: Γ) (Φ.map Internal.weaken1) b
       simp only [List.map_map, Function.comp_def] at he
       mirror_simp [p1_eq, mIs_eq, labelData, mArg_eq, mD_eq, mapT_weaken1, he]
-      rcases Internal.eval G E n rs 4096 m (a :: Γ) (Φ.map Internal.weaken1) b with _ | ⟨bw, _⟩
+      rcases Internal.evalC G E n rs 4096 m (a :: Γ) (Φ.map Internal.weaken1) b with _ | ⟨bw, _⟩
       · rfl
-      · simp only [Option.map_some, Option.isSome_some, Option.getD_some, p1_encTDB,
+      · simp only [Option.map_some, Option.isSome_some, Option.getD_some, p1_encTCB,
           matchesOf_eq, ite_true, appendTss_eq, ← List.map_append, eraseDupsTss_eq]
   · have hf : ((labelData l).1 == 5 && cs.length == 1) = false :=
       Bool.eq_false_iff.mpr fun h ↦ hlam (by simpa only [Bool.and_eq_true, beq_iff_eq] using h)
@@ -1320,14 +1321,14 @@ theorem byInstsOnce_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array In
       (Tactics.byInstsOnce m G E n rs hs next) := by
   have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
       (leaf 4096) (leaf (encDepth m)) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.eval G E n rs 4096 m Γ Φ t).map encTDB) :=
-    eval_eq G E n rs' rs hrs 4096 m
+      encOpt ((Internal.evalC G E n rs 4096 m Γ Φ t).map encTCB) :=
+    evalC_eq G E n rs' rs hrs 4096 m
   intro Γ Φ t u
   simp only [«Tactics.byInstsOnce», template, Tactics.byInstsOnce, hE]
-  rcases Internal.eval G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
+  rcases Internal.evalC G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
   · rfl
   tac_simp [hE]
-  rcases Internal.eval G E n rs 4096 m Γ Φ u with _ | ⟨u', du, _⟩
+  rcases Internal.evalC G E n rs 4096 m Γ Φ u with _ | ⟨u', du, _⟩
   · rfl
   have hmin : (if (Const.lt (leaf hs) (leaf Φ.length)).label ≠ 0 then leaf hs
       else leaf Φ.length) = leaf (min hs Φ.length) := by
@@ -1337,7 +1338,7 @@ theorem byInstsOnce_eq (m : Internal.Depth) (G : Internal.Globals) (E : Array In
       exact (ite_eq_left (by decide)).trans (congrArg leaf (Nat.min_eq_left (by omega)).symm)
     · rw [decide_eq_false h]
       exact (ite_eq_right (by decide)).trans (congrArg leaf (Nat.min_eq_right (by omega)).symm)
-  tac_simp [p1_encTDB, equal_eq, encTerm_eq_iff, hmin, range_eq,
+  tac_simp [p1_encTCB, equal_eq, encTerm_eq_iff, hmin, range_eq,
     foldr_found _ _ (instArgs_eq m G E n rs' rs hrs Γ Φ t' u')]
   by_cases htu : t' = u'
   · simp only [htu, decide_true, ofBool_true, label_leaf, ne_eq, one_ne_zero, not_false_eq_true,
@@ -1427,15 +1428,15 @@ theorem byAuto_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
       (Tactics.byAuto G E n rs d m) := by
   have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
       (leaf 4096) (leaf (encDepth m)) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.eval G E n rs 4096 m Γ Φ t).map encTDB) :=
-    eval_eq G E n rs' rs hrs 4096 m
+      encOpt ((Internal.evalC G E n rs 4096 m Γ Φ t).map encTCB) :=
+    evalC_eq G E n rs' rs hrs 4096 m
   intro Γ₀ Φ₀ t₀ u₀
   simp only [«Tactics.byAuto», template, Tactics.byAuto, length_eq, List.length_map, iter_leaf]
   refine (?_ : PRel _ _) Γ₀ Φ₀ t₀ u₀
   generalize Φ₀.length = hs
   refine repeat_rel _ _ _ _ (byInsts_eq m G E n rs' rs hrs hs) (fun rec' rec hrec ↦ ?_) d
   have hrec' : ∀ Γ Φ t u, rec' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((rec Γ Φ t u).map encDeriv) := hrec
+      encOpt ((rec Γ Φ t u).map encConv) := hrec
   intro Γ Φ t u
   simp only [byInsts_eq m G E n rs' rs hrs hs Γ Φ t u]
   rcases Tactics.byInsts m G E n rs hs Γ Φ t u with _ | q
@@ -1445,12 +1446,12 @@ theorem byAuto_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
   have hn : ∀ x, «Tactics.orO» (encOpt none) x = x := fun _ ↦ rfl
   rw [Option.map_none, hn, Option.orElse_none]
   tac_simp [hE]
-  rcases Internal.eval G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
+  rcases Internal.evalC G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
   · rfl
   tac_simp [hE]
-  rcases Internal.eval G E n rs 4096 m Γ Φ u with _ | ⟨u', du, _⟩
+  rcases Internal.evalC G E n rs 4096 m Γ Φ u with _ | ⟨u', du, _⟩
   · rfl
-  tac_simp [p1_encTDB, stuckVar_eq _ _ (mentionsAny_rel hs Φ), stuckVar_eq _ _ h0, orO_eq]
+  tac_simp [p1_encTCB, stuckVar_eq _ _ (mentionsAny_rel hs Φ), stuckVar_eq _ _ h0, orO_eq]
   generalize ((Tactics.stuckVar (fun i ↦ (Φ.take hs).any (Tactics.mentions · i)) t').orElse
     fun _ ↦ Tactics.stuckVar (fun i ↦ (Φ.take hs).any (Tactics.mentions · i)) u').orElse
     (fun _ ↦ (Tactics.stuckVar (fun _ ↦ false) t').orElse
@@ -1538,14 +1539,14 @@ theorem kidsAt_const {β : Type} (e : β → Tree) (l : Internal.Label) (v : Tre
 variable stands for the variable, back to the term. -/
 theorem occRewrite_eq (lk i : ℕ) (t : Term) (d : ℕ) :
     «Tactics.occRewrite» (leaf lk) (leaf i) (encTerm t) (leaf d) =
-      encDeriv (Tactics.occRewrite lk i t d) := by
+      encConv (Tactics.occRewrite lk i t d) := by
   simp only [«Tactics.occRewrite», template, Tactics.occRewrite]
-  refine para_enc _ _ (fun (v : Tree → Tree) (w : ℕ → Deriv) ↦ ∀ d, v (leaf d) = encDeriv (w d))
+  refine para_enc _ _ (fun (v : Tree → Tree) (w : ℕ → ConvDeriv) ↦ ∀ d, v (leaf d) = encConv (w d))
     («Tactics.occStep» (leaf lk) (leaf i)) _ (fun l v xs hx d ↦ ?_) t d
   change «Tactics.occStep» (leaf lk) (leaf i)
     (encTerm (RoseTree.node l (xs.map Prod.fst))) _ (leaf d) = _
-  have hG := kidsAt_G encDeriv l v d xs hx
-  have hC := kidsAt_const encDeriv l v d xs hx
+  have hG := kidsAt_G encConv l v d xs hx
+  have hC := kidsAt_const encConv l v d xs hx
   cases l with
   | var k =>
     mirror_simp [«Tactics.occStep», labelData, mD_eq, label_encTerm]
@@ -1650,7 +1651,7 @@ theorem byTreeSplit_eq (lk i : ℕ) (p' : List Tree → List Tree → Tree → T
     (p : Internal.Prover) (hp : PRel p' p) :
     PRel («Tactics.byTreeSplit» (leaf lk) (leaf i) p') (Tactics.byTreeSplit lk i p) := by
   have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p Γ Φ t u).map encDeriv) := hp
+      encOpt ((p Γ Φ t u).map encConv) := hp
   intro Γ Φ t u
   simp only [«Tactics.byTreeSplit», template, Tactics.byTreeSplit]
   tac_simp []
@@ -1703,8 +1704,8 @@ theorem byAutoT_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ
       (Tactics.byAutoT G E n lk rs d m) := by
   have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
       (leaf 4096) (leaf (encDepth m)) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.eval G E n rs 4096 m Γ Φ t).map encTDB) :=
-    eval_eq G E n rs' rs hrs 4096 m
+      encOpt ((Internal.evalC G E n rs 4096 m Γ Φ t).map encTCB) :=
+    evalC_eq G E n rs' rs hrs 4096 m
   have h0 : SkipRel (fun _ ↦ leaf 0) fun _ ↦ false := fun _ ↦ rfl
   have hn : ∀ x, «Tactics.orO» (encOpt none) x = x := fun _ ↦ rfl
   intro Γ₀ Φ₀ t₀ u₀
@@ -1715,7 +1716,7 @@ theorem byAutoT_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ
       else «Tactics.byInsts» (leaf (encDepth m)) (encGlobals G)
         (E.toList.map encEntry) (leaf n) rs' (leaf hs) Γ (Φ.map encTerm) (encTerm t)
         (encTerm u)) =
-      encOpt ((if hs = 0 then none else Tactics.byInsts m G E n rs hs Γ Φ t u).map encDeriv) := by
+      encOpt ((if hs = 0 then none else Tactics.byInsts m G E n rs hs Γ Φ t u).map encConv) := by
     intro Γ Φ t u
     by_cases h : hs = 0
     · subst h
@@ -1728,12 +1729,12 @@ theorem byAutoT_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ
     beta_reduce
     rw [hV]
     tac_simp [hE]
-    rcases Internal.eval G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
+    rcases Internal.evalC G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
     · exact hn _
     tac_simp [hE]
-    rcases Internal.eval G E n rs 4096 m Γ Φ u with _ | ⟨u', du, _⟩
+    rcases Internal.evalC G E n rs 4096 m Γ Φ u with _ | ⟨u', du, _⟩
     · exact hn _
-    tac_simp [p1_encTDB, p2_encTDB, equal_eq, encTerm_eq_iff]
+    tac_simp [p1_encTCB, p2_encTCB, equal_eq, encTerm_eq_iff]
     by_cases htu : t' = u'
     · simp only [htu, decide_true, ofBool_true, label_leaf, ne_eq, one_ne_zero,
         not_false_eq_true, ↓reduceIte]
@@ -1742,16 +1743,16 @@ theorem byAutoT_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ
         ↓reduceIte]
       exact hn _
   · have hrec' : ∀ Γ Φ t u, rec' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-        encOpt ((rec Γ Φ t u).map encDeriv) := hrec
+        encOpt ((rec Γ Φ t u).map encConv) := hrec
     intro Γ Φ t u
     beta_reduce
     tac_simp [hE]
-    rcases Internal.eval G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
+    rcases Internal.evalC G E n rs 4096 m Γ Φ t with _ | ⟨t', dt, _⟩
     · rfl
     tac_simp [hE]
-    rcases Internal.eval G E n rs 4096 m Γ Φ u with _ | ⟨u', du, _⟩
+    rcases Internal.evalC G E n rs 4096 m Γ Φ u with _ | ⟨u', du, _⟩
     · rfl
-    tac_simp [p1_encTDB, p2_encTDB, equal_eq, encTerm_eq_iff]
+    tac_simp [p1_encTCB, p2_encTCB, equal_eq, encTerm_eq_iff]
     by_cases htu : t' = u'
     · simp only [htu, decide_true, ofBool_true, label_leaf, ne_eq, one_ne_zero,
         not_false_eq_true, ↓reduceIte]
@@ -1784,8 +1785,8 @@ theorem byAutoC_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ
       (Tactics.byAutoC G E n lk rs d) := by
   have hE : ∀ Γ Φ t, «Prover.eval» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'
       (leaf 4096) (leaf 1) Γ (Φ.map encTerm) (encTerm t) =
-      encOpt ((Internal.eval G E n rs 4096 .weak Γ Φ t).map encTDB) :=
-    eval_eq G E n rs' rs hrs 4096 .weak
+      encOpt ((Internal.evalC G E n rs 4096 .weak Γ Φ t).map encTCB) :=
+    evalC_eq G E n rs' rs hrs 4096 .weak
   have h0 : SkipRel (fun _ ↦ leaf 0) fun _ ↦ false := fun _ ↦ rfl
   have hn : ∀ x, «Tactics.orO» (encOpt none) x = x := fun _ ↦ rfl
   simp only [«Tactics.byAutoC», template, Tactics.byAutoC, iter_leaf]
@@ -1798,12 +1799,12 @@ theorem byAutoC_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ
   · rfl
   rw [Option.map_none, hn, Option.orElse_none]
   tac_simp [hE]
-  rcases Internal.eval G E n rs 4096 .weak Γ Φ t with _ | ⟨t', dt, _⟩
+  rcases Internal.evalC G E n rs 4096 .weak Γ Φ t with _ | ⟨t', dt, _⟩
   · rfl
   tac_simp [hE]
-  rcases Internal.eval G E n rs 4096 .weak Γ Φ u with _ | ⟨u', du, _⟩
+  rcases Internal.evalC G E n rs 4096 .weak Γ Φ u with _ | ⟨u', du, _⟩
   · rfl
-  tac_simp [p1_encTDB, stuckVarC_eq _ _ h0, orO_eq]
+  tac_simp [p1_encTCB, stuckVarC_eq _ _ h0, orO_eq]
   generalize (Tactics.stuckVarC (fun _ ↦ false) t').orElse
     (fun _ ↦ Tactics.stuckVarC (fun _ ↦ false) u') = oi
   rcases oi with _ | i
@@ -1812,10 +1813,10 @@ theorem byAutoC_eq (G : Internal.Globals) (E : Array Internal.Entry) (n lk : ℕ
 
 /-- The mirror's proof that a conditional is the conditional with a term's occurrences rewritten
 in its first branch, by absorption and a derivation of the rewriting under the mask. -/
-@[simp] theorem maskRwD_eq (a b : Tree) (ab : ℕ) (dM : Deriv) (c d x x' z y : Term) :
-    «Tactics.maskRwD» a b (leaf ab) (encDeriv dM) (encTerm c) (encTerm d) (encTerm x)
+@[simp] theorem maskRwD_eq (a b : Tree) (ab : ℕ) (dM : ConvDeriv) (c d x x' z y : Term) :
+    «Tactics.maskRwD» a b (leaf ab) (encConv dM) (encTerm c) (encTerm d) (encTerm x)
         (encTerm x') (encTerm z) (encTerm y) =
-      encDeriv (Tactics.maskRwD a b ab dM c d x x' z y) := by
+      encConv (Tactics.maskRwD a b ab dM c d x x' z y) := by
   simp only [«Tactics.maskRwD», template, Tactics.maskRwD]
   tac_simp [abstractTerm_eq, GebTests.Prototypes.FreeTopos.Agreement.Translation.condT_eq,
     «Theory.l5»]
@@ -1827,14 +1828,14 @@ in its first branch, by a masked lemma. -/
     (c d x x' z y : Term) :
     «Tactics.maskRw» a b (leaf ab) (leaf j) θ (σ.map encTerm) (encTerm c) (encTerm d)
         (encTerm x) (encTerm x') (encTerm z) (encTerm y) =
-      encDeriv (Tactics.maskRw a b ab j θ σ c d x x' z y) := by
+      encConv (Tactics.maskRw a b ab j θ σ c d x x' z y) := by
   simp only [«Tactics.maskRw», template, Tactics.maskRw, ← maskRwD_eq]
   tac_simp []
   rfl
 
 /-- A rewriting under a mask: the subterm, its rewriting and the derivation of their equation. -/
-def encMask (p : Term × Term × Deriv) : Tree :=
-  RoseTree.node 0 [encTerm p.1, encTerm p.2.1, encDeriv p.2.2]
+def encMask (p : Term × Term × ConvDeriv) : Tree :=
+  RoseTree.node 0 [encTerm p.1, encTerm p.2.1, encConv p.2.2]
 
 /-- The mirror's rewriting of a conditional subterm by a hypothesis under its mask. -/
 theorem maskAt_eq (ab cs : ℕ) (Φ : List Term) (a : Tree) (c y d S : Term) (i : ℕ) :
@@ -1978,7 +1979,7 @@ theorem byMaskSubs_eq (G : Internal.Globals) (E : Array Internal.Entry) (ab cs :
   simp only [appendNR_eq]
   refine byNF_eq G E 0 _ _ (List.rel_append hex hrs) .weak _ _ fun Γ Φ t u ↦ ?_
   have hp' : ∀ Γ Φ t u, p' ex' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p ex Γ Φ t u).map encDeriv) := hp ex' ex hex
+      encOpt ((p ex Γ Φ t u).map encConv) := hp ex' ex hex
   simp only [maskSub_eq, orO_eq]
   generalize (Tactics.maskSub ab cs Φ t).orElse (fun _ ↦ Tactics.maskSub ab cs Φ u) = oS
   rcases oS with _ | ⟨S, S', dS⟩
@@ -1998,7 +1999,7 @@ theorem byGeneralize_eq (a : Tree) (c : Term) (p' : List Tree → List Tree → 
     (p : Internal.Prover) (hp : PRel p' p) :
     PRel («Tactics.byGeneralize» a (encTerm c) p') (Tactics.byGeneralize a c p) := by
   have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
-      encOpt ((p Γ Φ t u).map encDeriv) := hp
+      encOpt ((p Γ Φ t u).map encConv) := hp
   intro Γ Φ t u
   simp only [«Tactics.byGeneralize», template, Tactics.byGeneralize]
   tac_simp [abstractTerm_eq, hp', applyAbs_eq]

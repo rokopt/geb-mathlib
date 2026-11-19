@@ -2,9 +2,10 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; The metalogic: its checker, its translation, its prover, its tactics, its combinators, the printer
-; and the check of elementary-affine certificates, a layer of emitted Lean to a part. Each entry is
-; a definition whose mirror's agreement with the loaded program is proved.
+; The metalogic: its checker, its translation, its prover, the checker with a step of conversion,
+; with the evaluation at literals and the environment machine, its tactics, its combinators, the
+; printer and the check of elementary-affine certificates, a layer of emitted Lean to a part. Each
+; entry is a definition whose mirror's agreement with the loaded program is proved.
 
 (program metalogic (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
   (layers
@@ -17,11 +18,11 @@
       check.geb)
     (Translation free-topos/translation.geb)
     (Prover free-topos/prove.geb)
+    (Conversion free-topos/literals.geb free-topos/machine.geb free-topos/conversion.geb)
     (Tactics free-topos/tactics.geb)
     (Combinator free-topos/combinator.geb)
     (Printer datatype.geb printer.geb)
-    (Affine affine.geb)
-    (Conversion free-topos/literals.geb free-topos/machine.geb free-topos/conversion.geb))
+    (Affine affine.geb))
   (entries Derivation.checkDev Translation.program Translation.trGlobals Translation.thm
     Prover.prepareRules
     Prover.byNorm

@@ -328,14 +328,17 @@ the sections below detail:
     declarations, and the transcription proved in Lean to agree with it,
     the reduction by the machine among its steps; the Lean the compiler
     emits then takes the machine in Lean as an acceleration, by that
-    agreement, and the
-    tactics, in Lean and in Geb together, emit its steps in place of the
-    derivations their reductions compute, and the stored developments are
-    certified again in its certificates and measured. The step of the
+    agreement; the provers and the
+    tactics, in Lean and in Geb together, name a reduction by its step
+    in place of the derivation the reduction computes where that
+    derivation has more nodes than a bound, their agreement proved at
+    those certificates; and the stored developments' certificates are
+    its certificates, measured with their reductions named by steps and
+    kept at derivations, whose checks take less. The step of the
     environment machine rewrites by hypotheses and by the development's
-    theorems, as the prover's normalization does, before the tactics
-    emit it in place of the steps `norm` and `eval`, so that it replaces
-    each of their reductions. Its evaluation of
+    theorems, as the prover's normalization does; the tactics name the
+    steps `norm` and `eval`, the searches reducing by the prover's
+    compiled reduction, and do not name it. Its evaluation of
     primitives at literals is written in Lean beside it
     (`Geb/Prototypes/FreeTopos/Literals.lean`): a step rewrites the
     library's addition, truncated difference, multiplication, equality,
@@ -6648,12 +6651,17 @@ depth through weak head normal forms, and the proofs of an equation by
 normalization, by induction, by extensionality and by case analysis. A
 rule of the normalizer is its encoding paired with a matching, which the
 preparation of a theorem computes once from the theorem's left side.
-`GebTests/Prototypes/FreeTopos/Agreement/Prove.lean` proves it equal to
-the Lean prover by the same method: at encoded arguments, rules related
-to the normalizer's and provers related to Lean's, each of its entry
-points gives the encoding of the Lean prover's derivation, so that the
-prover written in Geb constructs exactly the derivations the Lean prover
-constructs. In the loading mode `proof` the proof depends on no axiom
+`GebTests/Prototypes/FreeTopos/Agreement/Prove.lean` proves its
+reductions, and `GebTests/Prototypes/FreeTopos/Agreement/Provers.lean`
+its provers, equal to the Lean prover's by the same method: at encoded
+arguments, rules related to the normalizer's and provers related to
+Lean's, each of its entry points gives the encoding of the Lean
+prover's certificate, a reduction of a derivation past a bound the step
+of conversion that names it
+({ref "conversion-continuation"}[Completing the checker with a step of
+conversion]), so that the prover written in Geb constructs exactly the
+certificates the Lean prover constructs. In the loading mode `proof` the
+proof depends on no axiom
 beyond `propext` and `Quot.sound`; in the mode `native` it depends also
 on the axioms stating the loading.
 
@@ -8456,7 +8464,7 @@ identity of the datatype language's expansion on programs of kernel forms
   proved in Lean to agree with it; the prover, its tactics and the
   combinator prover, each proved in Lean to agree with its Lean
   prototype, so that the prover written in Geb constructs exactly the
-  derivations the Lean prover constructs; and the translation proved in
+  certificates the Lean prover constructs; and the translation proved in
   Lean to agree with the Lean translation. During the bootstrap it lets
   the proofs about programs be made without the Lean prototype, and is
   the checker every stronger checker is admitted beside. After the
@@ -8494,13 +8502,15 @@ What is ready, each item independent of the others except as stated:
   their own that change no source of the program whose typing's
   soundness is proved, and its agreement proved, the environment
   machine's and that of the check of a development's declarations with
-  it; the tactics' emission of its steps and the stored
-  developments' certification in its certificates follow, since the
-  tactics written in Geb construct
-  exactly the certificates the Lean tactics construct. The evaluation of primitives
+  it; the provers and the tactics, in Lean and in Geb, name by its
+  steps the reductions whose derivations have more nodes than a bound,
+  the tactics written in Geb constructing exactly the certificates the
+  Lean tactics construct, and the stored developments' certificates are
+  its certificates, their reductions within the bound. The evaluation of
+  primitives
   at literals is written in Lean for addition, the truncated
   difference, multiplication, equality, less, division, remainder and
-  the logarithm. The steps that remain, in their order,
+  the logarithm. The steps in their order, and what remains of them,
   are stated in {ref "conversion-continuation"}[Completing the checker
   with a step of conversion].
 * The datatype language's completion
@@ -8601,7 +8611,13 @@ measurement shows the checking or storage of cached certificates to need
 it, and follows the bootstrap otherwise (`TODO.md` § Triggers).
 During the bootstrap a stronger checker shortens the
 proofs about the compiler's components, whose derivations have from
-600000 to 1240000 nodes and take from 30 to 40 seconds to check. After
+600000 to 1240000 nodes and take from 30 to 40 seconds to check: with
+their reductions named by steps the stored certificates have one node
+in 185 of the derivations', and their checks, which perform the steps'
+reductions, take longer, so that the stored certificates are kept at
+derivations
+({ref "conversion-continuation"}[Completing the checker with a step of
+conversion]). After
 the bootstrap it bears on the size of the proofs of the mathematics the
 road map lists, and adds decision procedures and tactics as single
 steps without adding to what is trusted.
@@ -8625,9 +8641,12 @@ prepared theorem, and its check of a development at every list of
 declarations with such certificates. The Lean the compiler emits runs
 the machine in Lean in place of the machine written in Geb, by that
 agreement.
-No prover emits its steps, and no stored certificate uses them. This
-section states what is written, the order of the steps that remain, and
-the constraints each of them carries.
+The provers and the tactics, in Lean and in Geb, name by its steps the
+reductions whose derivations have more nodes than a bound, and the
+stored certificates are its certificates, their reductions within the
+bound. This
+section states what is written, the steps in their order with what
+remains of them, and the constraints each of them carries.
 
 #### What is written
 
@@ -8660,7 +8679,40 @@ the constraints each of them carries.
   reduction that computes a derivation
   ({name}`Geb.FreeTopos.Internal.normalizeR_eq`,
   {name}`Geb.FreeTopos.Internal.evalR_eq`), by which the steps `norm`
-  and `eval` compute their results.
+  and `eval` compute their results. The compiler computes them by the
+  rules with each theorem's matching prepared once and by the reduction
+  it runs in place of the prover's
+  ({name}`Geb.FreeTopos.Internal.normalizeR_eq_normalizeRFast`,
+  {name}`Geb.FreeTopos.Internal.evalR_eq_evalRFast`), so that a step
+  takes the time of the prover's reduction, and a rule of a stored
+  certificate that names a theorem is prepared where its step is
+  checked.
+* `Geb/Prototypes/FreeTopos/Internal/Provers.lean` and the tactics of
+  `Geb/Prototypes/FreeTopos/Tactics/`: the provers of equations and the
+  tactics composed from them, whose proofs are certificates. A reduction
+  that rewrites, and whose derivation has more nodes than a bound
+  ({name}`Geb.FreeTopos.Internal.stepBound`,
+  {name}`Geb.FreeTopos.Internal.derivSize`), is the step naming it by
+  its rules, its fuel and its depth
+  ({name}`Geb.FreeTopos.Internal.normalizeC`,
+  {name}`Geb.FreeTopos.Internal.evalC`,
+  {name}`Geb.FreeTopos.Internal.stepped`), a prepared theorem among
+  the rules named as the theorem
+  ({name}`Geb.FreeTopos.Internal.NormRule.unprepare`); one whose
+  derivation is within the bound keeps the derivation
+  ({name}`Geb.FreeTopos.Internal.liftDeriv`); and one that does not
+  rewrite is the identity. The checker performs a step's reduction,
+  which traverses the whole term and tries its rules at each node, and
+  walks a derivation along its rewritings alone, so that a derivation
+  of few nodes is checked sooner than its reduction is performed
+  ({ref "measurements"}[The measurements]); the bound is above the
+  derivations of the stored developments (step 4 below). The reduction
+  itself is the
+  prover's, which computes a derivation, so that a search and the check
+  of a step it names compute by the same compiled reduction. The rules of
+  the language are rules of the certificates under their own names, so
+  that a tactic's node of a rule of the language is written as a
+  derivation's.
 * `Geb/Prototypes/FreeTopos/Internal/Machine.lean`: the environment
   machine ({name}`Geb.FreeTopos.Internal.machineReduce`), which
   evaluates a term in an environment of values, an abstraction to its
@@ -8803,7 +8855,8 @@ the constraints each of them carries.
   a bound. `GebTests/Prototypes/FreeTopos/InternalConversion.lean` tests
   the other steps.
 * `GebBench/Prototypes/FreeTopos/Rules.lean` counts the stored
-  certificates' derivation nodes by rule, and
+  certificates' nodes by rule, the rules of the language and the steps
+  of conversion, and
   `GebBench/Prototypes/FreeTopos/Literals.lean` makes the measurement of
   the arithmetic at numerals stated above. The latter takes about six
   minutes of `lake exe geb-bench`, which `slow-checks.yml` runs daily,
@@ -8813,20 +8866,26 @@ the constraints each of them carries.
   a run of the bench.
 * `bootstrap/free-topos/literals.geb`, `bootstrap/free-topos/machine.geb`
   and `bootstrap/free-topos/conversion.geb`: the evaluation at literals,
-  the environment machine and the checker written in Geb, the last layer
-  of the metalogic's program (`bootstrap/metalogic.manifest`), after the
-  layers whose agreement is proved, so that the positions of their
-  definitions are unchanged. A certificate is encoded as a derivation
+  the environment machine and the checker written in Geb, a layer of the
+  metalogic's program (`bootstrap/metalogic.manifest`) after the
+  prover's and before the tactics', whose proofs are its certificates. A
+  certificate is encoded as a derivation
   is, a rule of the language at its position and the steps of conversion
   and the application of a theorem at the positions after them, so that
   the step at a rule of the language is the base checker's step
   (`checkStep` of `bootstrap/free-topos/derivation.geb`) at the rules
   the premises stand for. The steps `norm` and `eval` take the term of
-  the prover's reductions written in Geb (`normalize` and `eval` of
-  `bootstrap/free-topos/prove.geb`), whose agreement is proved, and so
-  compute the derivation they discard; the step of the machine replaces
-  each of their reductions (step 3 below), so that reductions computing
-  their results alone are not written in Geb. The step of the machine
+  the prover's reductions written in Geb that compute a derivation
+  (`normalizeD` and `evalD` of `bootstrap/free-topos/prove.geb`), whose
+  agreement is proved, and so compute the derivation they discard;
+  reductions computing their results alone are not written in Geb. The
+  provers written in Geb name a reduction by its step (`normalize` and
+  `eval` there, each the reduction that computes a derivation followed
+  by the step in place of a derivation of more nodes than the bound,
+  `stepped`, `dSize` and `stepBound`), a prepared theorem named as
+  the theorem (`ruleNode`), and the proof-source runner checks what
+  they prove by the check of a declaration read as one with a
+  certificate (`certStep`, `checkCertDev`). The step of the machine
   calls the reduction at the data of the step, every argument a tree
   (`machineRun`), the definition that `bootstrap/accelerations` binds
   to the machine in Lean. The evaluation at literals
@@ -8894,7 +8953,17 @@ the constraints each of them carries.
   theorem, and its check of a development gives the encoding of the
   state {name}`Geb.FreeTopos.Internal.checkConvDev` gives, at
   declarations with such certificates (`conversion_agree` of
-  `GebTests/Prototypes/FreeTopos/Agreement.lean`). The reduction at the
+  `GebTests/Prototypes/FreeTopos/Agreement.lean`). The provers and the
+  tactics written in Geb construct the encodings of the certificates the
+  Lean provers and tactics construct
+  (`GebTests/Prototypes/FreeTopos/Agreement/Provers.lean`,
+  `GebTests/Prototypes/FreeTopos/Agreement/Tactics.lean`): a reduction
+  that names its step is the reduction that computes a derivation, whose
+  agreement `GebTests/Prototypes/FreeTopos/Agreement/Prove.lean` proves,
+  followed by the replacement of a derivation past the bound by the step
+  (`dSize_eq`, `stepped_eq`, `normalizeC_eq`, `evalC_eq`), and a
+  step's rules are encoded as they are before their preparation. The
+  reduction at the
   data of a step agrees with the machine in Lean at the representations
   (`machineRun_agrees`), so that the function the emitted Lean binds to
   it, and the function that runs both, are the reduction written in Geb
@@ -8952,20 +9021,40 @@ the constraints each of them carries.
    encoded constants, entries and term at each step, about 5
    milliseconds of a check of two steps at that development, which a
    reading kept between the steps of one certificate would remove.
-3. The emission of the steps by the tactics, in Lean and in Geb
-   together, so that
-   `GebTests/Prototypes/FreeTopos/Agreement/Tactics.lean`, the proof that
-   the tactics written in Geb construct exactly the Lean tactics'
-   certificates, is proved again at the new certificates. A tactic that
-   returns the derivation a reduction computes, as
-   {name}`Geb.FreeTopos.Tactics.byMode` returns those
-   {name}`Geb.FreeTopos.Internal.eval` computes, returns instead the step
-   that names the reduction with its rules, its fuel and its depth. It is
-   also the step at which the searches reduce by the environment
-   machine, whose step `machine` replaces a derivation the prover's
-   reduction computes; until it, the prover's compiled reduction
-   ({name}`Geb.FreeTopos.Internal.evalFast`) is the searches'. The
-   emission of the evaluation at literals has constraints of its own:
+3. The naming of the steps by the provers and the tactics, in Lean and
+   in Geb together: complete, but for the two parts stated after it. A
+   prover or a tactic that returned the derivation a reduction computes,
+   as {name}`Geb.FreeTopos.Tactics.byMode` returned those
+   {name}`Geb.FreeTopos.Internal.eval` computes, returns the step that
+   names the reduction with its rules, its fuel and its depth where that
+   derivation has more nodes than a bound
+   ({name}`Geb.FreeTopos.Internal.stepBound`), and the derivation
+   otherwise ({name}`Geb.FreeTopos.Internal.stepped`), and
+   `GebTests/Prototypes/FreeTopos/Agreement/Provers.lean` and
+   `GebTests/Prototypes/FreeTopos/Agreement/Tactics.lean` prove that the
+   provers and the tactics written in Geb construct exactly the Lean
+   ones' certificates. The bound is there because a step is checked by
+   performing its reduction, which traverses the whole term and tries
+   its rules at each node, where a derivation is checked along its
+   rewritings alone, and it is above the nodes of every derivation the
+   reductions of the stored developments compute, whose certificates so
+   hold derivations (step 4). The proof-source runner
+   (`bootstrap/authoring.geb`) checks and replays by the check of
+   certificates, and its certificates name a theory of their own
+   (`free-topos/conversion/v1`), a certificate or a cache of the
+   derivations' theory (`free-topos/base/v1`) being read as one of it
+   with no step; the derivations of a cache and of a
+   certificate carried to a changed program are read with the entries
+   their steps' rules cite renumbered and the definitions those rules
+   unfold at their places (`recite`, `transportRule`). Two parts
+   remain. The searches do not reduce by the environment machine, and no
+   tactic names the step `machine`: the prover's compiled reduction
+   ({name}`Geb.FreeTopos.Internal.evalFast`) is the searches', and a
+   check computes a step `norm` or `eval` by the same reduction, so
+   that it takes the reduction's time
+   ({ref "conversion-open"}[The questions that remain open]). And no
+   tactic names the evaluation at literals, whose emission has
+   constraints of its own:
    * A step of evaluation rewrites the whole term at its node, and is
      rejected unless that term is built of the evaluated definitions
      over literals. At a subterm it stands under the base checker's
@@ -8987,31 +9076,61 @@ the constraints each of them carries.
    * The development proves the rebuildings and the equations, and
      records their readiness by a declaration after them, before its
      first step of evaluation (step 4).
-4. The stored certificates. `GebTests/Prototypes/FreeTopos/Stored.lean`
-   encodes terms, the base checker's rules and declarations as trees of
-   natural numbers, and the step `machine` whose rules are theorems and
-   hypotheses, in `convRuleData` and `convRuleOf`. What remains is the
-   encoding of the prover's other rules
-   ({name}`Geb.FreeTopos.Internal.NormRule`), of the depths
-   ({name}`Geb.FreeTopos.Internal.Depth`), of the rules `norm`, `eval`,
-   `applyMatch` and `lit`, and of the declaration recording readiness;
-   their kinds are added to `convRuleData` and `convRuleOf`, and the
-   declaration to those `internConvDecl` encodes. The prover's rule
-   `thmAt` holds the matching of a theorem's
-   left side prepared beforehand, a function, which no store holds: a
-   stored certificate names the rule `thm` with its index and objects,
-   and the reader prepares the matching as the prover does. Each stored
-   development is checked from no entries
+4. The stored certificates: their encoding and their measurement
+   complete, and the certificates kept at derivations.
+   `GebTests/Prototypes/FreeTopos/Stored.lean` encodes terms, the rules
+   of the certificates and declarations as trees of natural numbers
+   (`convRuleData`, `convRuleOf`, `internConvDecl`): the base checker's
+   rules, the prover's rules ({name}`Geb.FreeTopos.Internal.NormRule`),
+   the depths ({name}`Geb.FreeTopos.Internal.Depth`), the steps `norm`,
+   `eval`, `applyMatch`, `lit` and `machine`, and the declaration
+   recording readiness. The prover's rule `thmAt` holds the matching of
+   a theorem's left side prepared beforehand, a function, which no store
+   holds: a stored certificate names the rule `thm` with its index and
+   objects, and the check prepares the matching where it computes the
+   step. Each stored development is checked from no entries
    (`GebTests/Prototypes/FreeTopos/Certified/Basic.lean`), so a
    development that evaluates at literals proves the rebuildings and the
    equations, and records their readiness, before its first step of
    evaluation, and its steps name the index of the first equation. The
-   certificates are then generated again (`generate` in
-   `GebTests/Prototypes/FreeTopos/StoredWriter.lean`), checked by the
-   modules of `GebTests/Prototypes/FreeTopos/Certified/`, whose
-   statements are axioms the evaluator decides (the modules of
-   `GebMeta.evaluationAxiomModules`), and measured by `Rules.lean`
-   against the projection of about one node in ninety.
+   certificates are those the searches write (`generate` in
+   `GebTests/Prototypes/FreeTopos/StoredWriter.lean`), each checked by
+   the conversion checker as it is stored, and checked by the modules of
+   `GebTests/Prototypes/FreeTopos/Certified/`, whose statements are
+   axioms the evaluator decides (the modules of
+   `GebMeta.evaluationAxiomModules`): at the provers' bound a
+   certificate holds no step, and the modules read it as a derivation
+   and check it by the base checker, whose check of a derivation takes
+   less than the conversion checker's
+   ({ref "measurements"}[The measurements]). Measured by `Rules.lean`, their
+   derivations have 130542831 nodes, 130042012 of them in 168114
+   rewritings, the largest of 5015696; of the rewritings, 149216 have
+   fewer than 128 nodes and 556142 nodes in all, and 8702 have 1024 or
+   more and 125603391 in all. The certificates were generated and
+   checked at two lower bounds. With every reduction that rewrites named
+   by its step they have 704760 nodes, one in 185, against the
+   projection of about one in ninety at the first measurement: the
+   rewritings have 203941, 29214 of them steps `eval` and 365 steps
+   `norm`, the tables of distinct nodes the certificates' text stores
+   1185874 entries against 2798399, and the text 23.8 megabytes against
+   41.2. At a bound of 1024 nodes they have 4979671 nodes, one in 26,
+   8730 of them steps `eval`, the tables 1546294 entries, and the text
+   26.0 megabytes. What the text holds at either is mostly the terms the
+   rules name, the instances of the theorems applied most of them,
+   1000773245 and 1006687912 nodes counted as trees against 1215829456.
+   At both bounds the checks take longer than the checks of the
+   derivations, on the modules of the datatype language's soundness
+   measured from 1.7 to 9.6 times with every reduction a step and from
+   1.4 to 6.1 at the bound of 1024, the most where the reductions
+   rewrite little of a large term
+   ({ref "measurements"}[The measurements]), so the provers' bound is
+   above the stored developments' derivations, and their certificates
+   are those of derivations until a step is checked in the time of the
+   derivation it replaces
+   ({ref "conversion-open"}[The questions that remain open]). A lower
+   bound is followed by `scripts/certificates.sh regen`, and by the
+   check of the certificates by the conversion checker in those modules,
+   which read them by `convDeclsOfText`.
 
 #### The questions that remain open
 %%%
@@ -9027,18 +9146,30 @@ tag := "conversion-open"
   and in Geb alike, with the soundness proved of that machine. Whether
   it is written waits on the second host
   ({ref "speed-and-second-host"}[Speed and a second host]).
-* The reach of the step of the machine. The steps `norm` and `eval`
-  compute the reduction's result alone
-  ({name}`Geb.FreeTopos.Internal.evalR`), and a step takes about as long
-  as the base checker takes on the derivation the prover's reduction
-  computes: the time is the reduction's own, its rewriting by
-  substitution and its trial of the rules at each node. The step
-  `machine` reduces by the environment machine; on the product of
-  numerals of six decimal digits, in one run of the bench, the base
-  checker takes 27.1 seconds, the step `eval` 18.8 and the step
-  `machine` 0.179 ({ref "measurements"}[The measurements]). The machine
-  normalizes under abstractions and the steps of folds, so that two
-  sides whose normal forms differ only in a fold's step are joined. The
+* The time of a step. The steps `norm` and `eval` compute the prover's
+  reduction for its result alone
+  ({name}`Geb.FreeTopos.Internal.evalR`), by the reduction the compiler
+  runs in place of the prover's, so that a step takes the reduction's
+  time: its traversal of the term, its rewriting by substitution and its
+  trial of the rules at each node. The base checker checks the
+  derivation the reduction computes along the derivation's rewritings
+  alone, and takes less, many times less where the reduction rewrites
+  little of a large term ({ref "measurements"}[The measurements]). The
+  provers' bound ({name}`Geb.FreeTopos.Internal.stepBound`) trades the
+  two: each derivation a step replaces leaves the certificate and adds
+  to the check, at both bounds measured (step 4 above), and the stored
+  certificates are kept at derivations. Whether a step that names only
+  the rules its reduction applies, so that the check tries no other at a
+  node, takes the time of the derivation's check is not measured, nor is
+  a bound relative to the size of the term reduced, which would keep the
+  derivations of the reductions that rewrite little of it.
+* The reach of the step of the machine. The step `machine` reduces by
+  the environment machine; on the product of numerals of six decimal
+  digits, in one run of the bench, the base checker takes 27.1 seconds,
+  the step `eval` 18.8 and the step `machine` 0.179
+  ({ref "measurements"}[The measurements]). The machine normalizes under
+  abstractions and the steps of folds, so that two sides whose normal
+  forms differ only in a fold's step are joined. No tactic names it. The
   translation of a development's derivations
   ({name}`Geb.FreeTopos.Internal.devByMachine`) replaces each join that
   the machine also joins by two steps of the machine. On the
@@ -9172,9 +9303,10 @@ Each changes the program that `GebMirror.Metalogic` mirrors, so the
 mirror is emitted again (`scripts/bootstrap.sh`) and its loading checked
 in both loading modes. The prover and the tactics written in Geb infer
 types by `typeIn` as well, as the Lean prover does, so the first changes
-their time and not the derivations they construct, and their agreements
-(`Agreement/Prove.lean`, `Agreement/Tactics.lean`) rest on the agreement
-of `typeIn`. The first writes its fold, and the rewriting of `check`
+their time and not the certificates they construct, and their agreements
+(`Agreement/Prove.lean`, `Agreement/Provers.lean`,
+`Agreement/Tactics.lean`) rest on the agreement of `typeIn`. The first
+writes its fold, and the rewriting of `check`
 that follows the second writes `check`, in forms the elementary-affine
 search accepts
 ({ref "interaction-net-affine-certificates"}[Elementary-affine
@@ -9199,7 +9331,7 @@ by a rewriting at the root that tries the rules of an index by the keys
 of their roots' labels (`indexRules`, `ruleBucket`) and compares a term
 with an equation among the hypotheses by the fold of its left side
 (`isRename`, `prepareHyps`). Its agreement at every encoded input
-(`eval_eq` in `GebTests/Prototypes/FreeTopos/Agreement/Prove.lean`)
+(`evalD_eq` in `GebTests/Prototypes/FreeTopos/Agreement/Prove.lean`)
 relates its rewriting at the root to the rewriting by the rules under
 the hypotheses weakened, by {name}`Geb.FreeTopos.Internal.tryRuleK_eq`
 and {name}`Geb.FreeTopos.Internal.tryRule_eq_none`, and composes the
@@ -9209,12 +9341,12 @@ it is defined. Like the checker's, it changes the mirrored program, and
 its time bears only on a run of the loaded prover.
 
 The searches do not reduce by the environment machine
-({name}`Geb.FreeTopos.Internal.machineReduce`): a search constructs the
-derivations its reductions compute, and the machine computes a result
-alone, so it enters a search when the tactics emit the step `machine` in
-place of those derivations
+({name}`Geb.FreeTopos.Internal.machineReduce`): a search's reductions
+compute the derivations its certificates keep, each within the provers'
+bound, and the machine computes a result alone, so it enters a search
+when a tactic names the step `machine` in place of a reduction
 ({ref "conversion-continuation"}[Completing the checker with a step of
-conversion], step 3), which certifies the stored developments again. The
+conversion], step 3). The
 compiled reduction above brings every search within minutes
 ({ref "measurements"}[The measurements]), so no search waits on that
 step, and the time that remains in a search is stated in

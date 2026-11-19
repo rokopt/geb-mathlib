@@ -39,8 +39,8 @@ namespace GebTests.Prototypes.FreeTopos.InternalCompleteness
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Sorts
 open GebTests.Prototypes.FreeTopos.Internal
 open GebTests.Prototypes.FreeTopos.InternalCitations (appendNil appendNilTwice developmentWith)
-open Geb.FreeTopos.Internal (Term Thm Decl checkThms)
-open Geb.FreeTopos.Internal.Logic (nd)
+open Geb.FreeTopos.Internal (Term Thm ConvDecl checkConvThms)
+open Geb.FreeTopos.Internal.Logic (cnd)
 
 /-- Appending the empty list to a list gives the list, under that hypothesis. -/
 def appendNilHyp : Thm := ⟨1, [L], [appendNil.concl], appendNil.concl⟩
@@ -49,22 +49,22 @@ def appendNilHyp : Thm := ⟨1, [L], [appendNil.concl], appendNil.concl⟩
 proved by the certificate of its sequent, and the theorem with a hypothesis proved by the
 hypothesis and then by the certificate that cites its sequent. The result's last component is
 that certificate. -/
-def developmentWith : Option (List Decl × Tree) := do
+def developmentWith : Option (List ConvDecl × Tree) := do
   let (ds, c) ← InternalCitations.developmentWith
-  let ds₁ := ds ++ [Decl.language appendNilTwice (nd (.certSeq c)),
-    Decl.language appendNilHyp (nd (.hyp 0))]
+  let ds₁ := ds ++ [ConvDecl.language appendNilTwice (cnd (.certSeq c)),
+    ConvDecl.language appendNilHyp (cnd (.hyp 0))]
   let c₁ := Scope.cite ⟨[obj], []⟩ (ds₁.length - 1)
-  pure (ds₁ ++ [Decl.language appendNilHyp (nd (.certSeq c₁))], c₁)
+  pure (ds₁ ++ [ConvDecl.language appendNilHyp (cnd (.certSeq c₁))], c₁)
 
 /-- The development. -/
-def development : Option (List Decl) := developmentWith.map Prod.fst
+def development : Option (List ConvDecl) := developmentWith.map Prod.fst
 
 -- the development checks
-#guard development.any fun ds ↦ checkThms G ds #[]
+#guard development.any fun ds ↦ checkConvThms G ds #[]
 
 -- the certificate of the theorem's sequent does not prove it without its hypothesis
 #guard developmentWith.any fun (ds, c) ↦
-  !checkThms G (ds.dropLast ++ [Decl.language appendNil (nd (.certSeq c))]) #[]
+  !checkConvThms G (ds.dropLast ++ [ConvDecl.language appendNil (cnd (.certSeq c))]) #[]
 
 end GebTests.Prototypes.FreeTopos.InternalCompleteness
 

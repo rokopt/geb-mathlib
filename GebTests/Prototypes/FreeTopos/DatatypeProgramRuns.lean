@@ -845,7 +845,7 @@ def programPrefixDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
 context of that list alone: the empty list by {lit}`base`, a construction by {lit}`step` under
 the induction hypothesis, the first hypothesis. -/
 def listInduction (name : String) (φ : Term) (base step : Deducer) :
-    Option (Internal.Thm × Internal.Deriv) := do
+    Option (Internal.Thm × Internal.ConvDeriv) := do
   let Ls := list treeTy
   let some d₀ := base [] [] (Term.subst φ (Internal.instVar (Term.arr 0 [treeTy] Term.star)))
     | dbgTrace s!"{name}: empty" fun _ ↦ none
