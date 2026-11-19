@@ -497,6 +497,12 @@ def convRuleOf {ρ : Type} (k : ℕ) (ts : List (Tree × Reading ρ)) :
       kc.1.label (← rs.2.normRules), rest)
   | k, ts => (ruleOf k ts).map fun (r, rest) ↦ (.base r, rest)
 
+/-- A conversion derivation read back from its table, sharing equal subderivations and terms. -/
+def shareConvDeriv (d : ConvDeriv) : Option ConvDeriv := do
+  let tab := ((internDeriv convRuleData d).run Table.empty).2
+  let (_, root) ← paraOfNats (read convRuleOf) tab.toNats
+  root.deriv
+
 /-- The index of a declaration's tree among the distinct nodes: a theorem of the base checker's
 as {name}`internDecl` enters it, a theorem with a certificate of the conversion checker with
 its rules' trees of {name}`convRuleData`, and the record of an index at which the evaluation at

@@ -353,6 +353,8 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let K : Kit := ⟨P, S, E, ix, walkRules ix E⟩
     let L := K.L
     let φ := cataWalkφ P S T w
+    -- Keep the completed field cases in their shared representation while proving their siblings.
+    let shared (k : Deducer) : Deducer := fun Γ Φ ψ ↦ (k Γ Φ ψ).bind Stored.shareConvDeriv
     let childT ← primT Kernel.Prim.child
     let equalT ← primT Kernel.Prim.equal
     -- the walk's steps unfolded, and the reader's numeral, which computes a flag's value
@@ -770,7 +772,7 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
         decided (fun Γ ↦ pc P "Typing.clauseVar" [E' Γ, r Γ])
           (refute "the remaining wildcard no clause's" hTy) <|
         decideIn K (fun Γ ↦ ignoredField P (r Γ))
-          (fun Γ Φ ψ ↦
+          (shared fun Γ Φ ψ ↦
             let hIgnored := Φ.length - 1
             varAtom hTy r "the remaining variable no clause's"
               (fun pC iI ↦ normHyps K [hIgnored] (atomCase pC iI)) Γ Φ ψ)
@@ -788,7 +790,7 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
         (decideIn K (fun Γ ↦ apps childT [c Γ, leafT (numeral 2)])
           (linkK K "cataWalk: no remaining children" noRest) rest)
         (refute "a field type remaining" hTy) Γ₀ Φ₀ ψ₀
-    let r₀ : Option Internal.ConvDeriv := linkK K "cataWalk: no fields" nilCase
+    let r₀ : Option Internal.ConvDeriv := linkK K "cataWalk: no fields" (shared nilCase)
       (cataWalkCtx T).tail [] (Term.subst φ (Internal.instVar (Term.arr 0 [treeTy] Term.star)))
     -- the lengths' hypothesis of index h refuted, one comparison true by the comparisons of
     -- lengths at constructions
@@ -1132,8 +1134,8 @@ def cataWalk (P : Prog) (S : Defs) (T : Defs3) : Step :=
             K.listCase treeTy (cq 2 Γ) (lenFalse cLen) (fun Γ Φ ψ ↦
               let pR := Γ.length - 2
               decideIn K (fun Γ ↦ ignoredField P (atPos pX Γ))
-                (fun Γ Φ ψ ↦ consField flag false pX pF pT pR (Φ.length - 1) Γ Φ ψ)
-                (fun Γ Φ ψ ↦ consField flag true pX pF pT pR (Φ.length - 1) Γ Φ ψ)
+                (shared fun Γ Φ ψ ↦ consField flag false pX pF pT pR (Φ.length - 1) Γ Φ ψ)
+                (shared fun Γ Φ ψ ↦ consField flag true pX pF pT pR (Φ.length - 1) Γ Φ ψ)
                 Γ Φ ψ) Γ Φ ψ) Γ Φ ψ) Γ₁ Φ₁ ψ₁) Γ₀ Φ₀ ψ₀
     let r₁ : Option Internal.ConvDeriv := linkK K "cataWalk: a field" (introsAt o consBody)
       (list treeTy :: treeTy :: (cataWalkCtx T).tail) [Internal.weakenElem φ]
