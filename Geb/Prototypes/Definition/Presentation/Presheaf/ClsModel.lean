@@ -73,7 +73,7 @@ variable [hfin : ∀ a, FinEnum (S.Gen a)]
 
 /-- The arguments of each term shape, enumerated. -/
 @[instance_reducible] def finEnumTermSig (s : (termSig S).A) : FinEnum ((termSig S).Gen s) :=
-  hfin s.1
+  hfin s.val
 
 attribute [local instance] finEnumTermSig finEnumOps
 
@@ -88,10 +88,10 @@ abbrev clsP : Iᵒᵖ ⥤ Type (max uA u v) := (onestep S).clsPsh (noVar I)
 /-- The value of the model on a node over the terms: its shape applied to the classes it gives its
 arguments at their objects. -/
 def αTerm {i : I} (n : (𝐅.objPresheaf (discrete (clsP S))).obj ⟨termObj i⟩) : (clsP S).obj ⟨i⟩ :=
-  (onestep S).toSlice.resort (noVar I) ⟨(S.q n.1.1.1.1).1,
-    (onestep S).toSlice.op (noVar I) (.inl ⟨n.1.1.1.1, congrArg Prod.snd n.2⟩) fun b ↦
-      PresheafDomPFunctorData.value _ n.1.1 ⟨⟨b, S.gobj n.1.1.1.1 b, 𝟙 _⟩, rfl⟩⟩
-    (congrArg Prod.fst n.2)
+  (onestep S).toSlice.resort (noVar I) ⟨(S.q n.val.val.val.1).1,
+    (onestep S).toSlice.op (noVar I) (.inl ⟨n.val.val.val.1, congrArg Prod.snd n.property⟩) fun b ↦
+      PresheafDomPFunctorData.value _ n.val.val ⟨⟨b, S.gobj n.val.val.val.1 b, 𝟙 _⟩, rfl⟩⟩
+    (congrArg Prod.fst n.property)
 
 /-- The value of the model on a node with given arguments. -/
 theorem αTerm_freeNode (a : S.A) {i : I} (hq : S.q a = termObj i)
@@ -125,8 +125,8 @@ theorem αTerm_map {i i' : I} (f : i' ⟶ i)
     αTerm ((𝐅.objPresheaf (discrete (clsP S))).map (termHom f).op n) =
       (onestep S).restrCls (noVar I) f (αTerm n) := by
   have h := αTerm_map_freeNode (restr_id := restr_id) (restr_comp := restr_comp)
-    (reindex_id := reindex_id) (reindex_comp := reindex_comp) n.1.1.1.1 n.2 f fun b ↦
-    PresheafDomPFunctorData.value _ n.1.1 ⟨⟨b, S.gobj n.1.1.1.1 b, 𝟙 _⟩, rfl⟩
+    (reindex_id := reindex_id) (reindex_comp := reindex_comp) n.val.val.val.1 n.property f fun b ↦
+    PresheafDomPFunctorData.value _ n.val.val ⟨⟨b, S.gobj n.val.val.val.1 b, 𝟙 _⟩, rfl⟩
   rwa [← FreeArity.eq_freeNode n] at h
 
 /-- The two endpoints of a node over the witnesses with given arguments have one value, by the
@@ -142,10 +142,10 @@ theorem αTerm_tgt_freeNode (s : S.A) {i : I} (hq : S.q s = eqObj i)
   let _ : FinEnum (S.Gen s) := hfin s
   obtain ⟨ts, hts⟩ := (onestep S).toSlice.exists_cls (noVar I) vals
   obtain rfl : vals = fun b ↦ (onestep S).toSlice.cls (noVar I) (ts b) := (funext hts).symm
-  have hσ : IsSorted (fun b ↦ (witEqns S).r ⟨w, b⟩) (noVar I) fun b ↦ (ts b).1 :=
-    fun b ↦ (ts b).2
+  have hσ : IsSorted (fun b ↦ (witEqns S).r ⟨w, b⟩) (noVar I) fun b ↦ (ts b).val :=
+    fun b ↦ (ts b).property
   let sideTm : Bool → Tm (ops (termSig S)) (noVar I) (S.q s).1 := fun o ↦
-    ⟨((onestep S).side o (.inr w)).bind fun b ↦ (ts b).1,
+    ⟨((onestep S).side o (.inr w)).bind fun b ↦ (ts b).val,
       (wellSorted_bind hσ _ ((onestep S).side_sorted o (.inr w)).1).1,
       (wellSorted_bind hσ _ ((onestep S).side_sorted o (.inr w)).1).2.trans
         ((onestep S).side_sorted o (.inr w)).2⟩
@@ -177,8 +177,8 @@ theorem αTerm_tgt {i : I} (n : (𝐅.objPresheaf (discrete (clsP S))).obj ⟨eq
     αTerm ((𝐅.objPresheaf (discrete (clsP S))).map (tgtHom i).op n) =
       αTerm ((𝐅.objPresheaf (discrete (clsP S))).map (srcHom i).op n) := by
   have h := αTerm_tgt_freeNode (restr_id := restr_id) (restr_comp := restr_comp)
-    (reindex_id := reindex_id) (reindex_comp := reindex_comp) n.1.1.1.1 n.2 fun b ↦
-      PresheafDomPFunctorData.value _ n.1.1 ⟨⟨b, S.gobj n.1.1.1.1 b, 𝟙 _⟩, rfl⟩
+    (reindex_id := reindex_id) (reindex_comp := reindex_comp) n.val.val.val.1 n.property fun b ↦
+      PresheafDomPFunctorData.value _ n.val.val ⟨⟨b, S.gobj n.val.val.val.1 b, 𝟙 _⟩, rfl⟩
   rwa [← FreeArity.eq_freeNode n] at h
 
 /-- The model's values: on a node over the terms, {lit}`αTerm`; on a node over the witnesses, the

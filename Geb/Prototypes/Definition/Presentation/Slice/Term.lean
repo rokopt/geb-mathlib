@@ -193,21 +193,21 @@ def evalSub (γ : Γ → I) (env : Γ → A.carrier) (henv : A.p ∘ env = γ) :
     (t : F.toPFunctor.FreeM Γ) → WellSorted γ t → {y : A.carrier // A.p y = sort γ t} :=
   fun t ↦ FreeM.rec (motive := fun t ↦ WellSorted γ t → {y : A.carrier // A.p y = sort γ t})
     (fun x _ ↦ ⟨env x, congrFun henv x⟩)
-    (fun a _ ih h ↦ ⟨A.g ⟨⟨a, fun b ↦ (ih b (h b).2).1⟩,
-      funext fun b ↦ (ih b (h b).2).2.trans (h b).1⟩, congrFun A.hg _⟩) t
+    (fun a _ ih h ↦ ⟨A.g ⟨⟨a, fun b ↦ (ih b (h b).2).val⟩,
+      funext fun b ↦ (ih b (h b).2).property.trans (h b).1⟩, congrFun A.hg _⟩) t
 
 /-- The value of a well-sorted term in an algebra over {lit}`I`, at an assignment of the
 variables lying over their sorts. -/
 def evalS (γ : Γ → I) (env : Γ → A.carrier) (henv : A.p ∘ env = γ) (t : F.toPFunctor.FreeM Γ)
     (ht : WellSorted γ t) : A.carrier :=
-  (evalSub A γ env henv t ht).1
+  (evalSub A γ env henv t ht).val
 
 variable {A}
 
 /-- The value of a term lies over its sort. -/
 theorem p_evalS (γ : Γ → I) (env : Γ → A.carrier) (henv : A.p ∘ env = γ)
     (t : F.toPFunctor.FreeM Γ) (ht : WellSorted γ t) : A.p (evalS A γ env henv t ht) = sort γ t :=
-  (evalSub A γ env henv t ht).2
+  (evalSub A γ env henv t ht).property
 
 /-- The value of a variable is its assigned value. -/
 theorem evalS_pure (γ : Γ → I) (env : Γ → A.carrier) (henv : A.p ∘ env = γ) (x : Γ)

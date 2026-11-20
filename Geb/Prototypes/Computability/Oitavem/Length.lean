@@ -202,16 +202,16 @@ theorem lengthBound_evalNode (a : Shape) (c : (d : Direction a) → Sem (childAr
     omega
 
 /-- Every admissible expression obeys the bound computed from its syntax. -/
-theorem Expr.length_le {n s : ℕ} (e : Expr n s) : LengthBound (lengthPoly e.1.1) e.eval := by
-  refine Expr.induction (P := fun _ e ↦ LengthBound (lengthPoly e.1.1) e.eval) ?_ e
+theorem Expr.length_le {n s : ℕ} (e : Expr n s) : LengthBound (lengthPoly e.val.val) e.eval := by
+  refine Expr.induction (P := fun _ e ↦ LengthBound (lengthPoly e.val.val) e.eval) ?_ e
   intro a c ih
-  exact lengthBound_evalNode a (fun d ↦ (c d).eval) (fun d ↦ lengthPoly (c d).1.1) ih
+  exact lengthBound_evalNode a (fun d ↦ (c d).eval) (fun d ↦ lengthPoly (c d).val.val) ih
 
 /-- Output length is polynomial in normal input length, independently of safe input length. -/
 theorem Expr.length_le_poly {n s : ℕ} (e : Expr n s) :
     ∃ c d : ℕ, ∀ x y m, (∀ j, (x j).length ≤ m) →
       (e.eval x y).length ≤ c * (m + 1) ^ d := by
-  obtain ⟨c, d, h⟩ := lengthPoly_isPolyBounded e.1.1
+  obtain ⟨c, d, h⟩ := lengthPoly_isPolyBounded e.val.val
   exact ⟨c, d, fun x y m hx ↦ (e.length_le x y m hx).trans (h m)⟩
 
 end Geb.Oitavem

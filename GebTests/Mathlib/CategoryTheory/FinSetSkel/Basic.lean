@@ -35,7 +35,7 @@ def objTwo : FinSetSkel.{0} := ⟨2⟩
 
 /-- A sample morphism collapsing three indices onto two. -/
 def sampleSkelHom : objThree ⟶ objTwo :=
-  FinSetSkel.Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨i.1 % 2, Nat.mod_lt _ (by decide)⟩))
+  FinSetSkel.Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨i.val % 2, Nat.mod_lt _ (by decide)⟩))
 
 /-- A second sample morphism, constant at the first index. -/
 def constZeroHom : objThree ⟶ objTwo :=
@@ -43,7 +43,7 @@ def constZeroHom : objThree ⟶ objTwo :=
 
 /-- A third sample morphism, swapping the two indices of `objTwo`. -/
 def swapHom : objTwo ⟶ objTwo :=
-  FinSetSkel.Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨(i.1 + 1) % 2, Nat.mod_lt _ (by decide)⟩))
+  FinSetSkel.Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨(i.val + 1) % 2, Nat.mod_lt _ (by decide)⟩))
 
 /-- The sample morphism takes a concrete value at a concrete index. -/
 theorem sampleSkelHom_value :

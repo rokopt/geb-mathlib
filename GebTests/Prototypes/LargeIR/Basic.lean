@@ -106,7 +106,7 @@ example : toLevels piBool (ofSlice p3) ((arrowPsh piBool).objRestr waHom sampleN
 
 -- The two elements' level-`1` assignments differ: `sample` sends the direction
 -- `true` to `0`, `sampleNot` to `1`.
-example : sample.1.1.2 (.inr true) = ⟨1, (0 : Fin 3)⟩ := rfl
-example : sampleNot.1.1.2 (.inr true) = ⟨1, (1 : Fin 3)⟩ := rfl
+example : sample.val.val.2 (.inr true) = ⟨1, (0 : Fin 3)⟩ := rfl
+example : sampleNot.val.val.2 (.inr true) = ⟨1, (1 : Fin 3)⟩ := rfl
 
 end LargeIRTest

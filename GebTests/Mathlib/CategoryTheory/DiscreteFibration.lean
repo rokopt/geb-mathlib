@@ -73,15 +73,15 @@ def constDisc : DiscreteFibration (Functor.CoElements.π constPsh) :=
 /-- Restriction in the fibre presheaf of the projection is the identity on
 the underlying element, the presheaf being constant. -/
 theorem restrict_arrow (c : (Functor.CoElements.π constPsh).Fiber true) :
-    (constDisc.restrict arrow c).1 =
-      Functor.CoElements.mk false c.1.elt :=
+    (constDisc.restrict arrow c).val =
+      Functor.CoElements.mk false c.val.elt :=
   rfl
 
 /-- The fibre of the projection over `b` is in bijection with the value of
 the presheaf at `b`, and the bijection reads off the element. -/
 theorem fiberPresheafEquiv_apply
     (c : (Functor.CoElements.π constPsh).Fiber true) :
-    Functor.CoElements.fiberPresheafEquiv constPsh true c = c.1.elt :=
+    Functor.CoElements.fiberPresheafEquiv constPsh true c = c.val.elt :=
   rfl
 
 /-- `toElements` records an object of the total category together with its

@@ -118,7 +118,11 @@ own requires a prior `lake build`.
   except that modules in `GebMeta.classicalAllowedModules`
   additionally permit `Classical.choice` (and only that).
 - `lake shake --add-public --keep-implied --keep-prefix Geb
-  GebTests`.
+  GebTests`. A failing report passes
+  `scripts/lib/shake-congr-eq.py` when each of its suggestions
+  stems from a matcher congruence lemma (`match_n.congr_eq_k`)
+  that `lake shake`, not recognising the name as reserved,
+  attributes to a module outside the reported module's imports.
 
 then the Markdown and project-rule checks:
 

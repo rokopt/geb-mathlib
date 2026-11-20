@@ -71,12 +71,12 @@ public section
 
 /-- The expression decoder inverts the spelling of every unary expression. -/
 theorem readExpr_spell (e : Expr 1 0) :
-    readExpr (codedPlain.spell e.1.1) = some e := by
+    readExpr (codedPlain.spell e.val.val) = some e := by
   simp only [readExpr, CodedSig.spell, Geb.BitTree.Elias.decode_encode, bind, Option.bind,
-    codedPlain.readW_toTree e.1.1, dite_eq_left ((wellFormed_eq_true _).mpr e.1.2)]
+    codedPlain.readW_toTree e.val.val, dite_eq_left ((wellFormed_eq_true _).mpr e.val.property)]
   split
   · rfl
-  · exact (‹¬ _› e.2).elim
+  · exact (‹¬ _› e.property).elim
 
 /-- Negate the verdict of the decoded expression on its encoded test input. -/
 @[expose] def diagonal (test : List Bool → List Bool) (w : List Bool) : Bool :=
@@ -88,7 +88,7 @@ theorem readExpr_spell (e : Expr 1 0) :
 theorem not_recognizes_diagonal (test : List Bool → List Bool) (e : Expr 1 0) :
     ¬ (∀ w, e.eval ![test w] Fin.elim0 = [true] ↔ diagonal test w = true) := by
   intro h
-  have h := h (codedPlain.spell e.1.1)
+  have h := h (codedPlain.spell e.val.val)
   rw [diagonal, readExpr_spell] at h
   simp only [Bool.not_eq_true', decide_eq_false_iff_not] at h
   have hn := fun hp ↦ h.mp hp hp
@@ -185,7 +185,7 @@ theorem testTree_natural_iff (p : List Bool → Bool) (w : List Bool) :
   constructor
   · intro h
     have h := h.1 ⟨Sum.inl (0 : Fin 1), rfl⟩
-    have hh := congrArg (fun z : (presheaf p).toSlicePFunctor.W ↦ PFunctor.W.head z.1)
+    have hh := congrArg (fun z : (presheaf p).toSlicePFunctor.W ↦ PFunctor.W.head z.val)
       (h.trans (restrict_dependentLeaf p))
     change Sum.inl (some (decide ((if p w then (1 : Fin 2) else (0 : Fin 2)) = 1))) =
       (Sum.inl (some true) : (presheaf p).A) at hh
@@ -239,11 +239,11 @@ theorem testTree_natural_iff (p : List Bool → Bool) (w : List Bool) :
 
 /-- The test tree's bitstring, computed without evaluating the predicate. -/
 @[expose] def testWord (w : List Bool) : List Bool :=
-  (coded (fun _ ↦ false)).spell (testTree (fun _ ↦ false) w).1
+  (coded (fun _ ↦ false)).spell (testTree (fun _ ↦ false) w).val
 
 /-- Every predicate gives the same bitstring for a test tree. -/
 theorem spell_testTree (p : List Bool → Bool) (w : List Bool) :
-    (coded p).spell (testTree p w).1 = testWord w := by
+    (coded p).spell (testTree p w).val = testWord w := by
   rfl
 
 /-- The predicate selecting a direction in the counterexample. -/
@@ -252,7 +252,7 @@ theorem spell_testTree (p : List Bool → Bool) (w : List Bool) :
 /-- No Oitavem expression decides hereditary naturality, even restricted to the
 spellings of these admissible slice trees. -/
 theorem no_oitavem_recognizer (e : Expr 1 0) :
-    ¬ (∀ w, e.eval ![(coded predicate).spell (testTree predicate w).1] Fin.elim0 = [true] ↔
+    ¬ (∀ w, e.eval ![(coded predicate).spell (testTree predicate w).val] Fin.elim0 = [true] ↔
       (presheaf predicate).IsHereditarilyNatural (testTree predicate w)) := by
   intro h
   apply not_recognizes_diagonal testWord e
@@ -294,7 +294,7 @@ theorem no_oitavem_recognizer (e : Expr 1 0) :
 
 /-- The native checker computes precisely the predicate on the admissible test trees. -/
 theorem nativeCheck_testTree (p : List Bool → Bool) (w : List Bool) :
-    nativeCheck p (testTree p w).1 = p w := by
+    nativeCheck p (testTree p w).val = p w := by
   rw [Bool.eq_iff_iff]
   exact ((presheaf p).isHereditarilyNaturalBoolCore_eq_true_iff
     (inferInstanceAs (DecidableEq (Fin 2))) (inferInstanceAs (FinEnum (Fin 2)))
@@ -304,7 +304,7 @@ theorem nativeCheck_testTree (p : List Bool → Bool) (w : List Bool) :
 /-- No unary Oitavem expression agrees with the native checker on these valid slice-tree codes. -/
 theorem no_oitavem_nativeCheck (e : Expr 1 0) :
     ¬ (∀ w, e.eval ![testWord w] Fin.elim0 = [true] ↔
-      nativeCheck predicate (testTree predicate w).1 = true) := by
+      nativeCheck predicate (testTree predicate w).val = true) := by
   simpa only [nativeCheck_testTree, predicate] using not_recognizes_diagonal testWord e
 
 end

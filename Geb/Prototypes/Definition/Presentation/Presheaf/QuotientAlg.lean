@@ -124,7 +124,8 @@ quotient's model, a restriction by the presheaf's. -/
 def qAlgFun : (a : (ops (termSig S)).A) → (vals : (ops (termSig S)).B a →
     Σ i, (quotient 𝐅).obj ⟨i⟩) → (∀ b, (vals b).1 = (ops (termSig S)).r ⟨a, b⟩) →
     Σ i, (quotient 𝐅).obj ⟨i⟩
-  | .inl s, vals, h => ⟨(S.q s.1).1, algTerm hcong (c := termObj (S.q s.1).1) s.1 (q_term s) rfl
+  | .inl s, vals, h =>
+    ⟨(S.q s.val).1, algTerm hcong (c := termObj (S.q s.val).1) s.val (q_term s) rfl
       fun b ↦ resortQ restr_id restr_comp reindex_id reindex_comp (vals b) (h b)⟩
   | .inr r, vals, h => ⟨r.2.1, (quotient 𝐅).map r.2.2.op
       (resortQ restr_id restr_comp reindex_id reindex_comp (vals ⟨⟩) (h ⟨⟩))⟩
@@ -133,7 +134,7 @@ def qAlgFun : (a : (ops (termSig S)).A) → (vals : (ops (termSig S)).B a →
 def qAlg : Alg.{max uA u v, u, u, max u v uA} (ops (termSig S)) where
   carrier := Σ i, (quotient 𝐅).obj ⟨i⟩
   p := Sigma.fst
-  g x := qAlgFun hcong x.1.1 x.1.2 (congrFun x.2)
+  g x := qAlgFun hcong x.val.1 x.val.2 (congrFun x.property)
   hg := by
     funext x
     obtain ⟨⟨a, vals⟩, h⟩ := x
@@ -145,8 +146,8 @@ theorem satisfies_qAlg : (onestep S).toSlice.Satisfies (qAlg hcong) := by
   intro e σ hσ
   rcases e with ((⟨s, g⟩ | c | ⟨g, h⟩) | s)
   · -- naturality: the naturality of the quotient's model
-    refine (congrArg (mk _) (map_algTerm hcong s.1 (q_term s) g _)).trans ?_
-    exact sigma_algTerm hcong _ (S.q_restr (termHom g) s.1 (q_term s))
+    refine (congrArg (mk _) (map_algTerm hcong s.val (q_term s) g _)).trans ?_
+    exact sigma_algTerm hcong _ (S.q_restr (termHom g) s.val (q_term s))
       (q_term ((termSig S).restr s g)) rfl rfl _
   · -- identity: the identity law of the presheaf
     refine (congrArg (mk c) (Functor.map_id_apply (quotient 𝐅) _ _)).trans ?_
@@ -154,18 +155,18 @@ theorem satisfies_qAlg : (onestep S).toSlice.Satisfies (qAlg hcong) := by
   · -- composition: the composition law of the presheaf
     exact congrArg (mk _) (Functor.map_comp_apply (quotient 𝐅) g.op h.op _).symm
   · -- a witness shape: the soundness of the quotient's model on its node
-    let v : (b : S.Gen s.1) → (discrete (quotient 𝐅)).obj ⟨S.gobj s.1 b⟩ := fun b ↦
+    let v : (b : S.Gen s.val) → (discrete (quotient 𝐅)).obj ⟨S.gobj s.val b⟩ := fun b ↦
       resortQ restr_id restr_comp reindex_id reindex_comp (σ b) (congrFun hσ b)
     have e : ∀ o : Bool, evalS (qAlg hcong) _ σ hσ (endpoint o s) (endpoint_sorted o s).1 =
-        mk (S.q s.1).1 ((quotientModel hcong).app ⟨termObj (S.q s.1).1⟩
+        mk (S.q s.val).1 ((quotientModel hcong).app ⟨termObj (S.q s.val).1⟩
           ((𝐅.objPresheaf (discrete (quotient 𝐅))).map (endMorOf o s).op
-            (FreeArity.freeNode (discrete (quotient 𝐅)) s.1 (q_wit s) v))) := by
+            (FreeArity.freeNode (discrete (quotient 𝐅)) s.val (q_wit s) v))) := by
       intro o
       rw [FreeArity.map_freeNode, quotientModel_freeNode]
       exact sigma_algTerm hcong _ (q_term (endShape o s))
-        (S.q_restr (endMorOf o s) s.1 (q_wit s)) rfl rfl _
+        (S.q_restr (endMorOf o s) s.val (q_wit s)) rfl rfl _
     exact (e false).trans ((congrArg (mk _) (model_sound (quotientModel hcong)
-      (FreeArity.freeNode (discrete (quotient 𝐅)) s.1 (q_wit s) v))).trans (e true).symm)
+      (FreeArity.freeNode (discrete (quotient 𝐅)) s.val (q_wit s) v))).trans (e true).symm)
 
 end Geb.Definition.Presheaf.QPRA
 

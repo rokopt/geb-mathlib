@@ -46,11 +46,11 @@ theorem sampleToOne (f : (mk 3 : FinSetSkel.{0}) ⟶ mk 1) : f = toOne (mk 3) :=
 
 /-- A sample morphism out of the two-element object. -/
 def sampleSkelLeftLeg : (mk 2 : FinSetSkel.{0}) ⟶ mk 4 :=
-  Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨(i.1 + 1) % 4, Nat.mod_lt _ (by decide)⟩))
+  Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨(i.val + 1) % 4, Nat.mod_lt _ (by decide)⟩))
 
 /-- A sample morphism out of the three-element object. -/
 def sampleSkelRightLeg : (mk 3 : FinSetSkel.{0}) ⟶ mk 4 :=
-  Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨2 * i.1 % 4, Nat.mod_lt _ (by decide)⟩))
+  Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨2 * i.val % 4, Nat.mod_lt _ (by decide)⟩))
 
 /-- The descent of the two sample morphisms out of their coproduct. -/
 def sampleSkelDesc : coprodObj (mk 2) (mk 3) ⟶ (mk 4 : FinSetSkel.{0}) :=
@@ -72,11 +72,11 @@ theorem sampleSkelDesc_inr_toList :
 
 /-- A sample morphism into the two-element object. -/
 def sampleToTwo : (mk 5 : FinSetSkel.{0}) ⟶ mk 2 :=
-  Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨i.1 % 2, Nat.mod_lt _ (by decide)⟩))
+  Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨i.val % 2, Nat.mod_lt _ (by decide)⟩))
 
 /-- A sample morphism into the three-element object. -/
 def sampleToThree : (mk 5 : FinSetSkel.{0}) ⟶ mk 3 :=
-  Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨i.1 % 3, Nat.mod_lt _ (by decide)⟩))
+  Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨i.val % 3, Nat.mod_lt _ (by decide)⟩))
 
 /-- A sample lift into the binary product. -/
 def sampleProdLift : (mk 5 : FinSetSkel.{0}) ⟶ prodObj (mk 2) (mk 3) :=

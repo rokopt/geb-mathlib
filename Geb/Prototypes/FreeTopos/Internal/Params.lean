@@ -258,7 +258,7 @@ theorem foldEnvIn_retype {k : ℕ} {z s : Term} {e e' : List (Tree × Tree)}
       exact ⟨fun _ ↦ hlt i hi, fun _ ↦ (List.getElem?_eq_some_iff.mp hq).1⟩
   have hT : (foldPs k e' z s).map Prod.snd = (foldPs k e z s).map Prod.snd := by
     simp only [foldPs, hV, List.map_filterMap]
-    exact List.filterMap_congr fun v hv ↦ he v (mem_foldParams.mp hv).2
+    exact List.filterMap_congr rfl fun v hv ↦ he v (mem_foldParams.mp hv).2
   simp only [foldEnvIn, hV, hT]
 
 /-- Lifting a strictly increasing renaming under a binder keeps it strictly increasing. -/
@@ -599,7 +599,7 @@ theorem foldParams_rename_of_lt {k : ℕ} {z s : Term} {e e' : List (Tree × Tre
   refine ⟨hV, ?_⟩
   unfold foldPs
   rw [hV, List.filterMap_map]
-  exact List.filterMap_congr fun v hv ↦ hf v (mem_foldParams.mp hv).1
+  exact List.filterMap_congr rfl fun v hv ↦ hf v (mem_foldParams.mp hv).1
 
 /-- A fold that compiles in an environment, renamed by a strictly increasing map into an
 environment that has at each renamed variable the first's entry, has as parameters the renamings

@@ -533,44 +533,45 @@ theorem alg_restr {c c' : Obj} (g : c' ⟶ c) (s : Sh) (hs : (s.sort, s.wobj) = 
 
 /-- The value a node over the model's presheaf gives an argument, at the argument's own
 object. -/
-def top {c : Objᵒᵖ} (n : (F.objPresheaf (discrete P)).obj c) (b : Sh.Gen n.1.1.1.1) :
-    Val (Sh.gsort n.1.1.1.1 b) :=
-  F.toPresheafDomPFunctorData.value n.1.1 ⟨⟨b, Sh.gobj n.1.1.1.1 b, 𝟙 _⟩, rfl⟩
+def top {c : Objᵒᵖ} (n : (F.objPresheaf (discrete P)).obj c) (b : Sh.Gen n.val.val.val.1) :
+    Val (Sh.gsort n.val.val.val.1 b) :=
+  F.toPresheafDomPFunctorData.value n.val.val ⟨⟨b, Sh.gobj n.val.val.val.1 b, 𝟙 _⟩, rfl⟩
 
 /-- The value a node gives an argument at any direction is the argument's value
 restricted along the walking arrow: the naturality of the node, the discrete graph's
 restriction along the walking parallel pair being the identity. -/
-theorem value_eq {c : Objᵒᵖ} (n : (F.objPresheaf (discrete P)).obj c) (b : Sh.Gen n.1.1.1.1)
-    {c' : Obj} (k : c' ⟶ Sh.gobj n.1.1.1.1 b) :
-    F.toPresheafDomPFunctorData.value n.1.1 ⟨⟨b, c', k⟩, rfl⟩ =
-      valMap (Sh.gsort n.1.1.1.1 b) c'.1 (top n b) := by
-  have h := n.1.2 k ⟨⟨b, Sh.gobj n.1.1.1.1 b, 𝟙 _⟩, rfl⟩
-  change F.toPresheafDomPFunctorData.value n.1.1 ⟨⟨b, c', k ≫ 𝟙 _⟩, rfl⟩ =
-    valMap (Sh.gsort n.1.1.1.1 b) c'.1 (top n b) at h
-  exact (congrArg (fun m : c' ⟶ Sh.gobj n.1.1.1.1 b ↦
-    F.toPresheafDomPFunctorData.value n.1.1 ⟨⟨b, c', m⟩, rfl⟩) (Category.comp_id k)).symm.trans h
+theorem value_eq {c : Objᵒᵖ} (n : (F.objPresheaf (discrete P)).obj c) (b : Sh.Gen n.val.val.val.1)
+    {c' : Obj} (k : c' ⟶ Sh.gobj n.val.val.val.1 b) :
+    F.toPresheafDomPFunctorData.value n.val.val ⟨⟨b, c', k⟩, rfl⟩ =
+      valMap (Sh.gsort n.val.val.val.1 b) c'.1 (top n b) := by
+  have h := n.val.property k ⟨⟨b, Sh.gobj n.val.val.val.1 b, 𝟙 _⟩, rfl⟩
+  change F.toPresheafDomPFunctorData.value n.val.val ⟨⟨b, c', k ≫ 𝟙 _⟩, rfl⟩ =
+    valMap (Sh.gsort n.val.val.val.1 b) c'.1 (top n b) at h
+  exact (congrArg (fun m : c' ⟶ Sh.gobj n.val.val.val.1 b ↦
+    F.toPresheafDomPFunctorData.value n.val.val ⟨⟨b, c', m⟩, rfl⟩)
+    (Category.comp_id k)).symm.trans h
 
 /-- The argument values of a restricted node are the original argument values
 restricted along the walking arrow. -/
 theorem top_map {c c' : Objᵒᵖ} (g : c ⟶ c') (n : (F.objPresheaf (discrete P)).obj c)
-    (b : Sh.Gen (freeArity.restr g.unop n.1.1.1.1)) :
+    (b : Sh.Gen (freeArity.restr g.unop n.val.val.val.1)) :
     top ((F.objPresheaf (discrete P)).map g n) b =
-      valMap (Sh.gsort n.1.1.1.1 (freeArity.reindex g.unop n.1.1.1.1 b).1)
-        (Sh.gsort (freeArity.restr g.unop n.1.1.1.1) b)
-        (top n (freeArity.reindex g.unop n.1.1.1.1 b).1) :=
+      valMap (Sh.gsort n.val.val.val.1 (freeArity.reindex g.unop n.val.val.val.1 b).1)
+        (Sh.gsort (freeArity.restr g.unop n.val.val.val.1) b)
+        (top n (freeArity.reindex g.unop n.val.val.val.1 b).1) :=
   value_eq n _ _
 
 /-- The model's algebra: a node goes to the value of its constructor on its arguments'
 values. -/
 def model : NatTrans (F.objPresheaf (discrete P)) (discrete P) where
-  app c := ↾ fun n ↦ alg c.unop.1 n.1.1.1.1 (top n)
+  app c := ↾ fun n ↦ alg c.unop.1 n.val.val.val.1 (top n)
   naturality c c' g := by
     ext n
-    change alg c'.unop.1 (freeArity.restr g.unop n.1.1.1.1)
+    change alg c'.unop.1 (freeArity.restr g.unop n.val.val.val.1)
         (top ((F.objPresheaf (discrete P)).map g n)) =
-      valMap c.unop.1 c'.unop.1 (alg c.unop.1 n.1.1.1.1 (top n))
+      valMap c.unop.1 c'.unop.1 (alg c.unop.1 n.val.val.val.1 (top n))
     rw [show top ((F.objPresheaf (discrete P)).map g n) = _ from funext (top_map g n)]
-    exact alg_restr g.unop n.1.1.1.1 n.2 (top n)
+    exact alg_restr g.unop n.val.val.val.1 n.property (top n)
 
 /-- The eliminator of the W-type into the model on the tree a constructor builds is the
 model's value on the eliminator's values on the arguments. -/

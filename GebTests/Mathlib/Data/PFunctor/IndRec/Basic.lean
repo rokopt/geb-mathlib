@@ -82,7 +82,7 @@ def sigmaTestMor :
     morSrc morTgt morHom
 
 -- The sigma action preserves the tag and the payload.
-example : sigmaTestMor.1 ⟨true, ULift.up ()⟩ = ⟨true, ULift.up ()⟩ := rfl
+example : sigmaTestMor.val ⟨true, ULift.up ()⟩ = ⟨true, ULift.up ()⟩ := rfl
 
 /-- The decoding assigned to each index of the delta test code: the
 decoding assigned to `true`. -/
@@ -107,14 +107,14 @@ def deltaTestMor :
 -- The delta action reindexes a name by postcomposition with the
 -- morphism and preserves the payload.
 example :
-    deltaTestMor.1 ⟨fun _ ↦ (), ULift.up ()⟩ =
+    deltaTestMor.val ⟨fun _ ↦ (), ULift.up ()⟩ =
       ⟨fun _ ↦ true, ULift.up ()⟩ :=
   rfl
 
 -- The image of a name decodes to the same type as the name.
 example :
     (IR.interpObj Type Type (IR.delta Type Type Bool deltaTestSub) morTgt).2
-        (deltaTestMor.1 ⟨fun _ ↦ (), ULift.up ()⟩) =
+        (deltaTestMor.val ⟨fun _ ↦ (), ULift.up ()⟩) =
       Nat :=
   rfl
 
@@ -180,7 +180,7 @@ def sampleDeltaCode : IR.{0, 0, 0, 0} Bool PUnit :=
 theorem samplePrecompMerge_inl (b : Bool) :
     IR.precompMerge Bool PUnit.{1} (fun _ ↦ true)
       (fun _ : Bool ↦ Sum.inl PUnit.unit)
-      (fun j ↦ nomatch j.2) b = true :=
+      (fun j ↦ nomatch j.property) b = true :=
   rfl
 
 /-- The merged assignment takes unresolved arity elements from
@@ -209,7 +209,7 @@ def samplePoint : FreeCoprodCompDisc.{0, 0} PUnit :=
 name. -/
 theorem samplePrecompIsoIota_apply :
     ((IR.precompIsoIota.{0, 0, 0, 0} PUnit PUnit PUnit.unit)
-      PUnit (fun _ ↦ PUnit.unit) samplePoint).1 (ULift.up Unit.unit) =
+      PUnit (fun _ ↦ PUnit.unit) samplePoint).val (ULift.up Unit.unit) =
       ULift.up Unit.unit :=
   rfl
 
@@ -219,7 +219,7 @@ theorem samplePrecompIsoSigma_apply :
     (((IR.precompIsoSigma.{0, 0, 0, 0} PUnit PUnit Bool
           (fun _ ↦ IR.iota.{0, 0, 0, 0} PUnit PUnit PUnit.unit)
           (fun _ ↦ IR.precompIsoIota.{0, 0, 0, 0} PUnit PUnit PUnit.unit))
-        PUnit (fun _ ↦ PUnit.unit) samplePoint).1
+        PUnit (fun _ ↦ PUnit.unit) samplePoint).val
       ⟨ULift.up true, ULift.up Unit.unit⟩).1 = true :=
   rfl
 
@@ -230,7 +230,7 @@ theorem samplePrecompIsoDelta_apply :
     (((IR.precompIsoDelta PUnit.{1} PUnit.{1} Bool
           (fun _ ↦ IR.iota PUnit.{1} PUnit.{1} PUnit.unit)
           (fun _ ↦ IR.precompIsoIota PUnit.{1} PUnit.{1} PUnit.unit))
-        PUnit (fun _ ↦ PUnit.unit) samplePoint).1
+        PUnit (fun _ ↦ PUnit.unit) samplePoint).val
       ⟨ULift.up (fun _ ↦ Sum.inr PUnit.unit),
         fun _ ↦ PUnit.unit, ULift.up Unit.unit⟩).1 =
       fun _ ↦ Sum.inr PUnit.unit :=
@@ -242,7 +242,7 @@ direction assignment. -/
 theorem sampleInterpDeltaIso_apply :
     ((IR.interpDeltaIso.{0, 0, 0, 0} PUnit PUnit Bool
           (fun _ ↦ IR.iota.{0, 0, 0, 0} PUnit PUnit PUnit.unit)
-          samplePoint).1
+          samplePoint).val
         ⟨fun _ ↦ PUnit.unit, ULift.up Unit.unit⟩).1 =
       fun _ ↦ PUnit.unit :=
   rfl

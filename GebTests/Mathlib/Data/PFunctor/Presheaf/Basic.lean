@@ -54,14 +54,14 @@ example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
 example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     (Z : Iᵒᵖ ⥤ Type) (j : J) :
     (F.objPresheaf Z).obj ⟨j⟩ =
-      { z : F.toPresheafDomPFunctorData.obj Z // F.q z.1.1.1 = j } := rfl
+      { z : F.toPresheafDomPFunctorData.obj Z // F.q z.val.val.1 = j } := rfl
 
 -- The dom morphism map is natural with respect to `objPresheaf`'s
 -- `J`-restriction: `map α` commutes with `objRestr g`, preserving the
 -- `q`-output index.
 example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     {Z Z' : Iᵒᵖ ⥤ Type} (α : NatTrans Z Z') ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toPresheafDomPFunctorData.obj Z) (hq : F.q x.1.1.1 = j) :
+    (x : F.toPresheafDomPFunctorData.obj Z) (hq : F.q x.val.val.1 = j) :
     F.toPresheafDomPFunctorData.map α (F.objRestr g x hq) =
       F.objRestr g (F.toPresheafDomPFunctorData.map α x) hq :=
   F.map_objRestr α g x hq
@@ -89,7 +89,7 @@ fiber. `reindex` along the non-identity `0 ⟶ 1` reindexes the shape (via
   q := id
   directionRestr := fun a {_i i'} _f _b ↦ ⟨i' + a, fin2_add_idx a i'⟩
   shapeRestr := fun {_j j'} _g _s ↦ ⟨j', rfl⟩
-  reindex := fun {_j _j'} _g a {i} _b ↦ ⟨i + a.1, fin2_add_idx a.1 i⟩
+  reindex := fun {_j _j'} _g a {i} _b ↦ ⟨i + a.val, fin2_add_idx a.val i⟩
 
 /-- The constraint `r ⟨a, ·⟩ = a + ·` is injective, so each fiber
 `Direction a i` has at most one element. -/
@@ -99,15 +99,15 @@ private theorem fin2_direction_cancel (a x y i : Fin 2) (hx : a + x = i) (hy : a
 /-- Each direction fiber of the witness is a singleton. -/
 private instance subsingleton_direction (a i : Fin 2) :
     Subsingleton (presheafWitnessData.toSliceDomPFunctor.Direction a i) :=
-  ⟨fun x y ↦ Subtype.ext (fin2_direction_cancel a x.1 y.1 i x.2 y.2)⟩
+  ⟨fun x y ↦ Subtype.ext (fin2_direction_cancel a x.val y.val i x.property y.property)⟩
 
 /-- Each shape fiber of the witness is a singleton (the shape-output map
 `q = id` separates the two shapes). -/
 private instance subsingleton_shape (j : Fin 2) :
     Subsingleton (presheafWitnessData.toSlicePFunctor.Shape j) :=
   ⟨fun x y ↦ Subtype.ext (by
-    have hx : (x.1 : Fin 2) = j := x.2
-    have hy : (y.1 : Fin 2) = j := y.2
+    have hx : (x.val : Fin 2) = j := x.property
+    have hy : (y.val : Fin 2) = j := y.property
     exact hx.trans hy.symm)⟩
 
 /-- The witness, with all seven functor laws discharged. Because every
@@ -139,11 +139,12 @@ example : presheafWitness.q (0 : Fin 2) = 0 := rfl
 example : presheafWitness.q (1 : Fin 2) = 1 := rfl
 
 -- `shapeRestr` along the non-identity `0 ⟶ 1` reindexes shape `1` to shape `0`.
-example : (presheafWitness.shapeRestr h01 ⟨(1 : Fin 2), rfl⟩).1 = (0 : Fin 2) := rfl
+example : (presheafWitness.shapeRestr h01 ⟨(1 : Fin 2), rfl⟩).val = (0 : Fin 2) := rfl
 
 -- `directionRestr` along `0 ⟶ 1` sends the unique direction of shape `0` over `1` to the
 -- unique direction over `0`.
-example : (presheafWitness.directionRestr (0 : Fin 2) h01 ⟨(1 : Fin 2), rfl⟩).1 = (0 : Fin 2) := rfl
+example :
+    (presheafWitness.directionRestr (0 : Fin 2) h01 ⟨(1 : Fin 2), rfl⟩).val = (0 : Fin 2) := rfl
 
 -- `reindex` along `0 ⟶ 1` moves the underlying direction value: the
 -- direction of value `0` over `i = 0` (for shape `0`, the image of shape `1`
@@ -152,14 +153,14 @@ example : (presheafWitness.directionRestr (0 : Fin 2) h01 ⟨(1 : Fin 2), rfl⟩
 -- constraint; a non-degenerate witness would be needed to discriminate a
 -- wrong `reindex`.)
 example :
-    (presheafWitness.reindex h01 ⟨(1 : Fin 2), rfl⟩ (i := (0 : Fin 2)) ⟨(0 : Fin 2), rfl⟩).1 =
+    (presheafWitness.reindex h01 ⟨(1 : Fin 2), rfl⟩ (i := (0 : Fin 2)) ⟨(0 : Fin 2), rfl⟩).val =
       (1 : Fin 2) := rfl
 
 -- The output presheaf's fiber over `j` is the `q`-indexed subtype of `obj Z`.
 example (Z : (Fin 2)ᵒᵖ ⥤ Type) :
     (presheafWitness.objPresheaf Z).obj ⟨(0 : Fin 2)⟩ =
       { z : presheafWitness.toPresheafDomPFunctorData.obj Z //
-        presheafWitness.q z.1.1.1 = (0 : Fin 2) } :=
+        presheafWitness.q z.val.val.1 = (0 : Fin 2) } :=
   rfl
 
 -- `map` of a composite transformation acts as the composite of the maps.
@@ -197,24 +198,24 @@ private def constFiberElt :
 -- `objPresheaf.map` along `h01.op` reindexes the shape `1` to `0` (the
 -- `shapeRestr` action), end to end through `objRestr` / `objRestrElt`.
 example :
-    ((presheafWitness.objPresheaf constPUnit).map h01.op constFiberElt).1.1.1.1 =
+    ((presheafWitness.objPresheaf constPUnit).map h01.op constFiberElt).val.val.val.1 =
       (0 : Fin 2) := rfl
 
 -- `objPresheaf.map` reindexes the assignment: the reindexed element sends direction
 -- `b'` to a total-space element whose base index is `reindex`-and-compatibility
 -- determined (`b' + 1` under `reindex`, then `1 + (b' + 1) = b'`).
 example :
-    (((presheafWitness.objPresheaf constPUnit).map h01.op constFiberElt).1.1.1.2
+    (((presheafWitness.objPresheaf constPUnit).map h01.op constFiberElt).val.val.val.2
         (0 : Fin 2)).1 = (0 : Fin 2) := rfl
 example :
-    (((presheafWitness.objPresheaf constPUnit).map h01.op constFiberElt).1.1.1.2
+    (((presheafWitness.objPresheaf constPUnit).map h01.op constFiberElt).val.val.val.2
         (1 : Fin 2)).1 = (1 : Fin 2) := rfl
 
 -- `objRestrElt` generalizes over the projection: it applies at any `p : X → I`,
 -- not only `elemProj Z`. Here `p` is a constant map on `PUnit`.
 example (g : (0 : Fin 2) ⟶ 1)
     (x : presheafWitness.toSliceDomPFunctor.Obj (fun _ : PUnit ↦ (1 : Fin 2)))
-    (hq : presheafWitness.q x.1.1 = 1) :
+    (hq : presheafWitness.q x.val.1 = 1) :
     presheafWitness.toSliceDomPFunctor.Obj (fun _ : PUnit ↦ (1 : Fin 2)) :=
   presheafWitness.objRestrElt g x hq
 
@@ -302,26 +303,27 @@ def presheafWitness2Data : PresheafPFunctorData (Fin 1) (Fin 3) where
   B := fun _ ↦ Fin 2
   r := fun _ ↦ 0
   q := qVal2
-  directionRestr := fun _a {_i i'} _f b ↦ ⟨b.1, (Fin.fin_one_eq_zero i').symm⟩
-  shapeRestr := fun {j j'} _g a ↦ ⟨shapeRestrVal2 j' j a.1, shapeRestrVal2_output j' j a.1 a.2⟩
-  reindex := fun {j j'} _g _a {i} b ↦ ⟨reindexVal2 j' j b.1, (Fin.fin_one_eq_zero i).symm⟩
+  directionRestr := fun _a {_i i'} _f b ↦ ⟨b.val, (Fin.fin_one_eq_zero i').symm⟩
+  shapeRestr := fun {j j'} _g a ↦
+    ⟨shapeRestrVal2 j' j a.val, shapeRestrVal2_output j' j a.val a.property⟩
+  reindex := fun {j j'} _g _a {i} b ↦ ⟨reindexVal2 j' j b.val, (Fin.fin_one_eq_zero i).symm⟩
 
 /-- The underlying value of a direction cast along a shape equality is the
 underlying value of the original. A local, `Subsingleton`-free counterpart of
 the source module's private `cast_val_heq`, specialized to the constant
 direction type `Fin 2`. -/
 private theorem cast_dir_val2 {j : Fin 3} {s s' : presheafWitness2Data.Shape j} (h : s = s')
-    {i : Fin 1} (p : presheafWitness2Data.Direction s.1 i) :
+    {i : Fin 1} (p : presheafWitness2Data.Direction s.val i) :
     (cast (congrArg (fun t : presheafWitness2Data.Shape j ↦
-        presheafWitness2Data.Direction t.1 i) h) p).1 = p.1 := by
+        presheafWitness2Data.Direction t.val i) h) p).val = p.val := by
   cases h
   rfl
 
 /-- The underlying value of a `reindex` is the value map applied to the
 underlying input value. -/
 private theorem reindex_fst2 {j j' : Fin 3} (g : j' ⟶ j) (a : presheafWitness2Data.Shape j)
-    {i : Fin 1} (b : presheafWitness2Data.Direction (presheafWitness2Data.shapeRestr g a).1 i) :
-    (presheafWitness2Data.reindex g a b).1 = reindexVal2 j' j b.1 := rfl
+    {i : Fin 1} (b : presheafWitness2Data.Direction (presheafWitness2Data.shapeRestr g a).val i) :
+    (presheafWitness2Data.reindex g a b).val = reindexVal2 j' j b.val := rfl
 
 /-- The non-degenerate witness, with all seven functor laws discharged.
 `directionRestr_id` / `directionRestr_comp` / `reindex_naturality` hold because the
@@ -336,25 +338,25 @@ def presheafWitness2 : PresheafPFunctor (Fin 1) (Fin 3) where
       directionRestr_comp := by intro _a _i _i' _i'' _f _g; funext _b; exact Subtype.ext rfl
       shapeRestr_id := by
         intro j; funext a; apply Subtype.ext
-        change shapeRestrVal2 j j a.1 = a.1
-        exact shapeRestrVal2_self j a.1
+        change shapeRestrVal2 j j a.val = a.val
+        exact shapeRestrVal2_self j a.val
       shapeRestr_comp := by
         intro j j' j'' g h; funext a; apply Subtype.ext
-        change shapeRestrVal2 j'' j a.1 = shapeRestrVal2 j'' j' (shapeRestrVal2 j' j a.1)
-        exact shapeRestrVal2_comp j'' j' j (leOfHom h) (leOfHom g) a.1
+        change shapeRestrVal2 j'' j a.val = shapeRestrVal2 j'' j' (shapeRestrVal2 j' j a.val)
+        exact shapeRestrVal2_comp j'' j' j (leOfHom h) (leOfHom g) a.val
       reindex_naturality := by intro _j _j' _g _a _i _i' _f; funext _b; exact Subtype.ext rfl
       reindex_id := by
         intro j a i b; apply Subtype.ext
         rw [reindex_fst2, cast_dir_val2]
-        · exact reindexVal2_id j b.1
-        · exact Subtype.ext (shapeRestrVal2_self j a.1)
+        · exact reindexVal2_id j b.val
+        · exact Subtype.ext (shapeRestrVal2_self j a.val)
       reindex_comp := by
         intro j j' j'' g h a i b; apply Subtype.ext
         rw [reindex_fst2, reindex_fst2, reindex_fst2, cast_dir_val2]
-        · exact reindexVal2_comp j'' j' j (leOfHom h) (leOfHom g) b.1
+        · exact reindexVal2_comp j'' j' j (leOfHom h) (leOfHom g) b.val
         · exact Subtype.ext (by
-            change shapeRestrVal2 j'' j a.1 = shapeRestrVal2 j'' j' (shapeRestrVal2 j' j a.1)
-            exact shapeRestrVal2_comp j'' j' j (leOfHom h) (leOfHom g) a.1) }
+            change shapeRestrVal2 j'' j a.val = shapeRestrVal2 j'' j' (shapeRestrVal2 j' j a.val)
+            exact shapeRestrVal2_comp j'' j' j (leOfHom h) (leOfHom g) a.val) }
 
 /-- The non-identity morphism `0 ⟶ 1` of the preorder category on `Fin 3`. -/
 private def k01 : (0 : Fin 3) ⟶ 1 := homOfLE (by decide)
@@ -370,25 +372,25 @@ private def shapeOverOne : presheafWitness2.toSlicePFunctor.Shape (1 : Fin 3) :=
 -- `reindex` along the non-identity `0 ⟶ 1` moves the underlying value on the
 -- two-element fiber: the direction of value `0` is sent to value `1`.
 example :
-    (presheafWitness2.reindex k01 shapeOverOne (i := (0 : Fin 1)) ⟨(0 : Fin 2), by rfl⟩).1 =
+    (presheafWitness2.reindex k01 shapeOverOne (i := (0 : Fin 1)) ⟨(0 : Fin 2), by rfl⟩).val =
       (1 : Fin 2) := rfl
 example :
-    (presheafWitness2.reindex k01 shapeOverOne (i := (0 : Fin 1)) ⟨(1 : Fin 2), by rfl⟩).1 =
+    (presheafWitness2.reindex k01 shapeOverOne (i := (0 : Fin 1)) ⟨(1 : Fin 2), by rfl⟩).val =
       (0 : Fin 2) := rfl
 
 -- `reindex` along `𝟙` does NOT move the value (would catch a wrong
 -- `reindex_id`): the identity arrow leaves both directions fixed.
 example :
     (presheafWitness2.reindex (𝟙 (1 : Fin 3)) shapeOverOne (i := (0 : Fin 1))
-        ⟨(1 : Fin 2), by rfl⟩).1 = (1 : Fin 2) := rfl
+        ⟨(1 : Fin 2), by rfl⟩).val = (1 : Fin 2) := rfl
 example :
     (presheafWitness2.reindex (𝟙 (1 : Fin 3)) shapeOverOne (i := (0 : Fin 1))
-        ⟨(0 : Fin 2), by rfl⟩).1 = (0 : Fin 2) := rfl
+        ⟨(0 : Fin 2), by rfl⟩).val = (0 : Fin 2) := rfl
 
 -- `shapeRestr` along `0 ⟶ 1` reindexes the singleton shape `2` (over output
 -- index `1`) to the representative shape `0` (over output index `0`), not the
 -- other shape `1` over output index `0`.
-example : (presheafWitness2.shapeRestr k01 shapeOverOne).1 = (0 : Fin 4) := rfl
+example : (presheafWitness2.shapeRestr k01 shapeOverOne).val = (0 : Fin 4) := rfl
 
 /-- A concrete choice-free input presheaf with a two-element fiber: the constant
 presheaf on `(Fin 1)ᵒᵖ` at `Fin 2`. The index category has only the identity
@@ -409,15 +411,16 @@ private def fin2FiberElt : (presheafWitness2.objPresheaf constFin2).obj ⟨(2 : 
 -- `objPresheaf.map` along the composite `0 ⟶ 2` reindexes shape `3` to shape `0`,
 -- end to end through `objRestr` / `objRestrElt` and `shapeRestr`.
 example :
-    ((presheafWitness2.objPresheaf constFin2).map k02.op fin2FiberElt).1.1.1.1 = (0 : Fin 4) :=
+    ((presheafWitness2.objPresheaf constFin2).map k02.op fin2FiberElt).val.val.val.1 =
+      (0 : Fin 4) :=
   rfl
 
 -- `objPresheaf.map` along the composite `0 ⟶ 2` reindexes the assignment with
 -- the boundary-crossing swap: direction `0` now records the value `1` and
 -- direction `1` the value `0`, distinguishing the moved `reindex` end to end.
 example :
-    (((presheafWitness2.objPresheaf constFin2).map k02.op fin2FiberElt).1.1.1.2 (0 : Fin 2)).2 =
-      (1 : Fin 2) := rfl
+    (((presheafWitness2.objPresheaf constFin2).map k02.op fin2FiberElt).val.val.val.2
+      (0 : Fin 2)).2 = (1 : Fin 2) := rfl
 example :
-    (((presheafWitness2.objPresheaf constFin2).map k02.op fin2FiberElt).1.1.1.2 (1 : Fin 2)).2 =
-      (0 : Fin 2) := rfl
+    (((presheafWitness2.objPresheaf constFin2).map k02.op fin2FiberElt).val.val.val.2
+      (1 : Fin 2)).2 = (0 : Fin 2) := rfl

@@ -131,9 +131,9 @@ theorem eq_derivedAlg_of_satisfies (alg : (sum P Q).Obj V → V)
 
 /-- The models of the presentation of derived operations are the algebras of {lit}`P`. -/
 def modelEquiv : {alg : (sum P Q).Obj V → V // (ofDerived δ).Satisfies alg} ≃ (P.Obj V → V) where
-  toFun alg := restrict alg.1
+  toFun alg := restrict alg.val
   invFun alg := ⟨derivedAlg alg (handler δ), satisfies_derivedAlg δ alg⟩
-  left_inv alg := Subtype.ext (eq_derivedAlg_of_satisfies δ alg.1 alg.2).symm
+  left_inv alg := Subtype.ext (eq_derivedAlg_of_satisfies δ alg.val alg.property).symm
   right_inv := restrict_derivedAlg δ
 
 /-- The unfolding coequalizes the two endpoint maps. -/

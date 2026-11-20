@@ -460,11 +460,13 @@ rationale.
   `Over`), CSLib's Turing machines — can do so while the
   constructive core stays strict. Axiom collection does not descend
   into the constants listed in `GebMeta.upstreamChoiceRoots`: upstream
-  constants whose data is choice-free and whose `Classical.choice`
-  dependency is confined to proof terms, each listed with the
-  verification that admits it and removed once the upstream proof is
-  constructive. In the loading mode `native`, every declaration also
-  permits the axioms of the modules in `GebMeta.loadingAxiomModules`,
+  constants whose `Classical.choice` dependency is confined to proof
+  terms, or selects the unique element of a type proved to have at
+  most one (`WellFounded.fixF`, through which every definition by
+  well-founded recursion is defined), each listed with the
+  verification that admits it and removed once the upstream
+  definition or proof is constructive. In the loading mode `native`,
+  every declaration also permits the axioms of the modules in `GebMeta.loadingAxiomModules`,
   the loading of the programs whose agreement with Lean is proved
   (`docs/rules/ci-and-workflow.md` § Loading modes), and in either
   mode the axioms of the modules in `GebMeta.evaluationAxiomModules`,

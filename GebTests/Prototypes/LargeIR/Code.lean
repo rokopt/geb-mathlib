@@ -60,8 +60,8 @@ def sampleDecoded :
 example : sampleDecoded.1 = ⟨(), id, ⟨()⟩⟩ := rfl
 
 -- Its decoded fibre sends the direction `true` to `0` and `false` to `1`.
-example : (sampleDecoded.2.2 true).1 = (0 : Fin 3) := rfl
-example : (sampleDecoded.2.2 false).1 = (1 : Fin 3) := rfl
+example : (sampleDecoded.2.2 true).val = (0 : Fin 3) := rfl
+example : (sampleDecoded.2.2 false).val = (1 : Fin 3) := rfl
 
 /-- The element over `not`, read through the isomorphism. -/
 def sampleNotDecoded :
@@ -74,7 +74,7 @@ example : sampleNotDecoded.1 = ⟨(), not, ⟨()⟩⟩ := rfl
 
 -- Its decoded fibre sends the direction `true` to `1`, an element over
 -- `not true = false`.
-example : (sampleNotDecoded.2.2 true).1 = (1 : Fin 3) := rfl
+example : (sampleNotDecoded.2.2 true).val = (1 : Fin 3) := rfl
 
 -- The isomorphism commutes with the restriction: the level-`0` image of the
 -- element over `not` is its index.

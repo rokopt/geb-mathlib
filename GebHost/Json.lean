@@ -47,7 +47,7 @@ be empty. The list decoder is covered by the repository's existing upstream axio
 def parse (text : String) : Except String Lean.Json :=
   let text := String.ofList (text.toList.dropWhile fun c ↦
     c == ' ' || c == '\t' || c == '\n' || c == '\r')
-  match Lean.Json.Parser.anyCore ⟨text, text.startPos⟩ with
+  match Lean.Json.Parser.anyCore Lean.Json.Parser.maxDepth ⟨text, text.startPos⟩ with
   | .success pos value =>
     if pos.2.offset.byteIdx == text.utf8ByteSize then .ok value
     else .error "trailing input after the JSON request"

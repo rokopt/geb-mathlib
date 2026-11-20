@@ -101,22 +101,22 @@ theorem correct_compileValue {k : ℕ} (a : Shape) (c : Direction a → Σ i, Co
 
 /-- Every successor-free expression's program is correct, with the constant
 {name}`Geb.SizeBounded.nsiConst` read off its syntax. -/
-theorem correct_compile (k : ℕ) : ∀ e : S, sbsFree e.1 = true →
-    CorrectSigma (compile k e) (fun w ↦ evalRep w e) (nsiConst e.1) :=
+theorem correct_compile (k : ℕ) : ∀ e : S, sbsFree e.val = true →
+    CorrectSigma (compile k e) (fun w ↦ evalRep w e) (nsiConst e.val) :=
   SlicePFunctor.W.induction fun x ih hfree ↦
-    ⟨fun _ ↦ rfl, correct_compileValue x.1.1 (fun b ↦ compile k (x.1.2 b)) _
-      (fun b w ↦ evalRep w (x.1.2 b))
-      (fun b w ↦ (fst_evalRep w (x.1.2 b)).trans
-        ((sig.toSliceDomPFunctor.compatible_iff _ x.1.1 x.1.2).mp x.2 b))
-      (fun b ↦ sbsFree (x.1.2 b).1) hfree
-      (fun b ↦ nsiConst (x.1.2 b).1) ih⟩
+    ⟨fun _ ↦ rfl, correct_compileValue x.val.1 (fun b ↦ compile k (x.val.2 b)) _
+      (fun b w ↦ evalRep w (x.val.2 b))
+      (fun b w ↦ (fst_evalRep w (x.val.2 b)).trans
+        ((sig.toSliceDomPFunctor.compatible_iff _ x.val.1 x.val.2).mp x.property b))
+      (fun b ↦ sbsFree (x.val.2 b).val) hfree
+      (fun b ↦ nsiConst (x.val.2 b).val) ih⟩
 
 /-- The compiled program of an expression of the subalgebra computes its
 meaning on representations. -/
 theorem LOf.correct (k : ℕ) {n : ℕ} (e : LOf n) :
-    Correct (LOf.compile k e) (fun w ↦ e.repSem w) (nsiConst e.1.1.1) :=
-  (correct_compile k e.1.1 e.2).atArity ((fst_compile k e.1.1).trans e.1.2)
-    fun w ↦ (fst_evalRep w e.1.1).trans e.1.2
+    Correct (LOf.compile k e) (fun w ↦ e.repSem w) (nsiConst e.val.val.val) :=
+  (correct_compile k e.val.val e.property).atArity ((fst_compile k e.val.val).trans e.val.property)
+    fun w ↦ (fst_evalRep w e.val.val).trans e.val.property
 
 end
 

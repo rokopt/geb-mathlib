@@ -52,7 +52,7 @@ def sampleNaturalityDeltaCode : IR.{0, 0, 0, 0} Bool Bool :=
 name. -/
 theorem sampleDeltaInto_apply :
     (IR.deltaInto.{0, 0, 0, 0} Bool Bool PUnit sampleDeltaSub
-        (fun _ ↦ true) sampleIObj).1
+        (fun _ ↦ true) sampleIObj).val
         ⟨⟨fun _ ↦ true, rfl⟩, ULift.up Unit.unit⟩ =
       ⟨fun _ ↦ true, ULift.up Unit.unit⟩ :=
   rfl
@@ -140,7 +140,7 @@ theorem sampleNatIotaEquiv_apply :
     ((IR.natIotaEquiv.{0, 0, 0, 0} Bool Bool true (iota Bool Bool true))
         (FreeCoprodCompDisc.NatTrans.id
           (IR.interpObj Bool Bool (iota Bool Bool true))
-          (IR.interpMor Bool Bool (iota Bool Bool true)))).1
+          (IR.interpMor Bool Bool (iota Bool Bool true)))).val
         (ULift.up Unit.unit) =
       ULift.up Unit.unit :=
   rfl
@@ -149,7 +149,7 @@ theorem sampleNatIotaEquiv_apply :
 the singleton name. -/
 theorem sampleInnerHomEquiv_apply :
     ((IR.innerHomEquiv.{0, 0, 0, 0} Bool Bool true (iota Bool Bool true))
-        (ULift.up (PLift.up rfl))).1 =
+        (ULift.up (PLift.up rfl))).val =
       ULift.up Unit.unit :=
   rfl
 
@@ -187,7 +187,7 @@ its component at the sample object is the identity on the singleton
 name type. -/
 theorem sampleInterpHom_component :
     ((IR.interpHom.{0, 0, 0, 0} Bool Bool (iota Bool Bool true)
-          (iota Bool Bool true) sampleIotaHom).1 sampleIObj).1
+          (iota Bool Bool true) sampleIotaHom).val sampleIObj).val
         (ULift.up Unit.unit) =
       ULift.up Unit.unit :=
   rfl
@@ -213,7 +213,7 @@ along the propositionally nontrivial commutation proof, and the image
 name is observable. -/
 theorem sampleInterpMorDelta_action :
     (IR.interpMor.{0, 0, 0, 0} Bool Bool sampleNaturalityDeltaCode sampleActX
-          sampleActY sampleActHom).1
+          sampleActY sampleActHom).val
         ⟨fun _ ↦ false, ULift.up Unit.unit⟩ =
       ⟨fun _ ↦ false, ULift.up Unit.unit⟩ :=
   congrFun
@@ -228,12 +228,12 @@ the interpretation's morphism action commutes with the decodings. -/
 theorem sampleInterpMorDelta_action_decode :
     (IR.interpObj Bool Bool sampleNaturalityDeltaCode sampleActY).2
         ((IR.interpMor.{0, 0, 0, 0} Bool Bool sampleNaturalityDeltaCode sampleActX
-              sampleActY sampleActHom).1
+              sampleActY sampleActHom).val
           ⟨fun _ ↦ false, ULift.up Unit.unit⟩) =
       true :=
   congrFun
     (IR.interpMor Bool Bool sampleNaturalityDeltaCode sampleActX sampleActY
-        sampleActHom).2
+        sampleActHom).property
     ⟨fun _ ↦ false, ULift.up Unit.unit⟩
 
 /-- A sample code morphism out of a `σ`-code: componentwise reflexivity

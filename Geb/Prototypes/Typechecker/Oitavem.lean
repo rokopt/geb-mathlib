@@ -141,16 +141,16 @@ theorem Expr.presheafScan_pass_iff {I : Type u} [CategoryTheory.Category.{v} I]
     (decEqW : DecidableEq (WType F.toPFunctor.B)) (p : Expr 2 0) (w : List Bool)
     (z : F.toSlicePFunctor.W) (nodeAt : List Bool → Option (WType F.toPFunctor.B))
     (sound : ∀ v ∈ w.tails, ∀ t, nodeAt v = some t →
-      t ∈ Geb.PresheafRecognition.occurrences feB z.1)
-    (complete : ∀ t ∈ Geb.PresheafRecognition.occurrences feB z.1,
+      t ∈ Geb.PresheafRecognition.occurrences feB z.val)
+    (complete : ∀ t ∈ Geb.PresheafRecognition.occurrences feB z.val,
       ∃ v ∈ w.tails, nodeAt v = some t)
     (hlocal : ∀ v ∈ w.tails, (!(p.eval ![v, w] Fin.elim0).isEmpty) =
       (nodeAt v).all (Geb.PresheafRecognition.localNaturality F decI feI feHom feB decEqW)) :
     p.scanProblem.checker.val w = [true] ↔ F.IsHereditarilyNatural z := by
   have hc := Geb.PresheafRecognition.positions_eq_native F decI feI feHom feB decEqW
-    w z.1 nodeAt sound complete (fun v ↦ !(p.eval ![v, w] Fin.elim0).isEmpty) hlocal
+    w z.val nodeAt sound complete (fun v ↦ !(p.eval ![v, w] Fin.elim0).isEmpty) hlocal
   have heval : p.scan.unary w =
-      truth (F.isHereditarilyNaturalBoolCore decI feI feHom feB decEqW z.1) :=
+      truth (F.isHereditarilyNaturalBoolCore decI feI feHom feB decEqW z.val) :=
     (Expr.eval_scan p w).trans (congrArg truth hc)
   rw [Expr.scanProblem, Expr.decisionProblem_pass_iff, heval, truth_ne_nil]
   exact F.isHereditarilyNaturalBoolCore_eq_true_iff decI feI feHom feB decEqW z

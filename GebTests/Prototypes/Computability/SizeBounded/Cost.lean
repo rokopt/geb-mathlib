@@ -46,10 +46,10 @@ theorem tailAccount_time : tailAccount.time = 7 := rfl
 theorem tailAccount_space : tailAccount.space = 1 := rfl
 
 /-- The tail's polynomial at length two. -/
-theorem timePoly_tailOf_two : timePoly tailOf.1.1 2 = 16 := rfl
+theorem timePoly_tailOf_two : timePoly tailOf.val.val 2 = 16 := rfl
 
 /-- The time is within the polynomial at the word's length. -/
-theorem tailAccount_time_le : tailAccount.time ≤ timePoly tailOf.1.1 2 := by decide
+theorem tailAccount_time_le : tailAccount.time ≤ timePoly tailOf.val.val 2 := by decide
 
 /-- The greatest length is within the linear bound. -/
-theorem tailAccount_space_le : tailAccount.space ≤ max 2 (nsiConst tailOf.1.1) := by decide
+theorem tailAccount_space_le : tailAccount.space ≤ max 2 (nsiConst tailOf.val.val) := by decide

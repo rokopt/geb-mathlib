@@ -53,7 +53,7 @@ check of the third against the first two with the given carry in. -/
 def arithAt (a b c : ℕ) (cin : Bool) : List Bool × List Bool × List Bool × List Bool :=
   let w := (threeWord a b c).1
   let env := ![w, w.drop 1, w.drop (threeWord a b c).2.1, w.drop (threeWord a b c).2.2]
-  (natEq.1.semVec env, natLt.1.semVec env, natValue.1.semVec env, (natSum cin).1.semVec env)
+  (natEq.val.semVec env, natLt.val.semVec env, natValue.val.semVec env, (natSum cin).val.semVec env)
 
 -- Equal numbers, the third their sum.
 #guard arithAt 1 1 2 false == ([true], [], (threeWord 1 1 2).1.drop 1, [true])

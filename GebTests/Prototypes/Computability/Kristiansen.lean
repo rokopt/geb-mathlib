@@ -43,7 +43,7 @@ example : (parity 1).sem ![[true, false, true]] = [true] := rfl
 
 example : (compOf (n := 0) (constOf 0 [true]) Fin.elim0).sem ![] = [true] := rfl
 
-example : ¬ Allowed (Geb.SizeBounded.sbsOf false).1.1 := fun h ↦ h.1
+example : ¬ Allowed (Geb.SizeBounded.sbsOf false).val.val := fun h ↦ h.1
 
 /-- A suffix of length one reads the final bit of the original input. -/
 theorem reference_one :

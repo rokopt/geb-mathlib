@@ -264,7 +264,7 @@ def sampleNatObjHom : FreeCoprodCompDisc.Hom Bool sampleNatObj sampleNatObj :=
 /-- The morphism map of the copowered map evaluates componentwise. -/
 theorem sampleCopowerHomMapMor_apply :
     (FreeCoprodCompDisc.copowerHomMapMor sampleNatObj sampleMapMor
-        sampleNatObj sampleNatObj sampleNatObjHom).1
+        sampleNatObj sampleNatObj sampleNatObjHom).val
         ⟨sampleNatObjHom, true⟩ =
       ⟨FreeCoprodCompDisc.Hom.comp Bool sampleNatObjHom sampleNatObjHom,
         true⟩ :=

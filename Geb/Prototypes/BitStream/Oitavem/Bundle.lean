@@ -118,7 +118,7 @@ abbrev Bundle := {t : sig.W // sig.wIndex t = none}
   | WType.mk (some _) _ => WType.mk none fun _ ↦ embed junk
 
 /-- A bundle is a root over its child. -/
-theorem bundle_eq (b : Bundle) : b.1.1 = WType.mk none fun _ ↦ child b.1.1 := by
+theorem bundle_eq (b : Bundle) : b.val.val = WType.mk none fun _ ↦ child b.val.val := by
   obtain ⟨⟨t, hv⟩, hi⟩ := b
   cases t with
   | mk a c =>
@@ -129,28 +129,28 @@ theorem bundle_eq (b : Bundle) : b.1.1 = WType.mk none fun _ ↦ child b.1.1 := 
 /-- The child of a bundle is admissible with the index of an expression of
 one normal and no safe argument. -/
 theorem child_valid (b : Bundle) :
-    sig.WValid (child b.1.1) ∧ sig.wIndexRoot (child b.1.1) = some (1, 0) := by
-  have hv := b.1.2
+    sig.WValid (child b.val.val) ∧ sig.wIndexRoot (child b.val.val) = some (1, 0) := by
+  have hv := b.val.property
   rw [bundle_eq b] at hv
-  have hv' := (SlicePFunctor.wValid_mk sig none fun _ ↦ child b.1.1).mp hv
+  have hv' := (SlicePFunctor.wValid_mk sig none fun _ ↦ child b.val.val).mp hv
   exact ⟨hv'.1 (), congrFun hv'.2 ()⟩
 
 /-- An expression under a root. -/
 @[expose] def wrap (e : Expr 1 0) : Bundle :=
-  ⟨⟨WType.mk none fun _ ↦ embed e.1.1, (SlicePFunctor.wValid_mk _ _ _).mpr
-    ⟨fun _ ↦ (wValid_embed _).mpr e.1.2, funext fun _ ↦ by
+  ⟨⟨WType.mk none fun _ ↦ embed e.val.val, (SlicePFunctor.wValid_mk _ _ _).mpr
+    ⟨fun _ ↦ (wValid_embed _).mpr e.val.property, funext fun _ ↦ by
       rw [Function.comp_apply, wIndexRoot_embed]
-      exact congrArg some e.2⟩⟩, rfl⟩
+      exact congrArg some e.property⟩⟩, rfl⟩
 
 /-- The expression under a bundle's root. -/
 @[expose] def unwrap (b : Bundle) : Expr 1 0 :=
-  ⟨⟨unembed (child b.1.1), by
+  ⟨⟨unembed (child b.val.val), by
     obtain ⟨hv, hi⟩ := child_valid b
     rw [← wValid_embed, embed_unembed _ hv (head_isSome_of_wIndexRoot _ _ hi)]
     exact hv⟩, by
     obtain ⟨hv, hi⟩ := child_valid b
     apply Option.some.inj
-    change some (Geb.Oitavem.sig.wIndexRoot (unembed (child b.1.1))) = _
+    change some (Geb.Oitavem.sig.wIndexRoot (unembed (child b.val.val))) = _
     rw [← wIndexRoot_embed, embed_unembed _ hv (head_isSome_of_wIndexRoot _ _ hi)]
     exact hi⟩
 
@@ -161,10 +161,10 @@ theorem child_valid (b : Bundle) :
   left_inv b := by
     obtain ⟨hv, hi⟩ := child_valid b
     refine Subtype.ext (Subtype.ext ?_)
-    change WType.mk none (fun _ ↦ embed (unembed (child b.1.1))) = b.1.1
+    change WType.mk none (fun _ ↦ embed (unembed (child b.val.val))) = b.val.val
     rw [embed_unembed _ hv (head_isSome_of_wIndexRoot _ _ hi)]
     exact (bundle_eq b).symm
-  right_inv e := Subtype.ext (Subtype.ext (unembed_embed e.1.1))
+  right_inv e := Subtype.ext (Subtype.ext (unembed_embed e.val.val))
 
 /-- The prefix of every bundle's spelling: the root's one fork, and the
 root's label as a leaf. -/
@@ -174,9 +174,9 @@ root's label as a leaf. -/
 /-- The spelling of a wrapped expression: the prefix, then the spelling of
 the embedded expression. -/
 theorem spell_wrap (e : Expr 1 0) :
-    coded.spell (wrap e).1.1 = rootPrefix ++ coded.spell (embed e.1.1) := by
+    coded.spell (wrap e).val.val = rootPrefix ++ coded.spell (embed e.val.val) := by
   change Geb.BitTree.Elias.encode (Geb.SizeBounded.Logspace.WTree.spine (leaf (code none))
-    (List.ofFn fun i : Fin 1 ↦ coded.toTree (embed e.1.1))) = _
+    (List.ofFn fun i : Fin 1 ↦ coded.toTree (embed e.val.val))) = _
   rw [List.ofFn_succ, List.ofFn_zero]
   rfl
 

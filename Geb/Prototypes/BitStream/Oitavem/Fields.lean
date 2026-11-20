@@ -240,9 +240,9 @@ theorem natCode_zero : natCode 0 = [true] := rfl
 
 /-- A number's list entry, as numerals. -/
 theorem ofList_getElem (l : List ℕ) (i : Fin 8) (h : l.length = 8) :
-    ofList l i = l[i.1]'(by rw [h]; exact i.2) := by
+    ofList l i = l[i.val]'(by rw [h]; exact i.isLt) := by
   simp only [ofList, List.getD_eq_getElem?_getD,
-    List.getElem?_eq_getElem (show i.1 < l.length by rw [h]; exact i.2), Option.getD_some]
+    List.getElem?_eq_getElem (show i.val < l.length by rw [h]; exact i.isLt), Option.getD_some]
 
 section Atoms
 
@@ -273,16 +273,16 @@ include hW hp hl hy hzero in
 theorem sem_atom (h6 : pos + 6 ≤ y.length) : ∀ a : Atom, atomBounded a = true →
     (atomExpr W p a).sem x = boolWord (a.holds (ofList l))
   | .eq i j, _ => by
-    obtain ⟨hi1, hi2, hi3⟩ := field_split x y W p pos l rest hW hp hl hy i.1 i.2
-    obtain ⟨hj1, hj2, hj3⟩ := field_split x y W p pos l rest hW hp hl hy j.1 j.2
+    obtain ⟨hi1, hi2, hi3⟩ := field_split x y W p pos l rest hW hp hl hy i.val i.isLt
+    obtain ⟨hj1, hj2, hj3⟩ := field_split x y W p pos l rest hW hp hl hy j.val j.isLt
     exact natEqAt_natCode x y W _ _ _ _ _ _ _ _ _ _ hW hi1 hj1 hi3 hi2 hj3 hj2
   | .const i c, hc => by
-    obtain ⟨hi1, hi2, hi3⟩ := field_split x y W p pos l rest hW hp hl hy i.1 i.2
+    obtain ⟨hi1, hi2, hi3⟩ := field_split x y W p pos l rest hW hp hl hy i.val i.isLt
     have hc' : c ≤ 3 := of_decide_eq_true hc
     exact sem_constAt c W _ x y hW (by omega) _ _ _ _ hi1 hi3 hi2
   | .succ i j, _ => by
-    obtain ⟨hi1, hi2, hi3⟩ := field_split x y W p pos l rest hW hp hl hy i.1 i.2
-    obtain ⟨hj1, hj2, hj3⟩ := field_split x y W p pos l rest hW hp hl hy j.1 j.2
+    obtain ⟨hi1, hi2, hi3⟩ := field_split x y W p pos l rest hW hp hl hy i.val i.isLt
+    obtain ⟨hj1, hj2, hj3⟩ := field_split x y W p pos l rest hW hp hl hy j.val j.isLt
     have hz : y = y.take pos ++ natCode 0 ++ y.drop (pos + 1) := by
       rw [natCode_zero, List.append_assoc, List.singleton_append, ← hzero, List.take_append_drop]
     change (natSumAt true W (fieldPtr W p i) p (fieldPtr W p j)).sem x = _
@@ -292,16 +292,16 @@ theorem sem_atom (h6 : pos + 6 ≤ y.length) : ∀ a : Atom, atomBounded a = tru
     exact boolWord_decide_congr _ _ ⟨fun h ↦ by simp only [Bool.toNat_true] at h; omega,
       fun h ↦ by simp only [Bool.toNat_true]; omega⟩
   | .lt i j, _ => by
-    obtain ⟨hi1, hi2, hi3⟩ := field_split x y W p pos l rest hW hp hl hy i.1 i.2
-    obtain ⟨hj1, hj2, hj3⟩ := field_split x y W p pos l rest hW hp hl hy j.1 j.2
+    obtain ⟨hi1, hi2, hi3⟩ := field_split x y W p pos l rest hW hp hl hy i.val i.isLt
+    obtain ⟨hj1, hj2, hj3⟩ := field_split x y W p pos l rest hW hp hl hy j.val j.isLt
     exact natLtAt_natCode x y W _ _ _ _ _ _ _ _ _ _ hW hi1 hj1 hi3 hi2 hj3 hj2
   | .bit i, _ => by
-    obtain ⟨hi1, hi2, hi3⟩ := field_split x y W p pos l rest hW hp hl hy i.1 i.2
+    obtain ⟨hi1, hi2, hi3⟩ := field_split x y W p pos l rest hW hp hl hy i.val i.isLt
     change (orF (constAt 0 W (fieldPtr W p i)) (constAt 1 W (fieldPtr W p i))).sem x = _
     rw [sem_orF _ _ x _ _ (sem_constAt 0 W _ x y hW (by omega) _ _ _ _ hi1 hi3 hi2)
       (sem_constAt 1 W _ x y hW (by omega) _ _ _ _ hi1 hi3 hi2)]
     change _ = boolWord (decide (ofList l i ≤ 1))
-    rw [show (⟨i.1, i.2⟩ : Fin 8) = i from rfl]
+    rw [show (⟨i.val, i.isLt⟩ : Fin 8) = i from rfl]
     congr 1
     rw [Bool.eq_iff_iff, Bool.or_eq_true, decide_eq_true_eq, decide_eq_true_eq, decide_eq_true_eq]
     constructor <;> intro h <;> omega

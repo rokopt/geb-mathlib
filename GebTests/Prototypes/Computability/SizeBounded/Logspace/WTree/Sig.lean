@@ -64,11 +64,11 @@ def constZero : Geb.SizeBounded.sig.toPFunctor.W := WType.mk (.const 0 []) Fin.e
 
 #guard sigCoded.recognize (sigCoded.spell constZero) = true
 
-#guard sigCoded.recognize (sigCoded.spell tailL.1.1.1) = true
+#guard sigCoded.recognize (sigCoded.spell tailL.val.val.val) = true
 
-#guard sigCoded.recognize (sigCoded.spell condL.1.1.1) = true
+#guard sigCoded.recognize (sigCoded.spell condL.val.val.val) = true
 
-#guard sigCoded.recognize (sigCoded.spell dropBy.1.1.1) = true
+#guard sigCoded.recognize (sigCoded.spell dropBy.val.val.val) = true
 
 -- A substitution of arity two whose head has arity three, with two arguments:
 -- the head's arity is not the number of arguments.
@@ -86,6 +86,6 @@ def constZero : Geb.SizeBounded.sig.toPFunctor.W := WType.mk (.const 0 []) Fin.e
   (false :: false :: true :: (Geb.SizeBounded.Logspace.WTree.Numeral.natCode 2 ++
     Geb.SizeBounded.Logspace.WTree.Numeral.natCode 1)))) = true
 
-example : sigRecognizer.1.semVec ![sigCoded.spell constZero] = [true] := by
+example : sigRecognizer.val.semVec ![sigCoded.spell constZero] = [true] := by
   rw [Geb.SizeBounded.SOf.semVec_eq]
   exact sigRecognizer_self (Geb.SizeBounded.Logspace.constL 0 [])

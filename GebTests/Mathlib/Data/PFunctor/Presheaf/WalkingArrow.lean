@@ -32,17 +32,18 @@ namespace WalkingArrowTests
   A := Fin 2 × Bool
   B a := { i : Fin 2 // i ≤ a.1 ∧ a.2 = true }
   q := Prod.fst
-  r d := d.2.1
+  r d := d.2.val
   directionRestr := fun _a {_i i'} g b ↦
-    ⟨⟨i', (g.down.down.trans (b.2 ▸ b.1.2.1)), b.1.2.2⟩, rfl⟩
-  shapeRestr := fun {_j j'} _g a ↦ ⟨(j', a.1.2), rfl⟩
+    ⟨⟨i', (g.down.down.trans (b.property ▸ b.val.property.1)), b.val.property.2⟩, rfl⟩
+  shapeRestr := fun {_j j'} _g a ↦ ⟨(j', a.val.2), rfl⟩
   reindex := fun {_j _j'} g a {_i} b ↦
-    ⟨⟨b.1.1, (b.1.2.1.trans g.down.down).trans_eq a.2.symm, b.1.2.2⟩, b.2⟩
+    ⟨⟨b.val.val, (b.val.property.1.trans g.down.down).trans_eq a.property.symm, b.val.property.2⟩,
+      b.property⟩
 
 /-- Each arity has at most one direction at each level. -/
 instance directionSubsingleton (a : natData.A) (i : Fin 2) :
     Subsingleton (natData.Direction a i) :=
-  ⟨fun x y ↦ Subtype.ext (Subtype.ext (x.2.trans y.2.symm))⟩
+  ⟨fun x y ↦ Subtype.ext (Subtype.ext (x.property.trans y.property.symm))⟩
 
 /-- Naturality identifies the base child with the index of the total-space child. -/
 @[reducible] def natPRA : PresheafPFunctor (Fin 2) (Fin 2) where
@@ -52,7 +53,7 @@ instance directionSubsingleton (a : natData.A) (i : Fin 2) :
       directionRestr_comp := by intro a i i' i'' f g; funext b; exact Subsingleton.elim _ _
       shapeRestr_id := by
         intro j; funext a
-        exact Subtype.ext (Prod.ext a.2.symm rfl)
+        exact Subtype.ext (Prod.ext a.property.symm rfl)
       shapeRestr_comp := by intro j j' j'' g h; rfl
       reindex_naturality := by intro j j' g a i i' f; funext b; exact Subsingleton.elim _ _
       reindex_id := by intro j a i b; exact Subsingleton.elim _ _
@@ -61,18 +62,18 @@ instance directionSubsingleton (a : natData.A) (i : Fin 2) :
 /-- A base constructor has only base directions. -/
 theorem nat_independent : BaseIndependent natPRA := by
   intro a b
-  have hb := b.2.1
-  have ha := a.2
-  change a.1.1 = 0 at ha
-  change b.1 = 0
+  have hb := b.property.1
+  have ha := a.property
+  change a.val.1 = 0 at ha
+  change b.val = 0
   have hb0 := hb.trans_eq ha
   apply Fin.ext
-  change b.1.val = 0
+  change b.val.val = 0
   omega
 
 /-- Zero in the ordinary polynomial W-type. -/
 def zero : (basePFunctor natPRA).W :=
-  WType.mk ⟨(0, false), rfl⟩ (fun b ↦ Bool.noConfusion b.2.2)
+  WType.mk ⟨(0, false), rfl⟩ (fun b ↦ Bool.noConfusion b.property.2)
 
 /-- Successor in the ordinary polynomial W-type. -/
 def succ (n : (basePFunctor natPRA).W) : (basePFunctor natPRA).W :=
@@ -83,9 +84,9 @@ example : baseWEquiv nat_independent (ofBaseW nat_independent (succ (succ zero))
 
 /-- The total-space leaf node. -/
 def totalZeroNode : (natPRA.objPresheaf natPRA.W).obj ⟨1⟩ :=
-  ⟨⟨⟨⟨(1, false), fun b ↦ Bool.noConfusion b.2.2⟩,
-      funext fun b ↦ Bool.noConfusion b.2.2⟩,
-    fun _ _ _ b ↦ Bool.noConfusion b.1.2.2⟩, rfl⟩
+  ⟨⟨⟨⟨(1, false), fun b ↦ Bool.noConfusion b.property.2⟩,
+      funext fun b ↦ Bool.noConfusion b.property.2⟩,
+    fun _ _ _ b ↦ Bool.noConfusion b.val.property.2⟩, rfl⟩
 
 /-- The total-space leaf. -/
 def totalZero : natPRA.W.obj ⟨1⟩ := W.mk totalZeroNode
@@ -94,7 +95,7 @@ def totalZero : natPRA.W.obj ⟨1⟩ := W.mk totalZeroNode
 def totalSuccNode (n : natPRA.W.obj ⟨1⟩) :
     (natPRA.objPresheaf natPRA.W).obj ⟨1⟩ :=
   ⟨⟨⟨⟨(1, true), fun b ↦
-      ⟨b.1, natPRA.W.map (homOfLE b.2.1).op n⟩⟩, rfl⟩, by
+      ⟨b.val, natPRA.W.map (homOfLE b.property.1).op n⟩⟩, rfl⟩, by
     intro i i' g b
     obtain ⟨⟨i, hi, hb⟩, rfl⟩ := b
     change natPRA.W.map _ n = natPRA.W.map g.op (natPRA.W.map _ n)
@@ -108,7 +109,7 @@ theorem index_zero : index nat_independent totalZero = zero := by
   change WType.mk _ _ = WType.mk _ _
   congr 1
   funext b
-  exact Bool.noConfusion b.2.2
+  exact Bool.noConfusion b.property.2
 
 /-- Restriction reads an ordinary successor. -/
 theorem index_succ (n : natPRA.W.obj ⟨1⟩) :
@@ -116,7 +117,7 @@ theorem index_succ (n : natPRA.W.obj ⟨1⟩) :
   change WType.mk _ _ = WType.mk _ _
   congr 1
   funext b
-  have hb : b.1 = 0 := nat_independent ⟨(0, true), rfl⟩ b
+  have hb : b.val = 0 := nat_independent ⟨(0, true), rfl⟩ b
   obtain ⟨i, hi⟩ := b
   change i = 0 at hb
   subst i
@@ -139,8 +140,8 @@ example : (totalEquiv nat_independent) ⟨succ (succ zero), dependentTwo⟩ =
 
 /-- The algebra counts successors, reading the base child at either level. -/
 def countAlg : NatTrans (natPRA.objPresheaf natTarget) natTarget where
-  app _ := ↾ fun x ↦ if h : x.1.shape.2 = true then
-    natPRA.value x.1.1 ⟨⟨0, by change 0 ≤ x.1.shape.1.val; omega, h⟩, rfl⟩ + 1 else 0
+  app _ := ↾ fun x ↦ if h : x.val.shape.2 = true then
+    natPRA.value x.val.val ⟨⟨0, by change 0 ≤ x.val.shape.1.val; omega, h⟩, rfl⟩ + 1 else 0
   naturality _ _ _ := by ext x; rfl
 
 example : (W.elim natPRA natTarget countAlg).app ⟨1⟩
@@ -172,7 +173,7 @@ def inhabitedFibre : DependentW fixture_independent baseLeaf :=
 /-- The other base leaf is not the restriction of any total-space tree. -/
 theorem empty_fibre (t : DependentW fixture_independent
     (WType.mk (β := (basePFunctor wFixture).B) ⟨.L0b, rfl⟩ (fun b ↦ b.elim0))) : False := by
-  have ht := congrArg PFunctor.W.head t.2
+  have ht := congrArg PFunctor.W.head t.property
   obtain ⟨⟨⟨⟨w, hw⟩, hq, hn⟩⟩, he⟩ := t
   cases w with
   | mk a f =>

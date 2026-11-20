@@ -626,7 +626,6 @@ theorem elim_datumStep_fst (c : SExp) :
   · unfold datumStep
     split <;> first | rfl | contradiction
   · unfold datumStep
-    dsimp only
     rw [Option.bind_some]
     cases numeral? s <;> rfl
 
@@ -693,7 +692,6 @@ theorem fold_readDatum : ∀ e : SExp,
       simp only [datumFold, hr, isAtom_atomS, label_leaf, ne_eq, one_ne_zero,
         not_false_eq_true, ↓reduceIte, children_eq, children_atomS, numeral_eq]
       unfold datumStep
-      dsimp only
       cases numeral? s with
       | none => rfl
       | some n =>

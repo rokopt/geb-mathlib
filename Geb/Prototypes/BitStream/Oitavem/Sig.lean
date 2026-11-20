@@ -267,7 +267,8 @@ theorem build_kind_fields (a : Option Shape) : build (kind a) (fields a) = some 
   cases c with
   | initial p =>
     cases p with
-    | proj n i => simp [build, kind, check, atoms, zeros, Atom.holds, fields, mk, initialParam, i.2]
+    | proj n i =>
+      simp [build, kind, check, atoms, zeros, Atom.holds, fields, mk, initialParam, i.isLt]
     | succ b => cases b <;> rfl
     | _ => rfl
   | comp n m b =>
@@ -332,7 +333,7 @@ theorem ofFn_ofList (l : List ℕ) (h : l.length = 8) : List.ofFn (ofList l) = l
 /-- Numerals are recovered from their list. -/
 theorem ofList_ofFn (fs : Fields) : ofList (List.ofFn fs) = fs := by
   funext i
-  simp only [ofList, List.getD_eq_getElem?_getD, List.getElem?_ofFn, i.2, dite_true,
+  simp only [ofList, List.getD_eq_getElem?_getD, List.getElem?_ofFn, i.isLt, dite_true,
     Option.getD_some]
 
 /-- The codes of a list of numbers, in order. -/

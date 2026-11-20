@@ -125,13 +125,13 @@ theorem wellSorted_refl {t : F.toPFunctor.FreeM Γ} (ht : WellSorted γ t) :
 
 /-- The source of a witness of sort {lit}`i`. -/
 def src {i : I} (w : p.Wit γ i) : Tm F γ i :=
-  ⟨p.toPresentation.src w.1, (p.wellSorted_src γ w.2.1).1,
-    (p.wellSorted_src γ w.2.1).2.trans w.2.2⟩
+  ⟨p.toPresentation.src w.val, (p.wellSorted_src γ w.property.1).1,
+    (p.wellSorted_src γ w.property.1).2.trans w.property.2⟩
 
 /-- The target of a witness of sort {lit}`i`. -/
 def tgt {i : I} (w : p.Wit γ i) : Tm F γ i :=
-  ⟨p.toPresentation.tgt w.1, (p.wellSorted_tgt γ w.2.1).1,
-    (p.wellSorted_tgt γ w.2.1).2.trans w.2.2⟩
+  ⟨p.toPresentation.tgt w.val, (p.wellSorted_tgt γ w.property.1).1,
+    (p.wellSorted_tgt γ w.property.1).2.trans w.property.2⟩
 
 /-- Two terms of a sort are linked when they are the endpoints of a witness of that sort. -/
 def Linked {i : I} (s t : Tm F γ i) : Prop := ∃ w, p.src γ w = s ∧ p.tgt γ w = t
@@ -224,19 +224,20 @@ theorem evalS_src (h : p.Satisfies A) (env : Γ → A.carrier) (henv : A.p ∘ e
 assignment of the variables lying over their sorts: the value of any term of the class. -/
 def lift (h : p.Satisfies A) (env : Γ → A.carrier) (henv : A.p ∘ env = γ) (i : I) :
     p.Cls γ i → A.carrier :=
-  Function.Coequalizer.desc _ _ (fun t ↦ evalS A γ env henv t.1 t.2.1)
-    (funext fun w ↦ p.evalS_src h env henv w.1 w.2.1)
+  Function.Coequalizer.desc _ _ (fun t ↦ evalS A γ env henv t.val t.property.1)
+    (funext fun w ↦ p.evalS_src h env henv w.val w.property.1)
 
 /-- The value of the class of a term is the value of the term. -/
 @[simp] theorem lift_cls (h : p.Satisfies A) (env : Γ → A.carrier) (henv : A.p ∘ env = γ)
-    {i : I} (t : Tm F γ i) : p.lift h env henv i (p.cls γ t) = evalS A γ env henv t.1 t.2.1 :=
+    {i : I} (t : Tm F γ i) :
+    p.lift h env henv i (p.cls γ t) = evalS A γ env henv t.val t.property.1 :=
   rfl
 
 /-- The value of a class of sort {lit}`i` lies over {lit}`i`. -/
 theorem p_lift (h : p.Satisfies A) (env : Γ → A.carrier) (henv : A.p ∘ env = γ) {i : I}
     (c : p.Cls γ i) : A.p (p.lift h env henv i c) = i :=
   Quot.ind (β := fun c ↦ A.p (p.lift h env henv i c) = i)
-    (fun t ↦ (p_evalS γ env henv t.1 t.2.1).trans t.2.2) c
+    (fun t ↦ (p_evalS γ env henv t.val t.property.1).trans t.property.2) c
 
 end Presentation
 

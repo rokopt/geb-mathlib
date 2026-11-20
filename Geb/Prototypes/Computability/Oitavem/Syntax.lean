@@ -131,9 +131,9 @@ def evalNode : (s : Shape) → ((d : Direction s) → Sem (childArity s d)) → 
 
 /-- The interpreting algebra in the slice over arities. -/
 def evalStep : sig.toSliceDomPFunctor.Obj (Sigma.fst (β := Sem)) → Σ i, Sem i :=
-  fun z ↦ ⟨resultArity z.1.1, evalNode z.1.1 fun d ↦
-    transport (((sig.toSliceDomPFunctor.compatible_iff _ z.1.1 z.1.2).mp z.2) d)
-      (z.1.2 d).2⟩
+  fun z ↦ ⟨resultArity z.val.1, evalNode z.val.1 fun d ↦
+    transport (((sig.toSliceDomPFunctor.compatible_iff _ z.val.1 z.val.2).mp z.property) d)
+      (z.val.2 d).2⟩
 
 /-- The fold interpreting a syntactically admissible tree. -/
 def interpret : sig.W → Σ i, Sem i :=
@@ -148,8 +148,8 @@ namespace Expr
 /-- Build an admissible node; its only obligations are the syntactic child arities. -/
 def node (s : Shape) (c : (d : Direction s) → Expr (childArity s d).1 (childArity s d).2) :
     Expr (resultArity s).1 (resultArity s).2 :=
-  ⟨⟨WType.mk s (fun d ↦ (c d).1.1), (sig.wValid_mk _ _).mpr
-    ⟨fun d ↦ (c d).1.2, funext fun d ↦ (c d).2⟩⟩, rfl⟩
+  ⟨⟨WType.mk s (fun d ↦ (c d).val.val), (sig.wValid_mk _ _).mpr
+    ⟨fun d ↦ (c d).val.property, funext fun d ↦ (c d).property⟩⟩, rfl⟩
 
 /-- An initial function, with no safe input. -/
 def initial (p : Initial) : Expr p.arity 0 := node (.initial p) fun d ↦ d.elim0
@@ -179,7 +179,7 @@ def logTransition {n : ℕ} (h : Expr (n + 1) 0) : Expr (n + 2) 1 :=
 
 /-- Evaluate an expression at its declared normal and safe arities. -/
 def eval {n s : ℕ} (e : Expr n s) : Sem (n, s) :=
-  transport ((fst_interpret e.1).trans e.2) (interpret e.1).2
+  transport ((fst_interpret e.val).trans e.property) (interpret e.val).2
 
 /-- The fold commutes with the constructor. -/
 theorem eval_node (s : Shape) (c : (d : Direction s) → Expr (childArity s d).1 (childArity s d).2) :
@@ -193,10 +193,10 @@ theorem induction {P : (i : ℕ × ℕ) → Expr i.1 i.2 → Prop}
   have go : ∀ w : sig.W, ∀ i (h : sig.wIndex w = i), P i ⟨w, h⟩ := by
     refine SlicePFunctor.W.induction fun x ih i hi ↦ ?_
     cases hi
-    exact step x.1.1 (fun d ↦ ⟨x.1.2 d,
-      ((sig.toSliceDomPFunctor.compatible_iff _ x.1.1 x.1.2).mp x.2) d⟩)
+    exact step x.val.1 (fun d ↦ ⟨x.val.2 d,
+      ((sig.toSliceDomPFunctor.compatible_iff _ x.val.1 x.val.2).mp x.property) d⟩)
       (fun d ↦ ih d _ _)
-  exact go e.1 (n, s) e.2
+  exact go e.val (n, s) e.property
 
 /-- Initial nodes interpret their initial function. -/
 @[simp] theorem eval_initial (p : Initial) (x : Fin p.arity → List Bool) :

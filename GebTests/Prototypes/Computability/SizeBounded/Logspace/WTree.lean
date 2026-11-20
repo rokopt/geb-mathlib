@@ -145,7 +145,7 @@ def binEdge : Geb.SizeBounded.Logspace.LOf 6 := Geb.SizeBounded.Logspace.constL 
 
 /-- The recognizer as an expression, evaluated with sharing. -/
 def binRecognizer : List Bool → List Bool :=
-  fun w ↦ (recognizeExpr binLabel binEdge).1.semVec ![w]
+  fun w ↦ (recognizeExpr binLabel binEdge).val.semVec ![w]
 
 #guard binRecognizer (binSig.spell (leafW [])) = [true]
 

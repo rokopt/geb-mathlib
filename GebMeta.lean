@@ -20,8 +20,9 @@ permitted set for its module. For most modules the permitted set
 is `{propext, Quot.sound}`; modules in `classicalAllowedModules`
 additionally permit `Classical.choice`. Axiom collection does not
 descend into the constants of `upstreamChoiceRoots`, upstream
-constants whose data is choice-free and whose `Classical.choice`
-dependency is confined to proof terms. The axioms of the modules in
+constants whose `Classical.choice` dependency is confined to proof
+terms or selects the unique element of a type proved subsingleton. The
+axioms of the modules in
 `loadingAxiomModules`, the loading of the programs whose agreement with
 Lean is proved, stated without proof in the loading mode `native`, are
 permitted to every declaration in that mode and to none in the mode
@@ -311,10 +312,12 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.FreeTopos.TranslationSoundClassical].foldl (·.insert ·)
     ({} : NameSet)
 
-/-- Upstream constants at which axiom collection stops: each has
-choice-free data and a `Classical.choice` dependency confined to its
-proof terms, in a library this repository does not change, so that
-holding a declaration to the strict set does not exclude the constant.
+/-- Upstream constants at which axiom collection stops: each, in a
+library this repository does not change, has choice-free data and a
+`Classical.choice` dependency confined to its proof terms, or applies
+`Classical.choice` only to select the unique element of a type proved
+to have at most one, so that holding a declaration to the strict set
+does not exclude the constant.
 Lean core's `Fin.instMin` and `Fin.instMax` (`Init.Data.Fin.MinMax`),
 whose values are `⟨min a b, _⟩` and `⟨max a b, _⟩`, `Fin.val_min` and
 `Fin.val_max`, which are `rfl` and state them, and
@@ -332,23 +335,42 @@ through the proofs of that decoder's bounds, which reach
 name of a function given as a string literal would otherwise depend on
 `Classical.choice`. Lean core's `instLinearOrderPackageUInt8`,
 `instLinearOrderPackageUInt32`, `instLinearOrderPackageUInt64`
-(`Init.Data.UInt.Package`) and
-`String.instLinearOrderPackage` (`Init.Data.String.Compare`) are built by
+(`Init.Data.UInt.Package`),
+`String.instLinearOrderPackage` (`Init.Data.String.Compare`) and
+`Char.instLinearOrderPackage` (`Init.Data.Char.Package`) are built by
 `Std.LinearOrderPackage.ofLE` from the type's own comparison and prove
 their laws, as `Fin.instLinearOrderPackage` does, by the `Std` order
 lemmas of `Init.Data.Order.Lemmas` and `Init.Data.Ord.Basic`, so the order
-of bytes, of words and of strings would otherwise depend on
+of bytes, of words, of characters and of strings would otherwise depend on
 `Classical.choice`. mathlib's `instLawfulBCmpCompare_mathlib`
 (`Mathlib.Order.Defs.LinearOrder`), the `Prop` instance relating a linear
 order's `compare` to its order, is proved by a lemma of
-`Init.Data.Ord.Basic` of the same kind. An entry is removed once the
-upstream proof is constructive. -/
+`Init.Data.Ord.Basic` of the same kind. mathlib's `Sigma.eq`
+(`Mathlib.Data.Sigma.Basic`) is proved by `grind`, which argues by
+contradiction, so an equivalence whose inverse law it proves, such as
+`Equiv.piEquivSubtypeSigma`, would otherwise depend on `Classical.choice`.
+Lean core's `WellFounded.fixF`
+(`Init.WF`), through which `WellFounded.fix` and so every definition by
+well-founded recursion is defined, is the value of
+`Classical.choice (WellFounded.FixGraph.nonempty F a)`: the element of
+the subtype of values satisfying the graph `WellFounded.FixGraph F x` of
+the fixpoint, which `WellFounded.FixGraph.unique` proves has at most one
+element, so the choice selects no data the recursion does not determine;
+its companion `WellFounded.fixGraph_fixF`, the proof that this value
+satisfies the graph, is the `property` of the same choice.
+Lean core's `Nat.land`, defined by well-founded recursion, tests the
+case masks of the eliminators Lean generates for a `match` on an
+inductive type with many constructors (`Nat.hasNotBit`), so nearly every
+definition by pattern matching would otherwise depend on
+`Classical.choice`. An entry is removed once the upstream definition or
+proof is constructive. -/
 def upstreamChoiceRoots : NameSet :=
   NameSet.ofList [``Fin.instMin, ``Fin.instMax, ``Fin.val_min, ``Fin.val_max,
     ``Fin.instLinearOrderPackage, ``String.toList, ``instLinearOrderPackageUInt8,
     ``instLinearOrderPackageUInt32, ``instLinearOrderPackageUInt64,
-    ``String.instLinearOrderPackage,
-    `instLawfulBCmpCompare_mathlib]
+    ``String.instLinearOrderPackage, ``Char.instLinearOrderPackage,
+    ``WellFounded.fixF, ``WellFounded.fixGraph_fixF,
+    `instLawfulBCmpCompare_mathlib, `Sigma.eq]
 
 /-- Exact module names whose axioms are permitted in the loading mode
 `native`: the modules that declare the loading of a program whose

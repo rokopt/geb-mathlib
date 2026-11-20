@@ -67,6 +67,6 @@ example : (arrowPshCodeEquiv piBool (ofSlice (not ∘ p3))).total
 example : sampleFlipped.1 = ⟨(), not, ⟨()⟩⟩ := rfl
 
 -- Its decoded fibre is the original one, the total map being the identity.
-example : (sampleFlipped.2.2 true).1 = (0 : Fin 3) := rfl
+example : (sampleFlipped.2.2 true).val = (0 : Fin 3) := rfl
 
 end LargeIRTest

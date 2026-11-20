@@ -9,7 +9,9 @@
 #    toolchain bumps).
 # 2. lake shake actually flags an injected unused mathlib import
 #    in the live project (semantic stability — catches the case
-#    where flags exist but their behaviour changes).
+#    where flags exist but their behaviour changes), and
+#    scripts/lib/shake-congr-eq.py, which pre-push.sh applies to a
+#    failing report, does not pass it.
 #
 # Exit 0 if all checks pass; exit non-zero with the failure
 # count otherwise. The semantic positive case temporarily injects
@@ -50,6 +52,7 @@ assert_flag() {
 assert_flag "--add-public"
 assert_flag "--keep-implied"
 assert_flag "--keep-prefix"
+assert_flag "--explain"
 
 # --------- Part 2: semantic positive case ---------
 #
@@ -88,7 +91,7 @@ positive_case() {
 
   local shake_output shake_exit
   shake_output=$(cd "$repo_root" \
-    && lake shake --add-public --keep-implied --keep-prefix Geb 2>&1)
+    && lake shake --add-public --keep-implied --keep-prefix --explain Geb 2>&1)
   shake_exit=$?
 
   checked=$((checked + 1))
@@ -97,6 +100,20 @@ positive_case() {
     echo "FAIL: lake shake did NOT detect injected unused import" >&2
     echo "  exit: $shake_exit" >&2
     echo "  output: '$shake_output'" >&2
+    failed=$((failed + 1))
+  fi
+
+  local filter_output filter_exit
+  filter_output=$(python3 "$repo_root/scripts/lib/shake-congr-eq.py" \
+    <<<"$shake_output" 2>&1)
+  filter_exit=$?
+
+  checked=$((checked + 1))
+  if [[ "$filter_exit" -eq 0 ]] \
+     || ! grep -qF "Mathlib.Algebra.Group.Basic" <<<"$filter_output"; then
+    echo "FAIL: shake-congr-eq.py passed the injected unused import" >&2
+    echo "  exit: $filter_exit" >&2
+    echo "  output: '$filter_output'" >&2
     failed=$((failed + 1))
   fi
 }

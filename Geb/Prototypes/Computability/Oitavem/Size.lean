@@ -158,8 +158,8 @@ theorem lengthPoly_le_pow (w : sig.toPFunctor.W) (m : ℕ) :
 {lit}`m` is at most {lit}`(m + 2) ^ 2 ^ size`. -/
 theorem Expr.length_le_pow {n s : ℕ} (e : Expr n s) (x : Fin n → List Bool)
     (y : Fin s → List Bool) (m : ℕ) (hx : ∀ j, (x j).length ≤ m) :
-    (e.eval x y).length ≤ (m + 2) ^ 2 ^ size e.1.1 :=
-  (e.length_le x y m hx).trans (lengthPoly_le_pow e.1.1 m)
+    (e.eval x y).length ≤ (m + 2) ^ 2 ^ size e.val.val :=
+  (e.length_le x y m hx).trans (lengthPoly_le_pow e.val.val m)
 
 end
 

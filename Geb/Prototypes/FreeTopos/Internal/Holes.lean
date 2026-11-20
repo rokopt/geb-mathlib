@@ -69,7 +69,7 @@ abbrev Sketch (α : Type) : Type := signature.FreeM α
 
 /-- A conversion rule applied to the given premises. -/
 def node {α : Type} (r : ConvRule) (ds : List (Sketch α)) : Sketch α :=
-  .liftBind (r, ds.length) fun i ↦ ds[i.1]
+  .liftBind (r, ds.length) fun i ↦ ds[i.val]
 
 /-- A hole proves only its declared sequent, when that sequent is well formed. It performs no
 rewriting, including rewriting under a binder. -/
@@ -236,14 +236,14 @@ def ofDeriv {α : Type} : ConvDeriv → Sketch α := RoseTree.elim node
 /-- A rule's holes are the holes of its premises in order. -/
 @[simp] theorem holes_node {α : Type} (r : ConvRule) (ds : List (Sketch α)) :
     holes (node r ds) = (ds.map holes).flatten := by
-  change (List.ofFn fun i : Fin ds.length ↦ holes ds[i.1]).flatten = _
+  change (List.ofFn fun i : Fin ds.length ↦ holes ds[i.val]).flatten = _
   rw [List.ofFn_getElem_eq_map]
 
 /-- Interpreting a rule preserves its premises. -/
 @[simp] theorem toDeriv_node {α : Type} (fill : α → ConvDeriv) (r : ConvRule)
     (ds : List (Sketch α)) :
     toDeriv fill (node r ds) = RoseTree.node r (ds.map (toDeriv fill)) := by
-  change RoseTree.node r (List.ofFn fun i : Fin ds.length ↦ toDeriv fill ds[i.1]) = _
+  change RoseTree.node r (List.ofFn fun i : Fin ds.length ↦ toDeriv fill ds[i.val]) = _
   rw [List.ofFn_getElem_eq_map]
 
 /-- Embedding a certificate introduces no obligations. -/

@@ -254,7 +254,7 @@ theorem writer_emits {k : ℕ} {input : List Bool} (i : Fin k)
 
 /-- The registers of an expression's machine: the input register, the output
 register, and the compiled program's need. -/
-@[expose] def tapes (e : SOf 1) : ℕ := regsBound e.1.1 + 2
+@[expose] def tapes (e : SOf 1) : ℕ := regsBound e.val.val + 2
 
 /-- The compiled program of {lit}`e` reading register {lit}`0`, writing register
 {lit}`1`, with the registers from {lit}`2` free. -/
@@ -302,23 +302,23 @@ theorem machine_tr (e : SOf 1) (q : State e) (inp : Option Bool)
 
 /-- The length bound the machine runs under on an input of length {lit}`n`: the
 length or the expression's constant. -/
-@[expose] def bound (e : SOf 1) (n : ℕ) : ℕ := max n (nsiConst e.1.1)
+@[expose] def bound (e : SOf 1) (n : ℕ) : ℕ := max n (nsiConst e.val.val)
 
 /-- The machine's step count on an input of length {lit}`n`. -/
 @[expose] def time (e : SOf 1) (n : ℕ) : ℕ :=
-  (3 * n + 5) + stepBound e.1.1 (bound e n) + (2 * bound e n + 3)
+  (3 * n + 5) + stepBound e.val.val (bound e n) + (2 * bound e n + 3)
 
 /-- The machine of {lit}`e` on {lit}`w` emits {lit}`e`'s meaning at {lit}`w`,
 in the reader's, the program's and the writer's steps, every head within the
 bound. -/
 theorem machine_emits (e : SOf 1) (w : List Bool) :
-    ∃ cfg' t', t' ≤ (3 * w.length + 5) + stepBound e.1.1 (bound e w.length) +
+    ∃ cfg' t', t' ≤ (3 * w.length + 5) + stepBound e.val.val (bound e w.length) +
         (2 * (e.sem ![w]).length + 3) ∧
       Emits (machine e) ((machine e).initCfg w) cfg' (e.sem ![w]) t' (bound e w.length) := by
   have h0 : 0 < tapes e := by unfold tapes; omega
   have h1 : 1 < tapes e := by unfold tapes; omega
   have hB : w.length ≤ bound e w.length := Nat.le_max_left _ _
-  have hK : nsiConst e.1.1 ≤ bound e w.length := Nat.le_max_right _ _
+  have hK : nsiConst e.val.val ≤ bound e w.length := Nat.le_max_right _ _
   have hσ₀ : Bounded (Function.update (fun _ ↦ ([] : List Bool)) (⟨0, h0⟩ : Fin (tapes e)) w)
       (bound e w.length) := Bounded.update (fun _ ↦ Nat.zero_le _) hB
   have h₁ := reader_runsTo (⟨0, h0⟩ : Fin (tapes e))

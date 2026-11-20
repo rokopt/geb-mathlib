@@ -38,7 +38,7 @@ namespace LargeIRTest
 -- `false ↦ 1` on the level-`1` directions.
 example : (elemEquiv (arrowPsh piBool) (ofSlice p3) sample).1 = .inr () := rfl
 example : (elemEquiv (arrowPsh piBool) (ofSlice p3) sample).2.1 ⟨.inl true, rfl⟩ = true := rfl
-example : ((elemEquiv (arrowPsh piBool) (ofSlice p3) sample).2.2 ⟨.inr false, rfl⟩).1 =
+example : ((elemEquiv (arrowPsh piBool) (ofSlice p3) sample).2.2 ⟨.inr false, rfl⟩).val =
     (1 : Fin 3) :=
   rfl
 
@@ -54,8 +54,8 @@ example : sampleGen.1.1 = ⟨.inl (), rfl⟩ := rfl
 example : sampleGen.1.2.1 ⟨.inl false, rfl⟩ = false := rfl
 
 -- The fibre element: the level-`1` shape over it, with its assignment.
-example : sampleGen.2.1.1 = ⟨.inr (), rfl⟩ := rfl
-example : (sampleGen.2.2.1 ⟨.inr true, rfl⟩).1 = (0 : Fin 3) := rfl
+example : sampleGen.2.1.val = ⟨.inr (), rfl⟩ := rfl
+example : (sampleGen.2.2.val ⟨.inr true, rfl⟩).val = (0 : Fin 3) := rfl
 
 /-- The element over `not` read through the general isomorphism. -/
 def sampleNotGen :=

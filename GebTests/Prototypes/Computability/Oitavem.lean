@@ -95,10 +95,10 @@ open scoped FinEnum
 /-- A composition with a safe function in a normal argument slot. -/
 @[expose] public def invalidRaw : sig.toPFunctor.W :=
   WType.mk (.comp 2 1 false) fun d ↦ match d with
-    | .inl () => (Expr.initial (.proj 1 0)).1.1
-    | .inr _ => (Expr.logTransition (Expr.initial (.proj 1 0))).1.1
+    | .inl () => (Expr.initial (.proj 1 0)).val.val
+    | .inr _ => (Expr.logTransition (Expr.initial (.proj 1 0))).val.val
 
 #guard !wellFormed invalidRaw
-#guard wellFormed lengthByRec.1.1
+#guard wellFormed lengthByRec.val.val
 
 end Geb.Oitavem.Tests

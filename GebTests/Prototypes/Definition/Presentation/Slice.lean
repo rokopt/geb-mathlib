@@ -191,7 +191,7 @@ def listOp : (a : Op) → (v : arity a → Γ ⊕ List Γ) → (∀ b, srtOf (v 
 def listAlg : Alg.{0, 0, 0, 0} sig where
   carrier := Γ ⊕ List Γ
   p := srtOf
-  g x := .inr (listOp x.1.1 x.1.2 (congrFun x.2))
+  g x := .inr (listOp x.val.1 x.val.2 (congrFun x.property))
   hg := rfl
 
 /-- The lists satisfy the equations. -/
@@ -241,16 +241,16 @@ theorem cls_appT_nilT (l : T Γ .list) : listApp.cls _ (appT nilT l) = listApp.c
     (funext fun b ↦ by
       cases b
       · exact congrArg (FreeM.liftBind (P := sig.toPFunctor) Op.nil) (funext fun x ↦ nomatch x)
-      · rfl)))).trans (listApp.cls_bind_lhs _ Eqn.appNil (fun _ ↦ l.1) fun _ ↦ l.2)
+      · rfl)))).trans (listApp.cls_bind_lhs _ Eqn.appNil (fun _ ↦ l.val) fun _ ↦ l.property)
 
 /-- The equation for {lit}`cons`, on classes. -/
 theorem cls_appT_consT (h : T Γ .elem) (l l' : T Γ .list) :
     listApp.cls _ (appT (consT h l) l') = listApp.cls _ (consT h (appT l l')) := by
-  let σ : Three → sig.toPFunctor.FreeM Γ := fun v ↦ Three.rec h.1 l.1 l'.1 v
+  let σ : Three → sig.toPFunctor.FreeM Γ := fun v ↦ Three.rec h.val l.val l'.val v
   have hσ : IsSorted (fun v ↦ eqns.r ⟨Eqn.appCons, v⟩) elemSort σ
-    | .x => h.2
-    | .l => l.2
-    | .l' => l'.2
+    | .x => h.property
+    | .l => l.property
+    | .l' => l'.property
   refine (congrArg (listApp.cls _) (Subtype.ext ?_)).trans
     ((listApp.cls_bind_lhs _ Eqn.appCons σ hσ).trans (congrArg (listApp.cls _) (Subtype.ext ?_)))
   · refine congrArg (FreeM.liftBind (P := sig.toPFunctor) Op.app) (funext fun b ↦ ?_)

@@ -1285,6 +1285,17 @@ Correcting these is a separate concern from any current branch per
 
 ## Triggers (do when condition fires)
 
+- **`lake shake` and matcher congruence lemmas**: `lake shake` loads
+  modules without their environment extensions, so it does not recognise
+  a matcher's congruence equation `match_n.congr_eq_k` as a reserved
+  name. It attributes the lemma to another module that generated it and
+  asks the module using it to import that module.
+  `scripts/lib/shake-congr-eq.py` passes the `scripts/pre-push.sh` shake
+  step's reports made only of such attributions. Trigger: a toolchain
+  whose `lake shake` passes on `Geb GebTests` without the script, at
+  which point the script, its call in `scripts/pre-push.sh`, its check in
+  `scripts/tests/test-lake-shake.sh` and its sentence in
+  `docs/rules/ci-and-workflow.md` are removed.
 - **The checker of shared certificates**: the Bootstrap chapter's section
   The next phase requires two stronger checkers, the conversion step and
   the checker of holes, and makes the checker of the shared certificates,

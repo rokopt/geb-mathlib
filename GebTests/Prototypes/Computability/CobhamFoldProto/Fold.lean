@@ -281,7 +281,7 @@ theorem leafCountFold_eq :
 /-- The expressions compute the algebra. -/
 theorem semAt_leafCountOf : ∀ (i : Fin binRanked.card)
     (f : Fin (binRanked.arity i) → List Bool),
-    Cobham.semAt (binRanked.arity i) (leafCountOf i).1.1 (leafCountOf i).2 f =
+    Cobham.semAt (binRanked.arity i) (leafCountOf i).val.val (leafCountOf i).property f =
       leafCountAlg i f
   | ⟨0, _⟩, f => semAt_constAtOf 0 [true] f
   | ⟨1, _⟩, _f => rfl
@@ -299,7 +299,7 @@ theorem growth_leafCountAlg : ∀ (i : Fin binRanked.card)
 
 /-- The expressions carry no `smash`. -/
 theorem smashFreeBool_leafCountOf : ∀ i : Fin binRanked.card,
-    Cobham.smashFreeBool (leafCountOf i).1.1.1 = true
+    Cobham.smashFreeBool (leafCountOf i).val.val.val = true
   | ⟨0, _⟩ => smashFreeBool_constAtOf 0 _
   | ⟨1, _⟩ =>
     smashFreeBool_concatCompOf 2 _ _

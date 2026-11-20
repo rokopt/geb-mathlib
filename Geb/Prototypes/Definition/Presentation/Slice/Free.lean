@@ -72,12 +72,13 @@ variable {I : Type uI} {F : SlicePFunctor.{uA, u, uI, uI} I I} {Γ Δ : Type u} 
 
 /-- An operation applied to well-sorted terms of the input sorts of its arguments. -/
 def opTm (a : F.A) (ts : (b : F.B a) → Tm F γ (F.r ⟨a, b⟩)) : Tm F γ (F.q a) :=
-  ⟨.liftBind a fun b ↦ (ts b).1, fun b ↦ ⟨(ts b).2.2, (ts b).2.1⟩, rfl⟩
+  ⟨.liftBind a fun b ↦ (ts b).val, fun b ↦ ⟨(ts b).property.2, (ts b).property.1⟩, rfl⟩
 
 /-- The terms of an updated family of well-sorted terms. -/
 theorem val_update (a : F.A) [DecidableEq (F.B a)] (ts : (b : F.B a) → Tm F γ (F.r ⟨a, b⟩))
     (b : F.B a) (y : Tm F γ (F.r ⟨a, b⟩)) :
-    (fun b' ↦ (Function.update ts b y b').1) = Function.update (fun b' ↦ (ts b').1) b y.1 := by
+    (fun b' ↦ (Function.update ts b y b').val) =
+      Function.update (fun b' ↦ (ts b').val) b y.val := by
   funext b'
   by_cases hb : b' = b
   · subst hb
@@ -97,20 +98,20 @@ theorem linked_opTm_update (a : F.A) [DecidableEq (F.B a)]
   obtain ⟨w, hs, ht⟩ := h
   have hws : ∀ b' : F.B a,
       sort (F := sum F p.E) γ
-          (Function.update (fun b ↦ p.toPresentation.refl (ts b).1) b w.1 b') = F.r ⟨a, b'⟩ ∧
+          (Function.update (fun b ↦ p.toPresentation.refl (ts b).val) b w.val b') = F.r ⟨a, b'⟩ ∧
         WellSorted (F := sum F p.E) γ
-          (Function.update (fun b ↦ p.toPresentation.refl (ts b).1) b w.1 b') := by
+          (Function.update (fun b ↦ p.toPresentation.refl (ts b).val) b w.val b') := by
     refine update_apply_of (fun b' t ↦ sort (F := sum F p.E) γ t = F.r ⟨a, b'⟩ ∧
-      WellSorted (F := sum F p.E) γ t) _ b w.1 ⟨w.2.2, w.2.1⟩ fun b' _ ↦ ?_
-    exact ⟨(p.wellSorted_refl γ (ts b').2.1).2.trans (ts b').2.2,
-      (p.wellSorted_refl γ (ts b').2.1).1⟩
-  have hs' : p.toPresentation.src w.1 = (ts b).1 := congrArg Subtype.val hs
-  have ht' : p.toPresentation.tgt w.1 = y.1 := congrArg Subtype.val ht
-  refine ⟨⟨p.toPresentation.congWit a (fun b ↦ (ts b).1) b w.1, hws, rfl⟩, ?_, ?_⟩
-  · refine Subtype.ext ((p.toPresentation.src_congWit a _ b w.1).trans ?_)
+      WellSorted (F := sum F p.E) γ t) _ b w.val ⟨w.property.2, w.property.1⟩ fun b' _ ↦ ?_
+    exact ⟨(p.wellSorted_refl γ (ts b').property.1).2.trans (ts b').property.2,
+      (p.wellSorted_refl γ (ts b').property.1).1⟩
+  have hs' : p.toPresentation.src w.val = (ts b).val := congrArg Subtype.val hs
+  have ht' : p.toPresentation.tgt w.val = y.val := congrArg Subtype.val ht
+  refine ⟨⟨p.toPresentation.congWit a (fun b ↦ (ts b).val) b w.val, hws, rfl⟩, ?_, ?_⟩
+  · refine Subtype.ext ((p.toPresentation.src_congWit a _ b w.val).trans ?_)
     rw [hs']
-    exact congrArg (FreeM.liftBind a) (update_apply_self (fun b ↦ (ts b).1) b)
-  · refine Subtype.ext ((p.toPresentation.tgt_congWit a _ b w.1).trans ?_)
+    exact congrArg (FreeM.liftBind a) (update_apply_self (fun b ↦ (ts b).val) b)
+  · refine Subtype.ext ((p.toPresentation.tgt_congWit a _ b w.val).trans ?_)
     rw [ht']
     exact congrArg (FreeM.liftBind a) (val_update γ a ts b y).symm
 
@@ -172,7 +173,8 @@ theorem sigma_resort {j : I} (y : Σ i, p.Cls γ i) (h : y.1 = j) : y = ⟨j, p.
 /-- The class of a term, as an element of the classes of all sorts, is the class of the term at
 any equal sort. -/
 theorem sigma_cls {i j : I} (t : Tm F γ i) (h : i = j) :
-    (⟨i, p.cls γ t⟩ : Σ i, p.Cls γ i) = ⟨j, p.cls γ ⟨t.1, t.2.1, t.2.2.trans h⟩⟩ := by
+    (⟨i, p.cls γ t⟩ : Σ i, p.Cls γ i) =
+      ⟨j, p.cls γ ⟨t.val, t.property.1, t.property.2.trans h⟩⟩ := by
   subst h
   rfl
 
@@ -183,7 +185,7 @@ theorem exists_cls {ι : Type u} [FinEnum ι] {s : ι → I} (f : (x : ι) → p
 
 /-- Re-sorting the class of a term is the class of the term at the new sort. -/
 theorem resort_cls {i j : I} (t : Tm F γ i) (h : i = j) :
-    p.resort γ ⟨i, p.cls γ t⟩ h = p.cls γ ⟨t.1, t.2.1, t.2.2.trans h⟩ := by
+    p.resort γ ⟨i, p.cls γ t⟩ h = p.cls γ ⟨t.val, t.property.1, t.property.2.trans h⟩ := by
   subst h
   rfl
 
@@ -194,7 +196,7 @@ operation applied to classes of the input sorts of its arguments. -/
 def clsAlg : Alg.{uA, uI, u, max uI uA u} F where
   carrier := Σ i, p.Cls γ i
   p := Sigma.fst
-  g x := ⟨F.q x.1.1, p.op γ x.1.1 fun b ↦ p.resort γ (x.1.2 b) (congrFun x.2 b)⟩
+  g x := ⟨F.q x.val.1, p.op γ x.val.1 fun b ↦ p.resort γ (x.val.2 b) (congrFun x.property b)⟩
   hg := rfl
 
 /-- The value of a term in the classes, its variables assigned the classes of well-sorted terms of
@@ -221,7 +223,7 @@ theorem satisfies_clsAlg [∀ e, FinEnum (p.E.B e)] : p.Satisfies (p.clsAlg γ) 
   obtain ⟨ts, hts⟩ := p.exists_cls γ fun v ↦ p.resort γ (σ v) (congrFun hσ v)
   obtain rfl : σ = fun v ↦ ⟨p.E.r ⟨e, v⟩, p.cls γ (ts v)⟩ :=
     funext fun v ↦ (p.sigma_resort γ (σ v) (congrFun hσ v)).trans (by rw [hts v])
-  have hs : IsSorted (fun v ↦ p.E.r ⟨e, v⟩) γ fun v ↦ (ts v).1 := fun v ↦ (ts v).2
+  have hs : IsSorted (fun v ↦ p.E.r ⟨e, v⟩) γ fun v ↦ (ts v).val := fun v ↦ (ts v).property
   refine (p.evalS_clsAlg γ hs (p.lhs e) (p.lhs_sorted e).1).trans ?_
   refine Eq.trans ?_ (p.evalS_clsAlg γ hs (p.rhs e) (p.rhs_sorted e).1).symm
   exact (p.sigma_cls γ ⟨_, (wellSorted_bind hs _ (p.lhs_sorted e).1).1,

@@ -160,7 +160,7 @@ theorem Expr.exists_uniform_truncation {n s : ℕ} (e : Expr n s) :
     ∃ p : ℕ → ℕ, IsPolyBounded p ∧ ∀ x m, (∀ j, (x j).length ≤ m) → ∀ y,
       e.eval x y = e.eval x (fun j ↦ unrank (cappedRank (p m) (y j))) := by
   obtain ⟨b, hb⟩ := e.exists_truncation
-  exact ⟨lengthPoly b.1.1, lengthPoly_isPolyBounded b.1.1,
+  exact ⟨lengthPoly b.val.val, lengthPoly_isPolyBounded b.val.val,
     fun x m hx y ↦ hb.mono x _ (b.length_le x Fin.elim0 m hx) y⟩
 
 /-- Safe recursion retaining only the capped numerical value of each recursive result. -/
@@ -270,14 +270,14 @@ theorem isPolyBounded_pow_size (a : ℕ) :
 /-- An executable safe-input prefix length, computed from the inferred polynomial
 bound on the truncation expression. -/
 def Expr.prefixCutoff {n s : ℕ} (e : Expr n s) (N : ℕ) : ℕ :=
-  (lengthPoly e.truncationBound.1.1 N).size
+  (lengthPoly e.truncationBound.val.val N).size
 
 /-- Every prefix at least as long as the inferred cutoff preserves the result. -/
 theorem Expr.eval_take_prefixCutoff {n s : ℕ} (e : Expr n s)
     (x : Fin n → List Bool) (N : ℕ) (hx : ∀ j, (x j).length ≤ N)
     (y : Fin s → List Bool) {k : ℕ} (hk : e.prefixCutoff N ≤ k) :
     e.eval x y = e.eval x (fun j ↦ (y j).take k) := by
-  have he := e.truncates_truncationBound.mono x (lengthPoly e.truncationBound.1.1 N)
+  have he := e.truncates_truncationBound.mono x (lengthPoly e.truncationBound.val.val N)
     (e.truncationBound.length_le x Fin.elim0 N hx)
   rw [he y, he (fun j ↦ (y j).take k)]
   simp only [cappedRank_take hk]
@@ -288,7 +288,7 @@ theorem Expr.prefixCutoff_le_log_of_polyBounded {n s : ℕ} (e : Expr n s)
     {p : ℕ → ℕ} (hp : IsPolyBounded p) :
     ∃ C : ℕ, ∀ m, e.prefixCutoff (p m) ≤ C * (m.size + 1) := by
   obtain ⟨C, hC⟩ := logarithmic_size_of_polyBounded
-    (isPolyBounded_comp (lengthPoly_isPolyBounded e.truncationBound.1.1) hp)
+    (isPolyBounded_comp (lengthPoly_isPolyBounded e.truncationBound.val.val) hp)
   exact ⟨C, fun m ↦ (Geb.BitTree.Counter.size_mono (Nat.le_succ _)).trans (hC m)⟩
 
 /-- A safe argument can be replaced by its first logarithmically many digits.
@@ -456,9 +456,9 @@ theorem Expr.exists_logarithmic_state {n : ℕ} (g : Expr n 0)
           C * (N.size + 1) := by
   obtain ⟨b₀, hb₀⟩ := (h false).exists_truncation
   obtain ⟨b₁, hb₁⟩ := (h true).exists_truncation
-  let p : ℕ → ℕ := fun N ↦ max (lengthPoly b₀.1.1 N) (lengthPoly b₁.1.1 N)
+  let p : ℕ → ℕ := fun N ↦ max (lengthPoly b₀.val.val N) (lengthPoly b₁.val.val N)
   have hp : IsPolyBounded p := Geb.SizeBounded.isPolyBounded_max
-    (lengthPoly_isPolyBounded b₀.1.1) (lengthPoly_isPolyBounded b₁.1.1)
+    (lengthPoly_isPolyBounded b₀.val.val) (lengthPoly_isPolyBounded b₁.val.val)
   obtain ⟨C, hC⟩ := logarithmic_size_of_polyBounded hp
   refine ⟨p, hp, C, ?_⟩
   intro x N hx w hw

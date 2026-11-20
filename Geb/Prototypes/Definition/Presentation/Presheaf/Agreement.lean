@@ -91,10 +91,10 @@ theorem ψ_fst (y : Σ i, (onestep S).toSlice.Cls (noVar I) i) : (ψ hcong y).1 
   congrFun ((onestep S).toSlice.p_liftAll (satisfies_qAlg hcong) (qEnv hcong) (qEnv_p hcong)) y
 
 /-- The value of classes commutes with the term shapes. -/
-theorem ψ_op (s : TermShape S) (f : (b : S.Gen s.1) → (onestep S).toSlice.Cls (noVar I)
-    ((S.gobj s.1 b).1)) :
-    ψ hcong ⟨(S.q s.1).1, (onestep S).toSlice.op (noVar I) (.inl s) f⟩ =
-      ⟨(S.q s.1).1, algTerm hcong (c := termObj (S.q s.1).1) s.1 (q_term s) rfl fun b ↦
+theorem ψ_op (s : TermShape S) (f : (b : S.Gen s.val) → (onestep S).toSlice.Cls (noVar I)
+    ((S.gobj s.val b).1)) :
+    ψ hcong ⟨(S.q s.val).1, (onestep S).toSlice.op (noVar I) (.inl s) f⟩ =
+      ⟨(S.q s.val).1, algTerm hcong (c := termObj (S.q s.val).1) s.val (q_term s) rfl fun b ↦
         resortQ restr_id restr_comp reindex_id reindex_comp (ψ hcong ⟨_, f b⟩) (ψ_fst hcong _)⟩ :=
   (onestep S).toSlice.liftAll_g (satisfies_qAlg hcong) (qEnv hcong) (qEnv_p hcong)
     ⟨⟨.inl s, fun b ↦ ⟨_, f b⟩⟩, rfl⟩
@@ -116,24 +116,25 @@ set_option hygiene false in
 local notation "Φ" => φ restr_id restr_comp reindex_id reindex_comp
 
 /-- The eliminator commutes with the term shapes. -/
-theorem φ_algTerm (s : TermShape S) (w : (b : S.Gen s.1) → (discrete (quotient 𝐅)).obj
-    ⟨S.gobj s.1 b⟩) :
-    (Φ).app ⟨(S.q s.1).1⟩ (algTerm hcong (c := termObj (S.q s.1).1) s.1 (q_term s) rfl w) =
+theorem φ_algTerm (s : TermShape S) (w : (b : S.Gen s.val) → (discrete (quotient 𝐅)).obj
+    ⟨S.gobj s.val b⟩) :
+    (Φ).app ⟨(S.q s.val).1⟩ (algTerm hcong (c := termObj (S.q s.val).1) s.val (q_term s) rfl w) =
       (onestep S).toSlice.op (noVar I) (.inl s) fun b ↦ (Φ).app _ (w b) := by
-  have h := isModelHom_elim hcong (clsP S) clsModel ⟨termObj (S.q s.1).1⟩
-    (FreeArity.freeNode (discrete (quotient 𝐅)) s.1 (q_term s) w)
+  have h := isModelHom_elim hcong (clsP S) clsModel ⟨termObj (S.q s.val).1⟩
+    (FreeArity.freeNode (discrete (quotient 𝐅)) s.val (q_term s) w)
   rw [quotientModel_freeNode, FreeArity.mapPresheaf_freeNode] at h
-  exact h.trans (αTerm_freeNode s.1 (q_term s) _)
+  exact h.trans (αTerm_freeNode s.val (q_term s) _)
 
 include hcong in
 /-- The eliminator sends the class of a term built by a term shape to the shape applied to the
 eliminator's values at the arguments' classes. -/
-theorem φ_quotientMk_freeNode (s : TermShape S) (ts : (b : S.Gen s.1) → 𝐅.W.obj ⟨S.gobj s.1 b⟩) :
-    (Φ).app ⟨(S.q s.1).1⟩
-      (quotientMk 𝐅 (PresheafPFunctor.W.mk (FreeArity.freeNode 𝐅.W s.1 (q_term s) ts))) =
+theorem φ_quotientMk_freeNode (s : TermShape S)
+    (ts : (b : S.Gen s.val) → 𝐅.W.obj ⟨S.gobj s.val b⟩) :
+    (Φ).app ⟨(S.q s.val).1⟩
+      (quotientMk 𝐅 (PresheafPFunctor.W.mk (FreeArity.freeNode 𝐅.W s.val (q_term s) ts))) =
         (onestep S).toSlice.op (noVar I) (.inl s) fun b ↦
           (Φ).app _ ((coeqUnit 𝐅.W).app _ (ts b)) :=
-  (congrArg (fun q ↦ (Φ).app ⟨_⟩ q) (algTerm_unit hcong s.1 (q_term s) rfl ts).symm).trans
+  (congrArg (fun q ↦ (Φ).app ⟨_⟩ q) (algTerm_unit hcong s.val (q_term s) rfl ts).symm).trans
     (φ_algTerm hcong s _)
 
 /-- The eliminator commutes with the restrictions. -/
@@ -169,10 +170,10 @@ theorem φψ_resort {j : I} (y : Σ i, (onestep S).toSlice.Cls (noVar I) i) (h :
 @[instance_reducible] def finEnumEqns (e : (onestep S).toSlice.E.A) :
     FinEnum ((onestep S).toSlice.E.B e) :=
   match e with
-  | .inl (.nat a _) => hfin a.1
+  | .inl (.nat a _) => hfin a.val
   | .inl (.id _) => finEnumPUnit
   | .inl (.comp _ _) => finEnumPUnit
-  | .inr s => hfin s.1
+  | .inr s => hfin s.val
 
 attribute [local instance] finEnumEqns
 
