@@ -17,6 +17,14 @@ revision=$(git -C "$root" rev-parse "${2:-HEAD}^{commit}")
 [ ! -e "$work" ] || { echo "client-acceptance: $work exists" >&2; exit 1; }
 mkdir -p "$work"
 work=$(cd "$work" && pwd)
+# elan selects the toolchain of the nearest lean-toolchain at or above the working directory,
+# so a client below another file would be run with that file's toolchain rather than its own.
+dir=$work
+while [ "$dir" != / ]; do
+  dir=$(dirname "$dir")
+  [ ! -e "$dir/lean-toolchain" ] || {
+    echo "client-acceptance: $work is below $dir/lean-toolchain" >&2; rmdir "$work"; exit 1; }
+done
 # Local paths stand in for the URLs of the Geb repository and the client's remote, and the
 # client's commit is made under a fixed unsigned identity.
 git=(git -c protocol.file.allow=always -c commit.gpgsign=false
