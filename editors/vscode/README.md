@@ -310,7 +310,9 @@ not install extensions into the user's editor. The first run requires
 network access.
 
 `scripts/tests/client-acceptance.sh WORKDIR [REVISION]` accepts a client
-of the shared library from a fresh clone. It makes a client repository
+of the shared library from a fresh clone. `WORKDIR` lies below no
+`lean-toolchain`, since elan would select that file's toolchain for the
+clone in place of the client's own. The script makes a client repository
 from [the template](../../examples/client/README.md) with its submodule
 at a revision of this repository, clones it from a bare repository,
 follows the template README's build and packaging steps in the clone,
