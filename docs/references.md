@@ -230,8 +230,9 @@ neither specifications nor citable literature.
 ## Interaction nets
 
 Runtimes and formalizations of interaction nets, the candidates for the
-interaction-net arm of the Bootstrap chapter's choice of machine. The
-state is as of 2026-09-29.
+interaction-net arm of the comparison of machines, which the Bootstrap
+chapter's section The choice of machine schedules after the bootstrap.
+The state is as of 2026-09-29.
 
 - [etiamz/interaction-net-resources](https://github.com/etiamz/interaction-net-resources)
   — a collection of resources about interaction nets.

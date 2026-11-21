@@ -87,6 +87,15 @@ These properties do not assert an increase in the partial recursive
 functions on natural numbers. They concern the structure available to
 programs and the preservation of observations, interaction, and progress.
 
+The [Bootstrap chapter](../manual/GebManual/Bootstrap.lean) cites the
+fair-merge separation of § Fair merge and polynomial evolution among its
+reasons for fixing the interface of a machine as the inhabitation of a
+type, with interaction nets as one machine specialized behind it (its
+section The choice of machine). The bootstrap has one host, Lean, and
+the implementation of § Implementation order and proof obligations
+follows it, with the rest of the interaction-net development (its
+section After the bootstrap).
+
 ## The tree-calculus comparison
 
 The triage formulation makes the comparison with SK explicit. Its values

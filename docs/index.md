@@ -73,8 +73,10 @@ import-direction rules above are enforced by
   functors and mathlib's `QPF`. Each claim is marked constructed, argued or
   conjectured, and the last section lists the constructions that remain.
 - [Bootstrapping Geb](../manual/GebManual/Bootstrap.lean) — a Verso
-  manual chapter recording the bootstrap: a road map of the bootstrap
-  and of the work written in Geb after it, each item with its state;
+  manual chapter recording the bootstrap: a road map of the bootstrap,
+  whose one host is Lean, and of the work that follows it, the second
+  host and the machines other than Lean's among it, each item with its
+  state;
   Gödel's T over rose trees, the equational theory of kernel terms, whose
   checker is retired; and the metalogic, the free topos presented as the initial
   model of one partial Horn theory, with the Mitchell–Bénabou language,
@@ -124,8 +126,9 @@ import-direction rules above are enforced by
   terminates under every graph schedule and its normal result reads back
   the checked denotation. [Graph adequacy](../Geb/Prototypes/InteractionNet/KernelGraphAdequacy.lean)
   transfers these results to the executable runtime and loaded globals;
-  [Bootstrapping Geb](../manual/GebManual/Bootstrap.lean) records the
-  machine-choice milestones.
+  [Bootstrapping Geb](../manual/GebManual/Bootstrap.lean) records their
+  place in the choice of machine and the development's continuation
+  after the bootstrap.
 - `Geb/Prototypes/SuccinctTree.lean` — balanced-parenthesis block
   summaries, associative composition, prefix-sum recognition, and an
   equivalent accumulator scan. Its adjacent experiment directory
