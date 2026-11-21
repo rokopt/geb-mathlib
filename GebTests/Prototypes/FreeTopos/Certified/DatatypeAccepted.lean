@@ -450,9 +450,9 @@ def mirrorIndices : List (String × ℕ) :=
     ("Datatype.kwData", 388), ("Datatype.kwDefn", 391), ("Datatype.kwGeneric", 396),
     ("Datatype.memberName", 401), ("Datatype.xpStep", 474), ("Datatype.genericStep", 475),
     ("Datatype.expandTyped", 476), ("Datatype.markersFirst", 485), ("Datatype.kernelForms", 486),
-    ("Recognize.markers", 532), ("Recognize.insertRecognizers", 544), ("Eval.valQuote", 559),
-    ("Eval.valUnit", 560), ("Eval.valPair", 561), ("Eval.listOf", 566), ("Eval.next", 582),
-    ("Eval.level", 583), ("charsFixed", 592), ("srcForm", 593), ("implName", 595)]
+    ("Recognize.markers", 532), ("Recognize.insertRecognizers", 546), ("Eval.valQuote", 561),
+    ("Eval.valUnit", 562), ("Eval.valPair", 563), ("Eval.listOf", 568), ("Eval.next", 584),
+    ("Eval.level", 585), ("charsFixed", 594), ("srcForm", 595), ("implName", 597)]
 
 set_option doc.verso false in
 /-- The entries of the manifest of the compilers' program are at the indices named with them, as

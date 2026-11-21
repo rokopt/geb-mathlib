@@ -14580,6 +14580,76 @@ def «Recognize.occurs» :=
             x3)
       x1
 
+def «Recognize.memberEnd» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        if (_root_.GebMirror.DatatypeSoundness.«Prelude.or»
+          (_root_.Geb.Kernel.Const.eq
+            (_root_.Geb.Kernel.Const.label x2)
+            (_root_.Geb.Kernel.leaf 2))
+          (_root_.Geb.Kernel.Const.eq
+            (_root_.Geb.Kernel.Const.arity x2)
+            (_root_.Geb.Kernel.leaf 0))).label ≠ 0 then
+          x2
+        else
+          if (_root_.Geb.Kernel.Const.eq
+            x1
+            (_root_.Geb.Kernel.Const.child
+              x2
+              (_root_.Geb.Kernel.leaf 0))).label ≠ 0 then
+            _root_.Geb.Kernel.Const.node
+              (_root_.Geb.Kernel.leaf 0)
+              (_root_.GebMirror.DatatypeSoundness.«Prelude.tail» (_root_.Geb.Kernel.Const.children x2))
+          else
+            _root_.Geb.Kernel.Const.node
+              (_root_.Geb.Kernel.leaf 2)
+              ([] : _root_.List _root_.Geb.Kernel.Tree))
+      (_root_.Geb.Kernel.Const.node
+        (_root_.Geb.Kernel.leaf 0)
+        (_root_.GebMirror.DatatypeSoundness.«Prelude.reverse»
+          (_root_.Geb.Kernel.Const.children
+            (_root_.Geb.Kernel.mk 1 [_root_.Geb.Kernel.leaf 46,
+              _root_.Geb.Kernel.leaf 109,
+              _root_.Geb.Kernel.leaf 101,
+              _root_.Geb.Kernel.leaf 109,
+              _root_.Geb.Kernel.leaf 98,
+              _root_.Geb.Kernel.leaf 101,
+              _root_.Geb.Kernel.leaf 114]))))
+      x0
+
+def «Recognize.memberAtoms» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.para
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+        let x3 : _root_.List
+          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+          (α := _root_.List _root_.Geb.Kernel.Tree)
+          (β := _root_.List _root_.Geb.Kernel.Tree)
+          (fun (x3 : _root_.List _root_.Geb.Kernel.Tree)
+             (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+            _root_.GebMirror.DatatypeSoundness.«Prelude.append» x3 x4)
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+          x2;
+        if (_root_.GebMirror.DatatypeSoundness.«Prelude.and»
+          (_root_.Geb.Kernel.Const.eq
+            (_root_.Geb.Kernel.Const.label x1)
+            (_root_.Geb.Kernel.leaf 1))
+          (_root_.Geb.Kernel.Const.equal
+            (_root_.GebMirror.DatatypeSoundness.«Recognize.memberEnd»
+              (_root_.Geb.Kernel.Const.children x1))
+            (_root_.Geb.Kernel.Const.node
+              (_root_.Geb.Kernel.leaf 0)
+              ([] : _root_.List _root_.Geb.Kernel.Tree)))).label ≠ 0 then
+          (x1 :: x3)
+        else
+          x3)
+      x0
+
 def «Recognize.recognizersAt» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -14624,29 +14694,40 @@ def «Recognize.insertRecognizers» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
       _root_.Geb.Kernel.Tree := _root_.GebMirror.DatatypeSoundness.«Recognize.markers» x0;
-    let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.DatatypeSoundness.«Reader.allSome»
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.DatatypeSoundness.«Prelude.append»
+          (_root_.GebMirror.DatatypeSoundness.«Recognize.memberAtoms» x2)
+          x3)
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      x0;
+    let x3 : _root_.Geb.Kernel.Tree := _root_.GebMirror.DatatypeSoundness.«Reader.allSome»
       (_root_.Geb.Kernel.Const.foldr
         (α := _root_.Geb.Kernel.Tree)
         (β := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.Geb.Kernel.Tree)
-           (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-          ((_root_.GebMirror.DatatypeSoundness.«Recognize.recognizersAt» x1 x0 x2) :: x3))
+        (fun (x3 : _root_.Geb.Kernel.Tree)
+           (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+          ((_root_.GebMirror.DatatypeSoundness.«Recognize.recognizersAt» x1 x2 x3) :: x4))
         ([] : _root_.List _root_.Geb.Kernel.Tree)
         x0);
-    if (_root_.GebMirror.DatatypeSoundness.«Prelude.isSome» x2).label ≠ 0 then
+    if (_root_.GebMirror.DatatypeSoundness.«Prelude.isSome» x3).label ≠ 0 then
       _root_.GebMirror.DatatypeSoundness.«Prelude.some»
         (_root_.Geb.Kernel.Const.node
           (_root_.Geb.Kernel.leaf 0)
           (_root_.Geb.Kernel.Const.foldr
             (α := _root_.Geb.Kernel.Tree)
             (β := _root_.List _root_.Geb.Kernel.Tree)
-            (fun (x3 : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+            (fun (x4 : _root_.Geb.Kernel.Tree)
+               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
               _root_.GebMirror.DatatypeSoundness.«Prelude.append»
-                (_root_.Geb.Kernel.Const.children x3)
-                x4)
+                (_root_.Geb.Kernel.Const.children x4)
+                x5)
             ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (_root_.Geb.Kernel.Const.children (_root_.GebMirror.DatatypeSoundness.«Prelude.get» x2))))
+            (_root_.Geb.Kernel.Const.children (_root_.GebMirror.DatatypeSoundness.«Prelude.get» x3))))
     else
       _root_.GebMirror.DatatypeSoundness.«Prelude.none»
 

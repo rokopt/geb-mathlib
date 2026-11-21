@@ -4113,7 +4113,9 @@ import-direction rules above are enforced by
   temporaries, primitives and recognizers;
   the seed and both compilers reject `%` names in source outside quotations
   and datums. `recognize.geb` writes the recognizers of the
-  datatypes a program decodes, and `compile.geb`
+  datatypes a program decodes, finding them among the atoms of the
+  program's forms that end with `.member`, which one traversal
+  collects, and `compile.geb`
   composes them into the stage-0 compiler from source to image, rejecting
   ill-typed programs. `GebTests/Prototypes/Stage0.lean` compares the
   serializer with `Geb.Kernel.writeImage`, the checker with the seed's, and
@@ -4801,7 +4803,9 @@ import-direction rules above are enforced by
   declaration, and `DatatypeProgramStep.lean` proves the soundness of a
   program by induction on its forms at all states of those passes, each
   form's kind read off the expansion's step at it and the recognizers'
-  agreement with membership kept with the states' invariant, given that
+  agreement with membership kept with the states' invariant, a
+  recognizer's atom occurring among the atoms of the forms that end with
+  `.member` where it occurs in the forms, given that
   each definition's body the expansion writes is a source form at the
   numeral abbreviations before it, which that run tests, that the tree
   datatypes' keyword heads no form, that no name a form declares is one

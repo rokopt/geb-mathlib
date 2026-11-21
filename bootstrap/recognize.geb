@@ -192,9 +192,32 @@
   ; whether an atom occurs in a form
   (def occurs
     (lam ((a T) (f T)) (para T (lam ((n T) (rs Ts)) (if (equal n a) 1 (foldr T T or 0 rs))) f)))
-  ; the forms that replace a form f of a program's forms fs, whose markers are ms, when they can
-  ; be written: a marker by the recognizer of its datatype where the forms refer to it and by
-  ; none otherwise, any other form by itself
+  ; how a name's characters end: a fold from the last character whose value is the node of label
+  ; 0 over the characters of .member not yet met, the last first, which stays once none remains,
+  ; and the node of label 2 once a character differs; it is the node of label 0 over none where
+  ; the name ends with .member, as each recognizer's name does
+  (def memberEnd
+    (lam ((cs Ts))
+      (foldr T T
+        (lam ((c T) (s T))
+          (cond ((or (eq (label s) 2) (eq (arity s) 0)) s)
+            ((eq c (child s 0)) (node 0 (tail (children s))))
+            (else (node 2 (nil T)))))
+        (node 0 (reverse (children (quote (1 .member)))))
+        cs)))
+  ; the atoms of a form whose names end with .member, among which are the recognizers' atoms
+  ; that occur in it
+  (def memberAtoms
+    (lam ((f T))
+      (para Ts
+        (lam ((n T) (rs (List Ts)))
+          (let xs Ts (foldr Ts Ts (lam ((y Ts) (acc Ts)) (append y acc)) (nil T) rs)
+            (if (and (eq (label n) 1) (equal (memberEnd (children n)) (node 0 (nil T)))) (cons n xs)
+              xs)))
+        f)))
+  ; the forms that replace a form f of a program whose markers are ms, when they can be written:
+  ; a marker by the recognizer of its datatype where its atom occurs in fs, the program's forms
+  ; or the atoms of them that end with .member, and by none otherwise, any other form by itself
   (def recognizersAt
     (lam ((ms Ts) (fs Ts) (f T))
       (if (eq (label f) 9)
@@ -203,14 +226,16 @@
           (some (node 0 (nil T))))
         (some (node 0 (single f))))))
   ; a program's forms with its markers replaced by the recognizers it refers to, when each of
-  ; those can be written
+  ; those can be written; whether a recognizer's atom occurs in the forms is tested among the
+  ; atoms of the forms that end with .member, collected once
   (def insertRecognizers
     (lam ((fs Ts))
       (let*
         ((ms Ts (markers fs))
+         (refs Ts (foldr T Ts (lam ((f T) (acc Ts)) (append (memberAtoms f) acc)) (nil T) fs))
          (r T
            (allSome
-             (foldr T Ts (lam ((f T) (acc Ts)) (cons (recognizersAt ms fs f) acc)) (nil T) fs))))
+             (foldr T Ts (lam ((f T) (acc Ts)) (cons (recognizersAt ms refs f) acc)) (nil T) fs))))
         (if (isSome r)
           (some
             (node 0

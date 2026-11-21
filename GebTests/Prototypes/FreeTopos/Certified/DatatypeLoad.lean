@@ -279,43 +279,43 @@ theorem At.«Recognize.markers» : At 532 «Recognize.markers» :=
   ⟨_, rfl, datatypeSoundness.«Recognize.markers_heq»⟩
 
 /-- The global of the definition {lit}`Recognize.insertRecognizers` is its mirror. -/
-theorem At.«Recognize.insertRecognizers» : At 544 «Recognize.insertRecognizers» :=
+theorem At.«Recognize.insertRecognizers» : At 546 «Recognize.insertRecognizers» :=
   ⟨_, rfl, datatypeSoundness.«Recognize.insertRecognizers_heq»⟩
 
 /-- The global of the definition {lit}`Eval.valQuote` is its mirror. -/
-theorem At.«Eval.valQuote» : At 559 «Eval.valQuote» :=
+theorem At.«Eval.valQuote» : At 561 «Eval.valQuote» :=
   ⟨_, rfl, datatypeSoundness.«Eval.valQuote_heq»⟩
 
 /-- The global of the definition {lit}`Eval.valUnit` is its mirror. -/
-theorem At.«Eval.valUnit» : At 560 «Eval.valUnit» :=
+theorem At.«Eval.valUnit» : At 562 «Eval.valUnit» :=
   ⟨_, rfl, datatypeSoundness.«Eval.valUnit_heq»⟩
 
 /-- The global of the definition {lit}`Eval.valPair` is its mirror. -/
-theorem At.«Eval.valPair» : At 561 «Eval.valPair» :=
+theorem At.«Eval.valPair» : At 563 «Eval.valPair» :=
   ⟨_, rfl, datatypeSoundness.«Eval.valPair_heq»⟩
 
 /-- The global of the definition {lit}`Eval.listOf` is its mirror. -/
-theorem At.«Eval.listOf» : At 566 «Eval.listOf» :=
+theorem At.«Eval.listOf» : At 568 «Eval.listOf» :=
   ⟨_, rfl, datatypeSoundness.«Eval.listOf_heq»⟩
 
 /-- The global of the definition {lit}`Eval.next` is its mirror. -/
-theorem At.«Eval.next» : At 582 «Eval.next» :=
+theorem At.«Eval.next» : At 584 «Eval.next» :=
   ⟨_, rfl, datatypeSoundness.«Eval.next_heq»⟩
 
 /-- The global of the definition {lit}`Eval.level` is its mirror. -/
-theorem At.«Eval.level» : At 583 «Eval.level» :=
+theorem At.«Eval.level» : At 585 «Eval.level» :=
   ⟨_, rfl, datatypeSoundness.«Eval.level_heq»⟩
 
 /-- The global of the definition {lit}`charsFixed` is its mirror. -/
-theorem At.«charsFixed» : At 592 «charsFixed» :=
+theorem At.«charsFixed» : At 594 «charsFixed» :=
   ⟨_, rfl, datatypeSoundness.«charsFixed_heq»⟩
 
 /-- The global of the definition {lit}`srcForm` is its mirror. -/
-theorem At.«srcForm» : At 593 «srcForm» :=
+theorem At.«srcForm» : At 595 «srcForm» :=
   ⟨_, rfl, datatypeSoundness.«srcForm_heq»⟩
 
 /-- The global of the definition {lit}`implName` is its mirror. -/
-theorem At.«implName» : At 595 «implName» :=
+theorem At.«implName» : At 597 «implName» :=
   ⟨_, rfl, datatypeSoundness.«implName_heq»⟩
 
 end GebTests.Prototypes.FreeTopos.Certified.DatatypeLoad

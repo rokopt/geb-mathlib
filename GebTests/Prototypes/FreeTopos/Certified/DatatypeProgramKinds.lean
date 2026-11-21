@@ -52,6 +52,7 @@ def kinds : List (List Internal.Decl) :=
     ofText (include_str "../../../../bootstrap/certificates/datatype-program-forms.cert"),
     ofText (include_str "../../../../bootstrap/certificates/datatype-program-recs.cert"),
     ofText (include_str "../../../../bootstrap/certificates/datatype-program-occurs.cert"),
+    ofText (include_str "../../../../bootstrap/certificates/datatype-program-refs.cert"),
     ofText (include_str "../../../../bootstrap/certificates/datatype-program-nums.cert"),
     ofText (include_str "../../../../bootstrap/certificates/datatype-program-alias.cert"),
     ofText (include_str "../../../../bootstrap/certificates/datatype-program-alias-snoc.cert"),

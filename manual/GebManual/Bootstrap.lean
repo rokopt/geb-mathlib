@@ -156,14 +156,14 @@ these capabilities in a client maintained in its own repository.
    This library is the modules that exist, assembled and shared. The
    library's own modules are written after step 4, in the forms it adds.
 2. Make a check take the time of what changed. The compiled compiler
-   takes seconds on the stage-1 compiler's program and nearly a minute
-   on the proof runner's, more than in proportion to their lengths, and
+   takes seconds on the stage-1 compiler's program and about twenty on
+   the proof runner's, more than in proportion to their lengths, and
    keeps nothing between compilations. Each check of a source compiles
    its program from the first source, which in a client includes the
-   library's ({ref "improvements"}[Improvements]). The division of the time
-   among the compiler's stages, which changed no source, locates most of
-   it in the recognizers' stage. Then make each stage's
-   time linear in the program, and compile a layer against the checked
+   library's ({ref "improvements"}[Improvements]). The time is divided
+   among the compiler's stages, and the recognizers' stage is linear in
+   the program. Then make each other stage's time linear in the
+   program, and compile a layer against the checked
    bundle of the layers before it, kept by the digest of their sources.
    A client's check then reads the library's checked layers where it now
    compiles a vendored copy. Each step below that changes a compiler's
@@ -321,9 +321,10 @@ Computation:
 * Ready. The Geb reader in constant depth, and the stage tests reading
   each compiler once, the section on improvements.
 * In progress. The compiler's time, the section on improvements: its
-  division among the compiler's stages is complete; each stage's time
-  linear in the program, and the compilation of a layer against the
-  checked bundle of the layers before it, remain
+  division among the compiler's stages, and the recognizers' stage
+  linear in the program, are complete; each other stage's time linear
+  in the program, and the compilation of a layer against the checked
+  bundle of the layers before it, remain
   ({ref "downstream-authoring"}[A Geb library and its downstream
   application]).
 
@@ -3546,7 +3547,7 @@ committed Lean and the committed image byte for byte, which is
 `scripts/bootstrap.sh check`, run by continuous integration and the
 pre-push checklist, checks every fixed point with the compiled
 executables. In one run on one machine the compiled compiler emits its
-Lean in 5.6 seconds, where its image run by the Lean evaluator takes 12.9
+Lean in 4.1 seconds, where its image run by the Lean evaluator takes 12.9
 ({ref "improvements"}[Improvements]).
 
 `scripts/bench-bootstrap.sh` times both compilers on the compiler's own
@@ -8526,13 +8527,12 @@ the change that removes it.
   still needs to report which expression failed and why
   ({ref "editing"}[Editing]).
 * Compile time. In one run on one machine the compiled compiler,
-  `geb-compile`, compiles the stage-0 compiler's program, of 115
-  kilobytes of source, in 1.2 seconds, the stage-1 compiler's, of 182,
-  in 4.0, the proof runner's, of 570, in 51, and the metalogic's, of
-  487, in 58; the stage-1 compiler's image run by the Lean evaluator
-  compiles its own source in 12.9. The modes `image`, `lean` and `check`
-  differ by the backend alone, which takes about a second on the
-  stage-1 compiler's program and is otherwise the stages before it. The
+  `geb-compile`, checks the stage-0 compiler's program, of 115
+  kilobytes of source, in 1.0 seconds, the stage-1 compiler's, of 182,
+  in 2.4, the proof runner's, of 570, in 19, and the metalogic's, of
+  487, in 17; it emits the stage-1 compiler's Lean in 4.1, where the
+  stage-1 compiler's image run by the Lean evaluator takes 12.9. The
+  modes `image`, `lean` and `check` differ by the backend alone. The
   driver computes the program's bundle once, for the backend and for
   the names of its definitions, which the check of a manifest's entry
   points reads. `geb-compile profile` divides the time among the stages
@@ -8547,60 +8547,60 @@ the change that removes it.
     * Reading and the reserved atoms
     * 0.1
     * 0.4
-    * 0.4
+    * 0.3
   *
     * Elaboration of modules
-    * 0.7
-    * 5.7
-    * 4.4
+    * 0.5
+    * 5.4
+    * 4.5
   *
     * Expansion, its decoding and erasure
-    * 0.3
-    * 1.1
-    * 1.1
+    * 0.2
+    * 1.2
+    * 1.0
   *
     * Typing
-    * 0.8
-    * 5.7
-    * 5.3
+    * 0.6
+    * 5.5
+    * 5.2
   *
     * Recognizers
-    * 1.3
-    * 25.2
-    * 35.7
+    * 0.1
+    * 0.4
+    * 0.3
   *
     * The reader's resolution
-    * 0.9
-    * 6.1
-    * 8.6
+    * 0.8
+    * 5.9
+    * 5.5
   *
     * The kernel's check
     * 0.1
-    * 1.1
-    * 1.1
+    * 1.0
+    * 1.0
   :::
-  The recognizers' time is that of deciding which markers a program
-  refers to: `recognizersAt` in `bootstrap/recognize.geb` traverses
-  every form of the program for each marker. The metalogic's program
-  refers to none of its 146 markers, so that no recognizer is written,
-  and those traversals are the stage's time. One traversal collecting the recognizers the
-  program refers to makes the stage linear. The time of the elaboration
-  of modules, of the typing and of the resolution also grows faster
-  than the program. Copies of `bootstrap/free-topos/theory.geb` under
-  other module names, after the four sources before it in the
-  metalogic's program, compile in 0.9, 2.6, 4.6, 9.7 and 24.6 seconds
-  at 0, 1, 2, 4 and 8 copies, before the bundle was computed once: the
-  first copy adds 1.7 seconds, and each of the fifth to the eighth 3.7.
-  The environments of the typing and of the expansion are lists
-  searched in order (`lookupName` in `bootstrap/stage1/typing.geb`,
-  `findCtor` in `bootstrap/stage1/datatype.geb`), each search a fold
-  that visits the whole list. Nothing is kept between compilations.
-  `geb-compile check` and `geb-author check` compile a program from its
-  first source to the source checked, and `scripts/bootstrap.sh`
-  compiles each layer of a manifest with the layers before it. Its
-  check, which compiles every manifest's program beside the fixed
-  points, took 17.3 of the 40.0 minutes of `scripts/pre-push.sh` with
-  its build up to date, before the bundle was computed once
+  The recognizers' stage collects, in one traversal, the atoms of the
+  program's forms that end with `.member`, and tests each marker's
+  recognizer among them (`insertRecognizers` in
+  `bootstrap/recognize.geb`). The time of the elaboration of modules,
+  of the typing and of the resolution grows faster than the program.
+  Copies of `bootstrap/free-topos/theory.geb` under other module names,
+  after the four sources before it in the metalogic's program, check in
+  0.4, 1.1, 1.8, 3.7 and 9.4 seconds at 0, 1, 2, 4 and 8 copies: the
+  first copy adds 0.7 seconds, and each of the fifth to the eighth 1.4.
+  Each of those stages searches lists in order, each search a fold that
+  visits the whole list: the elaboration of modules declares each name
+  after a search of the names visible (`declare` in
+  `bootstrap/modules.geb`, by `lookupAbbrev` in `bootstrap/reader.geb`),
+  the reader's resolution searches its abbreviations and names, and the
+  typing and the expansion search their environments (`lookupName` in
+  `bootstrap/stage1/typing.geb`, `findCtor` in
+  `bootstrap/stage1/datatype.geb`). Nothing is kept between
+  compilations. `geb-compile check` and `geb-author check` compile a
+  program from its first source to the source checked, and
+  `scripts/bootstrap.sh` compiles each layer of a manifest with the
+  layers before it; its check, which compiles every manifest's program
+  beside the fixed points, takes 14.1 minutes
   ({ref "measurements"}[The measurements]). A stage's time linear in the
   program, and a layer compiled against the checked bundle of the
   layers before it, kept by the digest of their sources, make a check
@@ -8746,11 +8746,11 @@ its downstream application]. Start the editor's proof-cache and index work
 alongside the library. Loading the compiler once per stage-test comparison
 shortens the feedback cycle for changes to the compiler itself. The
 constant-depth reader removes a stack limit as the sources grow
-({ref "improvements"}[Improvements]). The division of the compiler's time
-among its stages locates most of it in the recognizers' stage, whose
-change is the first to the compilers' sources, each of which regenerates
-and checks the committed artifacts at the compiler's cost. Polymorphic definitions precede the
-library's modules ({ref "polymorphic-definitions"}[Polymorphic
+({ref "improvements"}[Improvements]). The searches of lists in order in
+the elaboration of modules, the typing and the reader's resolution are the
+next changes to the compilers' sources, each of which regenerates and
+checks the committed artifacts at the compiler's cost. Polymorphic
+definitions precede the library's modules ({ref "polymorphic-definitions"}[Polymorphic
 definitions]).
 
 The proofs about the compiler's components are complete: the type
