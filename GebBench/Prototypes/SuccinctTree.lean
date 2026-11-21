@@ -50,7 +50,7 @@ def benchmarkRecognition (payloads : List ℕ) : IO Unit := do
     let w := Geb.BitTree.Elias.encode (Geb.BitTree.leaf (List.replicate payload true))
     timeRecognition "native-scanner" Geb.BitTree.Elias.Scanner.validBool w
     timeRecognition "shared-algebra" (fun w ↦
-      !(Geb.SizeBounded.Logspace.EliasTree.isEliasTree.1.semVec ![w]).isEmpty) w
+      !(Geb.SizeBounded.Logspace.EliasTree.isEliasTree.val.semVec ![w]).isEmpty) w
 
 /-- Time parsing and exact comparison of the existing rose syntax, with printing excluded. -/
 def timeSyntax (label : String) (tree : Geb.Rose 3) : IO Unit := do
