@@ -117,8 +117,9 @@ own requires a prior `lake build`.
   declaration depends on an axiom outside `{propext, Quot.sound}`,
   except that modules in `GebMeta.classicalAllowedModules`
   additionally permit `Classical.choice` (and only that).
-- `lake shake --add-public --keep-implied --keep-prefix Geb
-  GebTests`. A failing report passes
+- `scripts/shake.sh`, which CI also runs: `lake shake --add-public
+  --keep-implied --keep-prefix --explain Geb GebTests`. A failing
+  report passes
   `scripts/lib/shake-congr-eq.py` when each of its suggestions
   stems from a matcher congruence lemma (`match_n.congr_eq_k`)
   that `lake shake`, not recognising the name as reserved,
