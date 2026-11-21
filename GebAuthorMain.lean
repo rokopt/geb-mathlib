@@ -8,6 +8,7 @@ module
 import GebHost.Authoring
 import GebHost.Migration
 import GebHost.Navigation
+import GebHost.Requests
 import GebHost.Editor
 
 /-! # The command-line entry point of the proof-source runner -/
@@ -24,7 +25,9 @@ def cacheOption (args : List String) : Option System.FilePath × List String :=
     | none => (none, args)
   | none => (none, args)
 
-/-- Execute proofs, check a file, list the documents of a development, or convert a document
+/-- Execute proofs, check a file, compile a program or run one of its definitions on a file or as
+the step of a program that makes requests of its host
+({lit}`GebHost.Requests.interact`), list the documents of a development, or convert a document
 without discarding its decorations. A proof document is proved against the manifest given, or
 else against that of the program it names; with {lit}`--cache DIRECTORY`, {lit}`prove` and
 {lit}`check` resume its development from its cache in that directory, and {lit}`transport`
@@ -44,6 +47,13 @@ public def main (args : List String) : IO UInt32 := do
       GebHost.Authoring.checkExamples manifest m text
       IO.FS.writeBinFile output (writeImage b)
       return 0
+    | ["run", manifest, name, input, output] =>
+      let (_, _, b) ← GebHost.Authoring.readProgram manifest
+      Command.runBundle manifest b name input output
+      return 0
+    | "interact" :: manifest :: name :: arguments =>
+      let (_, _, b) ← GebHost.Authoring.readProgram manifest
+      GebHost.Requests.interactBundle manifest b name arguments
     | ["documents", manifest, proofs] =>
       let m ← Manifest.read manifest
       for d in ← GebHost.Authoring.development proofs m.profile do IO.println d.1
@@ -76,6 +86,8 @@ public def main (args : List String) : IO UInt32 := do
       return 0
     | _ =>
       IO.eprintln "usage: geb-author compile MANIFEST IMAGE\n\
+        geb-author run MANIFEST NAME INPUT OUTPUT\n\
+        geb-author interact MANIFEST NAME [ARGUMENT...]\n\
         geb-author prove [--cache DIRECTORY] [MANIFEST] PROOFS CERTIFICATE\n\
         geb-author replay [MANIFEST] PROOFS CERTIFICATE\n\
         geb-author transport [MANIFEST] PROOFS CERTIFICATE OUTPUT\n\

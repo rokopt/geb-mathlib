@@ -71,6 +71,7 @@ import GebTests.Prototypes.Kernel.Eval
 import GebTests.Prototypes.Kernel.Identity
 import GebTests.Prototypes.Kernel.Modules
 import GebTests.Prototypes.Kernel.Printer
+import GebTests.Prototypes.Kernel.Requests
 import GebTests.Prototypes.Kernel.SourceAnnotation
 import GebTests.Prototypes.Kernel.Strict
 import GebTests.Prototypes.LF

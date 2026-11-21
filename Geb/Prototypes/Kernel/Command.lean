@@ -23,7 +23,8 @@ bundle's image, and {lit}`build --manifest MANIFEST IMAGE` does so for the progr
 {lit}`join MANIFEST OUTPUT LAYER` the text of its layers up to the one named, that one included,
 and {lit}`layers MANIFEST` prints a line for each of its layers, the layer's name followed by the
 paths of its sources;
-{lit}`sources MANIFEST` prints the sources' relative paths, one per line in manifest order;
+{lit}`sources MANIFEST` prints the sources' relative paths, one per line in manifest order, and
+{lit}`entries MANIFEST` its entry points' names;
 {lit}`run IMAGE NAME INPUT OUTPUT` reads an image, applies its definition of that name to
 the input file's tree, and writes the output tree's bytes;
 {lit}`migrate-image INPUT OUTPUT` validates an image and writes its explicit-profile form,
@@ -43,6 +44,8 @@ without notes is read as it is written.
   by a newline.
 * {lit}`Geb.Kernel.Command.runFile` — a function of trees applied to a file, which the
   executable of the compiled bootstrap compiler shares.
+* {lit}`Geb.Kernel.Command.runBundle` — a bundle's definition applied to a file, which the
+  executable of the authoring tools shares.
 
 ## Implementation notes
 
@@ -94,6 +97,15 @@ def runBytes (name : String) (f : Tree → Except String Tree) (input : ByteArra
 def runFile (name : String) (f : Tree → Except String Tree) (input output : String) : IO Unit := do
   runBytes name f (← IO.FS.readBinFile input) output
 
+/-- Apply a bundle's definition of a name to an input file's tree and write the output tree's
+bytes, as {name}`runBytes` does; what names the bundle identifies it in errors. -/
+def runBundle (what : String) (bundle : Tree) (name input output : String) : IO Unit := do
+  let entry := s!"{what}: {name}"
+  runFile entry (fun x ↦ match runEntry bundle (chars name.toUTF8) x with
+    | some y => .ok y
+    | none => .error s!"{entry} is not a well-typed definition from trees to trees")
+    input output
+
 /-- Write the image of a program's text, the checks of its definitions' names passing; what names
 the program identifies it in errors. -/
 def buildImage (what : String) (text : List Char) (checkNames : List String → Except String Unit)
@@ -141,8 +153,8 @@ def checkAnnotations (path : String) : IO Unit := do
     throw <| IO.userError s!"{path}: the kernel definitions do not type-check"
   IO.println s!"{path}: source annotations and kernel definitions checked"
 
-/-- Build an image from a program's source or manifest, write or list a manifest's sources, run
-an image's named definition on a file, or check a program with holes. -/
+/-- Build an image from a program's source or manifest, write or list a manifest's sources, list
+its entry points, run an image's named definition on a file, or check a program with holes. -/
 def run (args : List String) : IO UInt32 := do
   match args with
   | ["migrate-image", input, output] =>
@@ -184,14 +196,14 @@ def run (args : List String) : IO UInt32 := do
     let m ← Manifest.read path
     for source in m.sources do IO.println source
     return 0
+  | ["entries", path] =>
+    let m ← Manifest.read path
+    for e in m.entries do IO.println e
+    return 0
   | ["run", img, name, input, output] =>
     let some t := readImage (← IO.FS.readBinFile img)
       | throw <| IO.userError s!"{img}: not an image"
-    let entry := s!"{img}: {name}"
-    runFile entry (fun x ↦ match runEntry t (chars name.toUTF8) x with
-      | some y => .ok y
-      | none => .error s!"{entry} is not a well-typed definition from trees to trees")
-      input output
+    runBundle img t name input output
     return 0
   | ["holes", "--manifest", path] =>
     let m ← Manifest.read path
@@ -202,8 +214,10 @@ def run (args : List String) : IO UInt32 := do
     throw <| IO.userError <|
       "usage: geb-kernel build SOURCE... IMAGE | geb-kernel build --manifest MANIFEST IMAGE | " ++
         "geb-kernel join MANIFEST OUTPUT [LAYER] | geb-kernel layers MANIFEST | " ++
-        "geb-kernel sources MANIFEST | " ++
-        "geb-kernel run IMAGE NAME INPUT OUTPUT | geb-kernel migrate-image INPUT OUTPUT | " ++
+        "geb-kernel sources MANIFEST | geb-kernel entries MANIFEST | " ++
+        "geb-kernel run IMAGE NAME INPUT OUTPUT | " ++
+        "geb-kernel interact IMAGE NAME [ARGUMENT...] | " ++
+        "geb-kernel migrate-image INPUT OUTPUT | " ++
         "geb-kernel holes SOURCE... | " ++
         "geb-kernel holes --manifest MANIFEST | geb-kernel annotations SOURCE OUTPUT | " ++
         "geb-kernel check-annotations RECORD"

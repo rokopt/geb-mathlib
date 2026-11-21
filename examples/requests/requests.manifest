@@ -1,0 +1,5 @@
+; A program that reads the file an index names and writes its bytes to an output, through the
+; requests the host performs.
+(program requests (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources Index.geb)
+  (entries Index.step))

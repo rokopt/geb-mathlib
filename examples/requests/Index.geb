@@ -1,0 +1,65 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; A program that makes requests of its host, run by {lit}`geb-kernel interact` or
+; {lit}`geb-author interact` with two arguments, the path of an index and the path of an output.
+; It reads the index, whose first line is the path of another file, reads that file and writes its
+; bytes to the output. Where that file is missing it writes the line {lit}`missing` instead, the
+; failure of the read being a result it receives. It exits with status 0 when it has written the
+; output, 1 when the index or the write fails, 2 without the two arguments and 3 when the host's
+; protocol is not version 0. Its datatypes are the protocol's, in their order of constructors.
+
+(module Index (export step)
+  ; a byte string, each byte the leaf of its value
+  (data Bytes (bytes & T))
+  ; why a request failed
+  (data Failure (other Bytes) (notFound) (denied))
+  ; the result of a request
+  (data Result (failed Failure) (succeeded & T))
+  ; a request: a read of a path, or a write of bytes to a path
+  (data Request (read Bytes) (write Bytes Bytes))
+  ; what a step returns: the end with its status, or a request with the state to resume in
+  (data Action (done T) (call Request T))
+  ; what a step receives: the start with the version and the arguments, or a state and a result
+  (data Event (start T & Bytes) (resume T Result))
+  ; the state the program resumes in, with the output's path while it reads
+  (data State (readingIndex Bytes) (readingTarget Bytes) (writing))
+  ; the bytes of a line before its first line feed
+  (defn firstLine ((cs (List T))) Bytes
+    (bytes (foldr T (List T) (lam ((c T) (r (List T))) (if (eq c 10) (nil T) (cons c r))) (nil T) cs)))
+  ; the bytes a read returns, or none
+  (defn contents ((xs (List T))) Bytes
+    (lcase T Bytes xs (bytes (nil T))
+      (lam ((x T) (r (List T))) (decode Bytes x (lam ((b Bytes)) b) (bytes (nil T))))))
+  ; the first line of the bytes a read returns
+  (defn named ((xs (List T))) Bytes (case (contents xs) ((bytes & cs) (firstLine cs))))
+  ; the line the output holds where the file the index names is missing
+  (defn missing () Bytes (datum Bytes (0 (109) (105) (115) (115) (105) (110) (103) (10))))
+  ; the read of the index, the output's path kept in the state
+  (defn begin ((args (List Bytes))) Action
+    (lcase Bytes Action args (done 2)
+      (lam ((index Bytes) (rest (List Bytes)))
+        (lcase Bytes Action rest (done 2)
+          (lam ((out Bytes) (more (List Bytes))) (call (read index) (rep (readingIndex out))))))))
+  ; the step after a request's result
+  (defn after ((st State) (r Result)) Action
+    (case st
+      ((readingIndex out)
+        (case r
+          ((failed f) (done 1))
+          ((succeeded & xs) (call (read (named xs)) (rep (readingTarget out))))))
+      ((readingTarget out)
+        (case r
+          ((failed f) (case f ((notFound) (call (write out missing) (rep writing))) (else (done 1))))
+          ((succeeded & xs) (call (write out (contents xs)) (rep writing)))))
+      ((writing) (case r ((failed f) (done 1)) ((succeeded & xs) (done 0))))))
+  ; the action of an event
+  (defn react ((e Event)) Action
+    (case e
+      ((start v & args) (if (eq v 0) (begin args) (done 3)))
+      ((resume s r) (decode State s (lam ((st State)) (after st r)) (done 2)))))
+  ; The program's step. At the start of version 0 with the arguments {lit}`a` and {lit}`b`, it
+  ; reads {lit}`a` and keeps {lit}`b` in its state.
+  (note (example (Index.step (quote (0 (0) (0 (97)) (0 (98))))) (quote (1 (0 (0 (97))) (0 (0 (98)))))))
+  (defn step ((e T)) T (rep (decode Event e react (done 2)))))
