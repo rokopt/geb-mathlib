@@ -75,15 +75,17 @@ code-insiders --install-extension 'geb/editors/vscode/paredit-0.2.1+geb.1.vsix' 
 
 Open the client's directory as the workspace folder. Its settings name
 `geb` as the toolchain directory and select the program `Client`, so
-that every command and task runs Lake in the submodule and reads the
-client's files where they are.
+that editor commands use the submodule's host tools and read the client's
+files where they are. The first use checks the tools through Lake. Later
+commands reuse them until their build inputs or executables change.
 
 - Go to Definition on `Bytes.reverse` in `Client.geb` opens its
   definition in `geb/library/Bytes.geb`, and Hover shows its
   documentation.
 - `Geb: Compile Program` compiles the program and checks the examples of
   its notes, the library's and the client's.
-- `Geb: Prove Statements` proves `Client.proofs.geb` and the library's
+- `Geb: Prove Statements` uses the client's `.lake/geb-proof-cache`
+  to prove `Client.proofs.geb` and the library's
   document it imports and saves the certificate;
   `Geb: Replay Certificate` replays it without search.
 - The task `Geb: check saved file` checks the active file against the

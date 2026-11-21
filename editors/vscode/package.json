@@ -188,7 +188,7 @@
     }
   },
   "scripts": {
-    "test": "node --test test/grammar.test.cjs",
+    "test": "node --test test/grammar.test.cjs test/navigation-host.test.cjs && python3 test/tools.py",
     "test:editor": "node test/run.cjs",
     "build:paredit": "bash patches/build.sh",
     "test:paredit": "npm run build:paredit && node test/run.cjs --paredit",

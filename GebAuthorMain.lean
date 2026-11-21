@@ -37,6 +37,7 @@ public def main (args : List String) : IO UInt32 := do
     | ["editor-holes", manifest] => GebHost.Editor.run "holes" manifest
     | ["migrate-proof-v2", manifest, proofs, certificate] =>
       GebHost.Migration.run manifest proofs certificate
+    | ["navigation-server", manifest] => GebHost.Navigation.serve manifest
     | ["navigation", manifest] => GebHost.Navigation.run manifest
     | ["compile", manifest, output] =>
       let (m, text, b) ← GebHost.Authoring.readProgram manifest
@@ -81,6 +82,7 @@ public def main (args : List String) : IO UInt32 := do
         geb-author check [--cache DIRECTORY] FILE\n\
         geb-author documents MANIFEST PROOFS\n\
         geb-author navigation MANIFEST < REQUEST.json\n\
+        geb-author navigation-server MANIFEST < REQUESTS.jsonl\n\
         geb-author format-buffer < REQUEST.json\n\
         geb-author editor-holes MANIFEST < REQUEST.json\n\
         geb-author migrate-proof-v2 MANIFEST PROOFS CERTIFICATE\n\

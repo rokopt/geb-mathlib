@@ -38,7 +38,7 @@ in the VS Code instance displaying the file.
 The extension runs the host executables of the Geb checkout that
 `geb.toolchainDirectory` names (§ Programs and commands). The default
 `lake build` builds the `Geb` library alone, and no executable; build
-those the extension and the preservation commands run with
+them ahead of the first command with
 
 ```sh
 lake build geb-author geb-kernel geb-fmt geb-compile geb-defs
@@ -49,9 +49,12 @@ replays proof documents, and answers the editor's navigation, formatting
 and hole requests; `geb-kernel` lists a manifest's sources, reports
 kernel holes and runs an image's definition on a file; `geb-fmt` formats
 files; `geb-compile` and `geb-defs` are run by `scripts/preserve.py` for
-records. Commands and tasks build what they invoke through Lake, but
-navigation, Format Document and the obligations view run
-`.lake/build/bin/geb-author` as it was last built.
+records. The extension uses Python 3 to check the selected checkout's
+host sources, dependency sources, build configuration, toolchain and
+executable. On first use or after a change it asks Lake to build the
+requested tools. Subsequent commands run those executables directly.
+The checkout keeps the successful build stamps in `.lake/geb-editor/tools/`.
+Editing a client or library Geb document requires no host rebuild.
 
 The structural editor is Mike's Paredit, built from the upstream commit
 and [patch](patches/README.md) that `package.json` pins under
@@ -78,9 +81,8 @@ atoms. The grammar distinguishes comments and quoted atoms so that
 parentheses inside them do not participate in bracket matching.
 Brackets and braces are not Geb grouping delimiters.
 
-Build `geb-author` with `lake build geb-author`, then use VS Code's
-Format Document command. It formats the current buffer, including untitled
-Geb documents, without saving it; one undo restores the original text.
+Format Document formats the current buffer, including untitled Geb
+documents. One undo restores the original text.
 The formatter retains comments and annotations. In CRLF buffers it spells
 newlines within quoted atoms as escapes, preserving their bytes when the
 editor normalizes inserted line endings. Malformed input leaves
@@ -90,7 +92,7 @@ workspace's `geb.toolchainDirectory` when no program is selected.
 Formatting on save is disabled by default for Geb.
 
 The extension also contributes the task `Geb: format saved file`, which
-invokes `lake exe geb-fmt` on the active file and writes its layout.
+invokes `geb-fmt` on the active file and writes its layout.
 
 The formatter and the document type are described in the
 [bootstrap chapter](../../manual/GebManual/Bootstrap.lean).
@@ -98,7 +100,7 @@ The formatter and the document type are described in the
 ## Diagnostics
 
 The extension contributes, for each workspace folder, the task
-`Geb: check saved file`, which runs `lake exe geb-author check` on the
+`Geb: check saved file`, which runs `geb-author check` on the
 active file in the folder's `geb.toolchainDirectory`, and the command
 writes nothing. Both file tasks are listed under Tasks: Run Task, and a
 `tasks.json` may refer to them as
@@ -130,7 +132,7 @@ run the same command when a buffer is saved.
 
 ## Navigation
 
-After building `geb-author` and selecting a program, Go to Definition
+After selecting a program, Go to Definition
 resolves references to that program's declarations, including imports,
 aliases and module instances. An instance's declaration opens its
 template's source. Hover displays the source signature and its preceding
@@ -159,15 +161,28 @@ as such; those entries supply no definition, hover or completion result.
 Recovery never changes the compiler's input. Strict-encoded sources have
 no editor navigation interface. Navigation requires workspace trust.
 
-The host interface is `geb-author navigation MANIFEST`. It reads a JSON
+The extension keeps `geb-author navigation-server MANIFEST` running for
+the selected program. It accepts one JSON request and returns one JSON
+response per line. Each query checks the manifest and the contents of
+its sources and proof imports, including unsaved snapshots. The host
+reuses parsed documents and resumes indexing at the first changed file.
+A change to the module nesting bound requires indexing from the start.
+The extension restarts the process when the host executable changes.
+For a project pinned to a checkout that provides only the single-request
+interface, it uses that interface.
+
+The single-request interface `geb-author navigation MANIFEST` reads a JSON
 object from standard input with `file`, one-based byte `line` and
 `column`, and `documents`, an array of `{path, text}` buffer snapshots
 under absolute paths. Optional `proofs` names the entry proof document;
 `recover: true` enables editor recovery. A zero line and column requests
-the declaration index alone. The result contains `symbols`, an optional
+the declaration index alone. The optional `operation` selects `target`,
+`completion`, `document` or `workspace`. Omitting it returns the full
+single-request result. The result contains `symbols`, an optional
 `target`, `completions`, an optional `atomSpan` for completion replacement,
 `incomplete` file paths and `errors`. Each symbol names its file, full
-span, name selection, signature, documentation and completion `insertText`.
+span, name selection, signature, documentation and completion `insertText`
+in the full result. Operation-specific responses omit unused symbol fields.
 Names and source text are arrays of bytes, decoded as UTF-8; file paths
 and kinds are JSON strings. Spans are
 `[startLine, startColumn, endLine, endColumn]`, with inclusive endpoints.
@@ -259,8 +274,10 @@ defaults are
 `.lake/geb-editor/program-NAME/program.img` and
 `.lake/geb-editor/program-NAME/proof.cert`, with the display name encoded
 as a URI component. Parent directories are created for those outputs.
-Commands that compile or check proofs build their host tools through
-Lake before using them; integrity verification needs only Python.
+Prove Statements shares the folder's `.lake/geb-proof-cache` with the
+saved-file check. Its terminal reports how many theorems it took from
+the cache and how many it proved. It replays the resulting certificate
+before writing it. Integrity verification needs only Python.
 A rejected program or failed proof leaves an existing output in place.
 Hole reporting is limited to the kernel forms accepted by the current
 host: exit status `2` means open obligations, `0` means complete, and `1`

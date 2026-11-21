@@ -72,6 +72,18 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     assert cert.read_bytes() == plain.read_bytes()
     run('replay', doc, cert)
 
+    # The saved-file check and Prove Statements may populate the same cold cache at once.
+    shared = root / 'shared'
+    writers = [subprocess.Popen([runner, *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+               for args in [('check', '--cache', shared, doc),
+                            ('prove', '--cache', shared, doc, cert)]]
+    for writer in writers:
+        output, error = writer.communicate(timeout=60)
+        assert writer.returncode == 0, (output, error)
+    assert uses(run('check', '--cache', shared, doc)[0]) == (4, 0, 0, 0)
+    assert cert.read_bytes() == plain.read_bytes()
+    run('replay', doc, cert)
+
     # A changed script is run again, and the theorems after it are taken: its statement is the
     # same, so the entries they were checked with are.
     out, _ = prove(DOC.replace('(by (normalize 64))', '(by (normalize 65))'))

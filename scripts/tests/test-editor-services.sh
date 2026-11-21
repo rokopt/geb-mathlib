@@ -167,6 +167,42 @@ with tempfile.TemporaryDirectory(prefix='geb-editor-services-') as directory:
                     extra=[dict(path=str(proof), text=broken_import)])
     assert selected(partial)[0] == 'Lib.known'
 
+    # Exercise a single live index through on-disk and unsaved edits, including proof imports.
+    with subprocess.Popen([host, 'navigation-server', manifest], text=True,
+                          stdin=subprocess.PIPE, stdout=subprocess.PIPE) as server:
+        def live(operation, file=source, contents=program, word='L.known x', documents=()):
+            prefix = contents[:contents.index(word)]
+            req = dict(operation=operation, file=str(file), line=prefix.count('\n') + 1,
+                       column=len(prefix.rsplit('\n', 1)[-1].encode()) + 1, proofs=str(proof),
+                       recover=True, documents=documents)
+            server.stdin.write(json.dumps(req) + '\n')
+            server.stdin.flush()
+            result = json.loads(server.stdout.readline())
+            assert 'error' not in result, result
+            return result
+
+        target = live('target')
+        assert target['symbols'] == [] and target['completions'] == []
+        before = selected(target)[1]
+        original_lib = library.read_text()
+        library.write_text('\n' + original_lib)
+        assert selected(live('target'))[1][0] == before[0] + 1
+        changed_lib = original_lib.replace('known', 'different')
+        snapshot = [dict(path=str(library), text=changed_lib)]
+        assert live('target', documents=snapshot)['target'] is None
+        choices = [text(s['name']) for s in live('completion', documents=snapshot)['completions']]
+        assert 'L.different' in choices and 'L.known' not in choices
+        library.write_text(original_lib)
+        assert selected(live('target'))[1] == before
+        def theorem(documents=()):
+            return live('target', proof, proofs, 'previous)', documents)['target']
+        assert text(theorem()['name']) == 'previous'
+        assert theorem([dict(path=str(imported), text=imported.read_text().replace(
+            'theorem previous', 'theorem renamed'))]) is None
+        assert theorem([dict(path=str(proof), text=proofs.replace('(import Library.proofs.geb)', ''))]) is None
+        assert text(theorem()['name']) == 'previous'
+        server.stdin.close()
+
     # Format unsaved bytes, retaining quoted atoms, comments and opaque notes; reject unfinished input.
     messy = '; retained λ😀\r\n(note (future opaque))\r\n(def "λ😀"   (quote (1 2)))\r\n'
     formatted = text(call(['format-buffer'], dict(text=messy))['text'])

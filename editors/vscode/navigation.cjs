@@ -2,42 +2,62 @@
 const vscode = require('vscode');
 const { realpath } = require('node:fs/promises');
 const host = require('./host.cjs');
+const { connect } = require('./navigation-host.cjs');
 const { range } = host;
 
 exports.register = (context, selected) => {
   const output = vscode.window.createOutputChannel('Geb navigation');
   context.subscriptions.push(output);
   const previous = new Map();
-  async function request(document, at, token) {
+  let service, serviceKey;
+  context.subscriptions.push({ dispose: () => service?.dispose() });
+  const identity = p => p && JSON.stringify([p.key, p.cwd, p.manifest, p.proofs]);
+  async function request(operation, document, at, token) {
     if (!vscode.workspace.isTrusted || token.isCancellationRequested) return;
     const program = selected();
     if (!program) return;
     try {
       const snapshot = await host.capture();
       const file = document ? await realpath(document.uri.fsPath) : '';
-      const payload = { file, line: at ? at.line + 1 : 0,
+      const payload = { operation, file, line: at ? at.line + 1 : 0,
         column: at ? Buffer.byteLength(document.lineAt(at.line).text.slice(0, at.character), 'utf8') + 1 : 0,
         documents: snapshot.documents, proofs: program.proofs || '', recover: true };
       if (token.isCancellationRequested) return;
-      const result = await host.call(program.cwd, ['navigation', program.manifest], payload, token);
-      if (!result || token.isCancellationRequested || selected()?.key !== program.key ||
-          !snapshot.current()) return;
+      const { binary, revision } = await host.author(program.cwd);
+      const current = () => !token.isCancellationRequested && identity(selected()) === identity(program) &&
+        snapshot.current();
+      if (!current()) return;
+      const key = JSON.stringify([identity(program), revision]);
+      if (key !== serviceKey || !service || service.closed) {
+        service?.dispose();
+        serviceKey = key;
+        service = connect(binary, program.manifest, program.cwd,
+          (payload, token) => host.call(program.cwd, ['navigation', program.manifest], payload, token));
+        previous.clear();
+      }
+      const result = await service.send(payload, token);
+      if (!result || key !== serviceKey || !current()) return;
       const decode = symbol => symbol && ({ ...symbol,
         name: host.decode(symbol.name),
-        signature: host.decode(symbol.signature),
-        documentation: host.decode(symbol.documentation),
-        insertText: host.decode(symbol.insertText) });
+        signature: symbol.signature && host.decode(symbol.signature),
+        documentation: symbol.documentation && host.decode(symbol.documentation),
+        insertText: symbol.insertText && host.decode(symbol.insertText) });
       const symbols = result.symbols.map(decode);
       const incomplete = new Set(result.incomplete);
-      for (const f of new Set([...symbols.map(s => s.file), ...(document ? [file] : [])])) {
-        const key = `${program.key}:${f}`;
-        if (!incomplete.has(f)) previous.set(key, symbols.filter(s => s.file === f));
-      }
-      // Previous symbols are offered only in outlines, with an explicit label. Their old
-      // locations never answer definition, hover or completion queries.
-      for (const f of incomplete) {
-        for (const s of previous.get(`${program.key}:${f}`) || []) {
-          if (!symbols.some(n => n.file === f && n.name === s.name)) symbols.push({ ...s, stale: true });
+      if (operation === 'document' || operation === 'workspace') {
+        if (operation === 'workspace') {
+          for (const f of previous.keys()) if (!incomplete.has(f)) previous.delete(f);
+        }
+        for (const f of new Set([...symbols.map(s => s.file), ...(document ? [file] : [])])) {
+          if (!incomplete.has(f)) previous.set(f, symbols.filter(s => s.file === f));
+        }
+        // Previous symbols are offered only in outlines, with an explicit label. Their old
+        // locations never answer definition, hover or completion queries.
+        for (const f of incomplete) {
+          if (document && f !== file) continue;
+          for (const s of previous.get(f) || []) {
+            if (!symbols.some(n => n.file === f && n.name === s.name)) symbols.push({ ...s, stale: true });
+          }
         }
       }
       return { ...result, symbols, target: decode(result.target),
@@ -51,10 +71,10 @@ exports.register = (context, selected) => {
   context.subscriptions.push(
     vscode.languages.registerDefinitionProvider(selector, {
       async provideDefinition(document, at, token) {
-        let result = await request(document, at, token);
+        let result = await request('target', document, at, token);
         // Keyboard navigation also works with the caret immediately after the atom.
         if (result && !result.target && at.character > 0) {
-          result = await request(document, at.translate(0, -1), token);
+          result = await request('target', document, at.translate(0, -1), token);
         }
         if (!result?.target) return;
         const target = result.target;
@@ -64,7 +84,7 @@ exports.register = (context, selected) => {
     }),
     vscode.languages.registerHoverProvider(selector, {
       async provideHover(document, at, token) {
-        const result = await request(document, at, token);
+        const result = await request('target', document, at, token);
         if (!result?.target) return;
         const target = result.target;
         const content = new vscode.MarkdownString();
@@ -76,7 +96,7 @@ exports.register = (context, selected) => {
     }),
     vscode.languages.registerDocumentSymbolProvider(selector, {
       async provideDocumentSymbols(document, token) {
-        const result = await request(document, undefined, token);
+        const result = await request('document', document, undefined, token);
         if (!result) return [];
         return result.symbols.filter(s => s.file === result.file).map(s =>
           new vscode.DocumentSymbol(s.name, s.stale ? 'previous successful parse' : s.kind,
@@ -86,7 +106,7 @@ exports.register = (context, selected) => {
     }),
     vscode.languages.registerCompletionItemProvider(selector, {
       async provideCompletionItems(document, at, token) {
-        const result = await request(document, at, token);
+        const result = await request('completion', document, at, token);
         if (!result) return [];
         // VS Code completion replacement ranges must lie on one line.
         if (result.atomSpan && result.atomSpan[0] !== result.atomSpan[2]) return [];
@@ -106,7 +126,7 @@ exports.register = (context, selected) => {
     }, '.', '"'),
     vscode.languages.registerWorkspaceSymbolProvider({
       async provideWorkspaceSymbols(query, token) {
-        const result = await request(undefined, undefined, token);
+        const result = await request('workspace', undefined, undefined, token);
         if (!result) return [];
         return Promise.all(result.symbols.filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
           .map(async s => {

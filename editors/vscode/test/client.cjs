@@ -38,11 +38,48 @@ exports.run = async (test, checkTask) => {
     assert.match(hovers.flatMap(h => h.contents).map(c => c.value).join('\n')
       .replaceAll('&nbsp;', ' '), /elements of a list of bytes in the opposite order/);
   });
+  await test('warm client navigation sees an unsaved change in the library', async () => {
+    const clientDoc = await vscode.workspace.openTextDocument(path.join(client, 'Client.geb'));
+    const at = clientDoc.positionAt(clientDoc.getText().indexOf('Bytes.reverse xs') + 'Bytes.'.length);
+    const query = async (kind, stage) => {
+      const start = performance.now();
+      const reply = await vscode.commands.executeCommand(`vscode.execute${kind}Provider`, clientDoc.uri, at);
+      console.log(`Client ${kind} (${stage}): ${Math.round(performance.now() - start)} ms`);
+      return reply;
+    };
+    const [initial] = await query('Definition', 'warm');
+    const complete = async stage => {
+      const result = await query('CompletionItem', stage);
+      return result.items.map(item => item.label);
+    };
+    assert.ok((await complete('warm')).includes('Bytes.reverseFile'));
+    const changed = '\n' + original.replace('The elements of a list', 'Updated elements of a list')
+      .replaceAll('reverseFile', 'reversedFile');
+    try {
+      await replace(library, changed);
+      const hover = await query('Hover', 'after unsaved import edit');
+      assert.match(hover.flatMap(h => h.contents).map(c => c.value).join(' ')
+        .replaceAll('&nbsp;', ' '), /Updated elements/);
+      const [moved] = await query('Definition', 'after reindexing');
+      assert.equal(moved.range.start.line, initial.range.start.line + 1);
+      const choices = await complete('after reindexing');
+      assert.ok(choices.includes('Bytes.reversedFile') && !choices.includes('Bytes.reverseFile'));
+      await query('Hover', 'warm');
+      assert.equal(readFileSync(library, 'utf8'), original);
+    } finally {
+      await replace(library, original);
+    }
+  });
   await test('compile checks the examples of the library and the client', async () => {
     await vscode.commands.executeCommand('geb.selectProgram', 'Client');
+    const start = performance.now();
     const result = await command('compile');
+    console.log(`Client Compile Program task: ${Math.round(performance.now() - start)} ms`);
     assert.equal(result.code, 0);
     assert.equal(result.task.execution.options.cwd, geb);
+    const warm = performance.now();
+    assert.equal((await command('compile')).code, 0);
+    console.log(`Client repeat Compile Program task: ${Math.round(performance.now() - warm)} ms`);
   });
   await test('an edit of the library module is checked by the client\'s compile', async () => {
     // A false example fails the compile, which reports it without a position.

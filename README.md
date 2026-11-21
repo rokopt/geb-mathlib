@@ -22,6 +22,12 @@ prototypes (under
 and the rendered libraries are published at
 [rokopt.github.io/geb-mathlib](https://rokopt.github.io/geb-mathlib/).
 
+To work on the [shared library](library/), open this checkout in VS Code
+and select the `Library` program. To start a separate repository, use
+the [client template](examples/client/README.md).
+The template includes the VS Code Insiders setup and the commands to
+compile the project, prove its theorems and run it on a file.
+
 ## Dependencies
 
 - [mathlib4](https://github.com/leanprover-community/mathlib4).

@@ -42,6 +42,37 @@ exports.run = async test => {
       assert.match(content, /defn first/);
       assert.match(content.replaceAll('&nbsp;', ' '), /first component of the pair/);
     });
+    await test('an unsaved import edit refreshes cached locations, hover and completions', async () => {
+      const pair = await vscode.workspace.openTextDocument(path.join(root, 'Pair.geb'));
+      const pane = await vscode.window.showTextDocument(pair);
+      const before = pair.getText();
+      const lookup = () => vscode.commands.executeCommand('vscode.executeDefinitionProvider',
+        document.uri, at('P.first x'));
+      const complete = () => vscode.commands.executeCommand('vscode.executeCompletionItemProvider',
+        document.uri, at('P.first x').translate(0, 2));
+      const [initial] = await lookup();
+      assert.ok((await complete()).items.some(i => i.label === 'P.left'));
+      try {
+        const edited = '\n\n' + before.replace('first component of the pair of the arguments',
+          'new documentation from the unsaved import').replaceAll('left', 'second');
+        await pane.edit(e => e.replace(new vscode.Range(pair.positionAt(0),
+          pair.positionAt(before.length)), edited));
+        const [moved] = await lookup();
+        assert.equal(moved.range.start.line, initial.range.start.line + 2);
+        assert.equal(pair.getText(moved.range), 'first');
+        const hover = await vscode.commands.executeCommand('vscode.executeHoverProvider',
+          document.uri, at('P.first x'));
+        assert.match(hover.flatMap(h => h.contents).map(c => c.value).join(' ')
+          .replaceAll('&nbsp;', ' '), /new documentation from the unsaved import/);
+        const choices = (await complete()).items.map(i => i.label);
+        assert.ok(choices.includes('P.second') && !choices.includes('P.left'));
+        assert.equal(readFileSync(pair.fileName, 'utf8'), before);
+      } finally {
+        await pane.edit(e => e.replace(new vscode.Range(pair.positionAt(0),
+          pair.positionAt(pair.getText().length)), before));
+        await vscode.window.showTextDocument(document);
+      }
+    });
     await test('definition ranges translate UTF-8 bytes to UTF-16 positions', async () => {
       const offset = document.getText().lastIndexOf('"λ😀"');
       const locations = await vscode.commands.executeCommand('vscode.executeDefinitionProvider',

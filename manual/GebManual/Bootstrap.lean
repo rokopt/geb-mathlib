@@ -139,8 +139,8 @@ these capabilities in a client maintained in its own repository.
    library's. Its proof document imports the library's and is proved
    against the client's program. Its settings name the submodule as
    `geb.toolchainDirectory`; the extension contributes the saved-file
-   tasks, which run Lake in the workspace folder's toolchain directory
-   and keep the proof cache in the folder. The extension's README
+   tasks, which use the tools from that checkout. Prove Statements and
+   the saved-file check share the workspace folder's proof cache. The extension's README
    documents the host executable targets beside the default `lake build`,
    which builds the Geb library. `scripts/tests/test-client.sh` checks
    the library, and the template outside the repository by its
@@ -209,8 +209,8 @@ these capabilities in a client maintained in its own repository.
    proof-source version 1 to 2 and the image's explicit kernel profile
    ({ref "first-authoring"}[Writing a first Geb development]).
 
-The library and client, datatype feedback, editor indexing, and filesystem
-interpreter can start in parallel, as can the measurement of step 2 and
+Datatype feedback and the filesystem interpreter can proceed alongside
+the library, as can the measurement of step 2 and
 the design of step 4, which change no source. Develop diagnostics and
 holes against the same source correspondence. Integrate the interpreter
 when the client can issue requests. Preservation work can start on the
@@ -220,10 +220,9 @@ merge one at a time, those of steps 2, 3 and 4 in that order. Step 2
 shortens the regeneration and the checks of the other two, and step 3
 serves the client while the form of step 4 is settled. Steps 1, 5 and 6
 change the host, the editor and the client, and proceed beside them.
-Start editor indexing and use of the proof cache with the library, since
-navigation of the compiler's sources already takes seconds per request
-({ref "improvements"}[Improvements]). Other editors can reuse these
-services through a general protocol. Network storage follows its own
+The editor retains the selected program's navigation index and uses the
+client's proof cache ({ref "improvements"}[Improvements]). Other
+editors can reuse these services through a general protocol. Network storage follows its own
 acceptance condition; the second host and the comparison of machines
 follow the bootstrap.
 
@@ -4038,9 +4037,10 @@ tag := "authoring-compatibility"
 *
   * Navigation and its index
   * Complete for definitions, hover, outlines, workspace symbols, scoped
-    completion and recovery on unsaved authoring documents. Reusing the
-    index across requests is ready. A general Language Server Protocol
-    interface and tree-sitter support wait on clients that need them.
+    completion and recovery on unsaved authoring documents. Queries reuse
+    parsed documents and the index preceding the first changed input. A
+    general Language Server Protocol interface and tree-sitter support
+    wait on clients that need them.
 *
   * The further requirements
     ({ref "further-requirements"}[Further requirements])
@@ -5352,11 +5352,11 @@ vertex through the source correspondence to the original expression,
 including under binders, `let`, `defn` and modules. Prefixes containing
 datatype declarations retain declaration diagnostics. Stage-1 typing
 can supply a source type at the offending expression before erasure.
-The next editor work is to expose that information and datatype holes,
-and to reuse the navigation index across requests. The existing VS Code
-client already tracks buffer versions, cancels requests and translates
-byte positions. A client using the Language Server Protocol would need
-an adapter for its negotiated position encoding.
+The next editor work is to expose that information and datatype holes.
+The VS Code client reuses the navigation index, tracks buffer versions,
+discards cancelled results and translates byte positions. A Language
+Server Protocol client would need an adapter for its negotiated position
+encoding.
 
 ### Typed holes
 %%%
@@ -8749,29 +8749,33 @@ the change that removes it.
   take the time of the layers that changed
   ({ref "downstream-authoring"}[A Geb library and its downstream
   application]).
-* Editor latency. Each navigation request starts `geb-author`, reads
-  the selected manifest's sources and proof imports, walks their forms
-  and returns the declaration index (`editors/vscode/host.cjs`,
-  `GebHost/Navigation.lean`). On one machine the median of three
-  fresh host processes requesting workspace symbols was 54 milliseconds
-  for Roundtrip, 2.66 seconds for Tree cases, and 7.71 seconds for the
-  stage-1 compiler. These were index requests with line and column zero,
-  recovery enabled and an empty list of open buffers. The first two used
-  their configured proof documents, the last used `bootstrap/stage1.manifest`
-  alone. These timings exclude the editor. Retain parsed documents and
-  their index across requests, invalidate scopes affected by a changed
-  buffer or import, and return only the data the operation needs.
-  Measure repeated hover and completion before and after an edit as well
-  as the first query. Check that an edited import resolves at its new
-  location and cancellation never restores an old result.
-* Repeated proof search and example checking. The saved-file check task
-  passes `--cache` to `geb-author`. The editor's Prove Statements command
-  invokes `prove` without it (`editors/vscode/extension.cjs`). Pass a
-  cache directory for the selected project and check that repeating an
-  unchanged proof searches no theorem and produces the same replayable
-  certificate. As the library acquires
-  examples, measure the cost of `checkExamples` in `GebHost/Authoring.lean`,
-  which recompiles the program with each example's two expressions.
+* Editor latency. The VS Code extension checks the selected checkout's
+  host sources, dependencies, toolchain and executable. Lake builds the
+  requested tools on first use and when their build inputs change.
+  A warm command runs the executable directly. On one machine a small
+  downstream client compiled in about 0.2 seconds through the editor
+  launcher, compared with 10.6 seconds through Lake and 0.11 seconds
+  invoking the executable directly. These times exclude the editor UI.
+  Navigation keeps a host process for the selected program. Its index
+  retains the parsed sources and proof documents and the module and
+  proof scopes through each file. A changed input invalidates its
+  checkpoint and all later ones. A change in the module depth bound
+  invalidates every checkpoint. Each operation requests its own fields.
+  The editor tests move an imported declaration in an unsaved buffer,
+  change its documentation and exports, then query it from a client.
+  The host tests also change imports on disk and in proof documents.
+  For example, at the use of `Prelude.and` in `stage1/typing.geb`, a
+  warm stage-1 host answered hover in about 2 milliseconds and completion
+  in about 20. The first query after inserting a line in the prelude
+  took about 0.3 seconds, including reindexing its dependants. These
+  timings include the JSON round trip and exclude the editor.
+* Repeated proof search and example checking. The saved-file check and
+  Prove Statements share the selected workspace folder's proof cache.
+  In the downstream client, the first prove searches two theorems. An
+  unchanged repeat takes both from the cache and writes the identical
+  replayable certificate. As the library acquires examples, measure the
+  cost of `checkExamples` in `GebHost/Authoring.lean`, which recompiles
+  the program with each example's two expressions.
 * The equivalence of the word-level codec with
   {name}`Geb.RoseTree.wire`, tested and not proved, which is the first
   of the decision gates of the value-representation chapter.
@@ -8885,9 +8889,10 @@ tag := "the-next-phase"
 %%%
 
 Begin on the Lean host with {ref "downstream-authoring"}[A Geb library and
-its downstream application]. Start the editor's proof-cache and index work
-alongside the library. Loading the compiler once per stage-test comparison
-shortens the feedback cycle for changes to the compiler itself. The
+its downstream application]. Client development in the editor now uses
+the proof cache and navigation index. Loading the compiler once per
+stage-test comparison shortens the feedback cycle for changes to the
+compiler itself. The
 constant-depth reader removes a stack limit as the sources grow
 ({ref "improvements"}[Improvements]). The searches of lists in order in
 the elaboration of modules, the typing and the reader's resolution are the

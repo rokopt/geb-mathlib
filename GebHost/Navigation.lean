@@ -23,7 +23,8 @@ compiles programs. Locations use the host's one-based byte columns.
 ## Main definitions
 
 * {lit}`query` — declarations and the declaration denoted at a source position.
-* {lit}`run` — the JSON command-line interface, with open-document snapshots on standard input.
+* {lit}`run` — one JSON request with open-document snapshots on standard input.
+* {lit}`serve` — successive requests sharing parsed documents and the unchanged index prefix.
 
 ## Implementation notes
 
@@ -127,6 +128,12 @@ structure Source where
   doc : Doc
   /-- Its located syntax, with notes omitted at block boundaries. -/
   forms : List Locate.Located
+  /-- Preceding prose indexed by qualified source name. -/
+  prose : List (Ident × List Char) := []
+  /-- Bytes identifying this revision of the parsed document. -/
+  bytes : ByteArray := .empty
+  /-- Module forms counted toward the elaborator's depth bound. -/
+  modules : Nat := 0
   /-- Whether editor recovery was needed for this source or its imports. -/
   incomplete : Bool := false
   /-- Comment locations, including in recovered documents. -/
@@ -232,24 +239,46 @@ def termScope (file : String) (pos : Locate.Pos) (t : Locate.Located)
       if let some s := childAt (i + 1) .type [] then return s
     return (all .term locals).getD here) t role locals
 
-/-- The state of a source block's traversal. -/
+/-- The lexical information determined by a cursor position. -/
+structure Focus where
+  /-- The resolved qualified name. -/
+  target : Option Ident := none
+  /-- The local scope for completion. -/
+  scope : Scope := {}
+  /-- The global spellings visible in that scope. -/
+  available : Visible := []
+  /-- A selected local binder. -/
+  localTarget : Option Symbol := none
+
+/-- A source region and the resolver in scope there. Smaller regions take precedence. -/
+structure Site (α : Type) where
+  /-- The declaring file. -/
+  file : String
+  /-- The region of this resolver. -/
+  span : Locate.Span
+  /-- Resolve a position within the region. -/
+  resolve : Locate.Pos → α
+
+/-- The position-independent declaration index and the module state for its continuation. -/
 structure State where
   /-- The compiler's module state. -/
   elaboration : ElabState := ⟨[], [], [], [], [], []⟩
   /-- Declarations in source order. -/
   symbols : List Symbol := []
+  /-- The first declaration of each name, including during recovery from duplicates. -/
+  byName : Std.TreeMap.Raw String Symbol := ∅
   /-- Instance prefixes and their source template prefixes. -/
   origins : List (Ident × Ident) := []
-  /-- The resolved name at the requested occurrence. -/
-  target : Option Ident := none
-  /-- The local scope of the queried occurrence. -/
-  scope : Scope := {}
-  /-- The visible spellings at the queried occurrence. -/
-  available : Visible := []
-  /-- A local declaration selected directly by its source occurrence. -/
-  localTarget : Option Symbol := none
-  /-- Editor recovery keeps errors separate from the declarations still available. -/
+  /-- Resolvers at source occurrences, most specific first. -/
+  sites : List (Site Focus) := []
+  /-- Explicit binding, import and export targets within those scopes. -/
+  targets : List (Site (Option Ident)) := []
+  /-- Errors retained during recovery. -/
   errors : List String := []
+
+/-- Insert a declaration in both the source outline and the name lookup table. -/
+def State.withSymbol (st : State) (s : Symbol) : State :=
+  { st with symbols := st.symbols ++ [s], byName := st.byName.insertIfNew (String.ofList s.name) s }
 
 /-- The marker emitted only by navigation, never by a source atom's renaming. -/
 def marker : Ident := "%navigation".toList
@@ -351,48 +380,53 @@ def signatureOf (t : Locate.Located) : List Char :=
     else e
   sourceText e
 
-/-- The source document's comments before a declaration, displayed as source prose. -/
-def documentationOf (src : Source) (name : Ident) : List Char :=
-  let block (rs : List (SExpr × (Ident → List Line))) (pre : Ident) : List Line :=
-    (rs.foldl (fun (pending, found) (t, f) ↦
-      if isNote t then (pending ++ t.label.1.lead, found)
-      else ([], found ++
-        if (declName? t).any (qualify pre · == name) then pending ++ f pre else f pre))
-      ([], [])).2
+/-- Gather preceding comments in document order, including comments attached through notes. -/
+def documentProse (doc : Doc) : List (Ident × List Char) :=
+  let block (rs : List (SExpr × (Ident → List (Ident × List Char)))) (pre : Ident) :=
+    (rs.foldl (fun (pending, found) (t, nested) ↦
+      if isNote t then (pending ++ t.label.1.lead, found) else
+        let lines := pending ++ t.label.1.lead
+        let own := if lines.isEmpty then [] else (declName? t).toList.map fun n ↦
+          (qualify pre n, ['\n'].intercalate (lines.map fun line ↦
+            if line.text.head? == some ' ' then line.text.drop 1 else line.text))
+        ([], found ++ own ++ nested pre)) ([], [])).2
   let render := RoseTree.para (fun l rs pre ↦
     let t := RoseTree.node l (rs.map Prod.fst)
-    let own := if (declName? t).any (qualify pre · == name) then l.1.lead else []
-    own ++ if headIs kwModule t then
-      block rs (qualify pre ((declName? t).getD []))
+    if headIs kwModule t then block rs (qualify pre ((declName? t).getD []))
     else if headIs Authoring.kwProofs t then block (rs.drop 2) [] else [])
-  let lines := block (src.doc.items.map fun t ↦ (t, render t)) []
-  ['\n'].intercalate (lines.map fun line ↦
-    if line.text.head? == some ' ' then line.text.drop 1 else line.text)
+  block (doc.items.map fun t ↦ (t, render t)) []
 
 /-- Add a named declaration to the index and recognize its name as its own target. -/
-def addSymbol (src : Source) (pos : Option Locate.Pos) (pre : Ident) (t : Locate.Located)
-    (st : State) : State :=
+def addSymbol (src : Source) (pre : Ident) (t : Locate.Located) (st : State) : State :=
   match t.children with
   | k :: n :: _ => match k.label.2, n.label.2 with
     | some kw, some name =>
       let name := qualify pre name
       let sym := Symbol.mk name (textOf kw) src.file t.label.1 n.label.1
-        (signatureOf t) (documentationOf src name)
-      { st with symbols := st.symbols ++ [sym]
-                target := if pos.any (contains n.label.1) then some name else st.target }
+        (signatureOf t) (src.prose.lookup name |>.getD [])
+      { st.withSymbol sym with targets := ⟨src.file, n.label.1, fun _ ↦ some name⟩ :: st.targets }
     | _, _ => st
   | _ => st
 
 /-- Traverse one source form, reusing the compiler's elaboration for imports and exports. -/
-def step (depth : Nat) (rec : Source → Option Locate.Pos → Ident → State → Locate.Located →
-    Except String State) (src : Source) (pos : Option Locate.Pos) (pre : Ident)
+def step (depth : Nat) (rec : Source → Ident → State → Locate.Located →
+    Except String State) (src : Source) (pre : Ident)
     (st : State) (t : Locate.Located) : Except String State := do
   if Locate.headIs kwNote t then return st
   let e := compilerForm t
   let mut out := st
   if let k :: n :: body := t.children then
     if let some name := n.label.2 then
-      if declHeads.contains (k.label.2.getD []) then out := addSymbol src pos pre t out
+      if !isKw (erase k) "module" then
+        let vis := if isKw (erase k) "data" || isKw (erase k) "tree-data" then
+            (name, qualify pre name) :: st.elaboration.vis else st.elaboration.vis
+        let focus (p : Locate.Pos) : Focus :=
+          let scope := declarationScope src.file p t
+          let localTarget := (atomAtPosition p t).bind fun atom ↦
+            scope.locals.find? (·.name == atom)
+          ⟨declarationTarget vis p t, scope, vis, localTarget⟩
+        out := { out with sites := ⟨src.file, t.label.1, focus⟩ :: out.sites }
+      if declHeads.contains (k.label.2.getD []) then out := addSymbol src pre t out
       if isKw (erase k) "module" then
         let inner := qualify pre name
         let mut nested := { out with
@@ -406,60 +440,43 @@ def step (depth : Nat) (rec : Source → Option Locate.Pos → Ident → State �
               let sym := (localSymbol src.file n sig
                 (if sig.label.2.isSome then "type parameter" else "parameter")).map fun s ↦
                 { s with name := qualify inner s.name }
-              nested := { nested with elaboration, symbols := nested.symbols ++ sym.toList }
+              nested := sym.toList.foldl State.withSymbol { nested with elaboration }
         for b in body.filter (!Locate.headIs "parameter".toList ·) do
-          match rec src pos inner nested b with
+          match rec src inner nested b with
           | .ok next => nested := next
           | .error e =>
             if src.incomplete then nested := { nested with errors := nested.errors ++ [e] }
             else throw e
         -- Exports may precede their declarations; the elaborator resolves them at block end.
-        if let some p := pos then
-          for b in body.filter (Locate.headIs "export".toList) do
-            for n in b.children.drop 1 do
-              if contains n.label.1 p then
-                nested := { nested with
-                  target := n.label.2.bind (nested.elaboration.vis.lookup ·) }
+        let vis := nested.elaboration.vis
+        for b in body.filter (Locate.headIs "export".toList) do
+          for n in b.children.drop 1 do
+            nested := { nested with targets := ⟨src.file, n.label.1, fun _ ↦
+              n.label.2.bind (vis.lookup ·)⟩ :: nested.targets }
         out := { out with
-          symbols := nested.symbols, origins := nested.origins, target := nested.target,
-          scope := nested.scope, available := nested.available, localTarget := nested.localTarget,
-          errors := nested.errors }
-      else if let some p := pos then
-        let vis := if isKw (erase k) "data" || isKw (erase k) "tree-data" then
-            (name, qualify pre name) :: st.elaboration.vis else st.elaboration.vis
-        if contains t.label.1 p then
-          let scope := declarationScope src.file p t
-          let localTarget := (atomAtPosition p t).bind fun n ↦
-            scope.locals.find? (·.name == n)
-          out := { out with scope, available := vis, localTarget }
-        if out.target.isNone then
-          out := { out with target := declarationTarget vis p t }
+          symbols := nested.symbols, byName := nested.byName, origins := nested.origins,
+          sites := nested.sites, targets := nested.targets, errors := nested.errors }
       if isKw (erase k) "data" || isKw (erase k) "tree-data" then
         for c in body do
           let ctor := RoseTree.node c.label
             (Locate.atomAt k.label.1 "constructor".toList :: c.children)
-          out := addSymbol src pos pre ctor out
+          out := addSymbol src pre ctor out
   if let some (p, _, as?) := importSpec e then
     if let some (.template params ..) := st.elaboration.reg.lookup p then
       out := { out with origins := out.origins ++ [(pre ++ '/' :: as?.getD p, p)] }
-      if let some ppos := pos then
-        let args := t.children[1]?.toList.flatMap (·.children.drop 1)
-        let target := (params.zip args).findSome? fun (param, arg) ↦
-          if contains arg.label.1 ppos then
-            probe st.elaboration.vis ppos arg
-              (if param.children[1]?.any (·.label.isSome) then .type else .term)
-          else none
-        out := { out with target := target.orElse fun _ ↦ out.target }
-    if let some ppos := pos then
-      let path := t.children[1]?.bind fun n ↦
-        if n.label.2.isSome then some n else n.children.head?
-      if path.any (fun n ↦ contains n.label.1 ppos) then
-        out := { out with target := some p }
+      let vis := st.elaboration.vis
+      for (param, arg) in params.zip (t.children[1]?.toList.flatMap (·.children.drop 1)) do
+        let role := if param.children[1]?.any (·.label.isSome) then Role.type else Role.term
+        out := { out with targets := ⟨src.file, arg.label.1, fun pos ↦
+          probe vis pos arg role⟩ :: out.targets }
+    if let some n := t.children[1]?.bind fun n ↦
+        if n.label.2.isSome then some n else n.children.head? then
+      out := { out with targets := ⟨src.file, n.label.1, fun _ ↦ some p⟩ :: out.targets }
   if Locate.headIs "export".toList t then
-    if let some p := pos then
-      for n in t.children.drop 1 do
-        if contains n.label.1 p then
-          out := { out with target := n.label.2.bind (st.elaboration.vis.lookup ·) }
+    let vis := st.elaboration.vis
+    for n in t.children.drop 1 do
+      out := { out with targets := ⟨src.file, n.label.1, fun _ ↦
+        n.label.2.bind (vis.lookup ·)⟩ :: out.targets }
   match elabAt depth pre st.elaboration e with
   | .ok elaboration => return { out with elaboration }
   | .error error =>
@@ -467,10 +484,10 @@ def step (depth : Nat) (rec : Source → Option Locate.Pos → Ident → State �
     else throw error
 
 /-- A bounded traversal of nested source modules. -/
-def walk (depth : Nat) : Source → Option Locate.Pos → Ident → State → Locate.Located →
+def walk (depth : Nat) : Source → Ident → State → Locate.Located →
     Except String State :=
-  Nat.rec (motive := fun _ ↦ Source → Option Locate.Pos → Ident → State → Locate.Located →
-    Except String State) (fun _ _ _ _ _ ↦ .error "navigation nesting exhausted")
+  Nat.rec (motive := fun _ ↦ Source → Ident → State → Locate.Located →
+    Except String State) (fun _ _ _ _ ↦ .error "navigation nesting exhausted")
     (fun n rec ↦ step (n + 1) rec) depth
 
 /-- The source name of a declaration elaborated in a template instance. -/
@@ -482,23 +499,28 @@ def sourceName (origins : List (Ident × Ident)) (name : Ident) : Ident :=
 def spanJson (s : Locate.Span) : Lean.Json :=
   Lean.toJson #[s.start.line, s.start.col, s.stop.line, s.stop.col]
 
-/-- A declaration's JSON representation. -/
-def Symbol.json (s : Symbol) : Lean.Json := Json.object
-  [("name", Lean.toJson (s.name.map Char.toNat)), ("kind", Lean.toJson s.kind),
-    ("file", Lean.toJson s.file), ("span", spanJson s.span),
-    ("selection", spanJson s.selection), ("signature", Lean.toJson (s.signature.map Char.toNat)),
-    ("documentation", Lean.toJson (s.documentation.map Char.toNat)),
-    ("insertText", Lean.toJson ((spellAtom s.name).map Char.toNat))]
+/-- Encode only the fields consumed by the requested operation. -/
+def Symbol.json (s : Symbol) (operation := "all") : Lean.Json := Id.run do
+  let mut fields := [("name", Lean.toJson (s.name.map Char.toNat)), ("kind", Lean.toJson s.kind)]
+  unless operation == "completion" do
+    fields := fields ++ [("file", Lean.toJson s.file), ("span", spanJson s.span),
+      ("selection", spanJson s.selection)]
+  unless operation == "workspace" || operation == "document" do
+    fields := fields ++ [("signature", Lean.toJson (s.signature.map Char.toNat)),
+      ("documentation", Lean.toJson (s.documentation.map Char.toNat))]
+  if operation == "all" || operation == "completion" then
+    fields := fields ++ [("insertText", Lean.toJson ((spellAtom s.name).map Char.toNat))]
+  return Json.object fields
 
 /-- Completion spellings resolved through the same visibility table as navigation. -/
-def completions (st : State) : List Symbol :=
-  if !st.scope.active then [] else
-    let globals := st.available.filterMap fun (spelling, name) ↦
-      (st.symbols.find? (·.name == sourceName st.origins name)).map fun s ↦
+def completions (st : State) (focus : Focus) : List Symbol :=
+  if !focus.scope.active then [] else
+    let globals := focus.available.filterMap fun (spelling, name) ↦
+      (st.byName.get? (String.ofList (sourceName st.origins name))).map fun s ↦
         { s with name := spelling }
-    let globals := if st.scope.types then globals.filter fun s ↦
+    let globals := if focus.scope.types then globals.filter fun s ↦
       ["deftype", "data", "tree-data", "type parameter"].contains s.kind else globals
-    (st.scope.locals ++ globals).foldl (fun out s ↦
+    (focus.scope.locals ++ globals).foldl (fun out s ↦
       if out.any (·.name == s.name) then out else out ++ [s]) []
 
 /-- The names introduced by the outer binders and assumptions of a proof statement. -/
@@ -605,71 +627,77 @@ def proofScope (file : String) (pos : Locate.Pos) (t : Locate.Located)
     t statement locals
 
 /-- Inspect a theorem before adding it to the declarations available to later theorems. -/
-def proofDeclaration (src : Source) (pos : Option Locate.Pos) (st : State)
-    (t : Locate.Located) : State := Id.run do
-  let mut out := st
-  if !Locate.headIs Authoring.kwTheorem t then return out
-  if let some p := pos then
-    if contains t.label.1 p then
-      let formulas := (src.forms.find? (Locate.headIs Authoring.kwProofs)).any fun doc ↦
-        ((doc.children[1]?.bind (·.label.2)) == some ['5'] ||
-          (doc.children[1]?.bind (·.label.2)) == some ['6']) &&
-          t.children[2]?.any (Locate.headIs "internal".toList)
-      let locals := t.children[2]?.toList.flatMap (statementNames src.file formulas)
-      let scope := if t.children[3]?.any (contains ·.label.1 p) then
-          proofScope src.file p (t.children[3]?.getD t) locals false formulas
-        else proofScope src.file p (t.children[2]?.getD t) [] true formulas
-      let name := atomAtPosition p t
-      let available := (st.elaboration.out.filterMap fun e ↦
-        e.children[1]?.bind (·.label)).map (fun n ↦ (n, n)) ++
-        (st.symbols.filter (·.kind == "theorem")).map (fun s ↦ (s.name, s.name))
-      let localTarget := if scope.active then
-          name.bind (fun n ↦ scope.locals.find? (·.name == n)) else none
-      let target := if scope.active then name.bind (available.lookup ·) else none
-      out := { out with scope, available, localTarget, target }
-  return addSymbol src pos [] t out
+def proofDeclaration (src : Source) (st : State) (t : Locate.Located) : State := Id.run do
+  unless Locate.headIs Authoring.kwTheorem t do return st
+  let globals := st.elaboration.out
+  let symbols := st.symbols
+  let focus (p : Locate.Pos) : Focus := Id.run do
+    let names := globals.filterMap fun e ↦ e.children[1]?.bind (·.label)
+    let available := names.map (fun n ↦ (n, n)) ++
+      (symbols.filter (·.kind == "theorem")).map (fun s ↦ (s.name, s.name))
+    let formulas := (src.forms.find? (Locate.headIs Authoring.kwProofs)).any fun doc ↦
+      ((doc.children[1]?.bind (·.label.2)) == some ['5'] ||
+        (doc.children[1]?.bind (·.label.2)) == some ['6']) &&
+        t.children[2]?.any (Locate.headIs "internal".toList)
+    let locals := t.children[2]?.toList.flatMap (statementNames src.file formulas)
+    let scope := if t.children[3]?.any (contains ·.label.1 p) then
+        proofScope src.file p (t.children[3]?.getD t) locals false formulas
+      else proofScope src.file p (t.children[2]?.getD t) [] true formulas
+    let name := atomAtPosition p t
+    let localTarget := if scope.active then
+        name.bind (fun n ↦ scope.locals.find? (·.name == n)) else none
+    let target := if scope.active then name.bind (available.lookup ·) else none
+    return ⟨target, scope, available, localTarget⟩
+  return addSymbol src [] t { st with sites := ⟨src.file, t.label.1, focus⟩ :: st.sites }
 
 /-- Read bytes from the editor snapshot, or from the file when it has no snapshot. -/
-def sourceBytes (path : System.FilePath) (snapshots : List (String × String)) : IO ByteArray := do
-  let file := (← IO.FS.realPath path).toString
+def sourceBytes (file : String) (snapshots : List (String × String)) : IO ByteArray := do
   match snapshots.lookup file with
   | some text => pure text.toUTF8
-  | none => IO.FS.readBinFile path
+  | none => IO.FS.readBinFile file
 
 /-- Read one source with its locations, optionally recovering an unfinished prefix for editing. -/
-def readSource (path : System.FilePath) (snapshots : List (String × String))
-    (recover : Bool) : IO Source := do
-  let file := (← IO.FS.realPath path).toString
-  let text := Command.chars (← sourceBytes path snapshots)
+def parseSource (file : String) (bytes : ByteArray) (recover : Bool) : IO Source := do
+  let text := Command.chars bytes
   let scan := (text ++ ['\n']).foldl Locate.scanStep Locate.Scan.init
   let comments := (scan.lex.toks.zip scan.spans).filterMap fun (tok, span) ↦
     match tok with
     | .comment _ _ => some span
     | _ => none
-  match readDoc text, Locate.locate text with
+  let src : Source ← match readDoc text, Locate.locate text with
   | some doc, .ok forms =>
     let errors ← match notesOf doc with
       | .ok _ => pure []
       | .error e => if recover then pure [e] else throw <| IO.userError e
-    return { file, doc, forms, comments, errors, incomplete := !errors.isEmpty }
+    pure { file, doc, forms, comments, errors, incomplete := !errors.isEmpty }
   | _, _ =>
     unless recover do throw <| IO.userError s!"{file}: malformed source document"
-    return { file, doc := ⟨[], []⟩, forms := Locate.recover text, incomplete := true, comments }
+    pure { file, doc := ⟨[], []⟩, forms := Locate.recover text, incomplete := true, comments }
+  let modules := moduleCount (src.forms.map erase)
+  return { src with bytes, modules, prose := documentProse src.doc }
 
 /-- Read a manifest's sources, preferring editor snapshots at exactly their absolute paths. -/
-def readSources (manifest : System.FilePath) (snapshots : List (String × String))
-    (recover := false) : IO (List Source) := do
+def sourcePaths (manifest : System.FilePath) (snapshots : List (String × String)) :
+    IO (List System.FilePath) := do
   let manifest ← IO.FS.realPath manifest
   let m ← match snapshots.lookup manifest.toString with
     | some text => IO.ofExcept (Manifest.parse (Command.chars text.toUTF8))
     | none => Manifest.read manifest
-  (Manifest.sourcePaths manifest m).mapM fun path ↦ readSource path snapshots recover
+  return Manifest.sourcePaths manifest m
 
-/-- Read a proof import closure using the author's import parser and path rules, with snapshots.
-Documents are returned in dependency order, as the proof runner consumes them. -/
-def readProofSources (proofs : String) (snapshots : List (String × String)) (recover : Bool) :
-    IO (List Source) := do
-  if proofs.isEmpty then return []
+/-- The source documents of a manifest, in its recorded order. -/
+def readSources (manifest : System.FilePath) (snapshots : List (String × String))
+    (recover := false) : IO (List Source) := do
+  (← sourcePaths manifest snapshots).mapM fun path ↦ do
+    let real := (← IO.FS.realPath path).toString
+    parseSource real (← sourceBytes real snapshots) recover
+
+/-- Resolve proof imports in the proof runner's dependency order. Also keep the parsed inputs,
+before attaching errors that depend on the presence or order of other files. -/
+def readProofSources (proofs : String) (read : System.FilePath → IO Source) (recover : Bool) :
+    IO (List Source × List Source) := do
+  if proofs.isEmpty then return ([], [])
+  let mut parsed := []
   let mut seen : List (Source × List String) := []
   let mut work := [proofs]
   for _ in [0:Authoring.documentLimit] do
@@ -677,10 +705,15 @@ def readProofSources (proofs : String) (snapshots : List (String × String)) (re
     work := rest
     let file := (← IO.FS.realPath p).toString
     if seen.any (·.1.file == file) then continue
-    let mut src ← try readSource file snapshots recover catch e =>
-      unless recover do throw e
-      pure { file, doc := ⟨[], []⟩, forms := [], incomplete := true, errors := [e.toString] }
-    let doc : Doc := ⟨src.forms.map fun t ↦ (erase t).map (⟨⟨[], false, []⟩, ·⟩), []⟩
+    let mut src ← try
+        let raw ← read file
+        parsed := raw :: parsed
+        pure raw
+      catch e =>
+        unless recover do throw e
+        pure { file, doc := ⟨[], []⟩, forms := [], incomplete := true, errors := [e.toString] }
+    let doc : Doc := if src.incomplete then
+        ⟨src.forms.map fun t ↦ (erase t).map (⟨⟨[], false, []⟩, ·⟩), []⟩ else src.doc
     let imports ← try
       (← IO.ofExcept (Authoring.importsOf doc)).mapM fun s ↦ do
         unless Manifest.validSource s do throw <| IO.userError "invalid proof import path"
@@ -703,55 +736,108 @@ def readProofSources (proofs : String) (snapshots : List (String × String)) (re
     ordered := ordered ++ (seen.filter fun s ↦ !ordered.any (·.file == s.1.file)).map
       fun (src, _) ↦
         { src with incomplete := true, errors := src.errors ++ ["cyclic proof imports"] }
-  return ordered
+  return (ordered, parsed)
 
-/-- The source declarations and the resolved declaration at an optional source position. -/
-def query (manifest : System.FilePath) (file : String) (pos : Locate.Pos)
-    (snapshots : List (String × String)) (proofs := "") (recover := false) : IO Lean.Json := do
-  let sources ← readSources manifest snapshots recover
-  let (proofSources, proofErrors) ← try
-      pure (← readProofSources proofs snapshots recover, [])
+/-- The index through one file of the manifest or its proof imports. -/
+structure Prefix where
+  /-- The input, including import recovery errors. -/
+  source : Source
+  /-- Whether these forms are theorems. -/
+  proof : Bool
+  /-- The declarations and scopes through this file. -/
+  state : State
+  /-- Whether the elaborator recovered an error in this file. -/
+  incomplete : Bool
+
+/-- Parsed files and dependency-ordered checkpoints of the last successful request. -/
+structure Cache where
+  /-- Recovery mode is part of the parser's input. -/
+  recover : Bool := false
+  /-- The elaborator's depth bound is shared by all source files. -/
+  depth : Nat := 0
+  /-- The ordered index, whose unchanged prefix can be resumed. -/
+  files : List Prefix := []
+  /-- Documents before import resolution, reusable even beyond an invalidated prefix. -/
+  parsed : List Source := []
+
+/-- Update the index from the first changed input and resolve one editor operation. -/
+def queryCached (old : Cache) (manifest : System.FilePath) (file : String)
+    (pos : Locate.Pos) (snapshots : List (String × String)) (proofs operation : String)
+    (recover : Bool) : IO (Lean.Json × Cache) := do
+  let read (path : System.FilePath) : IO Source := do
+    let real := (← IO.FS.realPath path).toString
+    let bytes ← sourceBytes real snapshots
+    match old.parsed.find? (fun s ↦ old.recover == recover &&
+        s.file == real && s.bytes == bytes) with
+      | some src => pure src
+      | none => parseSource real bytes recover
+  let sources ← (← sourcePaths manifest snapshots).mapM read
+  let ((proofSources, parsedProofs), proofErrors) ← try
+      pure (← readProofSources proofs read recover, [])
     catch e =>
       unless recover do throw e
-      pure ([], [e.toString])
-  let atomSpan := ((sources ++ proofSources).filter (·.file == file)).findSome? fun src ↦
-    src.forms.findSome? (completionSpan pos)
+      pure (([], []), [e.toString])
+  let depth := (sources.map (·.modules)).sum + 1
+  let mut previous := if old.depth == depth && old.recover == recover then old.files else []
+  let mut files := []
+  let mut st : State := {}
+  for (src, proof) in sources.map (·, false) ++ proofSources.map (·, true) do
+    if let h :: tail := previous then
+      if h.proof == proof && h.source.file == src.file && h.source.bytes == src.bytes &&
+          h.source.errors == src.errors && h.source.incomplete == src.incomplete then
+        st := h.state
+        files := h :: files
+        previous := tail
+        continue
+    previous := []
+    let errors := st.errors.length
+    if proof then
+      for root in src.forms.filter (Locate.headIs Authoring.kwProofs) do
+        for t in root.children.drop 2 do st := proofDeclaration src st t
+    else
+      for t in src.forms do
+        match walk depth { src with incomplete := recover || src.incomplete } [] st t with
+        | .ok next => st := next
+        | .error e =>
+          unless recover do throw <| IO.userError e
+          st := { st with errors := st.errors ++ [s!"{src.file}: {e}"] }
+    files := ⟨src, proof, st, src.incomplete || st.errors.length != errors⟩ :: files
+  let ordered := files.reverse
+  let cache : Cache := ⟨recover, depth, ordered, sources ++ parsedProofs⟩
+  let atCursor := ordered.find? (·.source.file == file)
+  let atomSpan := if pos.line == 0 then none else
+    atCursor.bind fun h ↦ h.source.forms.findSome? (completionSpan pos)
   let pos := match atomSpan with
     | some span => if contains span pos then pos else span.stop
     | none => pos
-  let depth := moduleCount (sources.flatMap fun s ↦ s.forms.map erase) + 1
-  let mut st : State := { errors := proofErrors ++ (sources ++ proofSources).flatMap (·.errors) }
-  let mut incomplete := (sources ++ proofSources).filter (·.incomplete) |>.map (·.file)
-  for src in sources do
-    let previousErrors := st.errors.length
-    for t in src.forms do
-      match walk depth { src with incomplete := recover || src.incomplete }
-          (if src.file == file then some pos else none) [] st t with
-      | .ok next => st := next
-      | .error e =>
-        if recover then st := { st with errors := st.errors ++ [s!"{src.file}: {e}"] }
-        else throw <| IO.userError e
-    if st.errors.length != previousErrors && !incomplete.contains src.file then
-      incomplete := incomplete ++ [src.file]
-  for src in proofSources do
-    for root in src.forms.filter (Locate.headIs Authoring.kwProofs) do
-      for t in root.children.drop 2 do
-        st := proofDeclaration src (if src.file == file then some pos else none) st t
-  if (sources ++ proofSources).any (fun src ↦ src.file == file &&
-      src.comments.any (contains · pos)) then
-    st := { st with scope := { active := false }, localTarget := none, target := none }
-  let name := st.target.map (sourceName st.origins)
-  let target := st.localTarget.orElse fun _ ↦ name.bind fun n ↦ st.symbols.find? (·.name == n)
-  return Json.object [("symbols", Lean.toJson (st.symbols.map Symbol.json)),
-    ("target", target.map Symbol.json |>.getD .null),
-    ("completions", Lean.toJson ((completions st).map Symbol.json)),
+  let atSite {α : Type} (sites : List (Site α)) : Option α :=
+    (sites.find? fun s ↦ s.file == file && contains s.span pos).map (fun s ↦ s.resolve pos)
+  let focus := if atCursor.any (fun h ↦ h.source.comments.any (contains · pos)) then
+      { scope := { active := false } }
+    else
+      let f := (atSite st.sites).getD {}
+      { f with target := (atSite st.targets).getD f.target }
+  let name := focus.target.map (sourceName st.origins)
+  let target := focus.localTarget.orElse fun _ ↦ name.bind fun n ↦ st.byName.get? (String.ofList n)
+  let symbols := if operation == "document" then st.symbols.filter (·.file == file)
+    else if operation == "all" || operation == "workspace" then st.symbols else []
+  let result := Json.object [("symbols", Lean.toJson (symbols.map (·.json operation))),
+    ("target", if operation == "all" || operation == "target" then
+      target.map (·.json operation) |>.getD .null else .null),
+    ("completions", Lean.toJson (if operation == "all" || operation == "completion" then
+      (completions st focus).map (·.json operation) else [])),
     ("atomSpan", atomSpan.map spanJson |>.getD .null),
-    ("incomplete", Lean.toJson incomplete),
-    ("errors", Lean.toJson st.errors)]
+    ("incomplete", Lean.toJson ((ordered.filter (·.incomplete)).map (·.source.file))),
+    ("errors", Lean.toJson (proofErrors ++ (ordered.flatMap (·.source.errors)) ++ st.errors))]
+  return (result, cache)
 
-/-- Read one JSON navigation request from standard input and write its JSON result. -/
-def run (manifest : String) : IO UInt32 := do
-  let input ← Json.readInput (← IO.getStdin)
+/-- A single query, independent of previous requests. -/
+def query (manifest : System.FilePath) (file : String) (pos : Locate.Pos)
+    (snapshots : List (String × String)) (proofs := "") (recover := false) : IO Lean.Json := do
+  return (← queryCached {} manifest file pos snapshots proofs "all" recover).1
+
+/-- Resolve a JSON request against the exact snapshots it carries. -/
+def request (cache : Cache) (manifest : String) (input : String) : IO (Lean.Json × Cache) := do
   let json ← IO.ofExcept (Json.parse input)
   let file ← IO.ofExcept (json.getObjValAs? String "file")
   let line ← IO.ofExcept (json.getObjValAs? Nat "line")
@@ -762,7 +848,25 @@ def run (manifest : String) : IO UInt32 := do
       ← IO.ofExcept (d.getObjValAs? String "text"))
   let proofs := (json.getObjValAs? String "proofs").toOption.getD ""
   let recover := (json.getObjValAs? Bool "recover").toOption.getD false
-  IO.println (← query manifest file ⟨line, column⟩ snapshots proofs recover).compress
+  let op := (json.getObjValAs? String "operation").toOption.getD "all"
+  queryCached cache manifest file ⟨line, column⟩ snapshots proofs op recover
+
+/-- Read one JSON navigation request from standard input and write its JSON result. -/
+def run (manifest : String) : IO UInt32 := do
+  IO.println (← request {} manifest (← Json.readInput (← IO.getStdin))).1.compress
   return 0
+
+/-- Serve newline-delimited JSON requests in order until the editor closes the stream. -/
+def serve (manifest : String) : IO UInt32 := do
+  let stdin ← IO.getStdin
+  let stdout ← IO.getStdout
+  IO.iterate ({} : Cache) fun cache ↦ do
+    let line ← stdin.getLine
+    if line.isEmpty then return .inr 0
+    let (answer, next) ← try request cache manifest line catch e =>
+      pure (Json.object [("error", Lean.toJson e.toString)], cache)
+    stdout.putStrLn answer.compress
+    stdout.flush
+    return .inl next
 
 end GebHost.Navigation
