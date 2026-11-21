@@ -49,7 +49,7 @@ abbrev finFam : natPFunctor.W → Type := Fiber natPFunctor natFam
 -- The fiber over `0` of the W-type is the natural numbers: the carried tree of
 -- a successor has the base shape `true` at its root, and its base tree is the
 -- successor again.
-example : PFunctor.W.head ((baseEquiv natPFunctor natFam).symm (succ zero)).down.1.1 =
+example : PFunctor.W.head ((baseEquiv natPFunctor natFam).symm (succ zero)).down.val.val =
     Sum.inl true :=
   rfl
 example : baseEquiv natPFunctor natFam ((baseEquiv natPFunctor natFam).symm (succ zero)) =
@@ -59,7 +59,7 @@ example : baseEquiv natPFunctor natFam ((baseEquiv natPFunctor natFam).symm (suc
 -- The fiber over zero is empty: the computation rule lands in a value of the
 -- shapeless functor.
 example : finFam zero → False :=
-  fun u ↦ (fiberMkEquiv natPFunctor natFam false PEmpty.elim u).1.1.elim
+  fun u ↦ (fiberMkEquiv natPFunctor natFam false PEmpty.elim u).val.1.elim
 
 /-- The zero element of the fiber over a successor: the shape `false`, with no
 children. -/
@@ -76,9 +76,9 @@ def fs (n : natPFunctor.W) (i : finFam n) : finFam (succ n) :=
 -- arrow is the carried `succ n`.
 example (n : natPFunctor.W) :
     baseEquiv natPFunctor natFam
-      (((PFunctor.dependent natPFunctor natFam).W).map PresheafPFunctor.arrow.op (fz n).1) =
+      (((PFunctor.dependent natPFunctor natFam).W).map PresheafPFunctor.arrow.op (fz n).val) =
       succ n := by
-  rw [(fz n).2]
+  rw [(fz n).property]
   exact (baseEquiv natPFunctor natFam).apply_symm_apply _
 
 -- The computation rule recovers a successor element's shape and child.

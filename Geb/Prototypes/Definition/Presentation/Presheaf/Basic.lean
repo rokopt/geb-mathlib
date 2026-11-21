@@ -269,7 +269,7 @@ theorem restrCls_cls {c c' : C} (g : c' ⟶ c) (t : Tm (ops S) γ c) :
 theorem restrCls_id (c : C) (x : p.toSlice.Cls γ c) : p.restrCls γ (𝟙 c) x = x := by
   refine Quot.ind (β := fun x ↦ p.restrCls γ (𝟙 c) x = x) (fun t ↦ ?_) x
   exact (p.restrCls_cls γ (𝟙 c) t).trans
-    (p.toSlice.cls_bind_lhs γ (.inl (.id c)) (fun _ ↦ t.1) fun _ ↦ t.2)
+    (p.toSlice.cls_bind_lhs γ (.inl (.id c)) (fun _ ↦ t.val) fun _ ↦ t.property)
 
 /-- Restriction along a composite is the composite of restrictions. -/
 theorem restrCls_comp {c c' c'' : C} (g : c' ⟶ c) (h : c'' ⟶ c') (x : p.toSlice.Cls γ c) :
@@ -277,7 +277,7 @@ theorem restrCls_comp {c c' c'' : C} (g : c' ⟶ c) (h : c'' ⟶ c') (x : p.toSl
   refine Quot.ind (β := fun x ↦ p.restrCls γ h (p.restrCls γ g x) = p.restrCls γ (h ≫ g) x)
     (fun t ↦ ?_) x
   exact (congrArg (p.restrCls γ h) (p.restrCls_cls γ g t)).trans ((p.restrCls_cls γ h _).trans
-    ((p.toSlice.cls_bind_lhs γ (.inl (.comp g h)) (fun _ ↦ t.1) fun _ ↦ t.2).trans
+    ((p.toSlice.cls_bind_lhs γ (.inl (.comp g h)) (fun _ ↦ t.val) fun _ ↦ t.property).trans
       (p.restrCls_cls γ (h ≫ g) t).symm))
 
 /-- The presheaf of classes: the classes of each object, with restriction of classes. -/
@@ -305,9 +305,10 @@ theorem restrCls_op (a : S.A) {c' : C} (g : c' ⟶ S.q a)
         p.restrCls γ (S.reindex a g b).2 (f (S.reindex a g b).1)⟩ := by
   obtain ⟨ts, hts⟩ := p.toSlice.exists_cls γ f
   obtain rfl : f = fun b ↦ p.toSlice.cls γ (ts b) := (funext hts).symm
-  have hσ : IsSorted (fun b ↦ (reqns S).r ⟨.nat a g, b⟩) γ fun b ↦ (ts b).1 := fun b ↦ (ts b).2
+  have hσ : IsSorted (fun b ↦ (reqns S).r ⟨.nat a g, b⟩) γ fun b ↦ (ts b).val :=
+    fun b ↦ (ts b).property
   have hl : p.restrCls γ g (p.toSlice.op γ (.inl a) fun b ↦ p.toSlice.cls γ (ts b)) =
-      p.toSlice.cls γ (p.toSlice.lhsBind γ (.inl (.nat a g)) (fun b ↦ (ts b).1) hσ) :=
+      p.toSlice.cls γ (p.toSlice.lhsBind γ (.inl (.nat a g)) (fun b ↦ (ts b).val) hσ) :=
     (congrArg (p.restrCls γ g) (p.toSlice.op_cls γ (.inl a) ts)).trans (p.restrCls_cls γ g _)
   have hr : p.toSlice.op γ (.inl (S.restr a g)) (fun b ↦
         p.restrCls γ (S.reindex a g b).2 (p.toSlice.cls γ (ts (S.reindex a g b).1))) =
@@ -316,7 +317,7 @@ theorem restrCls_op (a : S.A) {c' : C} (g : c' ⟶ S.q a)
     (congrArg (p.toSlice.op γ (.inl (S.restr a g)))
       (funext fun b ↦ p.restrCls_cls γ _ _)).trans (p.toSlice.op_cls γ _ _)
   exact (congrArg (Sigma.mk c') hl).trans ((congrArg (Sigma.mk c')
-    (p.toSlice.cls_bind_lhs γ (.inl (.nat a g)) (fun b ↦ (ts b).1) hσ)).trans
+    (p.toSlice.cls_bind_lhs γ (.inl (.nat a g)) (fun b ↦ (ts b).val) hσ)).trans
       ((p.toSlice.sigma_cls γ _ (S.q_restr a g).symm).trans (congrArg (Sigma.mk _) hr.symm)))
 
 end Presentation

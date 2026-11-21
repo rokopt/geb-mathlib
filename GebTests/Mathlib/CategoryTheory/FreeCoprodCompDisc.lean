@@ -93,7 +93,7 @@ def sampleIso : FreeCoprodCompDisc.Iso.{0, 1, 0} Bool sampleXLift sampleX :=
 inverse is the identity. -/
 theorem sampleIso_symm_trans_apply :
     (FreeCoprodCompDisc.Iso.trans Bool sampleIso
-      (FreeCoprodCompDisc.Iso.symm Bool sampleIso)).1 (ULift.up true) =
+      (FreeCoprodCompDisc.Iso.symm Bool sampleIso)).val (ULift.up true) =
       ULift.up true :=
   rfl
 
@@ -111,7 +111,7 @@ direction of `copowerEquiv` at a constant family applies the
 component morphism. -/
 theorem sampleCopower_desc_apply (b : Bool) :
     ((FreeCoprodCompDisc.copowerEquiv.{0, 0, 0} Bool Bool
-      sampleX sampleX).symm (fun _ ↦ sampleHom)).1 ⟨true, b⟩ = b :=
+      sampleX sampleX).symm (fun _ ↦ sampleHom)).val ⟨true, b⟩ = b :=
   rfl
 
 /-- A lifted object decodes through `ULift.down`. -/
@@ -126,7 +126,7 @@ applying the image of the identity index function evaluates by
 theorem sampleHomLift_apply :
     ((FreeCoprodCompDisc.homLiftEquiv.{0, 0, 1} Bool sampleX
         (FreeCoprodCompDisc.lift.{0, 0, 1} Bool sampleX))
-      ⟨_root_.id, rfl⟩).1 true = ULift.up true :=
+      ⟨_root_.id, rfl⟩).val true = ULift.up true :=
   rfl
 
 /-- The identity morphism of `sampleX` is the sample endomorphism. -/
@@ -246,7 +246,7 @@ theorem sampleCoprodInj_desc (b : Bool) :
 componentwise. -/
 theorem sampleCoprodHomEquiv_symm_apply :
     ((FreeCoprodCompDisc.coprodHomEquiv Bool Bool (fun _ ↦ sampleX)
-        sampleX).symm (fun _ ↦ sampleHom)).1 ⟨true, false⟩ = false :=
+        sampleX).symm (fun _ ↦ sampleHom)).val ⟨true, false⟩ = false :=
   rfl
 
 /-- A cotuple followed by a morphism is the cotuple of the composites. -/
@@ -299,7 +299,7 @@ theorem sampleCoprodPairMor_inr_desc_inl :
 fiber element. -/
 theorem sampleHomSingletonEquiv_symm_apply :
     ((FreeCoprodCompDisc.homSingletonEquiv Bool true sampleX).symm
-        ⟨true, rfl⟩).1 (ULift.up Unit.unit) = true :=
+        ⟨true, rfl⟩).val (ULift.up Unit.unit) = true :=
   rfl
 
 /-- A sample object with constant decoding, carrying a non-identity
@@ -323,7 +323,7 @@ theorem sampleIsoNot_hom_invHom :
 /-- The left injection into a coproduct pair whose summands sit at
 different index universes. -/
 theorem sampleCoprodPairInl_hetero_apply :
-    (FreeCoprodCompDisc.coprodPairInl.{0, 0, 1} Bool sampleX sampleXLift).1
+    (FreeCoprodCompDisc.coprodPairInl.{0, 0, 1} Bool sampleX sampleXLift).val
         true =
       Sum.inl true :=
   rfl
@@ -331,7 +331,7 @@ theorem sampleCoprodPairInl_hetero_apply :
 /-- The right injection into a coproduct pair whose summands sit at
 different index universes. -/
 theorem sampleCoprodPairInr_hetero_apply :
-    (FreeCoprodCompDisc.coprodPairInr.{0, 0, 1} Bool sampleX sampleXLift).1
+    (FreeCoprodCompDisc.coprodPairInr.{0, 0, 1} Bool sampleX sampleXLift).val
         (ULift.up true) =
       Sum.inr (ULift.up true) :=
   rfl

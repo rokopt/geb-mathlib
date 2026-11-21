@@ -65,7 +65,7 @@ variable {D : ℕ}
 /-- A node reads back by its step at its children's terms. -/
 theorem readBack_node (l : VLabel) (cs : List Val) :
     readBack D (RoseTree.node l cs) = readStep D l (cs.map (readBack D)) := by
-  have hof : List.ofFn (fun i : Fin cs.length ↦ readBack D (cs.toArray[i.1]'(by simp))) =
+  have hof : List.ofFn (fun i : Fin cs.length ↦ readBack D (cs.toArray[i.val]'(by simp))) =
       cs.map (readBack D) := by simp [List.ofFn_getElem_eq_map]
   conv_lhs => simp only [readBack, RoseTree.node, WType.elim]
   cases l

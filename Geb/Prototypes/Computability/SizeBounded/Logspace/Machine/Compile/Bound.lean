@@ -75,25 +75,27 @@ theorem time_compileValue {k : ℕ} (a : Shape) (c : Direction a → Σ i, Compi
   cases a <;> rfl
 
 /-- The compiled program's tape need is the syntactic one. -/
-theorem regs_compile (k : ℕ) : ∀ e : S, (compile k e).2.regs = regsBound e.1 :=
+theorem regs_compile (k : ℕ) : ∀ e : S, (compile k e).2.regs = regsBound e.val :=
   SlicePFunctor.W.induction fun x ih ↦
-    (regs_compileValue x.1.1 (fun d ↦ compile k (x.1.2 d)) _).trans
-      (congrArg (regsValue x.1.1) (funext ih))
+    (regs_compileValue x.val.1 (fun d ↦ compile k (x.val.2 d)) _).trans
+      (congrArg (regsValue x.val.1) (funext ih))
 
 /-- The compiled program's step bound is the syntactic one. -/
-theorem time_compile (k : ℕ) : ∀ e : S, (compile k e).2.time = timeBound e.1 :=
+theorem time_compile (k : ℕ) : ∀ e : S, (compile k e).2.time = timeBound e.val :=
   SlicePFunctor.W.induction fun x ih ↦
-    (time_compileValue x.1.1 (fun d ↦ compile k (x.1.2 d)) _).trans
-      (congrArg (timeValue x.1.1) (funext ih))
+    (time_compileValue x.val.1 (fun d ↦ compile k (x.val.2 d)) _).trans
+      (congrArg (timeValue x.val.1) (funext ih))
 
 /-- The tape need of an expression of the subalgebra. -/
-theorem LOf.regs (k : ℕ) {n : ℕ} (e : LOf n) : (LOf.compile k e).regs = regsBound e.1.1.1 := by
-  change (transportP _ (Machine.compile k e.1.1).2).regs = _
+theorem LOf.regs (k : ℕ) {n : ℕ} (e : LOf n) :
+    (LOf.compile k e).regs = regsBound e.val.val.val := by
+  change (transportP _ (Machine.compile k e.val.val).2).regs = _
   rw [regs_transportP, regs_compile]
 
 /-- The step bound of an expression of the subalgebra. -/
-theorem LOf.time (k : ℕ) {n : ℕ} (e : LOf n) : (LOf.compile k e).time = timeBound e.1.1.1 := by
-  change (transportP _ (Machine.compile k e.1.1).2).time = _
+theorem LOf.time (k : ℕ) {n : ℕ} (e : LOf n) :
+    (LOf.compile k e).time = timeBound e.val.val.val := by
+  change (transportP _ (Machine.compile k e.val.val).2).time = _
   rw [time_transportP, time_compile]
 
 /-- The binary size is polynomially bounded. -/

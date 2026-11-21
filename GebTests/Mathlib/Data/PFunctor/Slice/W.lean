@@ -30,7 +30,7 @@ open SlicePFunctor
 example (F : SlicePFunctor.{0, 0} Bool Bool) :
     F.W = { w : F.toPFunctor.W // F.WValid w } := rfl
 example (F : SlicePFunctor.{0, 0} Bool Bool) (z : F.W) :
-    F.wIndex z = F.wIndexRoot z.1 := rfl
+    F.wIndex z = F.wIndexRoot z.val := rfl
 
 -- The fold's index component is the root output index.
 example (F : SlicePFunctor.{0, 0} Bool Bool) (w : F.toPFunctor.W) :
@@ -98,8 +98,8 @@ example : wSlice.wIndex wLeafElt = false := rfl
 example : wSlice.wIndex wNodeElt = true := rfl
 
 -- `dest` reads the root shape of an admissible tree.
-example : (W.dest wLeafElt).1.1 = false := rfl
-example : (W.dest wNodeElt).1.1 = true := rfl
+example : (W.dest wLeafElt).val.1 = false := rfl
+example : (W.dest wNodeElt).val.1 = true := rfl
 
 -- `RecProp` computes one level by `recProp_mk`.
 example (x : wSlice.toSliceDomPFunctor.Obj wSlice.wIndex) :

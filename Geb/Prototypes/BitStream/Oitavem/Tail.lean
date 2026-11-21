@@ -135,13 +135,13 @@ the label of the successor by a clear bit, as a leaf. -/
 header, the code of the expression, and the successor's leaf. -/
 theorem spellExpr_tailExpr (e : Expr 1 0) :
     spellExpr (tailExpr e) =
-      rootPrefix ++ (compHeader ++ (coded.spell (embed e.1.1) ++ succLeaf)) := by
+      rootPrefix ++ (compHeader ++ (coded.spell (embed e.val.val) ++ succLeaf)) := by
   rw [spellExpr, spell_wrap]
   refine congrArg (rootPrefix ++ ·) ?_
   change encode (spine (leaf (code (some (.comp 1 1 false))))
     (List.ofFn fun i : Fin 2 ↦ coded.toTree
       (embed ((Fin.cases (Sum.inl ()) (fun j ↦ Sum.inr j) i : Unit ⊕ Fin 1).elim (fun _ ↦ e)
-        (fun j ↦ ![Expr.initial (.succ false)] j)).1.1))) = _
+        (fun j ↦ ![Expr.initial (.succ false)] j)).val.val))) = _
   rw [List.ofFn_succ, List.ofFn_succ, List.ofFn_zero]
   rfl
 

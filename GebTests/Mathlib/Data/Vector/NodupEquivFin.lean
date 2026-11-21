@@ -21,13 +21,13 @@ vector, injective, equiv
 
 /-- A sample injective vector. -/
 def sampleInj : Vector (Fin 5) 3 :=
-  Vector.ofFnC (fun i ↦ ⟨i.1 + 1, by omega⟩)
+  Vector.ofFnC (fun i ↦ ⟨i.val + 1, by omega⟩)
 
 /-- It is injective on indices. -/
 theorem sampleInj_injective : Function.Injective sampleInj.get := by
   intro a b hab
   simp only [sampleInj, Vector.get_ofFnC] at hab
-  have : a.1 + 1 = b.1 + 1 := congrArg Fin.val hab
+  have : a.val + 1 = b.val + 1 := congrArg Fin.val hab
   exact Fin.ext (by omega)
 
 /-- The inversion round-trips a sample index. -/

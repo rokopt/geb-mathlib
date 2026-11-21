@@ -27,7 +27,7 @@ open CategoryTheory FinSetSkel
 /-- A sample function on a product carrier, of exponent length `2`
 and parameter length `3`. -/
 def sampleSkelExpFun : Fin (2 * 3) → Fin 2 :=
-  fun i ↦ ⟨i.1 % 2, Nat.mod_lt _ (by decide)⟩
+  fun i ↦ ⟨i.val % 2, Nat.mod_lt _ (by decide)⟩
 
 /-- A sample reindexing of the parameter object. -/
 def sampleSkelExpReindex : Fin 2 → Fin 3 := Fin.succ

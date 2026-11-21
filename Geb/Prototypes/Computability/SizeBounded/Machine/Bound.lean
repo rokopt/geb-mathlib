@@ -62,14 +62,14 @@ theorem regs_compileValue {k : ℕ} (a : Shape) (c : Direction a → Σ i, Compi
 
 /-- The compiled program's register need is the syntactic one, at every number
 of registers. -/
-theorem regs_compile (k : ℕ) : ∀ e : S, (compile k e).2.regs = regsBound e.1 :=
+theorem regs_compile (k : ℕ) : ∀ e : S, (compile k e).2.regs = regsBound e.val :=
   SlicePFunctor.W.induction fun x ih ↦
-    (regs_compileValue x.1.1 (fun d ↦ compile k (x.1.2 d)) _).trans
-      (congrArg (regsValue x.1.1) (funext ih))
+    (regs_compileValue x.val.1 (fun d ↦ compile k (x.val.2 d)) _).trans
+      (congrArg (regsValue x.val.1) (funext ih))
 
 /-- The register need of an expression of a given arity. -/
-theorem SOf.regs (k : ℕ) {n : ℕ} (e : SOf n) : (SOf.compile k e).regs = regsBound e.1.1 := by
-  change (transportP _ (Machine.compile k e.1).2).regs = _
+theorem SOf.regs (k : ℕ) {n : ℕ} (e : SOf n) : (SOf.compile k e).regs = regsBound e.val.val := by
+  change (transportP _ (Machine.compile k e.val).2).regs = _
   rw [regs_transportP, regs_compile]
 
 /-- One node's step bound is polynomially bounded when its children's are. -/

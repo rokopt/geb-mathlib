@@ -84,7 +84,7 @@ theorem isPolyBounded_time (e : LOf 1) : IsPolyBounded (time e) := by
         (isPolyBounded_const 1)))
       (isPolyBounded_add isPolyBounded_id (isPolyBounded_const 1))
   exact isPolyBounded_add (isPolyBounded_add (isPolyBounded_add
-    (isPolyBounded_add hcount (isPolyBounded_timeBound (wordBound e) e.1.1.1))
+    (isPolyBounded_add hcount (isPolyBounded_timeBound (wordBound e) e.val.val.val))
     (isPolyBounded_add (isPolyBounded_mul (isPolyBounded_const 2) hB) (isPolyBounded_const 3)))
     (isPolyBounded_const 1)) hemit
 

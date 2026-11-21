@@ -29,7 +29,7 @@ example : wFixture.W = wFixture.carrier wFixture.wHereditaryNaturality := rfl
 
 -- Its root restriction is the generic one at the W-type's fixed point.
 example ⦃j j' : Fin 2⦄ (g : j' ⟶ j) (z : wFixture.toSlicePFunctor.W)
-    (hq : wFixture.q (PFunctor.W.head z.1) = j) :
+    (hq : wFixture.q (PFunctor.W.head z.val) = j) :
     wFixture.wRestrTree g z hq = wFixture.restrTree wFixture.toSlicePFunctor.wFixedPoint g z hq :=
   rfl
 

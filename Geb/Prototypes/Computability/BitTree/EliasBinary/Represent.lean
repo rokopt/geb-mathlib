@@ -375,14 +375,14 @@ theorem LiveRep.headBound {input : List (Fin 4)} {n width : ℕ}
   all_goals try
     (first
        | (rw [hph.2.registerPos]; constructor <;> omega)
-       | (rw [show cfg.workTapePos 6 = _ from hph.2.1.firstPos]
+       | (rw [show cfg.workTapePos 6 = _ from hph.2.left.firstPos]
           have := hts _ rfl
           constructor <;> omega))
   -- the length counter head
   all_goals try
     (first
        | (rw [hph.2.counterPos]; constructor <;> omega)
-       | (rw [show cfg.workTapePos 7 = _ from hph.2.1.secondPos]
+       | (rw [show cfg.workTapePos 7 = _ from hph.2.left.secondPos]
           have := hts _ rfl
           constructor <;> omega))
   -- the length mismatch head

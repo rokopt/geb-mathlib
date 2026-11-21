@@ -478,9 +478,9 @@ loop, and the selected value register copied into the output. -/
 slice over {lit}`ℕ`. -/
 @[expose] def compileStep {k : ℕ} :
     sig.toSliceDomPFunctor.Obj (Sigma.fst (β := Compiled k)) → Σ i, Compiled k i :=
-  fun z ↦ ⟨sig.q z.1.1,
-    compileValue z.1.1 z.1.2
-      ((sig.toSliceDomPFunctor.compatible_iff _ z.1.1 z.1.2).mp z.2)⟩
+  fun z ↦ ⟨sig.q z.val.1,
+    compileValue z.val.1 z.val.2
+      ((sig.toSliceDomPFunctor.compatible_iff _ z.val.1 z.val.2).mp z.property)⟩
 
 /-- The compilation of a tree: its arity together with its compiled program at
 that arity, by the slice W-type's eliminator. -/
@@ -498,7 +498,7 @@ theorem fst_compile (k : ℕ) (z : S) : (compile k z).1 = arity z :=
 
 /-- The compiled program of an expression of the subalgebra. -/
 @[expose] def LOf.compile (k : ℕ) {n : ℕ} (e : LOf n) : Compiled k n :=
-  compileAt k n e.1.1 e.1.2
+  compileAt k n e.val.val e.val.property
 
 end
 

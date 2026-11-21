@@ -66,19 +66,19 @@ example : (wPsh altList).obj ⟨mkIdx 1 true⟩ = { z : altList.W // altList.wIn
 /-- The one-step chain read through the fixed-point isomorphism as an element
 of the transcription's value at the W-type's presheaf. -/
 def consElem : (prodPsh altList).obj (wPsh altList) :=
-  ((wFixed altList false).symm ⟨consF, rfl⟩).1
+  ((wFixed altList false).symm ⟨consF, rfl⟩).val
 
 -- Its shape is the `cons` at `false`.
 example : consElem.shape = .inr (.inr false) := rfl
 
 -- Its level-`1` assignment at the one direction, at index `true`, is the
 -- child chain.
-example : ((elemEquiv (wPsh altList) (prodPsh altList) consElem).2.2 true ⟨.inr (), rfl⟩).1.1 =
+example : ((elemEquiv (wPsh altList) (prodPsh altList) consElem).2.2 true ⟨.inr (), rfl⟩).val.val =
     nilT :=
   rfl
 
 -- The empty chain reads as the `nil` at `true`.
-example : (((wFixed altList true).symm ⟨nilT, rfl⟩).1).shape = .inr (.inl true) := rfl
+example : (((wFixed altList true).symm ⟨nilT, rfl⟩).val).shape = .inr (.inl true) := rfl
 
 -- The fixed-point isomorphism inverts.
 example : wFixed altList false ((wFixed altList false).symm ⟨consF, rfl⟩) = ⟨consF, rfl⟩ :=

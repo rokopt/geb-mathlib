@@ -245,20 +245,20 @@ direction over the target index (leaves have none); `shapeRestr` uses
   directionRestr := fun a {i i'} _g d ↦ by
     cases a with
     | R => exact ⟨i', rfl⟩
-    | L1 => exact d.1.elim0
-    | L0a => exact d.1.elim0
-    | L0b => exact d.1.elim0
+    | L1 => exact d.val.elim0
+    | L0a => exact d.val.elim0
+    | L0b => exact d.val.elim0
   shapeRestr := fun {j j'} g s ↦
-    ⟨restrShapeTo s.1 j', restr_over s.1 j' (by
-      have hs : qFix s.1 = j := s.2
+    ⟨restrShapeTo s.val j', restr_over s.val j' (by
+      have hs : qFix s.val = j := s.property
       rw [hs]; exact leOfHom g)⟩
   reindex := fun {j j'} _g a {i} d ↦ by
     obtain ⟨as, has⟩ := a
     cases as with
     | R => exact ⟨i, rfl⟩
-    | L1 => exact (bFix_leaf_empty _ (restr_ne_r .L1 j' (by decide))).elim d.1
-    | L0a => exact (bFix_leaf_empty _ (restr_ne_r .L0a j' (by decide))).elim d.1
-    | L0b => exact (bFix_leaf_empty _ (restr_ne_r .L0b j' (by decide))).elim d.1
+    | L1 => exact (bFix_leaf_empty _ (restr_ne_r .L1 j' (by decide))).elim d.val
+    | L0a => exact (bFix_leaf_empty _ (restr_ne_r .L0a j' (by decide))).elim d.val
+    | L0b => exact (bFix_leaf_empty _ (restr_ne_r .L0b j' (by decide))).elim d.val
 
 /-- Every direction fiber of the fixture is a subsingleton: `R`'s direction over
 `i` is unique (its input map is the identity on `Fin 2`), and leaves have none.
@@ -266,10 +266,10 @@ This discharges the five direction-side functor laws. -/
 instance subsingletonDirection (a : Shp) (i : Fin 2) :
     Subsingleton (wFixtureData.toSliceDomPFunctor.Direction a i) := by
   cases a with
-  | R => exact ⟨fun x y ↦ Subtype.ext (show x.1 = y.1 from x.2.trans y.2.symm)⟩
-  | L1 => exact ⟨fun x _ ↦ x.1.elim0⟩
-  | L0a => exact ⟨fun x _ ↦ x.1.elim0⟩
-  | L0b => exact ⟨fun x _ ↦ x.1.elim0⟩
+  | R => exact ⟨fun x y ↦ Subtype.ext (show x.val = y.val from x.property.trans y.property.symm)⟩
+  | L1 => exact ⟨fun x _ ↦ x.val.elim0⟩
+  | L0a => exact ⟨fun x _ ↦ x.val.elim0⟩
+  | L0b => exact ⟨fun x _ ↦ x.val.elim0⟩
 
 /-- The fixture endofunctor: the operations with the seven functor laws. The
 direction-side laws hold by `Subsingleton.elim`; the shape-side laws by
@@ -290,9 +290,9 @@ direction-side laws hold by `Subsingleton.elim`; the shape-side laws by
       shapeRestr_comp := by
         intro j j' j'' g h; funext s
         refine Subtype.ext ?_
-        change restrShapeTo s.1 j'' = restrShapeTo (restrShapeTo s.1 j') j''
-        refine restr_comp s.1 j' j'' (leOfHom h) ?_
-        have hs : qFix s.1 = j := s.2
+        change restrShapeTo s.val j'' = restrShapeTo (restrShapeTo s.val j') j''
+        refine restr_comp s.val j' j'' (leOfHom h) ?_
+        have hs : qFix s.val = j := s.property
         rw [hs]; exact leOfHom g
       reindex_naturality := by intro j j' g a i i' f; funext d; exact Subsingleton.elim _ _
       reindex_id := by intro j a i b; exact Subsingleton.elim _ _

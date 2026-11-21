@@ -35,7 +35,7 @@ theorem sampleList_roundtrip :
 
 /-- `getEquivC` carries index `1` to the sample list's second entry. -/
 theorem sampleList_getEquivC_forward :
-    (List.Nodup.getEquivC sampleList sampleList_nodup ⟨1, by decide⟩ : {x // x ∈ sampleList}).1
+    (List.Nodup.getEquivC sampleList sampleList_nodup ⟨1, by decide⟩ : {x // x ∈ sampleList}).val
       = 3 := rfl
 
 /-- `getEquivC` carries the sample list's second entry back to index `1`. -/
@@ -43,7 +43,7 @@ theorem sampleList_getEquivC_backward :
     (List.Nodup.getEquivC sampleList sampleList_nodup).symm ⟨3, by decide⟩ = ⟨1, by decide⟩ := rfl
 
 /-- A sample decidable predicate on `Fin 4`. -/
-def samplePred : Fin 4 → Bool := fun i ↦ decide (i.1 % 2 = 0)
+def samplePred : Fin 4 → Bool := fun i ↦ decide (i.val % 2 = 0)
 
 /-- `compressEquiv` round-trips a sample compressed index. -/
 theorem sampleCompress_roundtrip
@@ -54,4 +54,4 @@ theorem sampleCompress_roundtrip
 /-- `compressEquiv` carries the second compressed index to the sample
 predicate's second even residue. -/
 theorem sampleCompress_value :
-    (Fin.compressEquiv samplePred ⟨1, by decide⟩ : {i : Fin 4 // samplePred i}).1 = 2 := rfl
+    (Fin.compressEquiv samplePred ⟨1, by decide⟩ : {i : Fin 4 // samplePred i}).val = 2 := rfl

@@ -111,11 +111,11 @@ theorem existsUnique_isSolution (hr : WellFounded r) (alg : P.Obj V → V) (env 
     (d : WFBlock P Γ r) : ∃! v, IsSolution alg env d.toBlock v := by
   simp only [isSolution_iff]
   let F : ∀ i, (∀ j, r j i → V) → V := fun i rec ↦
-    eval alg (Sum.elim env fun j ↦ rec j.1 j.2) (d i)
+    eval alg (Sum.elim env fun j ↦ rec j.val j.property) (d i)
   refine ⟨hr.fix F, fun i ↦ (hr.fix_eq F i).symm, fun w hw ↦ funext fun i ↦ ?_⟩
   refine hr.induction (C := fun i ↦ w i = hr.fix F i) i fun i ih ↦ ?_
   rw [← hw i, hr.fix_eq F i]
-  exact congrArg (fun k ↦ eval alg (Sum.elim env k) (d i)) (funext fun j ↦ ih j.1 j.2)
+  exact congrArg (fun k ↦ eval alg (Sum.elim env k) (d i)) (funext fun j ↦ ih j.val j.property)
 
 end WFBlock
 

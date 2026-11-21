@@ -109,7 +109,7 @@ theorem eval_boundedRecOrderTerm :
 `fst_eval` that carries the meaning to the expression's own arity does not obstruct
 reduction. -/
 theorem eval_concatOf :
-    concatOf.1.eval ![[true], [false, false]] = [false, false, true] := rfl
+    concatOf.val.eval ![[true], [false, false]] = [false, false, true] := rfl
 
 /-- The order-discriminating term is not admissible: its recursion returns the
 second argument while its bound child (`proj 2 0`) returns the first, so at
@@ -144,8 +144,8 @@ theorem recBounded_boundedRecBoundTerm : RecBounded boundedRecBoundTerm := by
 open scoped FinEnum in
 /-- A smash node is rejected wherever it sits. -/
 def smashFreeCheck : Bool :=
-  decide (Cobham.SmashFree Cobham.concatOf.1) &&
-    decide (¬ Cobham.SmashFree Cobham.smashOf.1)
+  decide (Cobham.SmashFree Cobham.concatOf.val) &&
+    decide (¬ Cobham.SmashFree Cobham.smashOf.val)
 
 example : smashFreeCheck = true := by decide
 
@@ -184,7 +184,7 @@ def smashNestedTerm : C :=
   ⟨⟨smashNestedRaw, smashNestedRaw_admissible⟩,
     ⟨trivial, fun d ↦ match d with
       | .inl () => ⟨trivial, fun c ↦ c.elim0⟩
-      | .inr _ => smashBelowRootTerm.2⟩⟩
+      | .inr _ => smashBelowRootTerm.property⟩⟩
 
 /-- A `comp` node whose argument is `concat`, structurally parallel to
 `smashBelowRootRaw` but with `smash` replaced by `concat`. -/
@@ -212,7 +212,7 @@ def smashFreeNestedTerm : C :=
   ⟨⟨smashFreeNestedRaw, smashFreeNestedRaw_admissible⟩,
     ⟨trivial, fun d ↦ match d with
       | .inl () => ⟨trivial, fun c ↦ c.elim0⟩
-      | .inr _ => concatBelowRootTerm.2⟩⟩
+      | .inr _ => concatBelowRootTerm.property⟩⟩
 
 /-- `SmashFree` rejects a `smash` node one level below the root, and two levels
 below the root, catching a check that inspects only the root's own shape or only
@@ -249,6 +249,6 @@ example : condDispatchCheck = true := by decide
 `condRaw` concatenates the three branch arguments where [HeraudNowak2011] smashes
 them. -/
 def smashFreeDerivedCheck : Bool :=
-  decide (Cobham.SmashFree pred.1) && decide (Cobham.SmashFree cond.1)
+  decide (Cobham.SmashFree pred.val) && decide (Cobham.SmashFree cond.val)
 
 example : smashFreeDerivedCheck = true := by decide

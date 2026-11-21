@@ -89,4 +89,4 @@ def workedWords : List (List Bool) :=
 
 #guard isEliasTree.sem ![[true, true]] = []
 
-#guard workedWords.all fun w ↦ decide (isEliasTree.1.semVec ![w] = [true]) == validBool w
+#guard workedWords.all fun w ↦ decide (isEliasTree.val.semVec ![w] = [true]) == validBool w

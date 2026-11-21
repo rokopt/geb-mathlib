@@ -68,14 +68,14 @@ theorem sampleMplus_nil :
 
 /-- The tower injection at a singleton stack is the right injection. -/
 theorem sampleMplusInj_apply :
-    (mplusInj Bool [sampleCategorySup] sampleCategoryObj).1 true =
+    (mplusInj Bool [sampleCategorySup] sampleCategoryObj).val true =
       Sum.inr true :=
   rfl
 
 /-- The tower action on morphisms fixes the stacked superscript. -/
 theorem sampleMplusMorMap_apply :
     (mplusMorMap Bool [sampleCategorySup] sampleCategoryObj sampleCategoryObj
-        (FreeCoprodCompDisc.Hom.id Bool sampleCategoryObj)).1 (Sum.inl true) =
+        (FreeCoprodCompDisc.Hom.id Bool sampleCategoryObj)).val (Sum.inl true) =
       Sum.inl true :=
   rfl
 
@@ -192,7 +192,7 @@ theorem sampleMprecompIso_natural
 /-- The component of `IR.interpHom` at the sample `ι`-domain. -/
 theorem sampleInterpHomIota_component
     (f : InnerHom.{0, 0, 0, 0} Bool Bool true sampleCategoryCode) :
-    (interpHom Bool Bool (iota Bool Bool true) sampleCategoryCode f).1
+    (interpHom Bool Bool (iota Bool Bool true) sampleCategoryCode f).val
         sampleCategoryObj =
       FreeCoprodCompDisc.Hom.comp Bool
         ((FreeCoprodCompDisc.homSingletonEquiv Bool true
@@ -243,12 +243,12 @@ theorem sampleInnerHomEquiv_mk
 codomain and object. -/
 theorem sampleInterpHom_sigma (A : Type) (K : A → IR.{0, 0, 0, 0} Bool Bool)
     (f : Hom.{0, 0, 0, 0} Bool Bool (sigma Bool Bool A K) sampleCategoryCode) :
-    (interpHom Bool Bool (sigma Bool Bool A K) sampleCategoryCode f).1
+    (interpHom Bool Bool (sigma Bool Bool A K) sampleCategoryCode f).val
         sampleCategoryObj =
       FreeCoprodCompDisc.coprodDesc Bool A
         (fun a ↦ interpObj Bool Bool (K a) sampleCategoryObj)
         (interpObj Bool Bool sampleCategoryCode sampleCategoryObj)
-        (fun a ↦ (interpHom Bool Bool (K a) sampleCategoryCode (f a)).1
+        (fun a ↦ (interpHom Bool Bool (K a) sampleCategoryCode (f a)).val
           sampleCategoryObj) :=
   interpHom_sigma Bool Bool A K sampleCategoryCode f sampleCategoryObj
 
@@ -257,11 +257,11 @@ codomain and object. -/
 theorem sampleInterpHom_delta (B : Type)
     (c : (B → Bool) → IR.{0, 0, 0, 0} Bool Bool)
     (f : Hom.{0, 0, 0, 0} Bool Bool (delta Bool Bool B c) sampleCategoryCode) :
-    (interpHom Bool Bool (delta Bool Bool B c) sampleCategoryCode f).1
+    (interpHom Bool Bool (delta Bool Bool B c) sampleCategoryCode f).val
         sampleCategoryObj =
       deltaDesc Bool Bool B c sampleCategoryObj
         (interpObj Bool Bool sampleCategoryCode sampleCategoryObj)
-        (fun i ↦ (interpHomDeltaSummand Bool Bool B c sampleCategoryCode i (f i)).1
+        (fun i ↦ (interpHomDeltaSummand Bool Bool B c sampleCategoryCode i (f i)).val
           sampleCategoryObj) :=
   interpHom_delta Bool Bool B c sampleCategoryCode f sampleCategoryObj
 
@@ -291,10 +291,10 @@ theorem sampleSigmaPushChar_apply (A' : Type)
     (K' : A' → IR.{0, 0, 0, 0} Bool Bool) (a' : A')
     (f : Hom.{0, 0, 0, 0} Bool Bool sampleCategoryCode (K' a')) :
     (interpHom Bool Bool sampleCategoryCode (sigma Bool Bool A' K')
-        (sigmaPush Bool Bool sampleCategoryCode A' K' a' f)).1
+        (sigmaPush Bool Bool sampleCategoryCode A' K' a' f)).val
         sampleCategoryObj =
       FreeCoprodCompDisc.Hom.comp Bool
-        ((interpHom Bool Bool sampleCategoryCode (K' a') f).1
+        ((interpHom Bool Bool sampleCategoryCode (K' a') f).val
           sampleCategoryObj)
         (FreeCoprodCompDisc.coprodInj Bool A'
           (fun a ↦ interpObj Bool Bool (K' a) sampleCategoryObj) a') :=
@@ -315,10 +315,10 @@ theorem sampleDeltaEmptyPushChar_apply
     (interpHom Bool Bool sampleCategoryCode
         (delta Bool Bool PEmpty.{1} M)
         (deltaEmptyPush Bool Bool sampleCategoryCode PEmpty.{1} _root_.id
-          M f)).1 sampleCategoryObj =
+          M f)).val sampleCategoryObj =
       FreeCoprodCompDisc.Hom.comp Bool
         ((interpHom Bool Bool sampleCategoryCode
-          (M (fun x ↦ (_root_.id x).elim)) f).1 sampleCategoryObj)
+          (M (fun x ↦ (_root_.id x).elim)) f).val sampleCategoryObj)
         (deltaEmptyInj Bool Bool PEmpty.{1} _root_.id M
           sampleCategoryObj) :=
   interpHom_deltaEmptyPush Bool Bool sampleCategoryCode PEmpty.{1}
@@ -328,7 +328,7 @@ theorem sampleDeltaEmptyPushChar_apply
 the factorization into the appended superscript. -/
 theorem sampleNavWeight_nil_apply :
     (navWeight Bool Bool (fun b ↦ b) Bool (fun b ↦ b) sampleCategoryObj
-        []).1 (ULift.up true) =
+        []).val (ULift.up true) =
       Sum.inl true :=
   rfl
 
@@ -340,11 +340,11 @@ theorem sampleMsigmaPushChar (A' : Type) (K' : A' → IR.{0, 0, 0, 0} Bool Bool)
       (mprecomp Bool Bool [sampleCategorySup] (K' a'))) :
     (interpHom Bool Bool sampleCategoryCode
         (mprecomp Bool Bool [sampleCategorySup] (sigma Bool Bool A' K'))
-        (msigmaPush Bool Bool sampleCategoryCode A' K' a' [sampleCategorySup] f)).1
+        (msigmaPush Bool Bool sampleCategoryCode A' K' a' [sampleCategorySup] f)).val
         sampleCategoryObj =
       FreeCoprodCompDisc.Hom.comp Bool
         ((interpHom Bool Bool sampleCategoryCode
-          (mprecomp Bool Bool [sampleCategorySup] (K' a')) f).1 sampleCategoryObj)
+          (mprecomp Bool Bool [sampleCategorySup] (K' a')) f).val sampleCategoryObj)
         (FreeCoprodCompDisc.Hom.comp Bool
           (FreeCoprodCompDisc.Hom.comp Bool
             (FreeCoprodCompDisc.Iso.hom Bool
@@ -365,16 +365,16 @@ theorem sampleDeltaNavBaseChar (Bout : Type) (iout : Bout → Bool) (Bin : Type)
       (precomp Bool Bool Bout iout (K (iout ∘ g)))) :
     (interpHom Bool Bool sampleCategoryCode
         (precomp Bool Bool Bout iout (delta Bool Bool Bin K))
-        (deltaNavBase Bool Bool sampleCategoryCode Bout iout Bin K g f)).1
+        (deltaNavBase Bool Bool sampleCategoryCode Bout iout Bin K g f)).val
         sampleCategoryObj =
       FreeCoprodCompDisc.Hom.comp Bool
         ((interpHom Bool Bool sampleCategoryCode
-          (precomp Bool Bool Bout iout (K (iout ∘ g))) f).1 sampleCategoryObj)
+          (precomp Bool Bool Bout iout (K (iout ∘ g))) f).val sampleCategoryObj)
         (FreeCoprodCompDisc.Hom.comp Bool
           (deltaEmptyInj Bool Bool
             {z : Bin // (fun b ↦ Sum.inl (g b) : Bin → Bout ⊕ PUnit.{1}) z =
               Sum.inr PUnit.unit}
-            (fun z ↦ nomatch z.2)
+            (fun z ↦ nomatch z.property)
             (fun j ↦ precomp Bool Bool Bout iout
               (K (precompMerge Bool Bout iout (fun b ↦ Sum.inl (g b)) j)))
             sampleCategoryObj)
@@ -401,12 +401,12 @@ theorem sampleDeltaNavChar (Bout : Type) (iout : Bout → Bool) (Bin : Type)
           ([sampleCategorySup] ++ [(⟨Bout, iout⟩ : SupObj.{0, 0} Bool)])
           (delta Bool Bool Bin K))
         (deltaNav Bool Bool sampleCategoryCode Bout iout Bin K g [sampleCategorySup]
-          f)).1 sampleCategoryObj =
+          f)).val sampleCategoryObj =
       FreeCoprodCompDisc.Hom.comp Bool
         ((interpHom Bool Bool sampleCategoryCode
           (mprecomp Bool Bool
             ([sampleCategorySup] ++ [(⟨Bout, iout⟩ : SupObj.{0, 0} Bool)])
-            (K (iout ∘ g))) f).1 sampleCategoryObj)
+            (K (iout ∘ g))) f).val sampleCategoryObj)
         (navInj Bool Bool Bout iout Bin K g [sampleCategorySup] sampleCategoryObj) :=
   interpHom_deltaNav Bool Bool sampleCategoryCode Bout iout Bin K g [sampleCategorySup]
     f sampleCategoryObj
@@ -417,7 +417,7 @@ theorem sampleInterpHomPreUnitStack_nil
     (X : FreeCoprodCompDisc.{0, 0} Bool) :
     (interpHom Bool Bool sampleCategoryCode
         (mprecomp Bool Bool [] sampleCategoryCode)
-        (preUnitStack Bool Bool sampleCategoryCode [])).1 X =
+        (preUnitStack Bool Bool sampleCategoryCode [])).val X =
       preUnitComponent Bool Bool sampleCategoryCode [] X :=
   interpHom_preUnitStack Bool Bool sampleCategoryCode [] X
 
@@ -428,7 +428,7 @@ theorem sampleInterpHomPreUnitStack_snoc
     (X : FreeCoprodCompDisc.{0, 0} Bool) :
     (interpHom Bool Bool sampleCategoryCode
         (mprecomp Bool Bool [sampleCategorySup] sampleCategoryCode)
-        (preUnitStack Bool Bool sampleCategoryCode [sampleCategorySup])).1 X =
+        (preUnitStack Bool Bool sampleCategoryCode [sampleCategorySup])).val X =
       preUnitComponent Bool Bool sampleCategoryCode [sampleCategorySup] X :=
   interpHom_preUnitStack Bool Bool sampleCategoryCode [sampleCategorySup] X
 

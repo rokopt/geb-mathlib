@@ -41,7 +41,7 @@ redefined here). -/
   q := id
   directionRestr := fun a {_i i'} _f _b ↦ ⟨i' + a, fin2_add_idx a i'⟩
   shapeRestr := fun {_j j'} _g _s ↦ ⟨j', rfl⟩
-  reindex := fun {_j _j'} _g a {i} _b ↦ ⟨i + a.1, fin2_add_idx a.1 i⟩
+  reindex := fun {_j _j'} _g a {i} _b ↦ ⟨i + a.val, fin2_add_idx a.val i⟩
 
 /-- The constraint `r ⟨a, ·⟩ = a + ·` is injective, so each fiber
 `Direction a i` has at most one element. -/
@@ -51,15 +51,15 @@ private theorem fin2_direction_cancel (a x y i : Fin 2) (hx : a + x = i) (hy : a
 /-- Each direction fiber of the witness is a singleton. -/
 private instance subsingleton_direction (a i : Fin 2) :
     Subsingleton (presheafWitnessData.toSliceDomPFunctor.Direction a i) :=
-  ⟨fun x y ↦ Subtype.ext (fin2_direction_cancel a x.1 y.1 i x.2 y.2)⟩
+  ⟨fun x y ↦ Subtype.ext (fin2_direction_cancel a x.val y.val i x.property y.property)⟩
 
 /-- Each shape fiber of the witness is a singleton (the shape-output map
 `q = id` separates the two shapes). -/
 private instance subsingleton_shape (j : Fin 2) :
     Subsingleton (presheafWitnessData.toSlicePFunctor.Shape j) :=
   ⟨fun x y ↦ Subtype.ext (by
-    have hx : (x.1 : Fin 2) = j := x.2
-    have hy : (y.1 : Fin 2) = j := y.2
+    have hx : (x.val : Fin 2) = j := x.property
+    have hy : (y.val : Fin 2) = j := y.property
     exact hx.trans hy.symm)⟩
 
 /-- The witness, with all seven functor laws discharged by `Subsingleton.elim`. -/
@@ -80,12 +80,13 @@ def presheafWitness : PresheafPFunctor (Fin 2) (Fin 2) where
 example (x : presheafWitness.toSliceDomPFunctor.Obj presheafWitness.toSlicePFunctor.wIndex) :
     presheafWitness.IsHereditarilyNatural (SlicePFunctor.W.mk x) ↔
       (∀ ⦃i i' : Fin 2⦄ (g : i' ⟶ i)
-          (b : presheafWitness.toSliceDomPFunctor.Direction x.1.1 i),
-          x.1.2 (presheafWitness.directionRestr x.1.1 g b).1
-            = presheafWitness.wRestrTree g (x.1.2 b.1)
+          (b : presheafWitness.toSliceDomPFunctor.Direction x.val.1 i),
+          x.val.2 (presheafWitness.directionRestr x.val.1 g b).val
+            = presheafWitness.wRestrTree g (x.val.2 b.val)
                 (((presheafWitness.toSliceDomPFunctor.compatible_iff
-                  presheafWitness.toSlicePFunctor.wIndex x.1.1 x.1.2).mp x.2 b.1).trans b.2)) ∧
-        ∀ b, presheafWitness.IsHereditarilyNatural (x.1.2 b) :=
+                  presheafWitness.toSlicePFunctor.wIndex x.val.1 x.val.2).mp x.property b.val).trans
+                  b.property)) ∧
+        ∀ b, presheafWitness.IsHereditarilyNatural (x.val.2 b) :=
   presheafWitness.isHereditarilyNatural_mk x
 
 -- Restriction of the carrier presheaf `W` along an identity is the identity map.

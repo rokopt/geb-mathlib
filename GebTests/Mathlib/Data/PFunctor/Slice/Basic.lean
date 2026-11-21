@@ -50,12 +50,12 @@ example : testSlice.toSliceDomPFunctor.Obj (id : Bool → Bool) =
 -- The action fixes the shape.
 example (X : Type) (p p' : X → Bool) (f : X → X) (hf : p' ∘ f = p)
     (z : testSlice.toSliceDomPFunctor.Obj p) :
-    (testSlice.toSliceDomPFunctor.map f hf z).1.1 = z.1.1 :=
+    (testSlice.toSliceDomPFunctor.map f hf z).val.1 = z.val.1 :=
   testSlice.toSliceDomPFunctor.map_fst f hf z
 
 -- The slice object's structure map into `cod` is the output index (`q`) at the shape.
 example (X : Type) (p : X → Bool) (z : testSlice.toSliceDomPFunctor.Obj p) :
-    testSlice.obj p z = testSlice.q z.1.1 := rfl
+    testSlice.obj p z = testSlice.q z.val.1 := rfl
 
 -- The slice morphism's underlying function is the `SliceDomPFunctor` map.
 example (X : Type) (p p' : X → Bool) (f : X → X) (hf : p' ∘ f = p) :
@@ -92,15 +92,15 @@ example : Prod.fst ∘ sliceMor = (id : Bool → Bool) := rfl
 
 -- The action post-composes the direction assignment with `sliceMor`.
 example :
-    (testSlice.toSliceDomPFunctor.map (p' := Prod.fst) sliceMor rfl sliceElt).1.2 = sliceMor :=
+    (testSlice.toSliceDomPFunctor.map (p' := Prod.fst) sliceMor rfl sliceElt).val.2 = sliceMor :=
   rfl
 example :
-    (testSlice.toSliceDomPFunctor.map (p' := Prod.fst) sliceMor rfl sliceElt).1.2 false =
+    (testSlice.toSliceDomPFunctor.map (p' := Prod.fst) sliceMor rfl sliceElt).val.2 false =
       (false, true) := rfl
 
 -- The shape component is fixed by the action.
 example :
-    (testSlice.toSliceDomPFunctor.map (p' := Prod.fst) sliceMor rfl sliceElt).1.1 = () := rfl
+    (testSlice.toSliceDomPFunctor.map (p' := Prod.fst) sliceMor rfl sliceElt).val.1 = () := rfl
 
 /-- A slice functor whose shape-output map `q = id` distinguishes its two
 shapes, so the output-index content of `obj` is exercised. -/
@@ -113,7 +113,7 @@ def separatingSlice : SlicePFunctor Bool Bool where
 -- `obj` reads the output index at the shape: with `q = id`, it is the shape
 -- projection (this fails for any output index that does not separate the shapes).
 example (X : Type) (p : X → Bool) :
-    separatingSlice.obj p = fun z ↦ z.1.1 := rfl
+    separatingSlice.obj p = fun z ↦ z.val.1 := rfl
 
 -- `map_w` over a functor with a separating output index: the morphism lies over `cod`.
 example (X X' : Type) (p : X → Bool) (p' : X' → Bool) (f : X → X')

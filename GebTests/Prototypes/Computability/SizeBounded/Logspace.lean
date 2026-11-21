@@ -74,6 +74,6 @@ def condEmpty : Rep := condL.repSem input ![⟨[], 0⟩, ⟨[true], 0⟩, ⟨[fa
 #guard condL.sem ![input.rtake 3, [true], [false], input.rtake 1] = condTrue.den input
 
 /-- Lemma 4.5 on the worked input: the value is short or an end segment. -/
-example : (tailL.sem ![input]).length ≤ nsiConst tailL.1.1.1 ∨
+example : (tailL.sem ![input]).length ≤ nsiConst tailL.val.val.val ∨
     ∃ i, tailL.sem ![input] <:+ ![input] i :=
   length_le_or_suffix tailL ![input]

@@ -99,9 +99,9 @@ def alternatingStream : SliceM alternatingSig :=
 
 #guard SliceM.index alternatingSig alternatingStream = true
 
-#guard SliceM.index alternatingSig (alternatingStream.dest.1.2 ()) = false
+#guard SliceM.index alternatingSig (alternatingStream.dest.val.2 ()) = false
 
-#guard SliceM.index alternatingSig ((alternatingStream.dest.1.2 ()).dest.1.2 ()) = true
+#guard SliceM.index alternatingSig ((alternatingStream.dest.val.2 ()).dest.val.2 ()) = true
 
 /-! ## The presheaf M-type -/
 
@@ -117,7 +117,7 @@ open CategoryTheory PresheafFixture
 whose children are the states over the indices of its directions. -/
 def unitNode (i : Fin 2) : (wFixture.objPresheaf unitY).obj ⟨i⟩ :=
   match i with
-  | 0 => ⟨⟨⟨⟨.L0a, fun b ↦ b.elim0⟩, funext fun b ↦ b.elim0⟩, fun _ _ _ b ↦ b.1.elim0⟩, rfl⟩
+  | 0 => ⟨⟨⟨⟨.L0a, fun b ↦ b.elim0⟩, funext fun b ↦ b.elim0⟩, fun _ _ _ b ↦ b.val.elim0⟩, rfl⟩
   | 1 => ⟨⟨⟨⟨.R, fun b ↦ ⟨b, PUnit.unit⟩⟩, rfl⟩, fun _ _ _ _ ↦ rfl⟩, rfl⟩
 
 /-- The coalgebra: restricting the node over {lit}`1` along the arrow gives
@@ -154,16 +154,16 @@ def rChild (t : M wFixture.toPFunctor) (b : Fin 2) : Option (M wFixture.toPFunct
   | .R => some (t.children (cast (congrArg BFix h.symm) b))
   | _ => none
 
-#guard spine.down.1.1.head = Shp.R
+#guard spine.down.val.val.head = Shp.R
 
-#guard (rChild spine.down.1.1 0).map M.head = some Shp.L0a
+#guard (rChild spine.down.val.val 0).map M.head = some Shp.L0a
 
-#guard (rChild spine.down.1.1 1).map M.head = some Shp.R
+#guard (rChild spine.down.val.val 1).map M.head = some Shp.R
 
-#guard ((rChild spine.down.1.1 1).bind (rChild · 0)).map M.head = some Shp.L0a
+#guard ((rChild spine.down.val.val 1).bind (rChild · 0)).map M.head = some Shp.L0a
 
-#guard SliceM.index wFixture.toSlicePFunctor spine.down.1 = 1
+#guard SliceM.index wFixture.toSlicePFunctor spine.down.val = 1
 
-#guard ((PresheafM wFixture).map PresheafPFunctor.arrow.op spine).down.1.1.head = Shp.L0a
+#guard ((PresheafM wFixture).map PresheafPFunctor.arrow.op spine).down.val.val.head = Shp.L0a
 
 end GebTests.MType

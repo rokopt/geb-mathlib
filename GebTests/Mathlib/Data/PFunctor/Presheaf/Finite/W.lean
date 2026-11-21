@@ -52,10 +52,10 @@ example {I : Type uI} [Category.{vI} I]
 reduces. -/
 
 /-- The good tree passes the combined validator. -/
-def wValidGood : Bool := finiteWFixture.wValidBool goodTree.1
+def wValidGood : Bool := finiteWFixture.wValidBool goodTree.val
 
 /-- The bad tree (fails naturality) fails the combined validator. -/
-def wValidBad : Bool := finiteWFixture.wValidBool badTree.1
+def wValidBad : Bool := finiteWFixture.wValidBool badTree.val
 
 /-- An inadmissible tree fails the combined validator. -/
 def wValidInadmissible : Bool := finiteWFixture.wValidBool inadmissibleTree
@@ -68,11 +68,11 @@ example : wValidInadmissible = false := by decide
 
 /-- DecidableEq: two equal leaf trees. -/
 def eqTrue : Bool :=
-  @decide _ (finiteWFixture.decidableEqW (leafTree .L0a).1 (leafTree .L0a).1)
+  @decide _ (finiteWFixture.decidableEqW (leafTree .L0a).val (leafTree .L0a).val)
 
 /-- DecidableEq: two distinct leaf trees. -/
 def eqFalse : Bool :=
-  @decide _ (finiteWFixture.decidableEqW (leafTree .L0a).1 (leafTree .L0b).1)
+  @decide _ (finiteWFixture.decidableEqW (leafTree .L0a).val (leafTree .L0b).val)
 
 example : eqTrue = true := by decide
 example : eqFalse = false := by decide
@@ -85,16 +85,16 @@ only the index test, `memWUnnatural` only hereditary naturality, and
 
 /-- Fiber membership: `goodTree` lies in the fiber over index `1`. -/
 def memWTrue : Bool :=
-  @decide _ (FinitePresheafPFunctor.decidableMemW finiteWFixture 1 goodTree.1)
+  @decide _ (FinitePresheafPFunctor.decidableMemW finiteWFixture 1 goodTree.val)
 
 /-- Fiber membership fails on the index: `goodTree` is indexed at `1`, not `0`. -/
 def memWWrongIndex : Bool :=
-  @decide _ (FinitePresheafPFunctor.decidableMemW finiteWFixture 0 goodTree.1)
+  @decide _ (FinitePresheafPFunctor.decidableMemW finiteWFixture 0 goodTree.val)
 
 /-- Fiber membership fails on hereditary naturality: `badTree` is admissible and
 indexed at `1`, but unnatural at the root. -/
 def memWUnnatural : Bool :=
-  @decide _ (FinitePresheafPFunctor.decidableMemW finiteWFixture 1 badTree.1)
+  @decide _ (FinitePresheafPFunctor.decidableMemW finiteWFixture 1 badTree.val)
 
 /-- Fiber membership fails on admissibility: `inadmissibleTree` is not a valid
 slice W-tree at all. -/

@@ -72,10 +72,10 @@ abbrev WitShape : Type uA := {s : S.A // (S.q s).2 = .one}
 variable {S}
 
 /-- A term shape lies over the object of terms over its object of {lit}`I`. -/
-theorem q_term (s : TermShape S) : S.q s.1 = termObj (S.q s.1).1 := Prod.ext rfl s.2
+theorem q_term (s : TermShape S) : S.q s.val = termObj (S.q s.val).1 := Prod.ext rfl s.property
 
 /-- A witness shape lies over the object of witnesses over its object of {lit}`I`. -/
-theorem q_wit (s : WitShape S) : S.q s.1 = eqObj (S.q s.1).1 := Prod.ext rfl s.2
+theorem q_wit (s : WitShape S) : S.q s.val = eqObj (S.q s.val).1 := Prod.ext rfl s.property
 
 variable (S)
 
@@ -83,29 +83,29 @@ variable (S)
 along a morphism of {lit}`I` as along that morphism on terms. -/
 def termSig : Sig.{uA} I where
   A := TermShape S
-  q s := (S.q s.1).1
-  Gen s := S.Gen s.1
-  gobj s b := (S.gobj s.1 b).1
-  restr s _ g := ⟨S.restr (termHom g) s.1,
-    congrArg Prod.snd (S.q_restr (termHom g) s.1 (q_term s))⟩
-  q_restr s _ g := congrArg Prod.fst (S.q_restr (termHom g) s.1 (q_term s))
-  reindex s _ g b := ⟨(S.reindex (termHom g) s.1 b).1, (S.reindex (termHom g) s.1 b).2.1⟩
+  q s := (S.q s.val).1
+  Gen s := S.Gen s.val
+  gobj s b := (S.gobj s.val b).1
+  restr s _ g := ⟨S.restr (termHom g) s.val,
+    congrArg Prod.snd (S.q_restr (termHom g) s.val (q_term s))⟩
+  q_restr s _ g := congrArg Prod.fst (S.q_restr (termHom g) s.val (q_term s))
+  reindex s _ g b := ⟨(S.reindex (termHom g) s.val b).1, (S.reindex (termHom g) s.val b).2.1⟩
 
 variable {S}
 
 /-- The endpoint morphism of a witness shape at an orientation: from the object of terms to the
 object of witnesses over its object of {lit}`I`. -/
-abbrev endMorOf (o : Bool) (s : WitShape S) : termObj (S.q s.1).1 ⟶ eqObj (S.q s.1).1 :=
+abbrev endMorOf (o : Bool) (s : WitShape S) : termObj (S.q s.val).1 ⟶ eqObj (S.q s.val).1 :=
   (𝟙 _, endHom o)
 
 /-- The endpoint of a witness shape at an orientation: its restriction along the endpoint
 morphism, a term shape over its object of {lit}`I`. -/
 def endShape (o : Bool) (s : WitShape S) : TermShape S :=
-  ⟨S.restr (endMorOf o s) s.1, congrArg Prod.snd (S.q_restr (endMorOf o s) s.1 (q_wit s))⟩
+  ⟨S.restr (endMorOf o s) s.val, congrArg Prod.snd (S.q_restr (endMorOf o s) s.val (q_wit s))⟩
 
 /-- The endpoint of a witness shape lies over its object of {lit}`I`. -/
-theorem q_endShape (o : Bool) (s : WitShape S) : (S.q (endShape o s).1).1 = (S.q s.1).1 := by
-  have h := congrArg Prod.fst (S.q_restr (endMorOf o s) s.1 (q_wit s))
+theorem q_endShape (o : Bool) (s : WitShape S) : (S.q (endShape o s).val).1 = (S.q s.val).1 := by
+  have h := congrArg Prod.fst (S.q_restr (endMorOf o s) s.val (q_wit s))
   exact h
 
 variable (S)
@@ -114,17 +114,17 @@ variable (S)
 variables, each at its object of {lit}`I`. -/
 def witEqns : SlicePFunctor.{uA, u, u, u} I I where
   A := WitShape S
-  B s := S.Gen s.1
-  r x := (S.gobj x.1.1 x.2).1
-  q s := (S.q s.1).1
+  B s := S.Gen s.val
+  r x := (S.gobj x.1.val x.2).1
+  q s := (S.q s.val).1
 
 variable {S}
 
 /-- The side of a witness shape's equation at an orientation: its endpoint's shape applied to the
 restrictions of the variables along the reindexing morphisms. -/
-def endpoint (o : Bool) (s : WitShape S) : (ops (termSig S)).toPFunctor.FreeM (S.Gen s.1) :=
+def endpoint (o : Bool) (s : WitShape S) : (ops (termSig S)).toPFunctor.FreeM (S.Gen s.val) :=
   opT (S := termSig S) (endShape o s) fun b ↦
-    rT (S.reindex (endMorOf o s) s.1 b).2.1 (.pure (S.reindex (endMorOf o s) s.1 b).1)
+    rT (S.reindex (endMorOf o s) s.val b).2.1 (.pure (S.reindex (endMorOf o s) s.val b).1)
 
 /-- The sides of the witness shapes' equations are well sorted. -/
 theorem endpoint_sorted (o : Bool) :

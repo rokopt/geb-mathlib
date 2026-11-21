@@ -170,7 +170,7 @@ theorem head_leaf_ne_head_node :
 
 -- Reflexivity is not a witness constructor of fixed shape here.
 example : ¬ ∃ (ρ : F.Shape (eqObj ⟨⟨⟩⟩)) (refl : Term → Wit),
-    (∀ t, head F.wHereditaryNaturality (refl t) = ρ.1) ∧ ∀ t, src F.W ⟨⟨⟩⟩ (refl t) = t :=
+    (∀ t, head F.wHereditaryNaturality (refl t) = ρ.val) ∧ ∀ t, src F.W ⟨⟨⟩⟩ (refl t) = t :=
   no_uniform_refl F.wHereditaryNaturality leaf (node leaf leaf) head_leaf_ne_head_node
 
 /-- The arguments of each operation are finite. -/

@@ -29,6 +29,6 @@ open scoped FinEnum
 
 /-- A substitution whose children have the wrong arity. -/
 @[expose] public def invalidRaw : sig.toPFunctor.W :=
-  WType.mk (.comp 1 1) fun _ ↦ (Expr.constant 2 0).1.1
+  WType.mk (.comp 1 1) fun _ ↦ (Expr.constant 2 0).val.val
 
 #guard !wellFormed invalidRaw

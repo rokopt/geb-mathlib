@@ -92,12 +92,12 @@ theorem Expr.Realized.comp {n k : ℕ} {safe : Bool}
     hg i m Pre X (fun j _ _ ↦ j.elim0) GX (fun j ↦ j.elim0) N hN hx
       (fun _ _ _ j ↦ j.elim0)
   obtain ⟨G⟩ := nonempty_fin_family hgs
-  let M (n : ℕ) := max (N n) (finMax k (fun i ↦ lengthPoly (g i).1.1 (N n)))
+  let M (n : ℕ) := max (N n) (finMax k (fun i ↦ lengthPoly (g i).val.val (N n)))
   have hM : IsPolyBounded M := isPolyBounded_max hN
     (isPolyBounded_finMax k _ (fun i ↦ isPolyBounded_comp (lengthPoly_isPolyBounded _) hN))
   exact hh m Pre _ Y G GY M hM
     (fun input σ hp i ↦ ((g i).length_le _ _ _ (hx input σ hp)).trans
-      ((le_finMax k (fun i ↦ lengthPoly (g i).1.1 (N input.length)) i).trans
+      ((le_finMax k (fun i ↦ lengthPoly (g i).val.val (N input.length)) i).trans
         (Nat.le_max_right _ _)))
     (fun input σ hp i ↦ (hy input σ hp i).trans (Nat.le_max_left _ _))
 

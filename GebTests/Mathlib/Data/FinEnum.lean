@@ -41,10 +41,10 @@ def forallTrue : Bool := decide (∀ b : Bool, b || !b)
 def forallFalse : Bool := decide (∀ b : Bool, b)
 
 /-- A `∀` over a decidable subtype that holds. -/
-def subtypeTrue : Bool := decide (∀ x : { b : Bool // b = true }, x.1 = true)
+def subtypeTrue : Bool := decide (∀ x : { b : Bool // b = true }, x.val = true)
 
 /-- A `∀` over a decidable subtype that fails. -/
-def subtypeFalse : Bool := decide (∀ x : { b : Bool // b = true }, x.1 = false)
+def subtypeFalse : Bool := decide (∀ x : { b : Bool // b = true }, x.val = false)
 
 /-- A function equality that holds. -/
 def funTrue : Bool := decide ((fun b : Bool ↦ !b) = fun b : Bool ↦ !b)

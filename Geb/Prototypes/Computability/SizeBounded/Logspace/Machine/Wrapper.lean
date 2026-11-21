@@ -144,7 +144,7 @@ theorem moveRight_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
 
 /-- The tapes of an expression's machine: the argument register, the output
 register, and the compiled program's need. -/
-@[expose] def tapes (e : LOf 1) : ℕ := regsBound e.1.1.1 + 4
+@[expose] def tapes (e : LOf 1) : ℕ := regsBound e.val.val.val + 4
 
 /-- The four tapes of the two registers are below the count. -/
 theorem lt_tapes (e : LOf 1) (t : ℕ) (h : t < 4) : t < tapes e := by
@@ -223,11 +223,11 @@ theorem machine_tr (e : LOf 1) (q : State e) (inp : Option Bool)
   exact tr_ofTr _ _ _ _ _
 
 /-- The word bound the machine runs under: the expression's constant. -/
-@[expose] def wordBound (e : LOf 1) : ℕ := nsiConst e.1.1.1
+@[expose] def wordBound (e : LOf 1) : ℕ := nsiConst e.val.val.val
 
 /-- The machine's step count on an input of length {lit}`n`. -/
 @[expose] def time (e : LOf 1) (n : ℕ) : ℕ :=
-  countInputTime (bound (wordBound e) n) n + timeBound e.1.1.1 (wordBound e) n +
+  countInputTime (bound (wordBound e) n) n + timeBound e.val.val.val (wordBound e) n +
     (2 * bound (wordBound e) n + 3) + 1 + emitSuffixTime (bound (wordBound e) n) n
 
 /-- The machine of {lit}`e` on {lit}`w` emits {lit}`e`'s meaning at {lit}`w`

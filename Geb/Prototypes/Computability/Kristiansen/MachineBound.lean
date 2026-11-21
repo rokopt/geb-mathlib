@@ -48,7 +48,7 @@ theorem computableInTimeAndSpace_sem (e : LOf 1) :
     ∃ c d : ℕ, Turing.MultiTapeTM.ComputableInTimeAndSpaceOfLength
       (fun w ↦ e.sem ![w]) (.refl _) (.refl _)
       (fun n ↦ c * (n + 1) ^ d) (fun n ↦ c * (n + 1)) :=
-  SizeBounded.Machine.computableInTimeAndSpace_sem e.1
+  SizeBounded.Machine.computableInTimeAndSpace_sem e.val
 
 end
 

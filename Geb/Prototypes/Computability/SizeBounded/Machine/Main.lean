@@ -64,7 +64,7 @@ theorem isPolyBounded_time (e : SOf 1) : IsPolyBounded (time e) :=
   isPolyBounded_add (isPolyBounded_add
       (isPolyBounded_add (isPolyBounded_mul (isPolyBounded_const 3) isPolyBounded_id)
         (isPolyBounded_const 5))
-      (isPolyBounded_shift _ (isPolyBounded_stepBound e.1.1)))
+      (isPolyBounded_shift _ (isPolyBounded_stepBound e.val.val)))
     (isPolyBounded_add (isPolyBounded_mul (isPolyBounded_const 2)
       (isPolyBounded_max isPolyBounded_id (isPolyBounded_const _))) (isPolyBounded_const 3))
 
@@ -76,7 +76,7 @@ theorem computableInTimeAndSpace_sem (e : SOf 1) :
     ∃ c d : ℕ, ComputableInTimeAndSpaceOfLength (fun w ↦ e.sem ![w]) (.refl _) (.refl _)
       (fun n ↦ c * (n + 1) ^ d) (fun n ↦ c * (n + 1)) := by
   obtain ⟨c₁, d, hd⟩ := isPolyBounded_time e
-  refine ⟨max c₁ (tapes e * (nsiConst e.1.1 + 2)), d, tapes e, State e, inferInstance,
+  refine ⟨max c₁ (tapes e * (nsiConst e.val.val + 2)), d, tapes e, State e, inferInstance,
     machine e, fun w ↦ ?_⟩
   obtain ⟨cfg', t', ht', h⟩ := machine_emits e w
   refine computesInTimeAndSpace_of_halted (t' := t')
@@ -93,11 +93,12 @@ theorem computableInTimeAndSpace_sem (e : SOf 1) :
       (le_trans (hd w.length) (Nat.mul_le_mul_right _ (Nat.le_max_left _ _)))
     unfold time
     omega
-  · have hlin : bound e w.length + 2 ≤ (nsiConst e.1.1 + 2) * (w.length + 1) := by
-      have hw : w.length ≤ (nsiConst e.1.1 + 2) * w.length := Nat.le_mul_of_pos_left _ (by omega)
+  · have hlin : bound e w.length + 2 ≤ (nsiConst e.val.val + 2) * (w.length + 1) := by
+      have hw : w.length ≤ (nsiConst e.val.val + 2) * w.length :=
+        Nat.le_mul_of_pos_left _ (by omega)
       unfold bound
       rw [Nat.mul_succ]
-      generalize (nsiConst e.1.1 + 2) * w.length = m at hw ⊢
+      generalize (nsiConst e.val.val + 2) * w.length = m at hw ⊢
       omega
     refine le_trans h.space_le (le_trans (Nat.mul_le_mul_left _ hlin) ?_)
     rw [← Nat.mul_assoc]

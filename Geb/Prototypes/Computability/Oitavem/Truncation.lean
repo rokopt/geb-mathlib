@@ -71,8 +71,8 @@ theorem truncationData_index (w : sig.toPFunctor.W) :
 
 /-- Bound extraction preserves syntactic admissibility. -/
 theorem Expr.truncationData_valid {n s : ℕ} (e : Expr n s) :
-    sig.WValid (truncationData e.1.1).2 := by
-  refine Expr.induction (P := fun _ e ↦ sig.WValid (truncationData e.1.1).2) ?_ e
+    sig.WValid (truncationData e.val.val).2 := by
+  refine Expr.induction (P := fun _ e ↦ sig.WValid (truncationData e.val.val).2) ?_ e
   intro a c ih
   have hinit (p : Initial) : sig.WValid (WType.mk (.initial p) Fin.elim0) :=
     (sig.wValid_mk _ _).mpr ⟨fun d ↦ d.elim0, funext fun d ↦ d.elim0⟩
@@ -87,25 +87,25 @@ theorem Expr.truncationData_valid {n s : ℕ} (e : Expr n s) :
       cases d with
       | inl u => cases u; exact ih (.inl ())
       | inr i =>
-        change sig.WValid (truncationData (c (.inr i)).1.1).1
+        change sig.WValid (truncationData (c (.inr i)).val.val).1
         rw [truncationData_fst]
-        exact (c (.inr i)).1.2
+        exact (c (.inr i)).val.property
     · funext d
       cases d with
       | inl u =>
         cases u
-        change sig.wIndexRoot (truncationData (c (.inl ())).1.1).2 = (m, 0)
+        change sig.wIndexRoot (truncationData (c (.inl ())).val.val).2 = (m, 0)
         rw [truncationData_index]
-        exact congrArg (fun i : ℕ × ℕ ↦ (i.1, 0)) (c (.inl ())).2
+        exact congrArg (fun i : ℕ × ℕ ↦ (i.1, 0)) (c (.inl ())).property
       | inr i =>
-        change sig.wIndexRoot (truncationData (c (.inr i)).1.1).1 = (n, 0)
+        change sig.wIndexRoot (truncationData (c (.inr i)).val.val).1 = (n, 0)
         rw [truncationData_fst]
-        exact (c (.inr i)).2
+        exact (c (.inr i)).property
 
 /-- Compute a normal-only expression bounding the observation of the safe input. -/
 def Expr.truncationBound {n s : ℕ} (e : Expr n s) : Expr n 0 :=
-  ⟨⟨(truncationData e.1.1).2, e.truncationData_valid⟩,
-    (truncationData_index e.1.1).trans (congrArg (fun i : ℕ × ℕ ↦ (i.1, 0)) e.2)⟩
+  ⟨⟨(truncationData e.val.val).2, e.truncationData_valid⟩,
+    (truncationData_index e.val.val).trans (congrArg (fun i : ℕ × ℕ ↦ (i.1, 0)) e.property)⟩
 
 /-- At composition, substitute the original normal arguments into the head's bound. -/
 theorem Expr.truncationBound_node_comp {n m : ℕ} {safe : Bool}

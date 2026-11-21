@@ -518,6 +518,7 @@ theorem shortlexSub_eq_numericSub (v w : List Bool) : shortlexSub v w = numericS
   have hpos : (0 : ℤ) ≤ (ofBits r.2 : ℤ) := Int.natCast_nonneg _
   rw [hrkA, hrkB] at hspec
   rw [shortlexSub, numericSub, ← hr]
+  dsimp only
   split
   · rename_i hc
     rw [dropLast_trim]

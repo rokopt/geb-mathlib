@@ -142,14 +142,14 @@ theorem decodeStream_eq_corec (w : List Bool) (h : recognize w = true) :
 /-- The value at a depth of an expression of {lit}`s` nodes has length at most
 {lit}`(n + 2) ^ 2 ^ s`. -/
 theorem length_valueAt_le (e : Expr 1 0) (n : ℕ) :
-    (valueAt e n).length ≤ (n + 2) ^ 2 ^ size e.1.1 :=
+    (valueAt e n).length ≤ (n + 2) ^ 2 ^ size e.val.val :=
   Expr.length_le_pow e ![depthWord n] Fin.elim0 n fun j ↦ match j with
     | ⟨0, _⟩ => (List.length_replicate (n := n) (a := false)).le
 
 /-- The code of the tail has two nodes more than the code of the expression. -/
-theorem size_tailExpr (e : Expr 1 0) : size (tailExpr e).1.1 = size e.1.1 + 2 := by
-  change 1 + size e.1.1 + Geb.SizeBounded.finSum 1 (fun _ ↦ 1) = size e.1.1 + 2
-  change 1 + size e.1.1 + (0 + 1) = size e.1.1 + 2
+theorem size_tailExpr (e : Expr 1 0) : size (tailExpr e).val.val = size e.val.val + 2 := by
+  change 1 + size e.val.val + Geb.SizeBounded.finSum 1 (fun _ ↦ 1) = size e.val.val + 2
+  change 1 + size e.val.val + (0 + 1) = size e.val.val + 2
   omega
 
 end

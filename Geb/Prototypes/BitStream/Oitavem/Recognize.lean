@@ -118,7 +118,7 @@ theorem sem_startsWithExpr (x : Fin n → List Bool) : ∀ (P : List Bool) (p : 
 
 /-- The word coding an expression's stream: the spelling of the expression
 under a root. -/
-@[expose] def spellExpr (e : Expr 1 0) : List Bool := coded.spell (wrap e).1.1
+@[expose] def spellExpr (e : Expr 1 0) : List Bool := coded.spell (wrap e).val.val
 
 /-- The encoding of a left spine: one set bit per fork, the encoding of the
 leftmost tree, and the encodings of the children. -/
@@ -178,7 +178,7 @@ theorem head_none_of_prefix (t : sig.toPFunctor.W) (h : rootPrefix <+: coded.spe
 
 /-- The recognizer accepts exactly the spellings of bundles. -/
 theorem recognize_iff (w : List Bool) :
-    recognize w = true ↔ ∃ b : Bundle, coded.spell b.1.1 = w := by
+    recognize w = true ↔ ∃ b : Bundle, coded.spell b.val.val = w := by
   rw [recognize, Bool.and_eq_true, decide_eq_true_eq, coded.recognize_iff]
   constructor
   · rintro ⟨⟨t, hv, rfl⟩, hp⟩
@@ -187,9 +187,9 @@ theorem recognize_iff (w : List Bool) :
     rw [head_none_of_prefix t hp]
     rfl
   · rintro ⟨b, rfl⟩
-    refine ⟨⟨b.1.1, b.1.2, rfl⟩, ?_⟩
+    refine ⟨⟨b.val.val, b.val.property, rfl⟩, ?_⟩
     rw [bundle_eq b]
-    exact (congrArg (fun z ↦ rootPrefix <+: z) (spell_mk_none fun _ ↦ child b.1.1)).mpr
+    exact (congrArg (fun z ↦ rootPrefix <+: z) (spell_mk_none fun _ ↦ child b.val.val)).mpr
       (List.prefix_append _ _)
 
 /-- The recognizer accepts exactly the words coding the streams of
@@ -198,7 +198,7 @@ theorem recognize_iff_spellExpr (w : List Bool) :
     recognize w = true ↔ ∃ e : Expr 1 0, spellExpr e = w := by
   rw [recognize_iff]
   exact ⟨fun ⟨b, hb⟩ ↦ ⟨unwrap b,
-      (congrArg (fun z : Bundle ↦ coded.spell z.1.1) (bundleEquiv.left_inv b)).trans hb⟩,
+      (congrArg (fun z : Bundle ↦ coded.spell z.val.val) (bundleEquiv.left_inv b)).trans hb⟩,
     fun ⟨e, he⟩ ↦ ⟨wrap e, he⟩⟩
 
 /-- The expression's value: {lit}`[true]` when the recognizer accepts, the
@@ -233,17 +233,17 @@ when it spells one. -/
 /-- A coding word decodes to the expression it spells. -/
 theorem decodeExpr_spellExpr (e : Expr 1 0) : decodeExpr (spellExpr e) = some e := by
   rw [decodeExpr, spellExpr]
-  change (Geb.BitTree.Elias.decode (encode (coded.toTree (wrap e).1.1))).bind _ = _
-  have h := coded.readW_toTree (wrap e).1.1
+  change (Geb.BitTree.Elias.decode (encode (coded.toTree (wrap e).val.val))).bind _ = _
+  have h := coded.readW_toTree (wrap e).val.val
   rw [Geb.BitTree.Elias.decode_encode, Option.bind_some, h]
-  change (if hv : sig.wValidBool (wrap e).1.1 = true then
-      if hi : sig.wIndex ⟨(wrap e).1.1, (sig.wValidBool_eq_true_iff _).mp hv⟩ = none then
-        some (bundleEquiv ⟨⟨(wrap e).1.1, (sig.wValidBool_eq_true_iff _).mp hv⟩, hi⟩)
+  change (if hv : sig.wValidBool (wrap e).val.val = true then
+      if hi : sig.wIndex ⟨(wrap e).val.val, (sig.wValidBool_eq_true_iff _).mp hv⟩ = none then
+        some (bundleEquiv ⟨⟨(wrap e).val.val, (sig.wValidBool_eq_true_iff _).mp hv⟩, hi⟩)
       else none
     else none) = some e
-  rw [dite_eq_left ((sig.wValidBool_eq_true_iff _).mpr (wrap e).1.2),
-    dite_eq_left (show sig.wIndex ⟨(wrap e).1.1, (sig.wValidBool_eq_true_iff _).mp
-      ((sig.wValidBool_eq_true_iff _).mpr (wrap e).1.2)⟩ = none from (wrap e).2)]
+  rw [dite_eq_left ((sig.wValidBool_eq_true_iff _).mpr (wrap e).val.property),
+    dite_eq_left (show sig.wIndex ⟨(wrap e).val.val, (sig.wValidBool_eq_true_iff _).mp
+      ((sig.wValidBool_eq_true_iff _).mpr (wrap e).val.property)⟩ = none from (wrap e).property)]
   exact congrArg some (bundleEquiv.right_inv e)
 
 /-- The stream a coding word decodes to is the stream of the expression. -/

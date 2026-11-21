@@ -68,13 +68,13 @@ private def binE : Expr 2 0 := Expr.initial (.proj 2 0)
 
 #guard recognize [] = false
 
-#guard recognize (coded.spell (embed projE.1.1)) = false
+#guard recognize (coded.spell (embed projE.val.val)) = false
 
 #guard recognize (spellExpr projE ++ [false]) = false
 
 #guard recognize ((spellExpr onesE).take ((spellExpr onesE).length - 1)) = false
 
-#guard recognize (rootPrefix ++ coded.spell (embed binE.1.1)) = false
+#guard recognize (rootPrefix ++ coded.spell (embed binE.val.val)) = false
 
 #guard (prefixEquiv (ofNat 3) (observe (toStream projE) (ofNat 3))).val = []
 
@@ -121,13 +121,13 @@ private def squaresE : ℕ → Expr 1 0
 
 #guard (List.range 5).map (fun k ↦ (valueAt (squaresE k) 0).length) = [2, 4, 16, 256, 65536]
 
-#guard (List.range 5).map (fun k ↦ size (squaresE k).1.1) = [5, 10, 15, 20, 25]
+#guard (List.range 5).map (fun k ↦ size (squaresE k).val.val) = [5, 10, 15, 20, 25]
 
-#guard (valueAt (squaresE 3) 0).length ≤ (0 + 2) ^ 2 ^ size (squaresE 3).1.1
+#guard (valueAt (squaresE 3) 0).length ≤ (0 + 2) ^ 2 ^ size (squaresE 3).val.val
 
-#guard codedPlain.recognize (codedPlain.spell binE.1.1) = true
+#guard codedPlain.recognize (codedPlain.spell binE.val.val) = true
 
-#guard codedPlain.recognize (codedPlain.spell onesE.1.1) = true
+#guard codedPlain.recognize (codedPlain.spell onesE.val.val) = true
 
 #guard codedPlain.recognize (spellExpr onesE) = false
 

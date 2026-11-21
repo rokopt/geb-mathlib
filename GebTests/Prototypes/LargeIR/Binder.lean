@@ -38,8 +38,8 @@ def swapElem : PiFormerValue (termsPsh 2) := (piFormerEquiv 2).symm fun i ↦ i 
 
 -- Its family of codes is the one code, and its terms are the swapped ones.
 example : swapElem.2.1 ⟨(0 : Fin 2), rfl⟩ = () := rfl
-example : (swapElem.2.2 ⟨(0 : Fin 2), rfl⟩).1 = (1 : Fin 2) := rfl
-example : (swapElem.2.2 ⟨(1 : Fin 2), rfl⟩).1 = (0 : Fin 2) := rfl
+example : (swapElem.2.2 ⟨(0 : Fin 2), rfl⟩).val = (1 : Fin 2) := rfl
+example : (swapElem.2.2 ⟨(1 : Fin 2), rfl⟩).val = (0 : Fin 2) := rfl
 example : piFormerEquiv 2 swapElem = fun i ↦ i + 1 := (piFormerEquiv 2).apply_symm_apply _
 
 /-- No family of bijections identifies the transcription's level-`1` values

@@ -82,16 +82,17 @@ theorem correct_compileValue {k : ℕ} (a : Shape) (c : Direction a → Σ i, Co
 /-- Every expression's program is correct, with the constant {name}`nsiConst` and
 the bound {name}`stepBound` read off its syntax. -/
 theorem correct_compile (k : ℕ) : ∀ e : S,
-    CorrectSigma (compile k e) (eval e) (nsiConst e.1) (stepBound e.1) :=
+    CorrectSigma (compile k e) (eval e) (nsiConst e.val) (stepBound e.val) :=
   SlicePFunctor.W.induction fun x ih ↦
-    ⟨rfl, correct_compileValue x.1.1 (fun b ↦ compile k (x.1.2 b)) _ (fun b ↦ eval (x.1.2 b)) _
-      (fun b ↦ nsiConst (x.1.2 b).1) (fun b ↦ stepBound (x.1.2 b).1) ih⟩
+    ⟨rfl, correct_compileValue x.val.1 (fun b ↦ compile k (x.val.2 b)) _
+      (fun b ↦ eval (x.val.2 b)) _ (fun b ↦ nsiConst (x.val.2 b).val)
+      (fun b ↦ stepBound (x.val.2 b).val) ih⟩
 
 /-- The compiled program of an expression of a given arity computes its meaning. -/
 theorem SOf.correct (k : ℕ) {n : ℕ} (e : SOf n) :
-    Correct (SOf.compile k e) e.sem (nsiConst e.1.1) (stepBound e.1.1) := by
-  obtain ⟨h, hc⟩ := correct_compile k e.1
-  have hg := Correct.transport ((fst_eval e.1).trans e.2) hc
+    Correct (SOf.compile k e) e.sem (nsiConst e.val.val) (stepBound e.val.val) := by
+  obtain ⟨h, hc⟩ := correct_compile k e.val
+  have hg := Correct.transport ((fst_eval e.val).trans e.property) hc
   rw [transportP_transportP] at hg
   exact hg
 

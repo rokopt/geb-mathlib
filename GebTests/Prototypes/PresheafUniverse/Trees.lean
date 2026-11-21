@@ -74,29 +74,29 @@ Membership in the carrier presheaf's fiber conjoins admissibility, the index
 test, and hereditary naturality; for a term tree the last is well-typedness. -/
 
 /-- The base code lies in the fiber over the code object. -/
-def memBaseCode : Bool := finiteUniverse.memWBool 0 natCode.1
+def memBaseCode : Bool := finiteUniverse.memWBool 0 natCode.val
 
 /-- The `sigma` code lies in the fiber over the code object. -/
-def memBaseSqCode : Bool := finiteUniverse.memWBool 0 baseSqCode.1
+def memBaseSqCode : Bool := finiteUniverse.memWBool 0 baseSqCode.val
 
 /-- The `pi` code lies in the fiber over the code object. -/
-def memBaseFunCode : Bool := finiteUniverse.memWBool 0 baseFunCode.1
+def memBaseFunCode : Bool := finiteUniverse.memWBool 0 baseFunCode.val
 
 /-- A literal lies in the fiber over the term object. -/
-def memTrueTerm : Bool := finiteUniverse.memWBool 1 trueTerm.1
+def memTrueTerm : Bool := finiteUniverse.memWBool 1 trueTerm.val
 
 /-- A well-typed pair lies in the fiber over the term object. -/
-def memPairTT : Bool := finiteUniverse.memWBool 1 pairTT.1
+def memPairTT : Bool := finiteUniverse.memWBool 1 pairTT.val
 
 /-- A well-typed nested pair lies in the fiber over the term object. -/
-def memPairNested : Bool := finiteUniverse.memWBool 1 pairNested.1
+def memPairNested : Bool := finiteUniverse.memWBool 1 pairNested.val
 
 /-- A term tree does not lie in the fiber over the code object. -/
-def memPairTTAtCode : Bool := finiteUniverse.memWBool 0 pairTT.1
+def memPairTTAtCode : Bool := finiteUniverse.memWBool 0 pairTT.val
 
 /-- The ill-typed pair is admissible and indexed at the term object, but fails
 hereditary naturality. -/
-def memPairIllTyped : Bool := finiteUniverse.memWBool 1 pairIllTyped.1
+def memPairIllTyped : Bool := finiteUniverse.memWBool 1 pairIllTyped.val
 
 example : memBaseCode = true := by decide
 example : memBaseSqCode = true := by decide
@@ -116,22 +116,22 @@ morphism is its type. -/
 
 /-- The type of a literal is the base code. -/
 def typeTrueTermIsBase : Bool :=
-  @decide _ (finiteUniverse.decidableEqW (typeOf trueTerm rfl).1 natCode.1)
+  @decide _ (finiteUniverse.decidableEqW (typeOf trueTerm rfl).val natCode.val)
 
 /-- The type of a pair of base-type terms is the `sigma` code of the base type
 with itself. -/
 def typePairTT : Bool :=
-  @decide _ (finiteUniverse.decidableEqW (typeOf pairTT rfl).1 baseSqCode.1)
+  @decide _ (finiteUniverse.decidableEqW (typeOf pairTT rfl).val baseSqCode.val)
 
 /-- The type of the nested pair is the `sigma` code of the inner pair's type
 with the base code. -/
 def typePairNested : Bool :=
-  @decide _ (finiteUniverse.decidableEqW (typeOf pairNested rfl).1
-    (sigmaCode baseSqCode baseCode rfl rfl).1)
+  @decide _ (finiteUniverse.decidableEqW (typeOf pairNested rfl).val
+    (sigmaCode baseSqCode baseCode rfl rfl).val)
 
 /-- The type of a pair is not the base code: the typing map is not constant. -/
 def typePairTTNotBase : Bool :=
-  @decide _ (finiteUniverse.decidableEqW (typeOf pairTT rfl).1 natCode.1)
+  @decide _ (finiteUniverse.decidableEqW (typeOf pairTT rfl).val natCode.val)
 
 example : typeTrueTermIsBase = true := by decide
 example : typePairTT = true := by decide
@@ -157,6 +157,6 @@ def pairTTElt : (universeFunctor.W).obj ⟨(1 : Fin 2)⟩ :=
 its components' types. -/
 def restrPairTTElt : Bool :=
   @decide _ (finiteUniverse.decidableEqW
-    (((universeFunctor.W).map arrowHom.op pairTTElt).down.1.1) baseSqCode.1)
+    (((universeFunctor.W).map arrowHom.op pairTTElt).down.val.val) baseSqCode.val)
 
 example : restrPairTTElt = true := by decide

@@ -42,7 +42,7 @@ def sampleMorCod : FinSetSkel.{0} := ⟨2⟩
 /-- A sample morphism, exercising the comparison functors' action on
 morphisms rather than only on objects. -/
 def sampleMor : sampleMorDom ⟶ sampleMorCod :=
-  FinSetSkel.Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨i.1 % 2, Nat.mod_lt _ (by decide)⟩))
+  FinSetSkel.Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨i.val % 2, Nat.mod_lt _ (by decide)⟩))
 
 /-- The comparison functors are mutually inverse on a sample morphism. -/
 theorem sampleMor_toSkeleton_ofSkeleton_roundtrip :

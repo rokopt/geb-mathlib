@@ -34,17 +34,17 @@ namespace Geb.Oitavem.PresheafCounterexample.Tests
 open CategoryTheory Geb.PresheafRecognition
 open scoped FinEnum
 
-#guard nativeCheck (fun _ ↦ true) (testTree (fun _ ↦ true) [false]).1
-#guard !nativeCheck (fun _ ↦ false) (testTree (fun _ ↦ false) [true]).1
+#guard nativeCheck (fun _ ↦ true) (testTree (fun _ ↦ true) [false]).val
+#guard !nativeCheck (fun _ ↦ false) (testTree (fun _ ↦ false) [true]).val
 #guard ([[], [true], [false], [true, false]] : List (List Bool)).all fun w ↦
-  nativeCheck (List.headD · false) (testTree (List.headD · false) w).1 == w.headD false
+  nativeCheck (List.headD · false) (testTree (List.headD · false) w).val == w.headD false
 
-#guard (readExpr (Geb.BitStream.Oitavem.codedPlain.spell (Expr.initial (.proj 1 0)).1.1)).isSome
-#guard diagonal testWord (Geb.BitStream.Oitavem.codedPlain.spell (Expr.initial (.zero 1)).1.1)
+#guard (readExpr (Geb.BitStream.Oitavem.codedPlain.spell (Expr.initial (.proj 1 0)).val.val)).isSome
+#guard diagonal testWord (Geb.BitStream.Oitavem.codedPlain.spell (Expr.initial (.zero 1)).val.val)
 
 /-- The local scan on the counterexample family. -/
 @[expose] public def scanned (p : List Bool → Bool) (w : List Bool) : Bool :=
-  (occurrences (presheafFinitary p) (testTree p w).1).all
+  (occurrences (presheafFinitary p) (testTree p w).val).all
     (localNaturality (presheaf p) inferInstance inferInstance homEnum
       (presheafFinitary p) (treeDecidableEq p))
 
@@ -55,12 +55,12 @@ open scoped FinEnum
 @[expose] public def leafComparison (b : Bool) : Bool :=
   restrictedEq (presheaf (fun _ ↦ false)) (shapeDecidableEq _) (presheafFinitary _)
     (fun t u ↦ (treeDecidableEq _ t u).decide) PresheafPFunctor.arrow
-    (baseLeaf (fun _ ↦ false) b).1 (dependentLeaf (fun _ ↦ false)).1 rfl
+    (baseLeaf (fun _ ↦ false) b).val (dependentLeaf (fun _ ↦ false)).val rfl
 
 #guard leafComparison true
 #guard !leafComparison false
 #guard restrictedEq (presheaf (fun _ ↦ false)) (shapeDecidableEq _) (presheafFinitary _)
   (fun t u ↦ (treeDecidableEq _ t u).decide) (𝟙 (1 : Fin 2))
-  (testTree (fun _ ↦ false) [true]).1 (testTree (fun _ ↦ false) [true]).1 rfl
+  (testTree (fun _ ↦ false) [true]).val (testTree (fun _ ↦ false) [true]).val rfl
 
 end Geb.Oitavem.PresheafCounterexample.Tests

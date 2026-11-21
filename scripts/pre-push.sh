@@ -139,7 +139,11 @@ step "scripts/manual.sh build (build, lint and generate the manual)"
 bash scripts/manual.sh build
 
 step "lake shake (minimised imports)"
-lake shake --add-public --keep-implied --keep-prefix Geb GebTests
+# A report made only of matcher congruence lemmas that shake attributes
+# to a module not imported passes (scripts/lib/shake-congr-eq.py).
+shake_report="$(lake shake --add-public --keep-implied --keep-prefix --explain \
+  Geb GebTests 2>&1)" \
+  || python3 scripts/lib/shake-congr-eq.py <<<"$shake_report"
 
 step "scripts/lint-imports.sh"
 bash scripts/lint-imports.sh

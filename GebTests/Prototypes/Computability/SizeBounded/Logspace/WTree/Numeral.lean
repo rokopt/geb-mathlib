@@ -81,8 +81,8 @@ def numeralWord (pre : List Bool) (n : ℕ) (suf : List Bool) : List Bool := pre
 /-- The acceptance, the end position and the bit at an index, from the
 expressions evaluated with sharing. -/
 def numAt (w : List Bool) (tp i : ℕ) : List Bool × List Bool × List Bool :=
-  (numOk.1.semVec ![w, w.drop tp, w.drop i], numEnd.1.semVec ![w, w.drop tp, w.drop i],
-    numHit.1.semVec ![w, w.drop tp, w.drop i])
+  (numOk.val.semVec ![w, w.drop tp, w.drop i], numEnd.val.semVec ![w, w.drop tp, w.drop i],
+    numHit.val.semVec ![w, w.drop tp, w.drop i])
 
 #guard numAt [true] 0 0 = ([true], [], [])
 

@@ -50,7 +50,7 @@ example (a b : ℕ) : summarize (bitSteps (wordBits 8 a ++ wordBits 8 b)) =
 #guard [0, 1].all fun payload ↦
   let w := Geb.BitTree.Elias.encode (Geb.BitTree.leaf (List.replicate payload true))
   Geb.BitTree.Elias.Scanner.validBool w &&
-    !(Geb.SizeBounded.Logspace.EliasTree.isEliasTree.1.semVec ![w]).isEmpty
+    !(Geb.SizeBounded.Logspace.EliasTree.isEliasTree.val.semVec ![w]).isEmpty
 
 -- the rose syntax parses what it prints, at chains and fans of 16, 64 and 256 nodes
 #guard [16, 64, 256].all fun n ↦
