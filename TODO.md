@@ -144,6 +144,15 @@ where the time of the checks and of the searches goes, and its section
 The searches' remaining time the measurements that locate the next
 change to a search's speed.
 
+The bootstrap has one host, Lean, and ends at a complete development
+process for Geb implemented in Lean and for Geb implemented in Geb. The
+Bootstrap chapter's section After the bootstrap lists what is deferred
+until then: the second host, the comparison of the machines that stand
+behind the interface its section The choice of machine fixes, the
+inhabitation of a type, the interaction-net stages after the first with
+their benchmark and their compilation target, and what remains of the
+elementary-affine decorations.
+
 The first authoring milestone is documented in
 `manual/GebManual/Authoring.lean`: `examples/authoring/` contains a
 documented program, its statements and proof scripts in Geb, and a

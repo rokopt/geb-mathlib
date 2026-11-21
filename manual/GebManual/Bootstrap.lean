@@ -32,8 +32,9 @@ open Verso.Genre.Manual.InlineLean
 #doc (Manual) "Bootstrapping Geb" =>
 
 The aim is an implementation of Geb written in Geb and compiled by
-Geb, with a small, fixed seed in host languages: Lean first, and a
-systems language after it. The seed consists of the representation of
+Geb, with a small, fixed seed in one host language, Lean; a seed in a
+second host language follows the bootstrap. The seed consists of the
+representation of
 values, a kernel language with its type checker and evaluator, a
 loader for a canonical serialized form, and byte input and output.
 Everything else, the reader, the elaborator, the compiler, the
@@ -41,7 +42,7 @@ libraries and eventually the proof checker, is Geb code, which the
 seed runs until the compiler written in Geb reproduces itself.
 
 This chapter records a road map of the bootstrap and of the work
-written in Geb after it, the decisions that fix the seed, a survey of
+that follows it, the decisions that fix the seed, a survey of
 how other languages and proof checkers bootstrap, and the plan, each
 of whose sections ends with an executable acceptance condition.
 The
@@ -54,12 +55,16 @@ file that implements it.
 # Road map
 
 The bootstrap ends when a developer can write the rest of Geb in Geb:
-when the logic, the computation and the first compilers and hosts
-exist, and the language suffices to write the rest of Geb's programs
-and proofs in it. Most of what the repository formalizes in Lean is then
+when the logic, the computation and the compilers exist on the first
+host, Lean, and the language suffices to write the rest of Geb's
+programs and proofs in it, with a complete development process for Geb
+implemented in Lean and for Geb implemented in Geb. The bootstrap has
+that one host: a second host, the machines other than Lean's with their
+compilation targets, and the typing that serves those machines follow
+it. Most of what the repository formalizes in Lean is then
 written in Geb and is not part of the bootstrap. The road map therefore
 has two parts: the bootstrap, whose end point is stated first, and the
-work written in Geb after it.
+work that follows it.
 
 {ref "downstream-authoring"}[A Geb library and its downstream application]
 gives the order of work for developing in Geb on the Lean host. The
@@ -72,19 +77,14 @@ waiting or deferred).
 * Computation. Geb's implementation, the reader, the expansion, the
   type checker and the compilers, is written in Geb and compiled by Geb,
   with the host code reduced to the seed, and every compiler reproduces
-  itself (the section on what self-compilation establishes); the
-  bootstrap's programs carry elementary-affine decorations that a
-  checker and a search written in Geb check and find
-  ({ref "choice-of-machine"}[The choice of machine]). Complete on the
-  Lean host but for the decorations, which are in progress.
-* Hosts and targets. The kernel runs on three hosts or targets: Lean,
-  where the seed and the backend emitting Lean are; a systems language,
-  Rust, where a second seed reproduces the fixed points; and an
-  interaction-net runtime running the staged interaction system of the
-  choice of machine, which a compiler written in Geb targets for
-  parallel workloads. Complete for Lean; the
-  systems language and the interaction-net runtime wait on
-  {ref "choice-of-machine"}[the choice of machine].
+  itself (the section on what self-compilation establishes). Complete.
+* Host. The kernel runs on one host, Lean, where the seed and the
+  backend emitting Lean are, and a machine is addressed through one
+  interface, the inhabitation of a type
+  ({ref "choice-of-machine"}[The choice of machine]). Complete. A second
+  host, the machines specialized behind that interface and the
+  compilation targets other than Lean follow the bootstrap
+  ({ref "after-the-bootstrap"}[After the bootstrap]).
 * Logic. One checker, proved sound in Lean and written again in Geb,
   the checker written in Geb proved in Lean to agree with it, and a
   prover in Geb whose tactics construct its derivations: the
@@ -195,7 +195,7 @@ these capabilities in a client maintained in its own repository.
    and their results in Geb, with an interpreter in the host. The acceptance
    program reads an index, chooses another path from its contents, handles a
    missing file as a result, and writes the output. General step-bounded
-   execution and resumption belong to the second-host work
+   execution and resumption follow the bootstrap, with the second host
    ({ref "files-editions"}[Files, editions and the host boundary]).
 6. Migrate the client and its first saved datatype value. Keep readable
    `.geb` sources, their manifest and dependency revisions, and a checked
@@ -223,8 +223,9 @@ change the host, the editor and the client, and proceed beside them.
 Start editor indexing and use of the proof cache with the library, since
 navigation of the compiler's sources already takes seconds per request
 ({ref "improvements"}[Improvements]). Other editors can reuse these
-services through a general protocol. Network storage and the choice of
-machine follow their own acceptance conditions.
+services through a general protocol. Network storage follows its own
+acceptance condition; the second host and the comparison of machines
+follow the bootstrap.
 
 ## The bootstrap
 
@@ -258,29 +259,14 @@ Computation:
   of the typing, proved with the prover in Geb and transferred to Lean
   under conditions on what the expansion writes and on the names a form
   declares, whose proofs follow the bootstrap.
-* Complete. The first stage of the interaction-net arm of
-  {ref "choice-of-machine"}[the choice of machine]: a kernel program's
-  interaction system, duplicating no λ-value, with a sequential reducer
-  in Lean. Every accepted closed program from trees to trees reaches a
-  normal configuration whose read-back is its denotation.
-* Complete. The finite-net representation, confluence across schedules,
-  and graph-runtime refinement of the interaction-net arm
-  ({ref "choice-of-machine"}[The choice of machine]): boundary-preserving
-  renaming, commuting reductions, and executable graph reduction proved
-  to compute the denotation of every accepted closed tree-to-tree program.
-* Ready. The first-stage benchmark harness
-  ({ref "choice-of-machine"}[The choice of machine]): the benchmark
-  programs run through the graph runtime of the interaction-net arm's
-  first stage, each result compared with the denotation.
-* Deferred until before the second host.
-  {ref "choice-of-machine"}[The choice of machine]: the environment
-  machine, the compilation to the triage calculus, native code with
-  forks over a node's children, the measurements across these arms and
-  the staged interaction system, and the decision.
-* Waiting on the choice of machine. The second host
-  ({ref "speed-and-second-host"}[Speed and a second host]): the evaluator
-  and loader in Rust, reproducing the stage-0 and stage-1 fixed points,
-  which is diverse double-compiling across hosts.
+* Complete. {ref "choice-of-machine"}[The choice of machine]: the
+  interface of a machine, the inhabitation of a type of the metalogic by
+  a term that the checker checks. Lean's is the machine of the
+  bootstrap. The machines specialized behind the interface, their
+  comparison, the second host and the compilation targets other than
+  Lean follow the bootstrap
+  ({ref "after-the-bootstrap"}[After the bootstrap]), where the parts of
+  them that are constructed are listed.
 * In progress. Accelerations ({ref "speed-and-second-host"}[Speed and a
   second host]): native code bound to a definition by its name in the
   Lean the compiler emits, proved in Lean equal to the definition, and
@@ -288,33 +274,6 @@ Computation:
   the acceleration of the conversion checker's reduction by the
   environment machine are complete; that of the hash written in Geb is
   ready.
-* Waiting on the choice of machine. The interaction-net target
-  ({ref "speed-and-second-host"}[Speed and a second host]): a
-  compiler written in Geb to the staged interaction system of the
-  choice of machine, run on a runtime pinned to a revision and tested,
-  within the limits on duplicating λ-values of the section on
-  operational semantics; HVM4 serves as an external back end for
-  measurement and for searching certificates.
-* In progress. Elementary-affine decorations of the bootstrap's
-  programs ({ref "choice-of-machine"}[The choice of machine]): each
-  program typable with first-order data copied natively, its decoration
-  found by an untrusted search and checked in the build by a checker
-  specified in Lean and written in Geb; then a search written in Geb,
-  which full self-hosting requires; and later, elementary affine logic
-  without the exemption. The search with z3, `scripts/eal/eal.py`, with
-  a decoration per use of a definition and the certificates it writes,
-  the checker specified in Lean, {name}`Geb.Affine.check`, the checker
-  written in Geb, `bootstrap/affine.geb`, proved in Lean to agree with it,
-  and the search written in Geb, `bootstrap/affine-search.geb`, whose
-  verdicts agree with those of the search with z3, are constructed, and the
-  definitions the searches rejected in the sources proper to the metalogic
-  are rewritten, but for the conversion checker's step at the application
-  of a theorem, which is ready. Ready, the datatype language's completion
-  being complete: the rewriting
-  of the definitions they reject in the compilers' sources, among them
-  `resolve`, `typeIn` and `expandExpr`, which the metalogic's program
-  includes, so that no program is typable as a whole before it. Waiting on
-  that rewriting: the check in the build.
 * Complete. The Geb serializer's list processing in constant depth:
   data accumulators for digits, preorder traversal and byte packing;
   the fold counting the nodes still follows the tree's depth.
@@ -550,10 +509,13 @@ Extension:
   library's modules are written.
 
 ## After the bootstrap
+%%%
+tag := "after-the-bootstrap"
+%%%
 
-Every item waits on the bootstrap. Each is written in Geb, and each
-proof in the metalogic, a proof about programs being about their
-translations:
+Every item follows the bootstrap, in two lists. Those of the first wait
+on it: each is written in Geb, and each proof in the metalogic, a proof
+about programs being about their translations:
 
 * The Geb-native refinement search, first
   ({ref "search-synthesis"}[Search and synthesis]): refinement over
@@ -637,10 +599,79 @@ translations:
 * A backend without Lean, a milestone separate from the bootstrap (the
   section on what self-compilation establishes).
 
+Those of the second list are the hosts and machines other than Lean's,
+with the typing that serves them. The bootstrap's end point excludes
+them, by the decision on its scope, and they are deferred until it is
+reached. Parts of them are constructed, as prototypes, and are not
+continued before the bootstrap ends. Among the items, the comparison of
+machines precedes the second host and the interaction-net target:
+
+* The interaction-net arm of
+  {ref "choice-of-machine"}[the choice of machine]. Complete: its first
+  stage, a kernel program's interaction system, duplicating no λ-value,
+  with a sequential reducer in Lean, by which every accepted closed
+  program from trees to trees reaches a normal configuration whose
+  read-back is its denotation; and the finite-net representation,
+  confluence across schedules and graph-runtime refinement, which are
+  boundary-preserving renaming, commuting reductions, and executable
+  graph reduction proved to compute the denotation of every accepted
+  closed tree-to-tree program. Deferred: the first-stage benchmark
+  harness, the benchmark programs run through the first stage's graph
+  runtime, each result compared with the denotation; the second stage,
+  closed-function nets
+  ({ref "interaction-net-stage-two"}[Stage 2: closed-function nets]);
+  the stages after it; and the structural elimination and reflection
+  for nets of `docs/reflective-polynomial-evolution.md`.
+* The elementary-affine decorations of the bootstrap's programs
+  ({ref "interaction-net-affine-certificates"}[Elementary-affine
+  certificates]): each program typable with first-order data copied
+  natively, its decoration found by an untrusted search and checked in
+  the build by a checker specified in Lean and written in Geb; and
+  later, elementary affine logic without the exemption. Complete: the
+  search with z3, `scripts/eal/eal.py`, with a decoration per use of a
+  definition and the certificates it writes; the checker specified in
+  Lean, {name}`Geb.Affine.check`; the checker written in Geb,
+  `bootstrap/affine.geb`, proved in Lean to agree with it; the search
+  written in Geb, `bootstrap/affine-search.geb`, whose verdicts agree
+  with those of the search with z3; and the rewriting of the definitions
+  the searches rejected in the sources proper to the metalogic, but for
+  the conversion checker's step at the application of a theorem.
+  Deferred: that step; the rewriting of the definitions the searches
+  reject in the compilers' sources, among them `resolve`, `typeIn` and
+  `expandExpr`, which the metalogic's program includes, so that no
+  program is typable as a whole before it; and, waiting on that
+  rewriting, the check in the build.
+* The comparison of machines
+  ({ref "choice-of-machine"}[The choice of machine]): the environment
+  machine, the compilation to the triage calculus, native code with
+  forks over a node's children, the measurements across these arms and
+  the staged interaction system, and the selection among them of the
+  machines that stand behind the interface for kernel programs.
+* The second host
+  ({ref "speed-and-second-host"}[Speed and a second host]), waiting on
+  the comparison of machines: the evaluator and loader in Rust,
+  reproducing the stage-0 and stage-1 fixed points, which is diverse
+  double-compiling across hosts; and with it, general typed entry
+  points and step-bounded execution with resumption.
+* The interaction-net target
+  ({ref "speed-and-second-host"}[Speed and a second host]), waiting on
+  the comparison of machines: a compiler written in Geb to the staged
+  interaction system, run on a runtime pinned to a revision and tested,
+  within the limits on duplicating λ-values of the section on
+  operational semantics; HVM4 serves as an external back end for
+  measurement and for searching certificates.
+
 # Decisions
 
 The following are fixed; the plan builds on them.
 
+* Scope. The bootstrap has one host, Lean, and ends at a complete
+  development process for Geb implemented in Lean and for Geb
+  implemented in Geb ({ref "downstream-authoring"}[A Geb library and its
+  downstream application]). A second host, every machine other than
+  Lean's with its compilation target, the continuation of the
+  interaction-net development and what remains of the elementary-affine
+  typing follow it ({ref "after-the-bootstrap"}[After the bootstrap]).
 * Proofs. During the bootstrap, correctness proofs are Lean proofs:
   the kernel's evaluator is proved to agree with the kernel's
   denotation, and every codec with its decoder. The proof checker for
@@ -669,10 +700,14 @@ The following are fixed; the plan builds on them.
   spelled as readable S-expressions. There is no compiler written in a
   host language: Geb grows by elaborators written in Geb.
 * Semantics. The reference semantics of the kernel is its denotation.
-  Which machine runs it, an environment machine, a compilation to tree
-  calculus, or a compilation to interaction combinators, is decided by
-  the comparison of {ref "choice-of-machine"}[the choice of machine],
-  run on the same kernel programs.
+* Machine. The interface of a machine is the inhabitation of a type of
+  the metalogic: given a type, a machine returns a term of it, which the
+  checker checks. No particular machine is chosen in its place, an
+  environment machine, the tree calculus and interaction nets each being
+  specific where the interface is general. Such machines stand behind
+  the interface for the types they are specialized to, Lean's during
+  the bootstrap, and are compared after it, by measurement on the same
+  kernel programs ({ref "choice-of-machine"}[The choice of machine]).
 * Layers. Above the kernel, the language grows in three layers. The
   datatype language is computational: named datatypes whose
   constructors and structural
@@ -997,8 +1032,9 @@ each output tree back as bytes. The compiler is then a function from
 input trees to output trees, and the host services are a fixed, small
 set, to which primitives are added and never renamed. The first application
 that selects its files needs explicit requests and results interpreted by
-the Lean host. The planned step-bounded runner returns a value, an error
-or a resumable state on exhaustion.
+the Lean host. The step-bounded runner, planned with the second host
+after the bootstrap, returns a value, an error or a resumable state on
+exhaustion.
 
 # Survey
 
@@ -1047,9 +1083,10 @@ source is committed.
 Format changes are what force a bootstrap to be rerun: OCaml rebuilds
 its seed when the bytecode format or the set of primitives changes,
 and Lean when its object-file format changes. The image is therefore
-a kernel term, not the state of a particular machine, so that the
-choice of machine ({ref "choice-of-machine"}[The choice of machine])
-cannot invalidate it; it carries a version header,
+a kernel term, not the state of a particular machine, so that no
+selection among the machines that run it
+({ref "choice-of-machine"}[The choice of machine]) can invalidate it;
+it carries a version header,
 and it shares no subtrees, compression being a separate outer layer.
 Ribbit's compiler likewise emits trees without sharing, which keeps
 its decoder small {citep YvonFeeley2021}[].
@@ -1103,13 +1140,18 @@ Light with an end-to-end soundness theorem, whose classical logic Geb
 does not adopt. The [tree-calculus
 workflow](https://treecalcul.us/quick-start/) loads a compiler
 represented as a tree and reads a lightweight notation, the workflow
-triage arm of {ref "choice-of-machine"}[the choice of machine] needs.
+that the triage arm of {ref "choice-of-machine"}[the choice of machine]
+needs.
 
 ## Operational semantics
+%%%
+tag := "operational-semantics"
+%%%
 
-Four candidates run the kernel, and
-{ref "choice-of-machine"}[the choice of machine] compares them on the
-same programs.
+Four candidates run the kernel.
+{ref "choice-of-machine"}[The choice of machine] fixes the interface
+that they stand behind, and their comparison on the same programs
+follows the bootstrap.
 
 Environment machines. The Categorical Abstract Machine executes
 categorical combinators, morphisms of a free cartesian closed
@@ -1249,12 +1291,34 @@ independent of each other, so a fold may compute them in parallel. This
 target needs no discipline on λ-values; the elementary-affine
 decorations keep a target with optimal sharing available beside it.
 
-The evidence points to an environment machine as the reference and to
-two parallel targets for measured parallel workloads: ownership-based
-native code with forks over a node's children, and an interaction
-system staged by how it duplicates λ-values, its first stage
-duplicating none; {ref "choice-of-machine"}[the choice of machine]
-decides.
+Among the four, the evidence points to an environment machine as the
+reference and to two parallel targets for measured parallel workloads:
+ownership-based native code with forks over a node's children, and an
+interaction system staged by how it duplicates λ-values, its first
+stage duplicating none; the comparison of machines, after the
+bootstrap, selects among them
+({ref "choice-of-machine"}[The choice of machine]).
+
+Each of the four is a particular machine, and none is
+general over what a specification may ask of a machine. Interaction nets
+reduce with the one-step diamond property, so that a net has at most
+one normal form. Extended with McCarthy's `amb` they admit angelic and
+infinity merge and do not thereby implement fair merge
+{citep FernandezKhalil2002}[], and no total subset of the input-output
+relation of fair merge is implemented by a finite network of components
+with Hoare-monotone, limit-closed trace sets (Theorem 9 of
+{citet PanangadenShanbhogue1992}[]); `docs/reflective-polynomial-evolution.md`
+§ Fair merge and polynomial evolution states the scope of both results.
+Type inhabitation, the problem of finding an expression of a given
+type, is not particular in that way. In a dependent type theory it is
+undecidable and corresponds to theorem proving and program synthesis
+{citep NormanAvigad2026}[], such a theory encoding arbitrary
+mathematical theorems {citep NormanAvigad2025}[], and a type specifies
+a relation as it specifies a function. A sound and complete method of
+search for inhabitants exists {citep Dowek1993}[], which Canonical
+follows ({ref "holes-and-search"}[Holes and search]). The interface of
+{ref "choice-of-machine"}[the choice of machine] is therefore
+inhabitation, with the four as machines specialized behind it.
 
 ## The metalogic and its checker
 %%%
@@ -1838,11 +1902,14 @@ section below opens with a table of the states of its parts.
   * Nothing
 *
   * {ref "choice-of-machine"}[The choice of machine]
-  * Deferred until before the second host
-  * The first stage of the interaction-net arm: complete; the
-    finite-net representation, confluence and graph refinement: complete;
-    the elementary-affine decorations: in progress; the first-stage
-    benchmark harness: ready; the rest: deferred
+  * Complete
+  * The interface of a machine: decided. The first stage of the
+    interaction-net arm, and the finite-net representation, confluence
+    and graph refinement: complete. The elementary-affine decorations:
+    complete in their checkers, their searches and the sources proper
+    to the metalogic but for one step. The rest of the decorations, the
+    first-stage benchmark harness, the later stages and the comparison
+    of machines: deferred until after the bootstrap
 *
   * {ref "definitions-and-images"}[Definitions and images]
   * Complete
@@ -1859,9 +1926,10 @@ section below opens with a table of the states of its parts.
 *
   * {ref "speed-and-second-host"}[Speed and a second host]
   * In progress
-  * The second host and the interaction-net target: waiting on the choice
-    of machine; accelerations: in progress, the binding and the
-    environment machine's complete and the hash's ready
+  * The second host and the interaction-net target: deferred until after
+    the bootstrap, where they wait on the comparison of machines;
+    accelerations: in progress, the binding and the environment
+    machine's complete and the hash's ready
 *
   * {ref "content-identity"}[Content identity]
   * Complete
@@ -1909,8 +1977,8 @@ every fixed point on every build.
 The implementation changed the plan in these respects. The kernel's
 terms and types are rose trees read directly, and its checker and
 evaluator are one fold whose results are Lean closures, so no machine
-is needed before the first fixed point and the choice of machine left
-the critical path. The kernel gained lists, case analysis of lists and the
+other than Lean's is needed before the first fixed point, nor before
+the bootstrap ends. The kernel gained lists, case analysis of lists and the
 logarithm of a label, each for a cost measured on the bootstrap's own
 programs. And the representation of rose trees tabulates a node's
 children in an array, without which a fold over a wide node, such as a
@@ -2024,6 +2092,9 @@ tag := "choice-of-machine"
   * Step
   * State
 *
+  * The interface of a machine
+  * Complete
+*
   * The design of the interaction-net stages
   * Complete
 *
@@ -2034,19 +2105,71 @@ tag := "choice-of-machine"
   * Complete
 *
   * The benchmark programs, run by the first stage's graph runtime
-  * Ready
+  * Deferred until after the bootstrap
 *
   * The elementary-affine decorations
     ({ref "interaction-net-affine-certificates"}[Elementary-affine
     certificates])
-  * In progress
+  * Complete in the checkers, the searches and the sources proper to
+    the metalogic but for one step; the rest deferred until after the
+    bootstrap
 *
-  * The other arms, the measurements across them
-  * Deferred until before the second host
+  * The later interaction-net stages
+  * Deferred until after the bootstrap
+*
+  * The other arms, the measurements across them and the selection
+  * Deferred until after the bootstrap
 *
   * Acceptance
-  * Not met
+  * Met
 :::
+
+The choice is of an interface and not of a particular machine. A
+machine is given a type of the metalogic, in a context, and returns a
+term of that type, which the checker checks: the interface is the
+inhabitation of a dependent type. The types are those of the metalogic
+presented as a signature of the Logical Framework, in which judgements
+are families of types and rules are constants, so that an inhabitant
+decodes to a derivation or a certificate
+({ref "search-synthesis"}[Search and synthesis]). The evaluation of a
+kernel program at an input is posed at the interface as the type of a
+value with a derivation that the program's translation, at the input,
+equals it; the proof of a statement is an inhabitant of the statement's
+judgement; and the synthesis of a program is the inhabitation of its
+specification.
+
+The interface is chosen for its generality and not for a machine's
+speed. Each candidate of the survey, an environment machine, the triage
+calculus, an interaction system or native code, is a particular
+machine, and the survey records what such a machine does not
+implement, fair merge on interaction nets among it
+({ref "operational-semantics"}[Operational semantics]). A type
+specifies a relation as it specifies a function, and the interface asks
+for any inhabitant. No machine is the most efficient at every type:
+inhabitation is undecidable, and a complete search for inhabitants is
+not an efficient evaluator. The interface therefore fixes what a
+machine returns and leaves open how it is found, and a machine
+specialized to a class of types stands behind the interface for that
+class. For the values of kernel programs, those machines are Lean's on
+the first host, the kernel's evaluator and the Lean that the compiler
+emits, and after the bootstrap the machines compared below. A
+specialized machine is admitted by a proof that what it returns
+inhabits the type, as the first interaction-net stage's read-back is
+proved to be the denotation, or by the check of each result, the rule
+for every solver the bootstrap uses.
+
+The general machine is a search for inhabitants. During the bootstrap
+Canonical serves as one in experiment, on a fragment of the metalogic's
+language as a signature of the Logical Framework, each term it returns
+decoded and checked by the metalogic's checkers
+(`Geb/Prototypes/LF/`, `lake exe lf-canonical`). The Geb-native
+refinement search, the first item after the bootstrap, is its lasting
+implementation ({ref "search-synthesis"}[Search and synthesis]).
+
+Acceptance: the decision is recorded.
+
+The comparison of the machines specialized to kernel programs follows
+the bootstrap:
 
 * The benchmark programs, written once in kernel S-expressions: a fold
   over a balanced tree of $`2^{20}` leaves, as the value-representation
@@ -2066,10 +2189,11 @@ tag := "choice-of-machine"
   Every result is compared with the denotation.
 * Measurements: agreement, host lines, proof lines, steps and time per
   leaf, memory and its reclamation, and speedup with threads, one heavy
-  process at a time. The decision on the reference machine and the
-  compilation targets is recorded in this chapter.
+  process at a time. The selection of the reference machine for kernel
+  programs and of the compilation targets is recorded in this chapter.
 
-Acceptance: the measurements and the decision are recorded.
+The comparison's acceptance: the measurements and the selection are
+recorded.
 
 The interaction-net arm is staged by how it duplicates λ-values, each
 stage adding one family of agents whose correctness has a published
@@ -2116,8 +2240,9 @@ proof, and each program running at the highest stage it qualifies for
    states. Whether shared evaluation outperforms a lazy, pruning
    enumerator {citep RuncimanNaylorLindblad2008}[] is measured before
    this stage is built.
-5. Realizers extracted from the metalogic's proofs, after the
-   bootstrap. They are untyped, so they run at the second stage:
+5. Realizers extracted from the metalogic's proofs, once the extraction
+   of programs from proofs exists. They are untyped, so they run at the
+   second stage:
    closed reduction evaluates them correctly and without optimal
    sharing {citep FernandezMackieSinot2005}[], and optimal sharing for
    them needs the oracle. Realizability over the geometry of
@@ -2125,7 +2250,9 @@ proof, and each program running at the highest stage it qualifies for
    whether closed nets under application form a partial combinatory
    algebra is not settled.
 
-The machine runs kernel programs. The metalogic's terms are data that
+The first stage is constructed, and the stages after it follow the
+bootstrap. The staged machine runs kernel programs. The metalogic's
+terms are data that
 its checker, a kernel program, reads, and are not executed, so no stage
 needs optimal reduction of the metalogic, whose functions are not all
 System T's. Nor does the kernel's strength bear on the machine's
@@ -2318,16 +2445,17 @@ execution adequacy to loaded globals.
 Acceptance of these milestones is met: the diamond theorem on
 well-formed nets up to renaming, the corresponding termination and
 read-back result for permitted schedules of compiled programs, and the
-graph reducer's refinement and read-back theorems are proved. The machine
-comparison, the production runtime and the later stages of function
-sharing retain their separate states.
+graph reducer's refinement and read-back theorems are proved. The
+comparison of machines, the production runtime and the later stages of
+function sharing are deferred until after the bootstrap.
 
 ### Continuing the interaction-net development
 %%%
 tag := "interaction-net-continuation"
 %%%
 
-The recommended next proof-development milestone is stage 2, functions
+The development continues after the bootstrap. Its next
+proof-development milestone is stage 2, functions
 represented directly in nets and copied only when closed. The
 first-stage acceptance above is complete; there is no remaining
 first-stage simulation, confluence or runtime-adequacy theorem to finish
@@ -2339,10 +2467,10 @@ correctness proof remain to be written.
 The sequence has two parts. The proof development proceeds from the
 completed first stage to closed-function nets, then to certified
 elementary-affine sharing. Measurement of the first stage can proceed
-alongside those proofs; the recorded machine decision precedes the
+alongside those proofs; the comparison of machines precedes the
 production runtime and compiler target. Superposed certificate search
-has a separate measurement condition, and extracted realizers belong
-after the bootstrap.
+has a separate measurement condition, and extracted realizers wait on
+the extraction of programs from proofs.
 
 #### Stage 2: closed-function nets
 %%%
@@ -2457,11 +2585,11 @@ Use the kernel S-expression programs and measurements specified at the
 start of this section, comparing every result with the denotation.
 Begin with representative folds, copying and higher-order applications
 through {name}`Geb.InteractionNet.Kernel.graphRun`; retain the full
-cross-machine comparison as the acceptance condition for the choice of
-machine. Run heavy measurements one at a time. The comparison uses
-stage 1 and need not wait for stages 2 or 3. Its recorded schedule
-remains before the second host: kernel-term images and the Lean
-evaluator already support the first fixed point.
+cross-machine comparison as the acceptance condition of the comparison
+of machines. Run heavy measurements one at a time. The comparison uses
+stage 1 and need not wait for stages 2 or 3. Its schedule is after the
+bootstrap and before the second host: kernel-term images and the Lean
+evaluator support the bootstrap on the first host.
 
 The other separate task is the elementary-affine decorations: the
 per-use inference, the rewriting of folds and the certificate checker,
@@ -2474,7 +2602,7 @@ Programs without a certificate use stage 2. The decoration search that
 full self-hosting requires is written in Geb.
 
 The production runtime and the compiler written in Geb follow the
-recorded machine decision ({ref "speed-and-second-host"}[Speed and a
+comparison of machines ({ref "speed-and-second-host"}[Speed and a
 second host]). The proved partner-array implementation supplies a
 reference and refinement target. Storage, reclamation, scheduling and
 parallel execution are engineering decisions to make from measurements;
@@ -2488,7 +2616,8 @@ Stage 4 remains conditional on comparing shared certificate search
 with a lazy, pruning enumerator. It requires the checker access
 discipline and label-indexed family semantics stated above; checking a
 returned certificate protects soundness but does not prove search
-completeness. Stage 5, extracted realizers, remains after bootstrap;
+completeness. Stage 5, extracted realizers, waits on the extraction of
+programs from proofs;
 the question whether closed nets under application form a partial
 combinatory algebra is still open. Neither stage is a prerequisite for
 the recommended stage-two development.
@@ -2544,8 +2673,9 @@ decorated separately, which is the form of `typers`. The
 exemption is not proved sound for a net machine; the third stage needs
 it, and the first two need no typing.
 
-The bootstrap's programs, its compilers, checkers and prover, and its
-reader and printer once they are written in Geb, are required to be
+After the bootstrap, whose end point does not require it, the
+bootstrap's programs, its compilers, checkers and prover, and its
+reader and printer once they are written in Geb, are to be made
 typable in this discipline, first-order data copied natively and the
 fold whose step sees the node among the primitives that copy it, so that
 the third stage can run them with optimal sharing. A program's
@@ -2570,7 +2700,10 @@ complete:
    the numbers of `!` of its types, a reference naming the instance it
    uses and the boxes it is placed under, so that a definition used at
    several decorations has an instance of each.
-2. In progress. The rewriting of the definitions the search rejects,
+2. Complete in the sources proper to the metalogic, but for the
+   conversion checker's step at the application of a theorem; that step
+   and the compilers' sources are deferred until after the bootstrap.
+   The rewriting of the definitions the search rejects,
    alone or per use, each reading a list of functions more than once in one of the
    shapes above; `scripts/eal/eal.py --explain NAME` names a
    definition's contraction, and a definition rejected per use is
@@ -2670,7 +2803,8 @@ complete:
      jobs (`machB_eq`), and that function's rounds are the steps of the
      machine's operations at the operations of the depth below
      (`eStart_reach`, `wStart_reach`, `nStart_reach`).
-   * Ready: `convCheck` in `bootstrap/free-topos/conversion.geb`, which
+   * Deferred until after the bootstrap: `convCheck` in
+     `bootstrap/free-topos/conversion.geb`, which
      the search rejects with a decoration per use. Its step at the
      application of a theorem (`stepApply`) finds the theorem's instance
      by matching the formula it is given, and so applies the base
@@ -2682,15 +2816,15 @@ complete:
      the formula is to be written, and the agreement
      (`GebTests/Prototypes/FreeTopos/Agreement/Conversion.lean`) proved
      of it.
-   * Ready, the datatype language's completion
-     ({ref "datatype-completion"}[The datatype language's completion])
-     being complete, whose soundness of the typing is proved of the
-     stage-1 compiler: the compilers'
+   * Deferred until after the bootstrap: the compilers'
      sources, `resolve` in `bootstrap/reader.geb`, `typeIn` in
      `bootstrap/check.geb`, `rename` and `elabAt` in
      `bootstrap/modules.geb`, `expandExpr` in `bootstrap/datatype.geb`
      and in `bootstrap/stage1/datatype.geb`, and `synIn` in
-     `bootstrap/stage1/typing.geb`. The metalogic's program includes
+     `bootstrap/stage1/typing.geb`. A rewriting of them changes the
+     stage-1 compiler, of which the datatype language's completion
+     ({ref "datatype-completion"}[The datatype language's completion])
+     proves the soundness of the typing. The metalogic's program includes
      `reader.geb`, `check.geb` and `bootstrap/datatype.geb`, so that it is
      typable only after `resolve`, `typeIn` and `expandExpr` are rewritten.
 
@@ -2701,7 +2835,8 @@ complete:
    {name}`Geb.Affine.check` by the method of the metalogic's checker
    (`GebTests/Prototypes/FreeTopos/Agreement/Affine.lean`); its own
    program is written typable.
-4. Waiting on the second step. The check in the build of every program's
+4. Deferred until after the bootstrap, where it waits on the second
+   step. The check in the build of every program's
    committed decoration, the checker's own among them.
 5. Complete. A search written in Geb, `bootstrap/affine-search.geb`, run
    by `scripts/eal/search.sh`, which full self-hosting requires so that no
@@ -3389,8 +3524,8 @@ for it converges to such a quotation
 (`GebTests/Prototypes/FreeTopos/Certified/DatatypeProgramMembers.lean`).
 
 The rewriting of the definitions the elementary-affine search rejects in
-the compilers' sources follows this completion, whose soundness of the
-typing is proved of the stage-1 compiler
+the compilers' sources follows the bootstrap; it changes the stage-1
+compiler, of which this completion's soundness of the typing is proved
 ({ref "interaction-net-affine-certificates"}[Elementary-affine
 certificates], the second step).
 
@@ -3460,7 +3595,8 @@ tag := "speed-and-second-host"
   * State
 *
   * The second host
-  * Waiting on the choice of machine
+  * Deferred until after the bootstrap, where it waits on the
+    comparison of machines
 *
   * Accelerations
   * In progress: the binding, the shadow mode and the acceleration of
@@ -3468,16 +3604,17 @@ tag := "speed-and-second-host"
     complete; that of the hash written in Geb is ready
 *
   * The compilers
-  * In progress: the Lean backend is complete; the interaction-net
-    target waits on the choice of machine
+  * The Lean backend is complete; the interaction-net target is
+    deferred until after the bootstrap, where it waits on the
+    comparison of machines
 *
   * Acceptance
-  * Met on emitted Lean; the second host's fixed point waits on the
-    second host
+  * Met
 :::
 
-* A systems-language host: the evaluator and loader ported from the
-  Rust crate of the value-representation prototypes.
+* After the bootstrap, a systems-language host: the evaluator and
+  loader ported from the Rust crate of the value-representation
+  prototypes.
 * Lean and Geb: accelerations bound to a definition by its name, each
   proved in Lean equal to the definition it is run in place of, with the
   shadow mode that runs both. A line of `bootstrap/accelerations` names
@@ -3498,19 +3635,19 @@ tag := "speed-and-second-host"
   the machine in Lean in place of the machine written in Geb
   ({ref "conversion-continuation"}[Completing the checker with a step of
   conversion]).
-* Geb: compilers to the targets the choice of machine selects, emitting
-  Lean first
-  and then the staged interaction system for an interaction-net
-  runtime; the
+* Geb: a compiler emitting Lean; the
   optimized compiler compiles itself. The emitted Lean is
   committed beside the image, each definition under a name derived
   from its Geb name and in the order of the source, so that a change
   of the compiler's source changes the emitted definitions it touches
-  and no others.
+  and no others. After the bootstrap, compilers to the other targets
+  that the comparison of machines selects, the staged interaction
+  system for an interaction-net runtime among them.
 
-Acceptance: both hosts reach the same image fixed point, and the
-compiler emitting Lean reaches the fixed point on emitted Lean, which
-regenerates the committed Lean byte for byte.
+Acceptance: the compiler emitting Lean reaches the fixed point on
+emitted Lean, which regenerates the committed Lean byte for byte. The
+second host's acceptance, after the bootstrap, is that both hosts reach
+the same image fixed point.
 
 What the sections before the choice of machine fix for this one: a
 second host implements
@@ -5416,7 +5553,10 @@ type or proposition, the permitted grammar, examples and a budget of
 resources; a result carries a candidate and, when a semantic property is
 claimed, its certificate, with the revision of its input, so that it is
 not applied silently to another hole. Failure or exhaustion of the budget
-refutes nothing.
+refutes nothing. The interface of a machine
+({ref "choice-of-machine"}[The choice of machine]) is this one at its
+most general: the target is a type, and the result an inhabitant that
+the checker checks.
 
 The target is explicit. Inhabiting a computational type such as
 `Tree → Tree` specifies no behavior, so a program and a derivation of its
@@ -5463,7 +5603,8 @@ In order of availability:
    language; the decoded result passes Geb's checker whatever found it.
    The fourth stage of the interaction-net arm of
    {ref "choice-of-machine"}[the choice of machine], superpositions for
-   searching certificates, is where it would enter, after typed and
+   searching certificates, is where it would enter, after the bootstrap
+   and after typed and
    shared enumeration are compared on one finite grammar and set of
    obligations, measuring generation, checking, size of certificates,
    time and peak memory together.
@@ -6354,8 +6495,9 @@ remains.
     the existing byte runner and a versioned protocol for program-selected
     file reads and writes. The latter specifies path and byte encodings
     and how read and write errors return to Geb. General typed entry
-    points and step-bounded execution with resumption wait on the second
-    host. The proof runner uses its own entry through emitted Lean.
+    points and step-bounded execution with resumption follow the
+    bootstrap, with the second host. The proof runner uses its own entry
+    through emitted Lean.
 :::
 
 Most remaining reports and indexes can be derived from the documents
@@ -8648,9 +8790,10 @@ the change that removes it.
   into one function and the step returns it, a loop inside a closure
   over the argument not being typable. The sources proper to the metalogic
   are written in those forms, but for the conversion checker's step at the
-  application of a theorem. Rewriting the rejected compiler folds is
-  ready. Checking the decorations of whole bootstrap programs in the
-  build depends on those rewrites
+  application of a theorem. That step, the rewriting of the rejected
+  compiler folds and the check of the decorations of whole bootstrap
+  programs in the build, which depends on those rewritings, follow the
+  bootstrap, whose end point requires no such typing
   ({ref "interaction-net-affine-certificates"}[Elementary-affine
   certificates]).
 * Depth of the Geb reader. The reader's tokenizer is a right fold whose
@@ -8791,7 +8934,8 @@ graph-runtime refinement of the interaction-net arm are also complete
 ({ref "choice-of-machine"}[The choice of machine]). The compiler
 simulation transfers the sequential adequacy theorem to graph execution:
 every schedule of an accepted closed tree-to-tree application terminates,
-and every normal result reads back its denotation.
+and every normal result reads back its denotation. The arm's
+continuation follows the bootstrap.
 
 The following work can proceed in parallel with the external client.
 Where the work changes a compiler source, its generated artifacts are
@@ -8828,22 +8972,26 @@ integrated in sequence.
   independent check of each saved certificate. Passing searches are
   cached by their inputs (`scripts/pre-push.sh`,
   {ref "searches-remaining"}[The searches' remaining time]).
-* The elementary-affine decorations, in progress, wait on
-  rewriting the folds that read their children's results twice
-  ({ref "improvements"}[Improvements]). The rewriting changes `resolve`,
-  `typeIn` and `expandExpr`. Where the measurement of the compiler's time
-  locates a change in one of them, the definition is rewritten once, in
-  a form the affine search accepts.
 * Accelerations ({ref "speed-and-second-host"}[Speed and a second
   host]), in progress: the binding and the conversion checker's
   reduction by the environment machine are complete, and the hash
   written in Geb, which computes by arithmetic on natural numbers, is
   ready.
-* Benchmark the first-stage graph runtime against the kernel denotation.
-  The stage-2 development of closed-function nets can proceed alongside
-  that benchmark and the elementary-affine work. The comparison of
-  machines precedes the production runtime and the Rust host
-  ({ref "interaction-net-stage-two"}[Stage 2: closed-function nets]).
+
+The work on hosts and machines other than Lean's does not proceed
+before the bootstrap ends
+({ref "after-the-bootstrap"}[After the bootstrap]): what remains of the
+elementary-affine decorations, which is the rewriting of the folds that
+read their children's results twice
+({ref "improvements"}[Improvements]), `resolve`, `typeIn` and
+`expandExpr` among them, and the check in the build; the benchmark of
+the first-stage graph runtime against the kernel denotation; the
+stage-2 development of closed-function nets
+({ref "interaction-net-stage-two"}[Stage 2: closed-function nets]); and
+the comparison of machines, which precedes the production runtime and
+the Rust host. A change that the measurement of the compiler's time
+locates in `resolve`, `typeIn` or `expandExpr` is made during the
+bootstrap, and is not held to a form the affine search accepts.
 
 The admission of stronger checkers rests on the checker written in Geb
 and its agreement, and two are required by the bootstrap. The provers
@@ -8931,7 +9079,7 @@ the bootstrap it bears on the size of the proofs of the mathematics the
 road map lists, and adds decision procedures and tactics as single
 steps without adding to what is trusted.
 
-The second host waits on the choice of machine, and the parts of the
+The second host follows the bootstrap, and the parts of the
 authoring sequence that follow their consumers wait on those consumers
 ({ref "authoring-sequence"}[The sequence and its acceptance]).
 
@@ -9453,7 +9601,7 @@ tag := "conversion-open"
   that keeps the time in the Geb source makes the machine's delayed
   values entries of a store threaded through the evaluation, in Lean
   and in Geb alike, with the soundness proved of that machine. Whether
-  it is written waits on the second host
+  it is written is decided with the second host, after the bootstrap
   ({ref "speed-and-second-host"}[Speed and a second host]).
 * The time of a step. The steps `norm` and `eval` compute the prover's
   reduction for its result alone
