@@ -103,11 +103,13 @@ hexadecimal or base-64 atom's; and a character that both ends a token and is one
 two. -/
 def scanStep (s : Scan) (ch : Char) : Scan :=
   if !s.lex.ok then s else
-  let l := lexStep s.lex ch
+  -- The lexer prepends the zero, one or two tokens this character completes.
+  let emitted := lexStep { s.lex with toks := [] } ch
+  let l := if emitted.ok then { emitted with toks := emitted.toks ++ s.lex.toks } else emitted
   let p := s.pos
   let moved : Scan := { s with lex := l, pos := p.next ch, last := p }
   if !l.ok then { moved with bad := some p } else
-  let k := l.toks.length - s.lex.toks.length
+  let k := emitted.toks.length
   let idleAfter := decide (l.mode = .idle)
   if decide (s.lex.mode = .idle) then
     if k == 0 then (if idleAfter then moved else { moved with start := p })

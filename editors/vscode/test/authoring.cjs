@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const { execFileSync } = require('node:child_process');
 const { readFileSync, writeFileSync, existsSync } = require('node:fs');
 const path = require('node:path');
 const vscode = require('vscode');
@@ -81,12 +82,21 @@ exports.run = async test => {
     assert.equal(readFileSync(source, 'utf8'), text);
     assert.ok(readFileSync(image).length > 0);
     assert.deepEqual(result.task.execution.args,
-      ['exe', 'geb-author', 'compile', file('pair.manifest'), image]);
+      [path.resolve(__dirname, '../tools.py'), 'run', 'geb-author', 'compile', file('pair.manifest'), image]);
     assert.equal(result.task.execution.options.cwd, path.resolve(__dirname, '../../..'));
   });
   await test('prove and replay use the same selected program and certificate', async () => {
     assert.equal((await command('prove')).code, 0);
-    assert.ok(readFileSync(certificate).length > 0);
+    const first = readFileSync(certificate);
+    assert.ok(first.length > 0);
+    const repeat = await command('prove');
+    assert.equal(repeat.code, 0);
+    const args = repeat.task.execution.args;
+    assert.equal(args[args.indexOf('--cache') + 1], file('.lake/geb-proof-cache'));
+    const output = execFileSync(repeat.task.execution.process, args,
+      { cwd: repeat.task.execution.options.cwd, encoding: 'utf8' });
+    assert.match(output, /cache: [1-9]\d* taken, 0 checked, 0 proved, 0 not proved/);
+    assert.deepEqual(readFileSync(certificate), first);
     assert.equal((await command('replay')).code, 0);
   });
   await test('imported proof is saved and diagnosed; its previous certificate still replays', async () => {

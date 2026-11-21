@@ -599,7 +599,8 @@ interrupted leaves the cache whole. -/
 def writeCache (dir path : System.FilePath) (profile : Profile) (program cache : Tree) :
     IO Unit := do
   IO.FS.createDirAll dir
-  let tmp : System.FilePath := ⟨path.toString ++ ".tmp"⟩
+  -- The saved-file check and Prove Statements can write the same development concurrently.
+  let tmp : System.FilePath := ⟨s!"{path}.{← IO.Process.getPID}.tmp"⟩
   IO.FS.writeBinFile tmp (writeImage (mk 0 [cacheFormat, theoryName,
     nameTree (canonOf profile.toSExp), program, cache]))
   IO.FS.rename tmp path

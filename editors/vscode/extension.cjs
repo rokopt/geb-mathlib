@@ -3,6 +3,9 @@ const vscode = require('vscode');
 const path = require('node:path');
 const { mkdir } = require('node:fs/promises');
 
+const launcher = path.join(__dirname, 'tools.py');
+const proofCache = folder => path.join(folder, '.lake', 'geb-proof-cache');
+
 const actions = {
   compile: 'Compile program',
   prove: 'Prove statements',
@@ -46,19 +49,18 @@ function programs() {
   });
 }
 
-// The tasks on the active file run Lake in the workspace folder's toolchain directory, and keep
-// the proof cache in the folder itself.
+// The selected checkout supplies the tools. The client workspace owns its proof cache.
 const fileTasks = {
-  'format saved file': () => ['exe', 'geb-fmt', '${file}'],
-  'check saved file': folder => ['exe', 'geb-author', 'check',
-    '--cache', path.join(folder, '.lake', 'geb-proof-cache'), '${file}'],
+  'format saved file': () => ['run', 'geb-fmt', '${file}'],
+  'check saved file': folder => ['run', 'geb-author', 'check',
+    '--cache', proofCache(folder), '${file}'],
 };
 
 function fileTask(folder, name) {
   const cwd = path.resolve(folder.uri.fsPath,
     vscode.workspace.getConfiguration('geb', folder.uri).get('toolchainDirectory', '.'));
   return new vscode.Task({ type: 'geb', task: name }, folder, name, 'Geb',
-    new vscode.ProcessExecution('lake', fileTasks[name](folder.uri.fsPath), { cwd }),
+    new vscode.ProcessExecution('python3', [launcher, ...fileTasks[name](folder.uri.fsPath)], { cwd }),
     name === 'check saved file' ? ['$geb'] : []);
 }
 
@@ -68,13 +70,15 @@ function invocation(action, p, record) {
     return p.proofs;
   };
   switch (action) {
-    case 'compile': return ['lake', ['exe', 'geb-author', 'compile', p.manifest, p.image]];
-    case 'prove':
+    case 'compile': return ['python3', [launcher, 'run', 'geb-author', 'compile', p.manifest, p.image]];
+    case 'prove': return ['python3', [launcher, 'run', 'geb-author', action, '--cache',
+      proofCache(p.folder.uri.fsPath), p.manifest, proof(), p.certificate]];
     case 'replay':
-      return ['lake', ['exe', 'geb-author', action, p.manifest, proof(), p.certificate]];
-    case 'holes': return ['lake', ['exe', 'geb-kernel', 'holes', '--manifest', p.manifest]];
+      return ['python3', [launcher, 'run', 'geb-author', action, p.manifest, proof(), p.certificate]];
+    case 'holes': return ['python3', [launcher, 'run', 'geb-kernel', 'holes', '--manifest', p.manifest]];
     default: {
-      const args = [path.join(p.cwd, 'scripts/preserve.py'), action];
+      const args = action === 'verify' ? [path.join(p.cwd, 'scripts/preserve.py'), action]
+        : [launcher, 'preserve', action];
       if (action === 'record') args.push(p.manifest, proof(), record, '--certificate', p.certificate);
       else {
         args.push(record);

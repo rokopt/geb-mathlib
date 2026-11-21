@@ -3,6 +3,21 @@ const vscode = require('vscode');
 const { execFile } = require('node:child_process');
 const { realpath } = require('node:fs/promises');
 const path = require('node:path');
+const { promisify } = require('node:util');
+const execute = promisify(execFile);
+const checking = new Map();
+
+// Coalesce concurrent editor queries during a Lake build. Check again on the next request.
+exports.author = cwd => {
+  if (!checking.has(cwd)) checking.set(cwd,
+    execute('python3', [path.join(__dirname, 'tools.py'), 'ensure', 'geb-author'],
+      { cwd, maxBuffer: 16 * 1024 * 1024 })
+      .then(({ stdout }) => ({
+        binary: path.join(cwd, '.lake/build/bin', process.platform === 'win32' ? 'geb-author.exe' : 'geb-author'),
+        revision: stdout.trim(),
+      })).finally(() => checking.delete(cwd)));
+  return checking.get(cwd);
+};
 
 exports.capture = async () => {
   const open = vscode.workspace.textDocuments.filter(d => d.uri.scheme === 'file');
@@ -15,20 +30,24 @@ exports.capture = async () => {
     vscode.workspace.textDocuments.every(d => d.uri.scheme !== 'file' || !d.isDirty || open.includes(d)) };
 };
 
-exports.call = (cwd, args, payload, token) => new Promise((resolve, reject) => {
-  if (!vscode.workspace.isTrusted || token.isCancellationRequested) return resolve(undefined);
-  const child = execFile(path.join(cwd, '.lake/build/bin/geb-author'), args,
-    { cwd, timeout: 15000, maxBuffer: 16 * 1024 * 1024, encoding: 'utf8' },
-    (error, stdout, stderr) => {
-      cancellation.dispose();
-      if (token.isCancellationRequested) resolve(undefined);
-      else if (error) reject(new Error(stderr.trim() || error.message));
-      else { try { resolve(JSON.parse(stdout)); } catch (e) { reject(e); } }
-    });
-  const cancellation = token.onCancellationRequested(() => child.kill());
-  child.stdin.on('error', () => {});
-  child.stdin.end(JSON.stringify(payload));
-});
+exports.call = async (cwd, args, payload, token) => {
+  if (!vscode.workspace.isTrusted || token.isCancellationRequested) return;
+  const { binary } = await exports.author(cwd);
+  return new Promise((resolve, reject) => {
+    if (!vscode.workspace.isTrusted || token.isCancellationRequested) return resolve(undefined);
+    const child = execFile(binary, args,
+      { cwd, timeout: 15000, maxBuffer: 16 * 1024 * 1024, encoding: 'utf8' },
+      (error, stdout, stderr) => {
+        cancellation.dispose();
+        if (token.isCancellationRequested) resolve(undefined);
+        else if (error) reject(new Error(stderr.trim() || error.message));
+        else { try { resolve(JSON.parse(stdout)); } catch (e) { reject(e); } }
+      });
+    const cancellation = token.onCancellationRequested(() => child.kill());
+    child.stdin.on('error', () => {});
+    child.stdin.end(JSON.stringify(payload));
+  });
+};
 
 exports.position = (document, line, byteColumn) => {
   const row = Math.min(Math.max(line - 1, 0), document.lineCount - 1);
