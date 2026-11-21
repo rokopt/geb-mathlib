@@ -84,6 +84,9 @@ commands reuse them until their build inputs or executables change.
   documentation.
 - `Geb: Compile Program` compiles the program and checks the examples of
   its notes, the library's and the client's.
+- `Geb: Run Program on a File` compiles the program and applies the entry
+  point `Client.run`, a definition from trees to trees, to a file it asks
+  for, writing the output file it asks for.
 - `Geb: Prove Statements` uses the client's `.lake/geb-proof-cache`
   to prove `Client.proofs.geb` and the library's
   document it imports and saves the certificate;

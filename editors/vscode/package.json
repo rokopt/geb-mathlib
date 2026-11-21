@@ -1,8 +1,8 @@
 {
   "name": "geb-language",
   "displayName": "Geb",
-  "description": "Geb source editing, compilation, proofs and development records",
-  "version": "0.5.0",
+  "description": "Geb source editing, compilation, running, proofs and development records",
+  "version": "0.6.0",
   "publisher": "geb-mathlib",
   "private": true,
   "license": "Apache-2.0",
@@ -67,6 +67,18 @@
       {
         "command": "geb.compile",
         "title": "Compile Program",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      },
+      {
+        "command": "geb.run",
+        "title": "Run Program on a File",
+        "category": "Geb",
+        "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
+      },
+      {
+        "command": "geb.interact",
+        "title": "Run Program with Requests",
         "category": "Geb",
         "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
       },

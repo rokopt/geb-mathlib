@@ -245,6 +245,8 @@ a running command; another Geb command can start after the task ends.
 | Command | Host operation |
 | --- | --- |
 | `Geb: Compile Program` | `geb-author compile`: compile the manifest and check its examples |
+| `Geb: Run Program on a File` | `geb-author run`: compile the manifest and apply an entry point to a file, writing the output |
+| `Geb: Run Program with Requests` | `geb-author interact`: compile the manifest and run an entry point as a program that reads and writes files |
 | `Geb: Prove Statements` | `geb-author prove`: run proof scripts, check and save the certificate |
 | `Geb: Replay Certificate` | `geb-author replay`: check the saved certificate against current statements without search |
 | `Geb: Show Kernel Holes` | `geb-kernel holes --manifest`: display the context and type of each kernel-language hole |
@@ -253,9 +255,9 @@ a running command; another Geb command can start after the task ends.
 | `Geb: Check Recorded Development` | `preserve.py check`: compile archived sources and replay the saved certificate |
 | `Geb: Compare Sources with Record` | `preserve.py compare`: compare current sources with the record and replay its certificate |
 
-Compilation, proof commands, terminal hole reporting, recording and comparison
-save modified file-backed documents in the selected workspace folder
-before running, and documents below the manifest's and entry proof
+Compilation, running, proof commands, terminal hole reporting, recording
+and comparison save modified file-backed documents in the selected
+workspace folder before running, and documents below the manifest's and entry proof
 document's directories, including proof imports opened elsewhere.
 A failed save prevents execution. Untitled buffers are not program
 inputs. Integrity verification and checking an archived development do
@@ -284,6 +286,21 @@ host: exit status `2` means open obligations, `0` means complete, and `1`
 means rejection. Open obligations are displayed without being reported
 as a completed program.
 
+The two run commands offer the manifest's entry points, or take the only
+one. `Geb: Run Program on a File` then asks for an input file and an
+output file, and applies the entry, a definition of type `T → T`, to the
+input's bytes. `Geb: Run Program with Requests` asks for the program's
+arguments, separated by white space or written as a JSON array of
+strings, and runs the entry as the step of a program that reads and
+writes files by requests its host performs (the manual's
+[Bootstrap chapter](../../manual/GebManual/Bootstrap.lean), § Files,
+editions and the host boundary). It runs in the program's workspace
+folder, against which relative paths in its arguments and requests are
+resolved, and its task's exit code is the program's status. The choices
+are remembered for each program and offered first at the next run.
+Neither command checks the program's examples, which
+`Geb: Compile Program` does.
+
 A development can be compiled, proved and replayed with those commands,
 then retained by `Geb: Record Development`. Recording asks for a new
 directory and replays the selected certificate without proof search.
@@ -301,8 +318,11 @@ Commands use the public CLI and leave diagnostic text in the task
 terminal. Compilation, proving and replay also publish located errors
 in the Problems panel, including errors in imported proof documents.
 For command keybindings, `geb.selectProgram` accepts the program's name
-when unique across workspace folders, and `geb.record` accepts a new
-directory path in place of the directory dialog.
+when unique across workspace folders, `geb.record` accepts a new
+directory path in place of the directory dialog, and `geb.run` and
+`geb.interact` accept an object of the fields `entry`, `input` and
+`output`, or `entry` and `arguments`, an array of strings, in place of
+the choices they ask for.
 
 ## Validation
 

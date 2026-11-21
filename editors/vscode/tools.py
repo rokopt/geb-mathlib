@@ -101,15 +101,23 @@ def ensure(tools):
 
 def main(args):
     mode, *args = args
+    # A program's requests resolve relative paths against its own folder, not the toolchain's.
+    directory = None
+    if mode == 'run' and args[:1] == ['--directory'] and len(args) >= 2:
+        directory, args = args[1], args[2:]
     if mode == 'preserve':
         ensure(['geb-author', 'geb-compile', 'geb-defs', 'geb-kernel'])
         os.execv(sys.executable, [sys.executable, 'scripts/preserve.py', '--no-build', *args])
     targets = args if mode == 'ensure' else args[:1]
     if mode not in ('ensure', 'run') or not targets or not set(targets) <= TOOLS:
-        raise ValueError('expected ensure TOOL..., run TOOL [ARG...] or preserve ACTION [ARG...]')
+        raise ValueError('expected ensure TOOL..., run [--directory DIR] TOOL [ARG...] '
+                         'or preserve ACTION [ARG...]')
     binaries = ensure(targets)
     if mode == 'run':
-        os.execv(binaries[0], [str(binaries[0]), *args[1:]])
+        binary = binaries[0].resolve()
+        if directory is not None:
+            os.chdir(directory)
+        os.execv(binary, [str(binary), *args[1:]])
     print(json.dumps([identity(binary.stat()) for binary in binaries]))
 
 
