@@ -113,8 +113,8 @@ jobs:
         run: bash scripts/tests/test-axiom-linter.sh
       - name: scripts/tests/test-lint-driver.sh
         run: bash scripts/tests/test-lint-driver.sh
-      - name: lake shake (minimised imports)
-        run: lake shake --add-public --keep-implied --keep-prefix Geb GebTests
+      - name: scripts/shake.sh (minimised imports)
+        run: bash scripts/shake.sh
       - name: scripts/tests/test-lake-shake.sh
         run: bash scripts/tests/test-lake-shake.sh
 
