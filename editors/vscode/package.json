@@ -151,7 +151,7 @@
           "type": "string",
           "default": ".",
           "scope": "resource",
-          "description": "Geb repository containing lakefile.toml and scripts/preserve.py. Relative to the workspace folder."
+          "description": "Geb repository containing lakefile.toml and scripts/preserve.py, or an extracted Geb release containing geb-release.json. Relative to the workspace folder."
         },
         "geb.programs": {
           "type": "array",

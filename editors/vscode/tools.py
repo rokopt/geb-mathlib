@@ -1,4 +1,7 @@
-"""Run the selected checkout's Lake tools, reusing a successful build across editor tasks."""
+"""Run the selected checkout's Lake tools, reusing a successful build across editor tasks.
+
+A release of the tools (scripts/release.sh) holds geb-release.json beside the executables under
+bin/, which run as they are, without Lake."""
 from contextlib import closing
 import hashlib
 import json
@@ -10,6 +13,8 @@ import subprocess
 import sys
 
 TOOLS = {"geb-author", "geb-compile", "geb-defs", "geb-fmt", "geb-kernel"}
+RELEASE = 'geb-release.json'
+SUFFIX = '.exe' if os.name == 'nt' else ''
 
 
 def identity(st):
@@ -74,10 +79,15 @@ def inputs():
 
 
 def ensure(tools):
+    if os.path.isfile(RELEASE):
+        binaries = [Path('bin') / (tool + SUFFIX) for tool in tools]
+        missing = [str(binary) for binary in binaries if not binary.is_file()]
+        if missing:
+            raise ValueError('the release lacks ' + ', '.join(missing))
+        return binaries
     cache = Path('.lake/geb-editor/tools')
     cache.mkdir(parents=True, exist_ok=True)
-    binaries = [Path('.lake/build/bin') / (tool + ('.exe' if os.name == 'nt' else ''))
-                for tool in tools]
+    binaries = [Path('.lake/build/bin') / (tool + SUFFIX) for tool in tools]
     # A second window or task can arrive during a build. Its freshness check must see
     # the completed build, or retry it if the builder failed or was terminated.
     with closing(sqlite3.connect(cache / 'builds.sqlite', timeout=3600)) as db, db:
@@ -106,6 +116,8 @@ def main(args):
     if mode == 'run' and args[:1] == ['--directory'] and len(args) >= 2:
         directory, args = args[1], args[2:]
     if mode == 'preserve':
+        if os.path.isfile(RELEASE):
+            raise ValueError('development records need a Geb checkout, not a release')
         ensure(['geb-author', 'geb-compile', 'geb-defs', 'geb-kernel'])
         os.execv(sys.executable, [sys.executable, 'scripts/preserve.py', '--no-build', *args])
     targets = args if mode == 'ensure' else args[:1]
@@ -118,7 +130,7 @@ def main(args):
         if directory is not None:
             os.chdir(directory)
         os.execv(binary, [str(binary), *args[1:]])
-    print(json.dumps([identity(binary.stat()) for binary in binaries]))
+    print(json.dumps([[str(binary.resolve()), identity(binary.stat())] for binary in binaries]))
 
 
 if __name__ == '__main__':

@@ -1,0 +1,81 @@
+name: Release
+
+# A tag v* publishes a GitHub release of the host executables, built on each
+# platform by scripts/release.sh, and of the Geb and patched Paredit editor
+# extensions. A dispatch builds the same assets as workflow artifacts without
+# publishing them.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hosts:
+    name: Host executables (${{ matrix.runner }})
+    strategy:
+      matrix:
+        # The oldest supported Ubuntu, so that the executables need the
+        # oldest glibc; its Arm runner; and macOS on Apple silicon.
+        runner: [ubuntu-22.04, ubuntu-22.04-arm, macos-14]
+    runs-on: ${{ matrix.runner }}
+    # A build with no cache to restore compiles the host's emitted Lean in
+    # full; 360 minutes is the limit GitHub-hosted runners allow.
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: leanprover/lean-action@ba3fdfe5c4476c925da13bf11a005ddb47e47aee  # v1
+        with:
+          build: false
+          test: false
+          lint: false
+      - name: scripts/release.sh package
+        run: bash scripts/release.sh package "$VERSION" dist
+        env:
+          VERSION: ${{ github.ref_type == 'tag' && github.ref_name || format('dev-{0}', github.sha) }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: host-${{ matrix.runner }}
+          path: dist/*
+          retention-days: 7
+
+  editors:
+    name: Editor extensions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: '24'
+      - name: package the Geb and patched Paredit extensions
+        run: |
+          npm ci --prefix editors/vscode
+          npm run package --prefix editors/vscode
+          npm run build:paredit --prefix editors/vscode
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: editors
+          path: editors/vscode/*.vsix
+          retention-days: 7
+
+  publish:
+    name: Publish the release
+    if: github.ref_type == 'tag'
+    needs: [hosts, editors]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          path: dist
+          merge-multiple: true
+      - name: gh release create
+        run: gh release create "$TAG" --repo "$REPOSITORY" --verify-tag --generate-notes dist/*
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}

@@ -14,14 +14,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           submodules: true
-      # The Geb checkout pinned at geb/ supplies the toolchain and the library.
+      # A pinned release supplies the host executables and the library.
+      - name: fetch the pinned Geb release
+        if: hashFiles('geb-release.sha256') != ''
+        run: bash fetch-geb.sh
+      # Otherwise the Geb checkout pinned at geb/ supplies the toolchain and the library.
       - uses: leanprover/lean-action@ba3fdfe5c4476c925da13bf11a005ddb47e47aee  # v1
+        if: hashFiles('geb-release.sha256') == ''
         with:
           lake-package-directory: geb
           build: false
           test: false
           lint: false
       - name: build the host executables
+        if: hashFiles('geb-release.sha256') == ''
         run: lake -d geb build geb-author geb-kernel
       - name: compile, check examples, prove and replay
         run: bash check.sh

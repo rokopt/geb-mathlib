@@ -92,10 +92,11 @@ jobs:
       # sources are fixed points of geb-fmt --chains and of parinfer.
       - name: bootstrap fixed points
         run: bash scripts/bootstrap.sh check
-      - name: recorded Geb development, authoring, requests and client tests
+      - name: recorded Geb development, authoring, requests, release and client tests
         run: |
           bash scripts/authoring.sh check
           bash scripts/tests/test-requests.sh
+          bash scripts/tests/test-release.sh
           bash scripts/tests/test-authoring.sh
           bash scripts/tests/test-preservation.sh
           bash scripts/tests/test-proof-scripts.sh

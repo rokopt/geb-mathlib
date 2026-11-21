@@ -13,7 +13,8 @@ exports.author = cwd => {
     execute('python3', [path.join(__dirname, 'tools.py'), 'ensure', 'geb-author'],
       { cwd, maxBuffer: 16 * 1024 * 1024 })
       .then(({ stdout }) => ({
-        binary: path.join(cwd, '.lake/build/bin', process.platform === 'win32' ? 'geb-author.exe' : 'geb-author'),
+        // The launcher names each binary, a checkout's or a release's, with its identity.
+        binary: JSON.parse(stdout)[0][0],
         revision: stdout.trim(),
       })).finally(() => checking.delete(cwd)));
   return checking.get(cwd);
