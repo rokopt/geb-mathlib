@@ -7,7 +7,10 @@
 # each that the driver exits 1, reports on standard error the diagnostic
 # FILE:LINE:COLUMN: error: MESSAGE at the occurrence that rejects the
 # program and leaves an existing output untouched, and that a program the
-# compiler accepts is written, through both entry points. Asserts that
+# compiler accepts is written, through both entry points. Asserts that a
+# failure of the datatype language's typing is reported at the subterm
+# concerned with the type required and the type found, and a hole with
+# the type required of it and the variables bound around it. Asserts that
 # `check` reports the same diagnostics and writes nothing, and that it
 # compiles the sources of the nearest manifest listing a source, up to
 # that source.
@@ -87,18 +90,96 @@ assert_rejected duplicate '(def f (lam ((x T)) x))
   (def f (lam ((x T)) x))' 2:8 'f is reserved'
 assert_rejected typing "$nat
 
-(def g (lam ((t T)) (succ t)))" 3:6 'g does not check'
-assert_rejected unresolved '(def f (lam ((x T)) y))' 1:6 'f does not check'
+(def g (lam ((t T)) (succ t)))" 3:27 'g does not check: expected Nat, got T'
+assert_rejected unresolved '(def f (lam ((x T)) y))' 1:21 \
+  'f does not check: y is not declared before'
 assert_rejected template \
   '(module M (parameter A) (export f)
   ; a comment before the declaration
-  (def f (lam ((x A)) (label x))))' 3:8 \
-  "M.f does not check at its template's opaque parameters"
+  (def f (lam ((x A)) (label x))))' 3:30 \
+  "M.f does not check at its template's opaque parameters: expected T, got A"
 assert_rejected nested '(module A (export g)
   (module B (export f) (def f (lam ((x T)) x)))
-  (def g (lam ((x T)) (B.f y))))' 3:8 'A.g does not check'
+  (def g (lam ((x T)) (B.f y))))' 3:28 'A.g does not check: y is not declared before'
 assert_rejected expansion "(data N (z)) (def f (lam ((x N)) (case x ((z) 0) (else))))" 1:19 \
   'f does not expand'
+
+# The typing of the datatype language points to the subterm whose type is not the one its form
+# requires, with the two types as they are before the erasure of datatypes, through the forms
+# module elaboration and the expansion write for the source's.
+light='(data Light (red) (green) (amber T))'
+assert_rejected branch "$light
+(defn next ((l Light)) Light (case l ((red) green) ((green) 7) ((amber x) red)))" 2:61 \
+  'next does not check: expected Light, got T'
+assert_rejected scrutinee "$light
+(defn code ((t T)) T (case t ((red) 0) ((green) 1) ((amber x) x)))" 2:28 \
+  'code does not check: expected Light, got T'
+assert_rejected clause-variable "$light
+(defn code ((l Light)) Light (case l ((red) l) ((green) l) ((amber x) x)))" 2:71 \
+  'code does not check: expected Light, got T'
+assert_rejected pattern "$light
+(defn code ((l Light)) T (case l ((red x) 0) ((green) 1) ((amber x) x)))" 2:7 \
+  'code does not expand'
+assert_rejected recursion "$nat
+(defn count ((n Nat)) T (cata Nat T n ((zero) 0) ((succ r) (cons r (nil T)))))" 2:60 \
+  'count does not check: expected T, got (List T)'
+assert_rejected sequence "$light
+(defn f ((l Light) (k T)) T
+  (let* ((a T (add k 1)) (b T l)) (add a b)))" 3:31 'f does not check: expected T, got Light'
+assert_rejected guarded "$light
+(defn f ((l Light) (k T)) Light
+  (cond ((eq k 0) l) ((eq k 1) k) (else red)))" 3:32 'f does not check: expected Light, got T'
+assert_rejected argument-datatype "$light
+(defn f ((l Light)) T 0)
+(def g (f 3))" 3:11 'g does not check: expected Light, got T'
+assert_rejected field "(data Box (box Later))" 1:11 'box does not check'
+assert_rejected datum "$light
+(def d (datum Light (3)))" 2:21 'the datum is not a member of the datatype'
+assert_rejected invisible '(module M (export f) (def f 1) (def g 2))
+(def h (M.g 1))' 2:8 'a qualified name is not visible'
+
+# A hole has the type its form requires of it, or the one it declares, and is reported with the
+# variables bound around it; the holes of the definitions after it are reported while each
+# definition's type is determined, and a definition with a hole does not check.
+assert_reports() {
+  local name="$1" source="$2"
+  shift 2
+  checked=$((checked + 1))
+  printf '%s\n' "$source" > "$test_dir/$name.geb"
+  local output line
+  output="$("$compiler" check "$test_dir/$name.geb" 2>&1)"
+  [ $? -eq 1 ] || fail_case "$name" "check does not exit 1"
+  for line in "$@"; do
+    case "$output" in
+      *"$test_dir/$name.geb:$line"*) ;;
+      *) fail_case "$name" "the report '$output' lacks '$name.geb:$line'" ;;
+    esac
+  done
+}
+assert_reports hole "$light
+(defn next ((l Light)) Light (case l ((red) ?todo) ((green) red) ((amber x) ?other)))" \
+  '2:45: error: hole ?todo: expected Light; in scope: l : Light' \
+  '2:77: error: hole ?other: expected Light; in scope: x : T, l : Light'
+assert_reports hole-declared "$light
+(defn f ((k T)) T (add k (hole n T)))
+(defn g ((k T)) Light (hole m T))" \
+  '2:26: error: hole ?n: expected T; in scope: k : T' \
+  '3:23: error: g does not check: expected Light, got T'
+assert_reports hole-untyped '(def f (lam ((x T)) ?h))' \
+  '1:21: error: hole ?h: no type is required of it here'
+assert_reports hole-later "$light
+(defn pick ((b T)) Light (if b ?first ?second))
+(defn other ((l Light)) T ?later)" \
+  '2:32: error: hole ?first: expected Light; in scope: b : T' \
+  '2:39: error: hole ?second: expected Light; in scope: b : T' \
+  '3:27: error: hole ?later: expected T; in scope: l : Light'
+assert_reports hole-argument "$light
+(defn f ((l Light) (k T)) T k)
+(def g (f ?light ?number))" \
+  '3:11: error: hole ?light: expected Light' \
+  '3:18: error: hole ?number: expected T'
+assert_compiled hole-filled image "$light
+(defn next ((l Light)) Light (case l ((red) green) ((green) red) ((amber x) red)))"
 
 # Kernel typing points to the operand, with binder contexts and source desugaring respected.
 assert_rejected function '(def f (lam ((x T)) (x 0)))' 1:22 'expected a function type, got T'
@@ -124,7 +205,7 @@ assert_rejected bytes $'; λ\r\n(def f (pair (quote (0 "λ")) (label (nil T))))'
   'expected T, got (List T)'
 
 # A failure at the bottom of a deeply nested term is reported in the time of the term: each
-# subterm is checked once.
+# subterm is checked once, by the kernel's pass and by the datatype language's.
 deep() {
   local inner="$1" open="$2" close="$3" e="$1" i
   for i in $(seq 1 60); do e="$open$e$close"; done
@@ -137,6 +218,15 @@ output="$(timeout 60 "$compiler" check "$test_dir/deep-kernel.geb" 2>&1)"
 case "$output" in
   *"deep-kernel.geb:1:428: error: f does not check: expected T, got (List T)") ;;
   *) fail_case deep-kernel "message '$output' does not locate the innermost operand" ;;
+esac
+checked=$((checked + 1))
+printf '%s\n(defn g ((l Light)) Light %s)\n' "$light" \
+  "$(deep 7 '(case l ((red) ' ') ((green) green) ((amber x) l))')" > "$test_dir/deep-case.geb"
+output="$(timeout 60 "$compiler" check "$test_dir/deep-case.geb" 2>&1)"
+[ $? -eq 1 ] || fail_case deep-case "check does not exit 1 within a minute"
+case "$output" in
+  *"deep-case.geb:2:927: error: g does not check: expected Light, got T") ;;
+  *) fail_case deep-case "message '$output' does not locate the innermost branch" ;;
 esac
 
 assert_compiled image image '(def f (lam ((x T)) x))'
@@ -168,7 +258,7 @@ checked=$((checked + 1))
 output="$("$compiler" check "$test_dir/p/c.geb" 2>&1)"
 [ $? -eq 1 ] || fail_case later "exit status is not 1"
 case "$output" in
-  "$test_dir/p/c.geb:1:6: error: h does not check") ;;
+  "$test_dir/p/c.geb:1:22: error: h does not check: nope is not declared before"*) ;;
   *) fail_case later "message '$output' does not locate h" ;;
 esac
 
@@ -176,7 +266,7 @@ checked=$((checked + 1))
 output="$("$compiler" check --manifest "$test_dir/p/p.manifest" 2>&1)"
 [ $? -eq 1 ] || fail_case manifest "exit status is not 1"
 case "$output" in
-  "$test_dir/p/c.geb:1:6: error: h does not check") ;;
+  "$test_dir/p/c.geb:1:22: error: h does not check: nope is not declared before"*) ;;
   *) fail_case manifest "message '$output' does not locate h" ;;
 esac
 
@@ -185,7 +275,7 @@ printf '(def f (lam ((x T)) (nope x)))\n' > "$test_dir/p/a.geb"
 output="$("$compiler" check "$test_dir/p/sub/b.geb" 2>&1)"
 [ $? -eq 1 ] || fail_case earlier "exit status is not 1"
 case "$output" in
-  "$test_dir/p/a.geb:1:6: error: f does not check") ;;
+  "$test_dir/p/a.geb:1:22: error: f does not check: nope is not declared before"*) ;;
   *) fail_case earlier "message '$output' does not locate f in the earlier source" ;;
 esac
 

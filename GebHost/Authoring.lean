@@ -100,14 +100,13 @@ def sourceBytes (d : Doc) : ByteArray :=
   bytesOf (printAt (defaultLayout .profile 100 d) d)
 
 /-- Compile source with the current Geb compiler and retain its checked bundle; a rejection is
-the diagnostic of what was compiled from the sources given
-({name}`GebHost.Compiler.diagnostic`). -/
+the diagnostics of what was compiled from the sources given
+({name}`GebHost.Compiler.rendered`). -/
 def compile (what : String) (sources : List Compiler.Source) (text : ByteArray) : IO Tree := do
   let input := ofBytes text
   let out := GebBoot.«Compile.bundleOf» input
   if out.label == 0 then
-    throw <| IO.userError
-      (Compiler.diagnostic what sources (Compiler.rejectionOf input)).render
+    throw <| IO.userError (Compiler.rendered what sources (Compiler.rejectionOf input))
   let b := GebBoot.«Prelude.get» out
   unless (unbundle b).isSome do throw <| IO.userError "compiler returned a malformed bundle"
   return b

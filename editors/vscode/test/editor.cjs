@@ -152,14 +152,15 @@ exports.run = async () => {
       await assert.rejects(formatTask(editor), /formatter task exited 1/);
       assert.equal(readFileSync(editor.document.uri.fsPath, 'utf8'), text);
     });
-    await test('check task reports a failure at its declaration', async () => {
+    await test('check task reports a failure at the term that fails', async () => {
       const editor = await open('(def f (lam ((x T)) x))\n(def g (lam ((x T)) (nope x)))\n');
       const { exitCode, found } = await checkTask(editor);
       assert.equal(exitCode, 1);
       assert.equal(found.length, 1);
-      assert.equal(found[0].message, 'g does not check');
+      assert.equal(found[0].message,
+        'g does not check: nope is not declared before, or names no term');
       assert.equal(found[0].severity, vscode.DiagnosticSeverity.Error);
-      assert.deepEqual([found[0].range.start.line, found[0].range.start.character], [1, 5]);
+      assert.deepEqual([found[0].range.start.line, found[0].range.start.character], [1, 21]);
     });
     await test('check task reports nothing for an accepted program', async () => {
       const editor = await open('(def f (lam ((x T)) x))\n');

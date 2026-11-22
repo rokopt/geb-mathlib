@@ -173,10 +173,11 @@ with tempfile.TemporaryDirectory(prefix='geb-author-test-') as directory:
     run('prove', manifest, proofs, certificate, ok=False)
     assert certificate.read_bytes() == saved
 
-    # A program the compiler rejects is reported at the declaration that fails.
+    # A program the compiler rejects is reported at the expression that fails.
     source.write_text(original_source.replace('T x))', 'T z))'))
     result = run('compile', manifest, image, ok=False)
-    assert result.stderr.decode().startswith(f'{source}:9:9: error: Pair.left does not check')
+    assert result.stderr.decode().startswith(
+        f'{source}:9:30: error: Pair.left does not check: z is not declared before')
     assert image.read_bytes() == core
     source.write_text(original_source)
 

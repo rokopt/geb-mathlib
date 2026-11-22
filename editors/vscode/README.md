@@ -117,9 +117,13 @@ writes nothing. Both file tasks are listed under Tasks: Run Task, and a
 `{"type": "geb", "task": "check saved file"}`. For a source of a program it
 compiles the sources of the nearest manifest that lists the file, up to
 that file, or the file alone where no manifest lists it. It reports what
-rejects the program as `FILE:LINE:COLUMN: error: MESSAGE`, at the name of
-the first failing declaration, at an atom the implementation reserves, or
-at the character or parenthesis at which the text does not read. For a
+rejects the program as `FILE:LINE:COLUMN: error: MESSAGE`: a definition
+that does not check at the term whose type is not the type expected
+there, with both types, or at the definition's name where no such term is
+found; a hole of a definition at the hole, with the type expected there
+and the variables in scope; an atom the implementation reserves at that
+atom; and text that does not read at the character or parenthesis at
+which it stops reading. For a
 proof document, a file holding a form `(proofs V …)`, it proves the
 document, after the documents it imports, against the program the
 document names by `(program NAME)`, and reports a theorem whose statement

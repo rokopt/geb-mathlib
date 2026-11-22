@@ -587,7 +587,8 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-scripts-test-') as directory:
     assert run('check', root / 'Pair.geb') == ''
     broken = below / 'Broken.geb'
     broken.write_text((root / 'Pair.geb').read_text().replace('T x))', 'T z))'))
-    assert run('check', broken, ok=False).startswith(f'{broken}:9:9: error: Pair.left does not check')
+    assert run('check', broken, ok=False).startswith(
+        f'{broken}:9:30: error: Pair.left does not check: z is not declared before')
 
     # A document proved without a manifest names one program, which a manifest in its directory
     # or above names once; a manifest given takes the place of the program named.
