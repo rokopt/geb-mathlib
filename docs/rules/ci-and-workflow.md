@@ -161,6 +161,7 @@ fixtures:
   `scripts/tests/test-holes.sh`,
   `scripts/tests/test-manifest.sh`,
   `scripts/tests/test-geb-doc.sh`,
+  `scripts/tests/test-requests.sh`,
   `scripts/tests/test-accelerate.sh`.
 - `scripts/tests/test-mathlib-bump-detect.sh`,
   `scripts/tests/test-jj-bump-detect.sh`,

@@ -3817,9 +3817,28 @@ import-direction rules above are enforced by
   decoded tree. Unsupported formats and profiles are rejected. Preservation
   records compare images after this header migration without rewriting the
   archived files. `Geb.Kernel.Command.runFile` applies a function of
-  trees to a file. `Manifest.lean` reads a program's manifest, its edition,
-  the profile of its sources, its sources in order and its entry points
-  (`Geb.Kernel.Manifest.parse`),
+  trees to a file. `Requests.lean` states the protocol of the requests a
+  program makes of its host: a program is a step of type `T → T` from an
+  event, its start with the protocol's version and its arguments or its
+  resumption with a state and a request's result, to an action, its end
+  with an exit status or a request to read or write a file with the state
+  to resume in, each a tree in the datatype language's representation
+  (`Geb.Kernel.Requests.decodeAction`, `Geb.Kernel.Requests.next`), and
+  decodes a path's bytes as UTF-8 [RFC3629]
+  (`Geb.Kernel.Requests.pathText`). `GebHost/Requests.lean` performs the
+  requests on the file system, a missing file or a refused access being a
+  result the program receives, and runs a step from its start to its end
+  (`GebHost.Requests.interact`), as `geb-kernel interact IMAGE NAME
+  ARGUMENT…` and `geb-author interact MANIFEST NAME ARGUMENT…` do;
+  `geb-author run MANIFEST NAME INPUT OUTPUT` compiles a manifest's
+  program and applies a definition to a file, and `geb-kernel entries
+  MANIFEST` lists its entry points. `examples/requests/` is a program that
+  reads the file an index names and writes it to an output, writing a
+  line of its own where that file is missing
+  (`GebTests/Prototypes/Kernel/Requests.lean`,
+  `scripts/tests/test-requests.sh`). `Manifest.lean` reads a program's
+  manifest, its edition, the profile of its sources, its sources in order
+  and its entry points (`Geb.Kernel.Manifest.parse`),
   which the host driver, the executables `geb-compile` and `geb-fmt` and,
   by the term of `ManifestCommand.lean`, the tests read
   (`scripts/tests/test-manifest.sh`). `Subst.lean` weakens terms and

@@ -188,15 +188,24 @@ these capabilities in a client maintained in its own repository.
    optional values generic in their element type, used at several types
    in one module of the client
    ({ref "polymorphic-definitions"}[Polymorphic definitions]).
-5. Run the client and give it filesystem requests on the Lean host. First
-   expose `geb-kernel run IMAGE ENTRY INPUT OUTPUT` from the selected project
-   in the editor. That command already runs a pure byte transformation on
-   files chosen by the caller. Then define versioned read and write requests
-   and their results in Geb, with an interpreter in the host. The acceptance
-   program reads an index, chooses another path from its contents, handles a
-   missing file as a result, and writes the output. General step-bounded
-   execution and resumption follow the bootstrap, with the second host
-   ({ref "files-editions"}[Files, editions and the host boundary]).
+5. In progress. Run the client and give it filesystem requests on the Lean
+   host. The requests are complete: a program is a step of type `T → T`
+   from its start, with the protocol's version and its arguments, or from a
+   state and a request's result, to its end with an exit status or to a
+   request to read or write a file with the state to resume in, each a tree
+   in the datatype language's representation
+   (`Geb/Prototypes/Kernel/Requests.lean`). The host performs them, a
+   missing file being a result the program receives
+   (`geb-kernel interact`, `geb-author interact`). The acceptance program,
+   `examples/requests/`, reads an index, reads the file whose path is its
+   first line, writes a line of its own where that file is missing, and
+   writes the output. Remaining: the editor's commands that run a program
+   of the selected project, on a file (`geb-author run`) and with requests,
+   and the protocol's datatypes in the library, written with its modules
+   after step 4, through which a client issues requests. General
+   step-bounded execution and resumption follow the bootstrap, with the
+   second host ({ref "files-editions"}[Files, editions and the host
+   boundary]).
 6. Migrate the client and its first saved datatype value. Keep readable
    `.geb` sources, their manifest and dependency revisions, and a checked
    record at each migration. Edition 0 changes with the compiler, and
@@ -4764,11 +4773,20 @@ and semantic dependencies are references to definitions.
   then follows the new reader's rules, duplicates rejected; no present
   source has one.
 
-The current driver reads one input file and writes one output file,
-both chosen by the caller. For the downstream application the Lean host
-will interpret file requests chosen by Geb and return their results.
-The protocol must specify the encoding of paths and bytes, framing and
-errors. OS inputs remain explicit in the program's semantics.
+The driver runs an entry on one input file and writes one output file,
+both chosen by the caller (`geb-kernel run`), or runs a program that
+chooses the files it reads and writes by requests (`geb-kernel interact`,
+{name}`Geb.Kernel.Requests.next`). A program's step is applied to an
+event and returns an action, each a tree in the representation of the
+datatype language: a byte string is the node of label `0` over the leaves
+of its bytes, a path the bytes of its UTF-8 text ({citet RFC3629}[]), and
+a failure of the file system a result the program receives. The program's
+state between requests is a tree, which the host returns unread, so that
+the program keeps no function across a request. The protocol's version
+is `0`, the pre-release version, which changes with the host as edition
+`0` changes with the compiler, and which the first event names. OS inputs
+remain explicit in the program's semantics: its arguments are in its first
+event and its files in the results of its requests.
 
 The manifest records an edition per program, as Racket's `#lang`, Rust's
 editions and Go's `go` directive do. An edition fixes the reader, its
@@ -6491,12 +6509,14 @@ remains.
     define; a failure is a message on standard error and a nonzero
     status, the output left in place; a label is a natural number, so
     that no contract names a machine word; and the table of primitives
-    is only extended. Ready on the Lean host are the editor command for
-    the existing byte runner and a versioned protocol for program-selected
-    file reads and writes. The latter specifies path and byte encodings
-    and how read and write errors return to Geb. General typed entry
-    points and step-bounded execution with resumption follow the
-    bootstrap, with the second host. The proof runner uses its own entry
+    is only extended. A program chooses the files it reads and writes by
+    requests of a versioned protocol, which fixes the encodings of paths
+    and bytes and returns a failure of the file system to the program as a
+    result ({name}`Geb.Kernel.Requests.next`,
+    {ref "files-editions"}[Files, editions and the host boundary]). Ready
+    on the Lean host are the editor's commands that run a program. General
+    typed entry points and step-bounded execution with resumption follow
+    the bootstrap, with the second host. The proof runner uses its own entry
     through emitted Lean.
 :::
 
