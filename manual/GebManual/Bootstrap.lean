@@ -125,7 +125,11 @@ source in its manifest, import `(Seq T)` and reverse the bytes of a file.
 `examples/roundtrip/` assembles a library and client in separate layers
 with a checked example, a theorem written in Geb and a record whose
 certificate replays after relocation. The next milestone combines
-these capabilities in a client maintained in its own repository.
+these capabilities in a client maintained in its own repository. The
+steps toward it follow, each with its state, numbered as they were
+added; {ref "downstream-order"}[The order of the remaining steps] gives
+the order in which those that remain are taken and which of them proceed
+together.
 
 1. Complete. Assemble and share the first library. The library is
    `library/`: its manifest lists `seq.geb`, the bootstrap's source by a
@@ -159,9 +163,11 @@ these capabilities in a client maintained in its own repository.
    that changes neither the library nor a record: the client pins the
    archives by their digests, and `fetch-geb.sh` places the release at
    `geb/`, where the editor and `check.sh` run its executables, built, with
-   no Lake (`scripts/tests/test-release.sh`).
+   no Lake (`scripts/tests/test-release.sh`). No release is published
+   (step 10).
    This library is the modules that exist, assembled and shared. The
-   library's own modules are written after step 4, in the forms it adds.
+   library's own modules are written at step 8, in the forms step 4
+   adds.
 2. Complete. Make a check take the time of what changed. Each stage's
    time is linear in the program: the elaboration of modules holds its
    names in tries, and the typing and the reading check each form
@@ -198,7 +204,13 @@ these capabilities in a client maintained in its own repository.
    is one definition. The acceptance is a library module of lists and
    optional values generic in their element type, used at several types
    in one module of the client
-   ({ref "polymorphic-definitions"}[Polymorphic definitions]).
+   ({ref "polymorphic-definitions"}[Polymorphic definitions]). The form
+   whose uses write their type arguments changes `bootstrap/modules.geb`,
+   a source of the compilers and of no program a development is about:
+   it regenerates the compiler's image and the Lean the compiler emits,
+   and, the bundles of the existing sources being unchanged, no mirror
+   and no certificate. Step 7 precedes it, so that the checks it runs are
+   the compilers'.
 5. In progress. Run the client and give it filesystem requests on the Lean
    host. The requests are complete: a program is a step of type `T → T`
    from its start, with the protocol's version and its arguments, or from a
@@ -213,8 +225,13 @@ these capabilities in a client maintained in its own repository.
    writes the output. The editor runs an entry of the selected program on
    a file (`geb-author run`) and with requests, in the program's workspace
    folder (`geb-author interact`). Remaining: the protocol's datatypes in
-   the library, written with its modules after step 4, through which a
-   client issues requests. General
+   the library, written with its modules at step 8, through which a
+   client issues requests, a program declaring them itself until then,
+   in their order of constructors, as `examples/requests/Index.geb`
+   does. The requests are the read and the write of a whole file;
+   requests to write to the standard output, to read the standard input
+   and to list a directory are added with their first consumers, while
+   the protocol's version is `0`. General
    step-bounded execution and resumption follow the bootstrap, with the
    second host ({ref "files-editions"}[Files, editions and the host
    boundary]).
@@ -229,16 +246,215 @@ these capabilities in a client maintained in its own repository.
    proof document to the record workflow. The existing migrations cover
    proof-source version 1 to 2 and the image's explicit kernel profile
    ({ref "first-authoring"}[Writing a first Geb development]).
+7. Confine the checks that a change to a compiler runs to the programs
+   it changes. The modules of the developments about the bootstrap's
+   programs, those of the evaluator's fundamental lemma and of the
+   datatype language's soundness among them
+   (`GebTests/Prototypes/FreeTopos/NormalizationBase.lean`,
+   `GebTests/Prototypes/FreeTopos/DatatypeBase.lean`), compile the
+   program they are about at elaboration, by the stage-0 compiler's
+   source under Lean's evaluator, and so import the stage tests
+   (`GebTests/Prototypes/Stage0.lean`, `GebTests/Prototypes/Stage1.lean`),
+   whose libraries need the compilers' sources, the manifests and the
+   committed image (`lakefile.toml`). The generator of the certificates,
+   `geb-certify`, imports those modules, and its bytes key the searches
+   (`docs/rules/ci-and-workflow.md` § Certificates), and the modules of
+   `GebTests/Prototypes/FreeTopos/Certified/` that check the
+   certificates of the datatype language's soundness import them too. A
+   change to a source of a compiler or to the image therefore rebuilds
+   the developments' modules, checks their certificates again and runs
+   every search, also where it leaves the bundle of each program a
+   development is about unchanged;
+   {ref "measurements"}[The measurements] gives the times of the checks
+   and of the searches. A development is to depend on its
+   program's bundle and not on what compiles it. The metalogic's program
+   is committed so, the image of each of its layers beside the layer's
+   mirror (`bootstrap/lean/GebMirror/Metalogic/Load/`), which
+   `scripts/bootstrap.sh check` compares with the image of its sources;
+   whether the developments read their programs from images committed
+   likewise, or a search is keyed by the content identities of the
+   definitions it reads ({ref "content-identity"}[Content identity]), is
+   settled in the design. The acceptance: after a change to
+   `bootstrap/modules.geb` under which every manifest's program compiles
+   to the bundle it compiled to, with the image and the emitted Lean
+   regenerated, Lake
+   rebuilds no module of the developments and none of `Certified/`, the
+   bytes of `geb-certify` are unchanged, and `scripts/pre-push.sh` runs
+   no search. Two further changes shorten the checks of a change that
+   does alter such a program (step 12). The searches run each in a
+   process of its own, in the order of their list, in which the longest
+   begins among the last and ends them; begun longest first, they end
+   with the longest. And the modules that check the certificates of the
+   datatype language's soundness import one another in a chain, for the
+   declarations each development continues from, so that Lake builds
+   them in turn, the checks of `Certified/DatatypeCata.lean` in one
+   module; with the declarations in modules apart from the checks, Lake
+   builds the checks at the same time.
+8. Write the library's modules, in the forms of step 4: lists, optional
+   values and byte strings generic in their element types, and the
+   datatypes of the requests' protocol (step 5). They are sources of the
+   library's own. `library/seq.geb` is `bootstrap/seq.geb` by a symbolic
+   link, a source of the stage-1 compiler, of the proof runner, of the
+   metalogic and of the program of the datatype language's soundness, so
+   that a change to it is a change of step 12; the library's manifest
+   lists it until the library's own modules take its place. The client
+   template imports the library's modules, and the manual renders a page
+   for each ({ref "documentation"}[Documentation]). The acceptance is
+   that of step 4, with the program of `examples/requests/` importing
+   the protocol's datatypes, and a change to a module of the library
+   regenerating no artifact under `bootstrap/`.
+9. Name a dependency by its manifest. A client's manifest lists the
+   sources of the library, by their paths below the client, in the order
+   of the library's manifest, and nothing compares the two lists, so
+   that a source added to the library changes the manifest of every
+   client. A layer is to name the manifest of a dependency and take its
+   sources in that manifest's order, the dependency below the client's
+   directory as its sources are
+   ({ref "files-editions"}[Files, editions and the host boundary]); its
+   revision is pinned as it is, by the submodule or by the digests of a
+   release. The acceptance: the client template's manifest names
+   `geb/library/library.manifest`; a source added to the library changes
+   no client's manifest; a client of two libraries names each; and a
+   module that two of them declare is rejected.
+10. Give a client the tools without a build of them, and a description
+    of the language. The host executables import the kernel's modules,
+    which import mathlib, so that a client building them fetches
+    mathlib's cache and, from an empty Lake directory, builds for an hour
+    or more (`editors/vscode/README.md`). A release holds them built
+    (step 1), and the first is made at a tag
+    (`docs/rules/ci-and-workflow.md` § Releases), of the pre-release
+    edition `0`, which preserves nothing across revisions
+    ({ref "files-editions"}[Files, editions and the host boundary]). The
+    forms of programs, modules and their imports, datatypes, definitions,
+    case analysis and patterns, the representation and the decoding,
+    notes and entries, are stated in this chapter's sections, among the
+    decisions that fix them; a chapter of the manual is to state them for
+    a developer, as {ref "first-authoring"}[Writing a first Geb
+    development] states the forms of proof documents. The acceptance: a
+    client made from the template, with no Lake, fetches the published
+    release, checks its program and runs it in the editor; and each form
+    the chapter states is an example that the manual's build checks.
+11. Report in the editor as a source is edited. The check of a saved
+    file is a task that VS Code runs on request, where efm-langserver
+    runs it at each save (`editors/efm-langserver/config.yaml`); the
+    extension is to run it at each save, under a setting. The
+    obligations view and `geb-kernel holes` read kernel forms alone and
+    reject a program of modules or of datatypes, whose holes the check
+    reports (step 3); the view is to show those obligations
+    ({ref "editing"}[Editing]). The grammar gives scopes to comments,
+    quoted atoms, parentheses, holes, numerals and `&`, and none to the
+    names of the forms. Navigation resolves an occurrence to its
+    declaration; the references to a declaration, and its renaming,
+    follow from the same resolution. Each is a function of the
+    documents, changes no source of a program and regenerates no
+    artifact. The acceptance is a test of each in
+    `editors/vscode/test/`.
+12. Change the sources that developments are about, one change after
+    another. The reader in constant depth changes `bootstrap/reader.geb`;
+    the definitions of the steps of the folds of `typeIn`, `trav` and
+    `expandExpr` change `bootstrap/check.geb`, `bootstrap/subst.geb` and
+    the sources of the expansion ({ref "improvements"}[Improvements]);
+    and the conversion of the sources under `bootstrap/` to the forms of
+    step 4 changes `bootstrap/seq.geb` and the sources that import its
+    modules ({ref "polymorphic-definitions"}[Polymorphic definitions]).
+    Each is a source of the program of the datatype language's soundness
+    or of the metalogic's, so that each is followed by the regeneration
+    of the mirrors, by `scripts/certificates.sh regen` and by
+    `scripts/proofs.sh`. A change that holds several of them is followed
+    by one regeneration, and each made alone by its own. They follow
+    step 7, whose further changes shorten their checks, and step 8, in
+    which the writing of the library settles the forms of step 4 before
+    the bootstrap's sources take them.
 
-The filesystem interpreter can proceed alongside the library, as can
-the design of step 4, which changes no source. Integrate the
-interpreter when the client can issue requests. Preservation work can
-start on the Roundtrip record and take up value migration when the client
-has a saved datatype. Changes to compiler sources regenerate committed
-images and merge one at a time: steps 2 and 3 are complete, step 3
-without a change to a compiler's source, and step 4 is the next. Steps 1,
-5 and 6 change the host, the editor and the client, and proceed beside
-it.
+### The order of the remaining steps
+%%%
+tag := "downstream-order"
+%%%
+
+Steps 1, 2 and 3 are complete. The steps that remain are ordered by what
+each requires of the others and by the committed artifacts each
+regenerates, which continuous integration compares byte for byte: two
+changes that regenerate one artifact are merged one at a time, and
+changes that regenerate none in common proceed together.
+
+:::table +header
+*
+  * Step
+  * Follows
+  * Regenerates
+*
+  * 7, the checks that a change to a compiler runs
+  * Nothing
+  * Nothing; it changes the build's configuration and the developments'
+    modules
+*
+  * 4, polymorphic definitions
+  * 7; its design, which changes no source, proceeds beside 7
+  * The compiler's image and the Lean the compiler emits
+*
+  * 8, the library's modules
+  * 4
+  * Nothing
+*
+  * 5, its remainder, the protocol's datatypes in the library
+  * 8
+  * Nothing
+*
+  * 6, the migration of the client and of a saved value
+  * A saved datatype of the client, which follows 8; its work on the
+    Roundtrip record follows nothing
+  * The records it migrates
+*
+  * 9, a dependency named by its manifest
+  * Nothing
+  * Nothing
+*
+  * 10, a release and a description of the language
+  * Nothing; the description of the forms of step 4 follows 4
+  * Nothing
+*
+  * 11, the editor's reports
+  * Nothing
+  * Nothing
+*
+  * 12, the sources that developments are about
+  * 7 and 8
+  * The compiler's image, the mirrors and the certificates
+:::
+
+The steps taken in sequence are 7, 4, 8, the remainder of 5, 6 and then
+12, the last. Steps 9, 10 and 11 change the host, the editor, the client
+template and the manual, require none of that sequence, and proceed
+beside it from the first. So does the work of
+{ref "the-next-phase"}[The next phase]: the statements over the datatype
+language's types, which change the proof runner and regenerate the Lean
+emitted from it (`scripts/authoring.sh regen`); the checker of proof
+holes written in Geb, which adds sources to the metalogic's program and
+regenerates its mirrors; and the stage tests
+reading each compiler once, which change test modules alone, and which
+follow step 7, before which a change to those modules rebuilds the
+developments. Of the changes that regenerate one artifact, one is merged
+at a time: of the compiler's image, step 4 and the rejection that the
+compiled entry point returns ({ref "improvements"}[Improvements]); of the
+metalogic's mirrors, the checker of proof holes and step 12; and of the
+proof runner's Lean, the statements over datatypes and the port of the
+soundness deductions.
+
+Where no step requires another, what a step leaves to be converted by
+hand decides its place. A definition generic in a type and its copies at
+each type are written differently, as are their callers, so step 4
+precedes the library's modules. A theorem about a value of a datatype,
+stated over the trees that represent it, is stated again when statements
+take the datatype language's types, so those statements precede the
+library's theorems about such values. A program that declares the
+protocol's datatypes itself is rewritten when the library holds them, so
+the library holds them before clients issue requests. And a value saved
+before its encoding names its datatype has no migration, so step 6
+precedes the values a client keeps. Steps 9, 10 and 11 leave nothing to
+convert by hand: a manifest's list of sources converts to the name of a
+dependency's manifest mechanically, and the editor's reports are
+functions of the documents.
+
 The editor retains the selected program's navigation index and uses the
 client's proof cache ({ref "improvements"}[Improvements]). Other
 editors can reuse these services through a general protocol. Network storage follows its own
@@ -8966,8 +9182,10 @@ tag := "the-next-phase"
 %%%
 
 Begin on the Lean host with {ref "downstream-authoring"}[A Geb library and
-its downstream application]. Client development in the editor now uses
-the proof cache and navigation index. Loading the compiler once per
+its downstream application], in
+{ref "downstream-order"}[the order of its remaining steps], whose first
+confines the checks that a change to a compiler runs. Client development
+in the editor now uses the proof cache and navigation index. Loading the compiler once per
 stage-test comparison shortens the feedback cycle for changes to the
 compiler itself. The
 constant-depth reader removes a stack limit as the sources grow
