@@ -9,6 +9,7 @@ public import Geb.Prototypes.Kernel.Command
 public import GebBoot
 public import GebHost.Locate
 public import GebHost.Typing
+public import GebHost.Layers
 
 set_option doc.verso true
 
@@ -50,6 +51,8 @@ decides nothing about it.
 * {lit}`GebHost.Compiler.Diagnostic`: a failure with its source occurrence.
 * {lit}`GebHost.Compiler.compileManifest`: compile a manifest and check its entry points.
 * {lit}`GebHost.Compiler.checkSource`: compile the program a source belongs to, up to it.
+* {lit}`GebHost.Compiler.disagreement`: the first difference between the stages that check a form
+  against the declarations of its support and those that search every declaration.
 * {lit}`GebHost.Compiler.stageTimes`: the time of each stage of the compiler on a program.
 
 ## Tags
@@ -91,9 +94,24 @@ structure Rejection where
 def required (t : Tree) (why : Unit → Rejection) : Except Rejection Tree :=
   if (GebBoot.«Prelude.isSome» t).label ≠ 0 then .ok (GebBoot.«Prelude.get» t) else .error (why ())
 
-/-- The position of the first element whose prefix a test of prefixes rejects. -/
+/-- The position of the first element whose prefix a test of prefixes rejects, where the test
+rejects every prefix that extends one it rejects: the least position of an interval of positions
+at which the prefix through the position is rejected, the interval halved a number of times. -/
+def firstRejectedIn (ok : List Tree → Bool) (es : List Tree) (fuel lo hi : Nat) : Nat :=
+  Nat.rec (motive := fun _ ↦ Nat → Nat → Nat) (fun lo _ ↦ lo)
+    (fun _ rec lo hi ↦
+      if hi ≤ lo then lo
+      else
+        let mid := (lo + hi) / 2
+        if ok (es.take (mid + 1)) then rec (mid + 1) hi else rec lo mid)
+    fuel lo hi
+
+/-- The position of the first element whose prefix a test of prefixes rejects, where the test
+rejects every prefix that extends one it rejects, by bisection: the test is applied to a number of
+prefixes logarithmic in the list's length. -/
 def firstRejected (ok : List Tree → Bool) (es : List Tree) : Option Nat :=
-  (List.range es.length).find? fun k ↦ !ok (es.take (k + 1))
+  if ok es then none
+  else some (firstRejectedIn ok es (es.length + 1) 0 (es.length - 1))
 
 /-- A nonempty name a tree holds. -/
 def nameString? (t : Tree) : Option String :=
@@ -158,31 +176,28 @@ def rejection (file : Tree) : Except Rejection Unit := do
       | some k => .form k
       | none => .program, modulesFailure file⟩
   let es := mx.children
-  if let some n := nameString? (GebBoot.«Datatype.typeErrorOfForms» es) then
+  if let some n := nameString? (GebBoot.«Expansion.typeErrorOfForms» es) then
     if let some f := Typing.inProgram (file.children.map fun c ↦ Char.ofNat c.label) n then
       throw ⟨.term n f.path, s!"{n} does not check: {f.message}"⟩
     throw (checkFailure n)
-  let expands (fs : List Tree) := (GebBoot.«Datatype.expandProgram» fs).label ≠ 0
-  let kx ← required (GebBoot.«Datatype.expandProgram» es) fun _ ↦
+  let expands (fs : List Tree) := (GebBoot.«Expansion.expandProgram» fs).label ≠ 0
+  let kx ← required (GebBoot.«Expansion.expandProgram» es) fun _ ↦
     firstFormRejected expands es (s!"{·} does not expand")
   let rx ← required (GebBoot.«Recognize.insertRecognizers» kx.children) fun _ ↦
     ⟨.program, "the recognizers of the program's datatypes cannot be written"⟩
-  let fs := rx.children
-  let reads (gs : List Tree) := (GebBoot.«Reader.readProgram» gs).label ≠ 0
-  let b ← required (GebBoot.«Reader.readProgram» fs) fun _ ↦
-    firstFormRejected reads fs
+  let st := GebBoot.«Support.readMore» GebBoot.«Support.readStart» rx.children
+  let named (t : Tree) (msg : String → String) : Rejection :=
+    match nameString? t with
+    | some n => ⟨.declaration n 0, msg n⟩
+    | none => ⟨.program, msg "a form"⟩
+  let unread := GebBoot.«Support.unreadOf» st
+  if (GebBoot.«Prelude.isSome» unread).label ≠ 0 then
+    throw <| named (GebBoot.«Prelude.get» unread)
       (s!"{·} does not read: its name is reserved or declared before, " ++
         "or a name in it does not resolve")
-  let terms := (b.children.getD 0 (mk 0 [])).children
-  let names := (b.children.getD 1 (mk 0 [])).children
-  let checks (ts : List Tree) := (GebBoot.«Check.checkProgram» ts).label ≠ 0
-  if !checks terms then
-    throw <| match firstRejected checks terms with
-      | some k =>
-        match names[k]?.bind nameString? with
-        | some n => ⟨.declaration n 0, s!"{n} is ill-typed"⟩
-        | none => ⟨.program, s!"definition {k + 1} is ill-typed"⟩
-      | none => ⟨.program, "the program is ill-typed"⟩
+  let ill := GebBoot.«Support.illTypedOf» st
+  if (GebBoot.«Prelude.isSome» ill).label ≠ 0 then
+    throw <| named (GebBoot.«Prelude.get» ill) (s!"{·} is ill-typed")
 
 /-- What rejects a program, or that no stage does and the backend wrote nothing. -/
 def rejectionOf (file : Tree) : Rejection :=
@@ -260,23 +275,21 @@ def diagnostic (input : String) (sources : List Source) (r : Rejection) : Diagno
   | some (p, sp, msg) => ⟨p, some sp, msg⟩
   | none => ⟨input, none, r.message⟩
 
-/-- A program's bundle, where the compiler reads it and the kernel checks its terms, as
-{lit}`Compile.compileWith` composes {lit}`Compile.bundleOf` and {lit}`Check.checkProgram`. -/
+/-- A program's bundle, where the compiler reads it and the kernel's checker types its terms, as
+{lit}`Compile.compileWith` takes it from the state {lit}`Compile.readState` gives. -/
 def checkedBundle (file : Tree) : Option Tree :=
-  let b := GebBoot.«Compile.bundleOf» file
+  let st := GebBoot.«Compile.readState» file
+  let b := GebBoot.«Support.readBundle» st
   if (GebBoot.«Prelude.isSome» b).label = 0 then none
-  else
-    let g := GebBoot.«Prelude.get» b
-    let terms := (g.children.getD 0 (mk 0 [])).children
-    if (GebBoot.«Prelude.isSome» (GebBoot.«Check.checkProgram» terms)).label = 0 then none
-    else some g
+  else if (GebBoot.«Prelude.isSome» (GebBoot.«Support.illTypedOf» st)).label ≠ 0 then none
+  else some (GebBoot.«Prelude.get» b)
 
 /-- The names of the definitions of a bundle. -/
 def definedNames (b : Tree) : List String :=
   ((b.children.getD 1 (mk 0 [])).children).filterMap nameString?
 
-/-- What a driver compiles: the bytes the compiler reads, the sources they are read from, and
-the check of the names the program defines. -/
+/-- What a driver compiles: the bytes the compiler reads, the sources they are read from, the
+bytes by layer, and the check of the names the program defines. -/
 structure Input where
   /-- The bytes the compiler reads. -/
   bytes : ByteArray
@@ -284,51 +297,77 @@ structure Input where
   sources : List Source
   /-- The check of the program's definitions' names. -/
   checkNames : List String → Except String Unit
+  /-- The bytes the compiler reads, a layer at a time: joined, they are the bytes. -/
+  layers : List ByteArray
 
 /-- The input of a source file, its notes erased. -/
-def Input.ofFile (path : String) : IO Input :=
-  return ⟨← Command.sourceText path, [← Source.read path], fun _ ↦ .ok ()⟩
+def Input.ofFile (path : String) : IO Input := do
+  let bytes ← Command.sourceText path
+  return ⟨bytes, [← Source.read path], fun _ ↦ .ok (), [bytes]⟩
+
+/-- The input of lists of source files, a list to a layer, each file with its notes erased. -/
+def Input.ofLayers (layers : List (List System.FilePath)) : IO Input := do
+  let texts ← layers.mapM Command.joinSources
+  return ⟨texts.foldl (· ++ ·) ByteArray.empty, ← layers.flatten.mapM Source.read,
+    fun _ ↦ .ok (), texts⟩
 
 /-- The input of a list of source files, each with its notes erased. -/
-def Input.ofFiles (paths : List System.FilePath) : IO Input :=
-  return ⟨← Command.joinSources paths, ← paths.mapM Source.read, fun _ ↦ .ok ()⟩
+def Input.ofFiles (paths : List System.FilePath) : IO Input := Input.ofLayers [paths]
+
+/-- The paths of a manifest's sources by layer, the manifest being at a path. -/
+def layerPaths (path : System.FilePath) (m : Manifest) : List (List System.FilePath) :=
+  m.layers.map fun l ↦ l.sources.map (Manifest.resolve path)
 
 /-- The input of a manifest's program, whose entry points the program defines. -/
 def Input.ofManifest (path : String) : IO Input := do
   let m ← Manifest.read path
-  let paths := Manifest.sourcePaths path m
-  return { ← Input.ofFiles paths with checkNames := m.checkEntries }
+  return { ← Input.ofLayers (layerPaths path m) with checkNames := m.checkEntries }
 
 /-- A backend's output on the checked bundle of the program of a named input, as
 {lit}`Compile.compileWith` gives it, or the diagnostic of what rejects the program, the check of
-its definitions' names included. The bundle is computed once, for the backend and the names. -/
+its definitions' names included. The bundle is computed once, for the backend and the names, and
+is the one given where the program was compiled a layer at a time
+({name}`GebHost.Layers.bundle`). -/
 def compiled (back : Tree → Tree) (input : String) (sources : List Source)
-    (checkNames : List String → Except String Unit) (file : Tree) : Except String Tree := do
+    (checkNames : List String → Except String Unit) (file : Tree) (kept : Option Tree := none) :
+    Except String Tree := do
   let reject := fun _ : Unit ↦ (diagnostic input sources (rejectionOf file)).render
-  let some b := checkedBundle file | throw (reject ())
+  let some b := kept <|> checkedBundle file | throw (reject ())
   let out := back b
   if out == mk 0 [] then throw (reject ())
   (checkNames (definedNames b)).mapError fun msg ↦ (Diagnostic.mk input none msg).render
   return out
 
-/-- Compile an input through a backend, reporting a failure on standard error. -/
+/-- The checked bundle of an input compiled a layer at a time, where a directory of kept states
+is given and the composition gives one. -/
+def keptBundle (cache : Option System.FilePath) (i : Input) : IO (Option Tree) :=
+  match cache with
+  | some dir => Layers.bundle dir i.layers
+  | none => return none
+
+/-- Compile an input through a backend, reporting a failure on standard error; with a directory
+of kept states, a layer at a time. -/
 def compileInput (name : String) (back : Tree → Tree) (input output : String)
-    (load : IO Input) : IO UInt32 := do
+    (load : IO Input) (cache : Option System.FilePath := none) : IO UInt32 := do
   try
     let i ← load
-    Command.runBytes name (compiled back input i.sources i.checkNames) i.bytes output
+    let kept ← keptBundle cache i
+    Command.runBytes name (compiled back input i.sources i.checkNames (kept := kept)) i.bytes
+      output
     return 0
   catch e =>
     IO.eprintln e
     return 1
 
 /-- Compile a source file through a backend, its notes erased. -/
-def compileFile (name : String) (back : Tree → Tree) (input output : String) : IO UInt32 :=
-  compileInput name back input output (Input.ofFile input)
+def compileFile (name : String) (back : Tree → Tree) (input output : String)
+    (cache : Option System.FilePath := none) : IO UInt32 :=
+  compileInput name back input output (Input.ofFile input) cache
 
 /-- Compile the program of a manifest through a backend. -/
-def compileManifest (name : String) (back : Tree → Tree) (path output : String) : IO UInt32 :=
-  compileInput name back path output (Input.ofManifest path)
+def compileManifest (name : String) (back : Tree → Tree) (path output : String)
+    (cache : Option System.FilePath := none) : IO UInt32 :=
+  compileInput name back path output (Input.ofManifest path) cache
 
 /-! ## Checking a source -/
 
@@ -337,11 +376,13 @@ def checked (b : Tree) : Tree := b
 
 /-- Compile an input through a backend and write nothing, reporting a failure on standard
 error. -/
-def checkInput (back : Tree → Tree) (input : String) (load : IO Input) : IO UInt32 := do
+def checkInput (back : Tree → Tree) (input : String) (load : IO Input)
+    (cache : Option System.FilePath := none) : IO UInt32 := do
   try
     let i ← load
+    let kept ← keptBundle cache i
     discard <| IO.ofExcept
-      (compiled back input i.sources i.checkNames (ofBytes i.bytes))
+      (compiled back input i.sources i.checkNames (ofBytes i.bytes) kept)
     return 0
   catch e =>
     IO.eprintln e
@@ -363,11 +404,16 @@ def manifestsIn (dir : System.FilePath) : IO (List System.FilePath) := do
   return (paths.filter fun p ↦ ".manifest".toList.isSuffixOf p.toString.toList).mergeSort
     (·.toString ≤ ·.toString)
 
-/-- The sources of the program a source belongs to, up to the source: those of the first
-manifest that lists it, among the manifests of its directory and of each directory above, the
-nearest first and by name; and the source alone where no manifest lists it. A module imports
+/-- The first elements of lists in order, a number of them in all, list by list. -/
+def takeAcross {α : Type} (layers : List (List α)) (n : Nat) : List (List α) :=
+  (layers.foldl (init := (([] : List (List α)), n)) fun (acc, left) l ↦
+    if left = 0 then (acc, 0) else (acc ++ [l.take left], left - (l.take left).length)).1
+
+/-- The sources of the program a source belongs to, up to the source, by layer: those of the
+first manifest that lists it, among the manifests of its directory and of each directory above,
+the nearest first and by name; and the source alone where no manifest lists it. A module imports
 modules declared before it, so the sources before one are a program. -/
-def sourcesUpTo (source : System.FilePath) : IO (List System.FilePath) := do
+def sourcesUpTo (source : System.FilePath) : IO (List (List System.FilePath)) := do
   let target ← IO.FS.realPath source
   for d in (ancestors target.toString).drop 1 do
     for path in ← manifestsIn d do
@@ -378,16 +424,73 @@ def sourcesUpTo (source : System.FilePath) : IO (List System.FilePath) := do
             | .ok r => r
             | .error _ => p
         if let some k := real.findIdx? (·.toString == target.toString) then
-          return paths.take (k + 1)
-  return [source]
+          return takeAcross (layerPaths path m) (k + 1)
+  return [[source]]
 
 /-- Compile the program a source belongs to, up to the source, and write nothing. -/
-def checkSource (back : Tree → Tree) (source : String) : IO UInt32 :=
-  checkInput back source do Input.ofFiles (← sourcesUpTo source)
+def checkSource (back : Tree → Tree) (source : String)
+    (cache : Option System.FilePath := none) : IO UInt32 :=
+  checkInput back source (do Input.ofLayers (← sourcesUpTo source)) cache
 
 /-- Compile a manifest's program and write nothing. -/
-def checkManifest (back : Tree → Tree) (path : String) : IO UInt32 :=
-  checkInput back path (Input.ofManifest path)
+def checkManifest (back : Tree → Tree) (path : String)
+    (cache : Option System.FilePath := none) : IO UInt32 :=
+  checkInput back path (Input.ofManifest path) cache
+
+/-! ## The agreement of the stages over supports with the stages over whole environments -/
+
+/-- The first difference between what the compiler's stages give a program where the typing and
+the reading check each form against the declarations of its support ({lit}`Expansion.check`,
+{lit}`Support.readMore`) and where they search the lists of every declaration before it
+({lit}`Typing.checkForms`, {lit}`Reader.readProgram`, {lit}`Check.checkProgram`): the name of
+the first definition the typing rejects, the kernel forms the expansion writes, the bundle the
+reading gives, and whether the kernel's checker types every term. No difference where a stage
+before them rejects the program. -/
+def disagreement (file : Tree) : Option String := Id.run do
+  let sx := GebBoot.«Reader.readSExps» file.children
+  if (GebBoot.«Prelude.isSome» sx).label = 0 then return none
+  if (GebBoot.«Compile.userSource» (GebBoot.«Prelude.get» sx)).label = 0 then return none
+  let mx := GebBoot.«Modules.expandModules» (GebBoot.«Prelude.get» sx).children
+  if (GebBoot.«Prelude.isSome» mx).label = 0 then return none
+  let es := (GebBoot.«Prelude.get» mx).children
+  let whole := GebBoot.«Datatype.typeErrorOfForms» es
+  let over := GebBoot.«Expansion.typeErrorOfForms» es
+  if whole != over then
+    return some s!"the typing rejects {nameString? whole} over whole environments and \
+      {nameString? over} over supports"
+  let kx := GebBoot.«Datatype.expandProgram» es
+  if kx != GebBoot.«Expansion.expandProgram» es then
+    return some "the expansions write different kernel forms"
+  if (GebBoot.«Prelude.isSome» kx).label = 0 then return none
+  let rx := GebBoot.«Recognize.insertRecognizers» (GebBoot.«Prelude.get» kx).children
+  if (GebBoot.«Prelude.isSome» rx).label = 0 then return none
+  let fs := (GebBoot.«Prelude.get» rx).children
+  let b := GebBoot.«Reader.readProgram» fs
+  let st := GebBoot.«Support.readMore» GebBoot.«Support.readStart» fs
+  if b != GebBoot.«Support.readBundle» st then
+    return some "the readings give different bundles"
+  if (GebBoot.«Prelude.isSome» b).label = 0 then return none
+  let terms := ((GebBoot.«Prelude.get» b).children.getD 0 (mk 0 [])).children
+  let typed := (GebBoot.«Prelude.isSome» (GebBoot.«Check.checkProgram» terms)).label != 0
+  let typedOver := (GebBoot.«Prelude.isSome» (GebBoot.«Support.illTypedOf» st)).label == 0
+  if typed != typedOver then
+    return some s!"the kernel's checker types the program over whole environments: {typed}; \
+      over supports: {typedOver}"
+  return none
+
+/-- Compare the compiler's stages over supports with its stages over whole environments on an
+input, reporting a difference on standard error. -/
+def agreeInput (input : String) (load : IO Input) : IO UInt32 := do
+  try
+    let i ← load
+    match disagreement (ofBytes i.bytes) with
+    | some d =>
+      IO.eprintln s!"{input}: {d}"
+      return 1
+    | none => return 0
+  catch e =>
+    IO.eprintln e
+    return 1
 
 /-! ## The time of each stage -/
 
@@ -398,11 +501,12 @@ def timed {α : Type} (f : Unit → α) : IO (α × Nat) := do
   let t1 ← IO.monoNanosNow
   return (a, (t1 - t0) / 1000000)
 
-/-- The stages of {lit}`Compile.compileWith` composed as {lit}`Compile.bundleOf` and
-{lit}`Datatype.expandChecked` compose them, each stage's milliseconds and the number of trees it
+/-- The stages of {lit}`Compile.compileWith` composed as {lit}`Compile.readState` and
+{lit}`Expansion.expandProgram` compose them, each stage's milliseconds and the number of trees it
 gives, or the name of the first stage that rejects the program. The expansion of the datatype
 language is divided into the decoding of the forms by their recognizer, the expansion with their
-datatypes, the typing and the erasure. -/
+datatypes, the typing and the erasure; the reading resolves each definition's term and types it
+by the kernel's checker. -/
 def stageTimes (file : Tree) : IO (List (String × Nat × Nat) × Option String) := do
   let mut rows : List (String × Nat × Nat) := []
   let (sx, t) ← timed fun _ ↦ GebBoot.«Reader.readSExps» file.children
@@ -422,7 +526,7 @@ def stageTimes (file : Tree) : IO (List (String × Nat × Nat) × Option String)
   let (x, t) ← timed fun _ ↦ GebBoot.«Datatype.expandTyped» ms
   rows := rows ++ [("expand", t, x.2.length)]
   if x.1.label = 0 then return (rows, some "expand")
-  let (c, t) ← timed fun _ ↦ GebBoot.«Typing.checkForms» (GebBoot.«Datatype.markersFirst» x.2)
+  let (c, t) ← timed fun _ ↦ GebBoot.«Expansion.check» (GebBoot.«Datatype.markersFirst» x.2)
   rows := rows ++ [("typing", t, 1)]
   if c.label = 1 then return (rows, some "typing")
   let (ks, t) ← timed fun _ ↦ GebBoot.«Datatype.kernelForms» x.2
@@ -431,13 +535,13 @@ def stageTimes (file : Tree) : IO (List (String × Nat × Nat) × Option String)
   if (GebBoot.«Prelude.isSome» rx).label = 0 then return (rows, some "recognizers")
   let fs := (GebBoot.«Prelude.get» rx).children
   rows := rows ++ [("recognizers", t, fs.length)]
-  let (b, t) ← timed fun _ ↦ GebBoot.«Reader.readProgram» fs
-  if (GebBoot.«Prelude.isSome» b).label = 0 then return (rows, some "resolve")
+  let (st, t) ← timed fun _ ↦ GebBoot.«Support.readMore» GebBoot.«Support.readStart» fs
+  let b := GebBoot.«Support.readBundle» st
+  if (GebBoot.«Prelude.isSome» b).label = 0 then return (rows, some "reading")
   let terms := ((GebBoot.«Prelude.get» b).children.getD 0 (mk 0 [])).children
-  rows := rows ++ [("resolve", t, terms.length)]
-  let (k, t) ← timed fun _ ↦ GebBoot.«Check.checkProgram» terms
-  rows := rows ++ [("kernel", t, terms.length)]
-  if (GebBoot.«Prelude.isSome» k).label = 0 then return (rows, some "kernel")
+  rows := rows ++ [("reading", t, terms.length)]
+  if (GebBoot.«Prelude.isSome» (GebBoot.«Support.illTypedOf» st)).label ≠ 0 then
+    return (rows, some "reading")
   return (rows, none)
 
 /-- Print the time of each stage of the compiler on an input, one line a stage: its name, its

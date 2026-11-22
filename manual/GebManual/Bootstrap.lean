@@ -162,20 +162,20 @@ these capabilities in a client maintained in its own repository.
    no Lake (`scripts/tests/test-release.sh`).
    This library is the modules that exist, assembled and shared. The
    library's own modules are written after step 4, in the forms it adds.
-2. Make a check take the time of what changed. The compiled compiler
-   takes seconds on the stage-1 compiler's program and about twenty on
-   the proof runner's, more than in proportion to their lengths, and
-   keeps nothing between compilations. Each check of a source compiles
-   its program from the first source, which in a client includes the
-   library's ({ref "improvements"}[Improvements]). The time is divided
-   among the compiler's stages, and the recognizers' stage is linear in
-   the program. Then make each other stage's time linear in the
-   program, and compile a layer against the checked
-   bundle of the layers before it, kept by the digest of their sources.
-   A client's check then reads the library's checked layers where it now
-   compiles a vendored copy. Each step below that changes a compiler's
-   source regenerates and checks the committed artifacts at the
-   compiler's cost, so this step precedes them.
+2. Complete. Make a check take the time of what changed. Each stage's
+   time is linear in the program: the elaboration of modules holds its
+   names in tries, and the typing and the reading check each form
+   against the declarations it mentions, found in tries, by the
+   functions that search every declaration, whose definitions are
+   unchanged ({ref "improvements"}[Improvements]). With a directory of
+   kept states (`--cache DIRECTORY`) a manifest's program is compiled a
+   layer at a time, the stages' states after each layer kept under the
+   layers' texts and the compiler's identity (`GebHost/Layers.lean`), so
+   that a client's check reads the state after the library's layer where
+   it compiled a vendored copy, and compiles the layers that changed.
+   The bundle is that of the layers' texts joined; a layer that refers
+   to the recognizer of an earlier layer's datatype that no layer before
+   it refers to is compiled with the whole program.
 3. Report datatype errors and holes where they are written. Carry source
    occurrences through module elaboration and datatype expansion. Ask the
    stage-1 checker for the expected and actual types before their erasure.
@@ -227,16 +227,15 @@ these capabilities in a client maintained in its own repository.
    ({ref "first-authoring"}[Writing a first Geb development]).
 
 Datatype feedback and the filesystem interpreter can proceed alongside
-the library, as can the measurement of step 2 and
-the design of step 4, which change no source. Develop diagnostics and
-holes against the same source correspondence. Integrate the interpreter
-when the client can issue requests. Preservation work can start on the
-Roundtrip record and take up value migration when the client has a saved
-datatype. Changes to compiler sources regenerate committed images and
-merge one at a time, those of steps 2, 3 and 4 in that order. Step 2
-shortens the regeneration and the checks of the other two, and step 3
-serves the client while the form of step 4 is settled. Steps 1, 5 and 6
-change the host, the editor and the client, and proceed beside them.
+the library, as can the design of step 4, which changes no source.
+Develop diagnostics and holes against the same source correspondence.
+Integrate the
+interpreter when the client can issue requests. Preservation work can
+start on the Roundtrip record and take up value migration when the client
+has a saved datatype. Changes to compiler sources regenerate committed
+images and merge one at a time: step 2 is complete, and those of steps
+3 and 4 follow in that order. Steps 1, 5 and 6 change the host, the
+editor and the client, and proceed beside them.
 The editor retains the selected program's navigation index and uses the
 client's proof cache ({ref "improvements"}[Improvements]). Other
 editors can reuse these services through a general protocol. Network storage follows its own
@@ -295,11 +294,10 @@ Computation:
   the fold counting the nodes still follows the tree's depth.
 * Ready. The Geb reader in constant depth, and the stage tests reading
   each compiler once, the section on improvements.
-* In progress. The compiler's time, the section on improvements: its
-  division among the compiler's stages, and the recognizers' stage
-  linear in the program, are complete; each other stage's time linear
-  in the program, and the compilation of a layer against the checked
-  bundle of the layers before it, remain
+* Complete. The compiler's time, the section on improvements: its
+  division among the compiler's stages, each stage's time linear in the
+  program, and the compilation of a program a layer at a time from the
+  kept states of the layers before
   ({ref "downstream-authoring"}[A Geb library and its downstream
   application]).
 
@@ -6579,11 +6577,17 @@ is proved, which the row of the emitted Lean states.
     {name}`Geb.Kernel.readForms_printProgram`)
   * Agreement proved, the loading proved: `resolve_eq` and
     `printTermOpt_eq` of
-    `GebTests/Prototypes/FreeTopos/Agreement/Reader.lean`
+    `GebTests/Prototypes/FreeTopos/Agreement/Reader.lean`. Tested: that
+    the reading of each form against the declarations it mentions, which
+    the compiler runs (`bootstrap/support.geb`), gives the reader's
+    bundle and the kernel's checker's verdict (`geb-compile agree`,
+    `scripts/tests/test-support.sh`)
 *
   * Elaboration of modules
   * Defined, with no theorem (`Geb/Prototypes/Kernel/Modules.lean`)
-  * Tested against Lean's (`GebTests/Prototypes/Kernel/Modules.lean`)
+  * Tested against Lean's (`GebTests/Prototypes/Kernel/Modules.lean`),
+    its names held in the tries of `bootstrap/trie.geb`, of which no
+    theorem is stated
 *
   * Expansion and typing of the datatype language
   * Not defined: the programs written in Geb are their definition
@@ -6593,7 +6597,10 @@ is proved, which the row of the emitted Lean states.
     ({ref "datatype-completion"}[The datatype language's completion]),
     the check of each development decided by Lean's evaluator. Tested:
     the agreement of the two compilers
-    (`GebTests/Prototypes/Stage1.lean`)
+    (`GebTests/Prototypes/Stage1.lean`), and that the typing of each form
+    against the declarations it mentions, which the compiler runs
+    (`bootstrap/stage1/expansion.geb`), is the typing the soundness is
+    proved of (`geb-compile agree`, `scripts/tests/test-support.sh`)
 *
   * Type checking and evaluation of the kernel
   * The denotation is the checker's result, by definition
@@ -8699,13 +8706,17 @@ the change that removes it.
   would serve a second host without restating it. The host locates an
   operand inside a rejected kernel declaration. The datatype checker
   still needs to report which expression failed and why
-  ({ref "editing"}[Editing]).
+  ({ref "editing"}[Editing]). The reading's state names the first form
+  that does not read and the first definition that is ill-typed, and the
+  host finds the first form another stage rejects by bisection of the
+  program's prefixes, so that a rejection is explained in the time of a
+  number of compilations logarithmic in the program's forms.
 * Compile time. In one run on one machine the compiled compiler,
-  `geb-compile`, checks the stage-0 compiler's program, of 115
-  kilobytes of source, in 1.0 seconds, the stage-1 compiler's, of 182,
-  in 2.4, the proof runner's, of 570, in 19, and the metalogic's, of
-  487, in 17; it emits the stage-1 compiler's Lean in 4.1, where the
-  stage-1 compiler's image run by the Lean evaluator takes 12.9. The
+  `geb-compile`, checks the stage-0 compiler's program, of 132
+  kilobytes of source, in 0.9 seconds, the stage-1 compiler's, of 209,
+  in 2.0, the proof runner's, of 570, in 7.3, and the metalogic's, of
+  487, in 5.9; it emits the stage-1 compiler's Lean in 2.6, where the
+  stage-1 compiler's image run by the Lean evaluator takes 7.9. The
   modes `image`, `lean` and `check` differ by the backend alone. The
   driver computes the program's bundle once, for the backend and for
   the names of its definitions, which the check of a manifest's entry
@@ -8720,66 +8731,88 @@ the change that removes it.
   *
     * Reading and the reserved atoms
     * 0.1
-    * 0.4
+    * 0.3
     * 0.3
   *
     * Elaboration of modules
-    * 0.5
-    * 5.4
-    * 4.5
+    * 0.2
+    * 0.7
+    * 0.6
   *
     * Expansion, its decoding and erasure
     * 0.2
-    * 1.2
-    * 1.0
+    * 0.9
+    * 0.7
   *
     * Typing
     * 0.6
-    * 5.5
-    * 5.2
+    * 2.1
+    * 1.7
   *
     * Recognizers
     * 0.1
     * 0.4
     * 0.3
   *
-    * The reader's resolution
-    * 0.8
-    * 5.9
-    * 5.5
-  *
-    * The kernel's check
-    * 0.1
-    * 1.0
-    * 1.0
+    * The reader's resolution and the kernel's check
+    * 0.5
+    * 1.6
+    * 1.4
   :::
-  The recognizers' stage collects, in one traversal, the atoms of the
-  program's forms that end with `.member`, and tests each marker's
-  recognizer among them (`insertRecognizers` in
-  `bootstrap/recognize.geb`). The time of the elaboration of modules,
-  of the typing and of the resolution grows faster than the program.
-  Copies of `bootstrap/free-topos/theory.geb` under other module names,
-  after the four sources before it in the metalogic's program, check in
-  0.4, 1.1, 1.8, 3.7 and 9.4 seconds at 0, 1, 2, 4 and 8 copies: the
-  first copy adds 0.7 seconds, and each of the fifth to the eighth 1.4.
-  Each of those stages searches lists in order, each search a fold that
-  visits the whole list: the elaboration of modules declares each name
-  after a search of the names visible (`declare` in
-  `bootstrap/modules.geb`, by `lookupAbbrev` in `bootstrap/reader.geb`),
-  the reader's resolution searches its abbreviations and names, and the
-  typing and the expansion search their environments (`lookupName` in
-  `bootstrap/stage1/typing.geb`, `findCtor` in
-  `bootstrap/stage1/datatype.geb`). Nothing is kept between
-  compilations. `geb-compile check` and `geb-author check` compile a
-  program from its first source to the source checked, and
-  `scripts/bootstrap.sh` compiles each layer of a manifest with the
-  layers before it; its check, which compiles every manifest's program
-  beside the fixed points, takes 14.1 minutes
-  ({ref "measurements"}[The measurements]). A stage's time linear in the
-  program, and a layer compiled against the checked bundle of the
-  layers before it, kept by the digest of their sources, make a check
-  take the time of the layers that changed
-  ({ref "downstream-authoring"}[A Geb library and its downstream
+  Each stage's time is linear in the program. Copies of
+  `bootstrap/free-topos/theory.geb` under other module names, after the
+  four sources before it in the metalogic's program, check in 0.3, 0.6,
+  1.0, 1.7, 3.0, 5.9 and 12.4 seconds at 0, 1, 2, 4, 8, 16 and 32
+  copies: each copy adds from 0.3 to 0.4 seconds, every stage's share
+  of them alike, the lexer's among them. Before, the elaboration of
+  modules, the typing and the reader's resolution each searched a list
+  of every declaration at each name, a fold that visits the whole list,
+  and the same copies took 0.3, 1.0, 1.8, 4.5 and 10.6 seconds at 0, 1,
+  2, 4 and 8. A name is now found in a trie over the digits of its
+  characters (`bootstrap/trie.geb`), in the time of its length. The
+  elaboration of modules holds the names visible in a block and the
+  modules declared in tries (`bootstrap/modules.geb`). The typing and
+  the reading keep the declarations before a form in tries, and check
+  the form against the declarations it mentions alone, the names of its
+  atoms and those the typing derives from them, by the functions of
+  `bootstrap/stage1/typing.geb`, `bootstrap/reader.geb` and
+  `bootstrap/check.geb`, which search the lists they are given and
+  whose definitions are unchanged, a definition's references then given
+  their positions in the bundle (`bootstrap/stage1/expansion.geb`,
+  `bootstrap/support.geb`). A form's time is so that of its own length
+  and of the declarations it mentions. That a form checked against the
+  declarations it mentions is checked as against them all is tested and
+  not proved: `geb-compile agree` compares the two on a program, the
+  first definition the typing rejects, the kernel forms written, the
+  bundle read and the kernel's verdict, and
+  `scripts/tests/test-support.sh` asserts their agreement on every
+  manifest's program and on programs that name a declaration through
+  the names the typing derives ({ref "verification-boundary"}[The
+  verification boundary]). The expansion still searches the list of its
+  declarations at a constructor and at a type abbreviation, and the
+  kernel's markers are searched at a case analysis, each a small part
+  of the stages' time at the bootstrap's programs.
+  With a directory of kept states (`--cache DIRECTORY`, of `geb-compile`
+  and of `geb-author`), a manifest's program is compiled a layer at a
+  time (`GebHost/Layers.lean`): the stages are folds of a program's
+  forms from a state, and the state after each layer is kept under the
+  layers' texts and the compiler's identity and read by a later
+  compilation that begins with the same layers. The elaboration of
+  modules is run again over those layers, its state holding tries that
+  share their parts and are not kept. In one run on one machine, on the
+  metalogic's eight layers, a check with no state kept takes the time
+  of a check without the directory and half as much again, the states
+  written after each layer, and a check with every state kept about a
+  quarter of it. The bundle is the one compiled without the directory,
+  byte for byte (`scripts/tests/test-layers.sh`); a layer that refers
+  to the recognizer of an earlier layer's datatype that no layer before
+  it refers to, which the whole program writes in the earlier layer, is
+  compiled with the whole program. `scripts/bootstrap.sh` still
+  compiles each layer of a manifest with the layers before it by the
+  image under the evaluator; its check, which compiles every manifest's
+  program beside the fixed points, took 14.1 minutes before these
+  changes ({ref "measurements"}[The measurements]) and is not measured
+  since ({ref "downstream-authoring"}[A Geb library and its downstream
   application]).
 * Editor latency. The VS Code extension checks the selected checkout's
   host sources, dependencies, toolchain and executable. Lake builds the
@@ -8926,12 +8959,10 @@ the proof cache and navigation index. Loading the compiler once per
 stage-test comparison shortens the feedback cycle for changes to the
 compiler itself. The
 constant-depth reader removes a stack limit as the sources grow
-({ref "improvements"}[Improvements]). The searches of lists in order in
-the elaboration of modules, the typing and the reader's resolution are the
-next changes to the compilers' sources, each of which regenerates and
-checks the committed artifacts at the compiler's cost. Polymorphic
-definitions precede the library's modules ({ref "polymorphic-definitions"}[Polymorphic
-definitions]).
+({ref "improvements"}[Improvements]). Polymorphic definitions are the
+next change to the compilers' sources, which regenerates and checks the
+committed artifacts at the compiler's cost, and precede the library's
+modules ({ref "polymorphic-definitions"}[Polymorphic definitions]).
 
 The proofs about the compiler's components are complete: the type
 checker's preservation of types by weakening and by substitution and the

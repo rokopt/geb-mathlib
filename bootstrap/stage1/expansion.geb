@@ -1,0 +1,190 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The expansion of the datatype language the compiler's front end applies to a program's forms,
+; in the stage-1 compiler: the expansion and the erasure of bootstrap/stage1/datatype.geb, and
+; between them the typing of bootstrap/stage1/typing.geb, each form checked against the
+; declarations it mentions. The typing checks a form given the environment of the declarations
+; before it, lists it searches in order, so that checking a program takes the time of the product
+; of its atoms and its declarations. It looks a name up in the type abbreviations, the
+; definitions, the datatypes, the sorts and the numeral abbreviations where an atom of the form
+; has the name, and besides: the recognizer's name of a datatype the form names, among the
+; numeral abbreviations; the datatype whose recognizer's name a binder of the form takes, among
+; the datatypes; and the names in the field types of the marker of a datatype the form names.
+; A form checked, by the typing's own function, in the environment of the declarations of those
+; names alone, with every marker, is therefore checked as in the whole environment, and declares
+; what it declares there. The declarations are kept in a trie (bootstrap/trie.geb), a name's
+; found in the time of its length. Requires the prelude, the tries, the reader, the reading
+; against a support (bootstrap/support.geb), the typing and the expansion.
+
+(module Expansion (export check expandProgram typeErrorOfForms) (import Prelude) (import Trie)
+  (import Reader)
+  (import Support)
+  (import Typing)
+  (import (Seq Tx) as Txs)
+  (import (Seq Abbr) as Abbrs)
+  (import (Seq Name) as Names)
+  ; the typing's environment and state, as bootstrap/stage1/typing.geb declares them
+  (deftype Env
+    (Prod (List Abbr)
+      (Prod (List Abbr) (Prod (List Name) (Prod (List Name) (Prod (List Name) (List Tx)))))))
+  (deftype CS (Prod Env OName.Maybe))
+  ; a name's declarations are the node over the optional values at seven positions: its type
+  ; abbreviation and its definition, each the name with its type as the typing holds them; whether
+  ; it is a datatype, a sort and a numeral abbreviation; the datatype whose recognizer's name it
+  ; is; and the node over the names of the atoms of its marker. The trie's value at a name is the
+  ; node over a key and these
+  (defn slotsOf ((p T)) T (child p 1))
+  ; the trie and the number of the names declared, with a declaration of a name at a position
+  (deftype Decls (Prod T T))
+  (defn withSlot ((d Decls) (n T) (i T) (v T)) Decls
+    (let r T (find n (fst d))
+      (if (isSome r)
+        (pair
+          (put n
+            (node2 0 (child (get r) 0) (node 0 (setAt (children (child (get r) 1)) i (some v))))
+            (fst d))
+          (snd d))
+        (pair (put n (node2 0 (keyOf (snd d)) (node 0 (setAt (nil T) i (some v)))) (fst d))
+          (add (snd d) 1)))))
+  ; whether a name has a declaration at a position
+  (defn hasSlot ((d Decls) (n T) (i T)) T
+    (let r T (find n (fst d)) (if (isSome r) (isSome (child (child (get r) 1) i)) 0)))
+  ; the name of a datatype's recognizer, as the typing writes it
+  (defn recognizerOf ((n T)) T (node 0 (append (children n) (children (quote (1 .member))))))
+  ; the names whose declarations the typing reads besides those of a form's atoms, given the
+  ; declarations picked: a datatype's recognizer's name, the datatype of a recognizer's name, and
+  ; the names of a marker's atoms
+  (defn further ((ps Ts)) Ts
+    (foldr T Ts
+      (lam ((p T) (acc Ts))
+        (let*
+          ((n T (child p 0)) (sl T (slotsOf p))
+           (a1 Ts (if (isSome (child sl 2)) (cons (recognizerOf n) acc) acc))
+           (a2 Ts (if (isSome (child sl 5)) (cons (get (child sl 5)) a1) a1)))
+          (if (isSome (child sl 6)) (append (children (get (child sl 6))) a2) a2)))
+      (nil T)
+      ps))
+  ; the declarations of a form's support: those of the names of its atoms and of the empty name,
+  ; which the typing gives a form that is not an atom, then twice those of the further names
+  (defn supportOf ((d Decls) (f Tx)) Ts
+    (let*
+      ((p0 Pick
+         (pickedInto (cons (node 0 (nil T)) (mentions (rep f))) (fst d) (pair empty (nil T))))
+       (p1 Pick (pickedInto (further (snd p0)) (fst d) p0)))
+      (snd (pickedInto (further (snd p1)) (fst d) p1))))
+  ; the environment's lists of the declarations picked
+  (deftype Lists
+    (Prod (List Abbr) (Prod (List Abbr) (Prod (List Name) (Prod (List Name) (List Name))))))
+  (defn listsOf ((ps Ts)) Lists
+    (foldr T Lists
+      (lam ((p T) (acc Lists))
+        (let*
+          ((sl T (slotsOf p)) (al (List Abbr) (fst acc)) (ds (List Abbr) (fst (snd acc)))
+           (ns (List Name) (fst (snd (snd acc))))
+           (ss (List Name) (fst (snd (snd (snd acc)))))
+           (us (List Name) (snd (snd (snd (snd acc)))))
+           (more (Arrow T (Arrow (List Name) (List Name)))
+             (lam ((i T) (xs (List Name)))
+               (if (isSome (child sl i)) (decode Name (child p 0) (lam ((m Name)) (cons m xs)) xs)
+                 xs))))
+          (pair
+            (if (isSome (child sl 0))
+              (decode Abbr (get (child sl 0)) (lam ((a Abbr)) (cons a al)) al)
+              al)
+            (pair
+              (if (isSome (child sl 1))
+                (decode Abbr (get (child sl 1)) (lam ((a Abbr)) (cons a ds)) ds)
+                ds)
+              (pair (more 2 ns) (pair (more 3 ss) (more 4 us)))))))
+      (pair (nil Abbr) (pair (nil Abbr) (pair (nil Name) (pair (nil Name) (nil Name)))))
+      ps))
+  ; the state of the check of a program's forms: the name of the first definition that does not
+  ; have its type, when there is one; the declarations; and the markers
+  (deftype St (Prod OName.Maybe (Prod Decls (List Tx))))
+  (def start (pair OName.nothing (pair (pair empty 0) (nil Tx))))
+  (defn abbrName ((a Abbr)) T (case a ((abbr m ty) (rep m))))
+  ; the declarations with what a form declares, read off the environment the typing gives after
+  ; the form from the one before it: a type abbreviation, the latest of its name; a definition,
+  ; where its name has none; a datatype, with its recognizer's name; a sort; and a numeral
+  ; abbreviation
+  (defn declaredBy ((d Decls) (l Lists) (E Env)) Decls
+    (let*
+      ((d1 Decls
+         (if (lt (Abbrs.length (fst l)) (Abbrs.length (fst E)))
+           (lcase Abbr Decls (fst E) d
+             (lam ((a Abbr) (r (List Abbr))) (withSlot d (abbrName a) 0 (rep a))))
+           d))
+       (d2 Decls
+         (lcase Abbr Decls (Abbrs.drop (Abbrs.length (fst (snd l))) (fst (snd E))) d1
+           (lam ((a Abbr) (r (List Abbr)))
+             (if (hasSlot d1 (abbrName a) 1) d1 (withSlot d1 (abbrName a) 1 (rep a))))))
+       (d3 Decls
+         (lcase Name Decls (Names.drop (Names.length (fst (snd (snd l)))) (fst (snd (snd E)))) d2
+           (lam ((m Name) (r (List Name)))
+             (withSlot (withSlot d2 (rep m) 2 1) (recognizerOf (rep m)) 5 (rep m)))))
+       (d4 Decls
+         (lcase Name Decls
+           (Names.drop (Names.length (fst (snd (snd (snd l))))) (fst (snd (snd (snd E)))))
+           d3
+           (lam ((m Name) (r (List Name))) (withSlot d3 (rep m) 3 1)))))
+      (lcase Name Decls
+        (Names.drop (Names.length (snd (snd (snd (snd l))))) (fst (snd (snd (snd (snd E))))))
+        d4
+        (lam ((m Name) (r (List Name))) (withSlot d4 (rep m) 4 1)))))
+  ; one form checked, by the typing, in the environment of the declarations of its support and
+  ; every marker; a marker is kept, and the names of its atoms declared under its datatype's name,
+  ; where the name has no marker before
+  (defn checkStep ((s St) (f Tx)) St
+    (case (fst s) ((OName.just n) s)
+      ((OName.nothing)
+       (let*
+         ((d Decls (fst (snd s))) (ms (List Tx) (snd (snd s))) (l Lists (listsOf (supportOf d f)))
+          (r CS
+            (checkAll
+              (pair
+                (pair (fst l)
+                  (pair (fst (snd l))
+                    (pair (fst (snd (snd l)))
+                      (pair (fst (snd (snd (snd l)))) (pair (snd (snd (snd (snd l)))) ms)))))
+                OName.nothing)
+              (Txs.single f))))
+         (case (snd r) ((OName.just n) (pair (OName.just n) (snd s)))
+           ((OName.nothing)
+            (case f
+              ((tMarker & xs)
+               (let n T (nameOf (child (rep f) 0))
+                 (pair OName.nothing
+                   (pair (if (hasSlot d n 6) d (withSlot d n 6 (node 0 (mentions (rep f)))))
+                     (snd (snd (snd (snd (snd (fst r))))))))))
+              (else (pair OName.nothing (pair (declaredBy d l (fst r)) ms))))))))))
+  ; a program's forms checked in order: the name of the first definition that does not have its
+  ; type, when there is one
+  (defn check ((fs (List Tx))) OName.Maybe
+    (fst
+      ((foldr Tx (Arrow St St) (lam ((f Tx) (k (Arrow St St)) (s St)) (k (checkStep s f)))
+         (lam ((s St)) s)
+         fs) start)))
+  ; a program's forms, as the front end gives them, expanded with their datatypes, checked and
+  ; erased, when they expand and check
+  (defn expandProgram ((es Ts)) T
+    (decode Tx (node 2 es)
+      (lam ((x Tx))
+        (let r (Prod T (List Tx)) (Datatype.expandTyped (case x ((tList & xs) xs) (else (nil Tx))))
+          (if (fst r)
+            (case (check (Datatype.markersFirst (snd r))) ((OName.just n) none)
+              ((OName.nothing)
+               (some (node 0 (children (rep (tList (Datatype.kernelForms (snd r)))))))))
+            none)))
+      none))
+  ; the name of the first definition of a program's forms that does not check, or the empty tree
+  (defn typeErrorOfForms ((es Ts)) T
+    (decode Tx (node 2 es)
+      (lam ((x Tx))
+        (let r (Prod T (List Tx)) (Datatype.expandTyped (case x ((tList & xs) xs) (else (nil Tx))))
+          (if (fst r)
+            (case (check (Datatype.markersFirst (snd r))) ((OName.just n) (rep n))
+              ((OName.nothing) (node 0 (nil T))))
+            (node 0 (nil T)))))
+      (node 0 (nil T)))))

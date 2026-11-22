@@ -64,8 +64,10 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
     # certificate is the one a run without a cache writes.
     out, _ = prove(DOC)
     assert uses(out) == (0, 0, 4, 0), out
-    files = sorted(p.name for p in cache.iterdir())
+    files = sorted(p.name for p in cache.iterdir() if p.is_file())
     assert len(files) == 1 and files[0].startswith('Cached.proofs.geb.') and files[0].endswith('.cache'), files
+    # The states of the program's layers are kept in a directory of their own beside it.
+    assert sorted(p.name for p in cache.iterdir() if p.is_dir()) == ['layers']
     out, _ = prove(DOC)
     assert uses(out) == (4, 0, 0, 0), out
     run('prove', doc, plain)

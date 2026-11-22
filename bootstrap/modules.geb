@@ -6,9 +6,9 @@
 ; elaborates them: a program's module blocks flattened into declarations under qualified names,
 ; the instances of modules with parameters at their imports, each also at opaque arguments where
 ; it is declared, for the stage-1 compiler to check (genericOf), and every name renamed to what it
-; denotes. A name is a node of label 0 over its characters; the names visible in a block are
-; nodes over a name and the name it denotes in the flat program, looked up as abbreviations
-; are.
+; denotes. A name is a node of label 0 over its characters; the names visible in a block, each
+; with the name it denotes in the flat program, and the modules declared, each by its path, are
+; tries (bootstrap/trie.geb), so that a name is looked up in the time of its length.
 ;
 ; Sequential typed bindings (let\* ((x A e) ...) body) expand to nested let forms, each value
 ; seeing the preceding bindings. Guarded clauses (cond (test value) ... (else default)) expand
@@ -23,6 +23,7 @@
     expandModulesTree
     expandModules)
   (import Prelude)
+  (import Trie)
   (import Reader)
   (import Datatype)
   (def kwModule (quote (0 module)))
@@ -47,8 +48,8 @@
   ; atom hole, which denotes nothing; any other name is kept
   (def hasDot (lam ((n T)) (foldr T T (lam ((c T) (r T)) (or (eq c 46) r)) 0 (children n))))
   (def flatName
-    (lam ((vis Ts) (n T))
-      (let r T (lookupAbbrev n vis) (cond ((isSome r) (get r)) ((hasDot n) kwHole) (else n)))))
+    (lam ((vis T) (n T))
+      (let r T (find n vis) (cond ((isSome r) (get r)) ((hasDot n) kwHole) (else n)))))
 
   ; the names a binder or a list of binders binds, and the variables of a pattern (c x ...)
   (def boundBy
@@ -71,7 +72,7 @@
   ; source binders are private: %% differs from every name the datatype expansion introduces
   (def localAtom (lam ((x T)) (if (isAtom x) (node 1 (cons 37 (cons 37 (children x)))) x)))
   (def renPattern
-    (lam ((vis Ts) (p T))
+    (lam ((vis T) (p T))
       (lcase T T (children p) p
         (lam ((c T) (xs Ts))
           (mkList
@@ -159,7 +160,7 @@
              (single (rkAt rs 1 0 bound)))))
         (else emptyTerm))))
   (def renTermList
-    (lam ((vis Ts) (u T) (rs RenKs) (bound Ts))
+    (lam ((vis T) (u T) (rs RenKs) (bound Ts))
       (let* ((es Ts (children u)) (k T (arity u)) (h T (at es 0)))
         (cond ((eq k 0) u)
           ((named h kwLetStar)
@@ -215,7 +216,7 @@
              u))
           (else (mkList (rkAll rs 0 bound)))))))
   (def renStep
-    (lam ((vis Ts) (u T) (rs RenKs) (role T) (bound Ts))
+    (lam ((vis T) (u T) (rs RenKs) (role T) (bound Ts))
       (let* ((es Ts (children u)) (k T (arity u)))
         (cond ((lt 4 role) (renChainRole u rs role bound)) ((eq role 4) u)
           ((isAtom u)
@@ -242,24 +243,25 @@
           (else (renTermList vis u rs bound))))))
   ; an S-expression renamed in a role, under the visible names and the names bound around it
   (def rename
-    (lam ((vis Ts) (e T) (role T) (bound Ts))
+    (lam ((vis T) (e T) (role T) (bound Ts))
       ((para RenK (lam ((u T) (rs RenKs) (role T) (bound Ts)) (renStep vis u rs role bound)) e) role
        bound)))
 
-  ; the state of the elaboration of a block: whether every form has elaborated, the names visible
-  ; in it, the declarations emitted, the modules declared, by their paths from the root, the names
-  ; the block exports, the block's members and the modules elaborated, each after those nested in
-  ; it. A module of the registry is a node of label 0 over the node of its exports, visible names
-  ; with what they denote, or a template, a node of label 1 over the nodes of its parameters, its
-  ; export list, its other forms and the names visible where it is declared. A member is a node of
-  ; label 0 over a definition's name in the flat program, or of label 1 over the path of a module
-  ; nested or instantiated in the block; a module of the tree is a node over its path, the node of
-  ; its members and the node of its exports
-  (deftype ModSt (Prod T (Prod Ts (Prod Ts (Prod Ts (Prod Ts (Prod Ts Ts)))))))
+  ; the state of the elaboration of a block: whether every form has elaborated, the trie of the
+  ; names visible in it, the declarations emitted, the trie of the modules declared, by their
+  ; paths from the root, the names the block exports, the block's members and the modules
+  ; elaborated, each after those nested in it; the declarations, the members and the modules are
+  ; kept the latest first. A module of the registry is a node of label 0 over the node of its
+  ; exports, visible names with what they denote, or a template, a node of label 1 over the nodes
+  ; of its parameters, its export list and its other forms and the trie of the names visible where
+  ; it is declared. A member is a node of label 0 over a definition's name in the flat program, or
+  ; of label 1 over the path of a module nested or instantiated in the block; a module of the tree
+  ; is a node over its path, the node of its members and the node of its exports
+  (deftype ModSt (Prod T (Prod T (Prod Ts (Prod T (Prod Ts (Prod Ts Ts)))))))
   (def mkSt
-    (lam ((vis Ts) (out Ts) (reg Ts) (ex Ts) (mem Ts) (mods Ts))
+    (lam ((vis T) (out Ts) (reg T) (ex Ts) (mem Ts) (mods Ts))
       (pair 1 (pair vis (pair out (pair reg (pair ex (pair mem mods))))))))
-  (def stFail (pair 0 (snd (mkSt (nil T) (nil T) (nil T) (nil T) (nil T) (nil T)))))
+  (def stFail (pair 0 (snd (mkSt empty (nil T) empty (nil T) (nil T) (nil T)))))
   (def stVis (lam ((s ModSt)) (fst (snd s))))
   (def stOut (lam ((s ModSt)) (fst (snd (snd s)))))
   (def stReg (lam ((s ModSt)) (fst (snd (snd (snd s))))))
@@ -267,18 +269,19 @@
   (def stMem (lam ((s ModSt)) (fst (snd (snd (snd (snd (snd s))))))))
   (def stMods (lam ((s ModSt)) (snd (snd (snd (snd (snd (snd s))))))))
   (def withVis
-    (lam ((s ModSt) (vis Ts))
+    (lam ((s ModSt) (vis T))
       (if (fst s) (mkSt vis (stOut s) (stReg s) (stEx s) (stMem s) (stMods s)) s)))
   (def emitTo
     (lam ((s ModSt) (e T) (mem Ts))
       (if (fst s)
-        (mkSt (stVis s) (append (stOut s) (single e)) (stReg s) (stEx s) (append (stMem s) mem)
-          (stMods s))
+        (mkSt (stVis s) (cons e (stOut s)) (stReg s) (stEx s) (append mem (stMem s)) (stMods s))
         s)))
   (def memberDecl (lam ((fl T)) (node 0 (single fl))))
   (def memberSub (lam ((path T)) (node 1 (single path))))
+  ; a module of the tree, from its members, the latest first
   (def modNode
-    (lam ((path T) (mem Ts) (ex Ts)) (node 0 (cons path (cons (node 0 mem) (single (node 0 ex)))))))
+    (lam ((path T) (mem Ts) (ex Ts))
+      (node 0 (cons path (cons (node 0 (reverse mem)) (single (node 0 ex)))))))
 
   ; a name under a prefix: the name itself at the root, and the prefix, a dot and the name otherwise
   (def qualify (lam ((pre T) (n T)) (if (nonEmpty (children pre)) (nameCat pre 46 n) n)))
@@ -286,10 +289,9 @@
   (def declare
     (lam ((s ModSt) (n T) (fl T))
       (if (fst s)
-        (cond ((isSome (lookupAbbrev n (stVis s))) stFail)
-          ((isSome (indexOf n reservedNames)) stFail)
+        (cond ((isSome (find n (stVis s))) stFail) ((isSome (indexOf n reservedNames)) stFail)
           ((isSome (indexOf n moduleKeywords)) stFail)
-          (else (withVis s (append (stVis s) (single (node2 0 n fl))))))
+          (else (withVis s (put n fl (stVis s)))))
         s)))
   (def declareAll
     (lam ((s ModSt) (es Ts))
@@ -305,9 +307,7 @@
       (allSome
         (foldr T Ts
           (lam ((n T) (acc Ts))
-            (cons
-              (let r T (lookupAbbrev n (stVis s)) (if (isSome r) (some (node2 0 n (get r))) none))
-              acc))
+            (cons (let r T (find n (stVis s)) (if (isSome r) (some (node2 0 n (get r))) none)) acc))
           (nil T)
           (stEx s)))))
   ; the forms of a list with a given head keyword, or the others
@@ -348,7 +348,7 @@
           (pair (length xs) (nil T))
           xs))))
   (def bindParam
-    (lam ((inst T) (importer Ts) (s ModSt) (p T) (arg T))
+    (lam ((inst T) (importer T) (s ModSt) (p T) (arg T))
       (if (if (fst s) (eq (arity p) 2) 0)
         (let sig T (child p 1)
           (cond
@@ -396,7 +396,7 @@
       (let* ((es Ts (children e)) (k T (arity e)) (kw T (at es 0)) (x T (at es 1)))
         (if (if (lt 1 k) (isAtom x) 0)
           (let*
-            ((n T (nameOf x)) (fl T (qualify pre n)) (vis Ts (stVis s))
+            ((n T (nameOf x)) (fl T (qualify pre n)) (vis T (stVis s))
              (out (Arrow Ts T) (lam ((body Ts)) (mkList (cons kw (cons (atomOf fl) body))))))
             (cond
               ((named kw kwDef)
@@ -439,30 +439,32 @@
                             ctors))))
                      (if (fst s2)
                        (mkSt (stVis s2)
-                         (append (stOut s)
-                           (single
-                             (out
-                               (foldr T Ts
-                                 (lam ((c T) (acc Ts))
-                                   (cons
-                                     (mkList
-                                       (cons (atomOf (qualify pre (nameOf (child c 0))))
-                                         (foldr T Ts
-                                           (lam ((f T) (r Ts))
-                                             (cons (rename (stVis s1) f 1 (nil T)) r))
-                                           (nil T)
-                                           (drop 1 (children c)))))
-                                     acc))
-                                 (nil T)
-                                 ctors))))
+                         (cons
+                           (out
+                             (foldr T Ts
+                               (lam ((c T) (acc Ts))
+                                 (cons
+                                   (mkList
+                                     (cons (atomOf (qualify pre (nameOf (child c 0))))
+                                       (foldr T Ts
+                                         (lam ((f T) (r Ts))
+                                           (cons (rename (stVis s1) f 1 (nil T)) r))
+                                         (nil T)
+                                         (drop 1 (children c)))))
+                                   acc))
+                               (nil T)
+                               ctors))
+                           (stOut s))
                          (stReg s2)
                          (stEx s2)
-                         (append (stMem s)
-                           (foldr T Ts
-                             (lam ((c T) (acc Ts))
-                               (cons (memberDecl (qualify pre (nameOf (child c 0)))) acc))
-                             (nil T)
-                             ctors))
+                         (append
+                           (reverse
+                             (foldr T Ts
+                               (lam ((c T) (acc Ts))
+                                 (cons (memberDecl (qualify pre (nameOf (child c 0)))) acc))
+                               (nil T)
+                               ctors))
+                           (stMem s))
                          (stMods s2))
                        stFail))
                    stFail)))
@@ -521,8 +523,7 @@
              (k (add i 1) (bindParam inst (stVis s) acc prm (at args i))))
            (lam ((i T) (acc ModSt)) acc)
            (children (child d 0))) 0
-         (mkSt (children (child d 3)) (stOut s) (stReg s) (children (child d 1)) (nil T)
-           (stMods s)))
+         (mkSt (child d 3) (stOut s) (stReg s) (children (child d 1)) (nil T) (stMods s)))
         (children (child d 2)))))
   ; a template's instance at opaque arguments, which the stage-1 compiler checks and every
   ; compiler then drops: the form (%generic ...) over the declarations of fresh arguments, a sort
@@ -554,7 +555,7 @@
                  acc))
              (nil T)
              (zipWith2 (lam ((p T) (a T)) (node2 0 p a)) ps args)))
-         (vis Ts (append sorts (children (child d 3))))
+         (vis T (putAll sorts (child d 3)))
          (decls Ts
            (zipWith2
              (lam ((p T) (a T))
@@ -575,7 +576,7 @@
            (instantiate rec (mkSt (stVis s) (nil T) (stReg s) (stEx s) (stMem s) (stMods s)) d
              (nameCat path 37 (quote (0 generic)))
              args)))
-        (if (fst s2) (some (mkList (cons aGeneric (append decls (stOut s2))))) none))))
+        (if (fst s2) (some (mkList (cons aGeneric (append decls (reverse (stOut s2)))))) none))))
   (def elabStep
     (lam ((rec ElabK) (pre T) (s ModSt) (e T))
       (if (if (fst s) (if (isList e) (nonEmpty (children e)) 0) 0)
@@ -590,7 +591,7 @@
                  (let*
                    ((p T (child (get spec) 0)) (args Ts (children (child (get spec) 1)))
                     (as T (child (get spec) 2))
-                    (md T (lookupAbbrev p (stReg s))))
+                    (md T (find p (stReg s))))
                    (if (isSome md)
                      (let d T (get md)
                        (if (eq (label d) 0)
@@ -605,9 +606,9 @@
                                (if (isSome ex)
                                  (declareAll
                                    (mkSt (stVis s) (stOut s2) (stReg s2) (stEx s)
-                                     (append (stMem s) (single (memberSub inst)))
-                                     (append (stMods s2)
-                                       (single (modNode inst (stMem s2) (children (get ex))))))
+                                     (cons (memberSub inst) (stMem s))
+                                     (cons (modNode inst (stMem s2) (children (get ex)))
+                                       (stMods s2)))
                                    (importAs as (children (get ex))))
                                  stFail))
                              stFail))))
@@ -632,13 +633,10 @@
                                       (cons (atomNames (drop 1 (children x))) r))
                                     (nil Ts)
                                     (withHead kwExport others))))
-                              (cons (node 0 (withoutHead kwExport others))
-                                (single (node 0 (stVis s))))))))
+                              (cons (node 0 (withoutHead kwExport others)) (single (stVis s)))))))
                       (g T (genericOf rec s d path)))
                      (if (isSome g)
-                       (mkSt (stVis s) (append (stOut s) (single (get g)))
-                         (append (stReg s) (single (node2 0 path d)))
-                         (stEx s)
+                       (mkSt (stVis s) (cons (get g) (stOut s)) (putNew path d (stReg s)) (stEx s)
                          (stMem s)
                          (stMods s))
                        stFail))
@@ -650,11 +648,10 @@
                      (if (isSome ex)
                        (declareAll
                          (mkSt (stVis s) (stOut s1)
-                           (append (stReg s1) (single (node2 0 path (node 0 (single (get ex))))))
+                           (putNew path (node 0 (single (get ex))) (stReg s1))
                            (stEx s)
-                           (append (stMem s) (single (memberSub path)))
-                           (append (stMods s1)
-                             (single (modNode path (stMem s1) (children (get ex))))))
+                           (cons (memberSub path) (stMem s))
+                           (cons (modNode path (stMem s1) (children (get ex))) (stMods s1)))
                          (importAs (some n) (children (get ex))))
                        stFail))))
                stFail))
@@ -680,14 +677,13 @@
     (lam ((es Ts))
       (let s ModSt
         (elabForms (elabAt (add (moduleCount es) 1)) (node 0 (nil T))
-          (mkSt (nil T) (nil T) (nil T) (nil T) (nil T) (nil T))
+          (mkSt empty (nil T) empty (nil T) (nil T) (nil T))
           es)
         (if (fst s)
           (if (nonEmpty (stEx s)) none
             (some
-              (node2 0 (node 0 (stOut s))
-                (node 0
-                  (append (stMods s) (single (modNode (node 0 (nil T)) (stMem s) (nil T))))))))
+              (node2 0 (node 0 (reverse (stOut s)))
+                (node 0 (reverse (cons (modNode (node 0 (nil T)) (stMem s) (nil T)) (stMods s)))))))
           none))))
   ; a program's forms with its modules elaborated, as a node over them, when they elaborate
   (def expandModules

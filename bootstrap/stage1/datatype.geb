@@ -20,7 +20,10 @@
 ; prelude, the reader, the lists of bootstrap/seq.geb and the typing.
 
 (module Datatype
-  (export kwData kwCase kwCata kwRep kwDecode kwDatum kwDefn decimalChars memberName expandProgram
+  (export kwData kwCase kwCata kwRep kwDecode kwDatum kwDefn decimalChars memberName expandTyped
+    markersFirst
+    kernelForms
+    expandProgram
     typeErrorOfForms
     typeErrorOf)
   (import Prelude)

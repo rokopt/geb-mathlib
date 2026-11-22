@@ -1,0 +1,8 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The expansion of the datatype language the compiler's front end applies to a program's forms:
+; in the stage-0 compiler, that of bootstrap/datatype.geb.
+
+(module Expansion (export expandProgram) (import Datatype))

@@ -131,6 +131,11 @@ path = "bootstrap/prelude.geb"
 text = true
 
 [[input_file]]
+name = "trieSource"
+path = "bootstrap/trie.geb"
+text = true
+
+[[input_file]]
 name = "serializeSource"
 path = "bootstrap/serialize.geb"
 text = true
@@ -146,8 +151,18 @@ path = "bootstrap/check.geb"
 text = true
 
 [[input_file]]
+name = "supportSource"
+path = "bootstrap/support.geb"
+text = true
+
+[[input_file]]
 name = "datatypeSource"
 path = "bootstrap/datatype.geb"
+text = true
+
+[[input_file]]
+name = "expansionSource"
+path = "bootstrap/expansion.geb"
 text = true
 
 [[input_file]]
@@ -246,9 +261,9 @@ path = "bootstrap/compiler.img"
 [[lean_lib]]
 name = "GebTestsStage0"
 globs = ["GebTests.Prototypes.Stage0"]
-needs = ["@/preludeSource", "@/serializeSource", "@/readerSource", "@/checkSource",
-  "@/datatypeSource", "@/modulesSource", "@/recognizeSource", "@/compileSource",
-  "@/substSource", "@/weakeningStatement", "@/manifests"]
+needs = ["@/preludeSource", "@/trieSource", "@/serializeSource", "@/readerSource",
+  "@/checkSource", "@/supportSource", "@/datatypeSource", "@/expansionSource", "@/modulesSource",
+  "@/recognizeSource", "@/compileSource", "@/substSource", "@/weakeningStatement", "@/manifests"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]

@@ -58,6 +58,8 @@
     indexOf
     lookupAbbrev
     numeral
+    expandNums
+    readType
     readDatum
     RT
     RTs

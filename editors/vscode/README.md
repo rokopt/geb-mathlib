@@ -129,7 +129,10 @@ hole or the step, with the goal on the diagnostic's line (the manual's
 chapter Writing a first Geb development, § Holes and goals). The task
 passes `--cache` with the folder's `.lake/geb-proof-cache`, so that a
 proof document is resumed from the cache its last check left there and
-searched only where it changed (§ The cache of a development). The
+searched only where it changed (§ The cache of a development), and so
+that a program of several layers is compiled from the state kept after
+the last layer whose text, and the texts of the layers before it, are
+unchanged. The
 extension contributes the problem matcher `$geb`,
 which the task names, so that the report appears in the Problems view and
 at its position in the file that holds it, which may be an earlier source
