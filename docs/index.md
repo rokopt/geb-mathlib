@@ -4200,6 +4200,18 @@ import-direction rules above are enforced by
   correspondence. Kernel program prefixes, including modules and `defn`,
   report the offending expression and its expected and actual types;
   datatype prefixes retain declaration diagnostics.
+  The compiler's stages find a name in a trie over the digits of its
+  characters (`bootstrap/trie.geb`): the elaboration of modules holds its
+  names in tries, and the typing and the reading check each form against
+  the declarations it mentions (`bootstrap/stage1/expansion.geb`,
+  `bootstrap/support.geb`), by the typing's, the reader's and the kernel
+  checker's own functions, so that each stage's time is linear in the
+  program; `geb-compile agree` compares them with the stages that search
+  every declaration (`scripts/tests/test-support.sh`). With a directory of
+  kept states (`--cache DIRECTORY`), `GebHost/Layers.lean` compiles a
+  manifest's program a layer at a time and keeps the stages' states after
+  each layer, to the bundle compiled without it
+  (`scripts/tests/test-layers.sh`).
   `geb-compile check` compiles, and writes nothing, a source with
   the sources its nearest manifest lists before it; `geb-author check` does
   so for a source and proves a proof document against the program it names,

@@ -119,15 +119,25 @@ def writtenSources (paths : List System.FilePath) : IO (List Compiler.Source) :=
     let s ← Compiler.Source.read path
     return if (readBasic s.text).isSome then none else some s
 
-/-- A manifest's compiled program and the text from which its examples are checked. -/
-def readProgram (path : System.FilePath) : IO (Manifest × ByteArray × Tree) := do
+/-- A manifest's compiled program and the text from which its examples are checked; with a
+directory of kept states, the program is compiled a layer at a time
+({name}`GebHost.Layers.bundle`). -/
+def readProgram (path : System.FilePath) (cache : Option System.FilePath := none) :
+    IO (Manifest × ByteArray × Tree) := do
   let m ← Manifest.read path
   let paths := Manifest.sourcePaths path m
-  let text ← paths.foldlM (init := ByteArray.empty) fun acc src ↦ do
-    let d ← readDocument src m.profile
-    discard <| IO.ofExcept (notesOf d.doc)
-    return (acc ++ sourceBytes d.doc.eraseNotes).push 10
-  let b ← compile path.toString (← writtenSources paths) text
+  let layers ← (Compiler.layerPaths path m).mapM fun srcs ↦
+    srcs.foldlM (init := ByteArray.empty) fun acc src ↦ do
+      let d ← readDocument src m.profile
+      discard <| IO.ofExcept (notesOf d.doc)
+      return (acc ++ sourceBytes d.doc.eraseNotes).push 10
+  let text := layers.foldl (· ++ ·) ByteArray.empty
+  let kept ← match cache with
+    | some dir => Layers.bundle dir layers
+    | none => pure none
+  let b ← match kept with
+    | some b => pure b
+    | none => compile path.toString (← writtenSources paths) text
   let some ds := unbundle b | throw <| IO.userError "malformed bundle"
   IO.ofExcept (m.checkEntries (ds.map fun d ↦ String.ofList d.1))
   return (m, text, b)
@@ -531,8 +541,9 @@ structure Session where
 
 /-- Read a development against a manifest's program, whose examples are checked; a development
 that does not read is the diagnostic of what rejects it. -/
-def Session.read (manifest proofs : String) : IO Session := do
-  let (m, text, b) ← readProgram manifest
+def Session.read (manifest proofs : String) (cache : Option System.FilePath := none) :
+    IO Session := do
+  let (m, text, b) ← readProgram manifest cache
   checkExamples manifest m text
   let docs ← development proofs m.profile
   let written ← writtenSources (docs.map (·.1))
@@ -652,7 +663,7 @@ caches is resumed from its cache there, and its certificate replays before it is
 that of any development proved. -/
 def execute (mode manifest proofs certificate : String)
     (caches : Option System.FilePath := none) : IO UInt32 := do
-  let s ← Session.read manifest proofs
+  let s ← Session.read manifest proofs caches
   match mode with
   | "prove" =>
     let cert ← s.prove proofs caches
@@ -691,7 +702,8 @@ def transport (manifest proofs certificate output : String) : IO UInt32 := do
 /-- Check a file and write nothing: a proof document, one whose text holds a form
 {lit}`(proofs V …)`, is proved against the program it names, and any other file is compiled as
 {name}`GebHost.Compiler.checkSource` compiles a source. With a directory of caches a proof
-document's development is resumed from its cache there, which is the one file written, and the
+document's development is resumed from its cache there, the one file written beside the kept
+states of its program's layers ({name}`GebHost.Layers.bundle`), and the
 certificate found is not replayed: the declarations taken from the cache are those an earlier
 run checked, and the others are checked as they are found. -/
 def checkFile (file : String) (caches : Option System.FilePath := none) : IO UInt32 := do
@@ -699,10 +711,10 @@ def checkFile (file : String) (caches : Option System.FilePath := none) : IO UIn
     | .ok items => items.any (Locate.headIs kwProofs)
     | .error _ => false
   if proofs then
-    let s ← Session.read (← manifestOf file).toString file
+    let s ← Session.read (← manifestOf file).toString file caches
     discard <| s.prove file caches (verify := caches.isNone)
     return 0
-  else Compiler.checkSource Compiler.checked file
+  else Compiler.checkSource Compiler.checked file caches
 
 end GebHost.Authoring
 

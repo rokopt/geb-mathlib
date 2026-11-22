@@ -6,12 +6,13 @@
 ; the program does not read, names one of the implementation's names, or is ill-typed. The program's
 ; modules are elaborated, its forms of the datatype language expanded and the recognizers it refers
 ; to written first; for a program of kernel forms alone the image is byte for byte the one the seed
-; builds. bundleOf is the program's bundle before its types are checked, and compileWith takes the
-; backend applied to a checked program's bundle.
+; builds. bundleOf is the program's bundle, whether or not its definitions are well typed, and
+; compileWith takes the backend applied to a checked program's bundle.
 
-(module Compile (export bundleOf compileWith compile) (import Prelude) (import Serialize)
+(module Compile (export readState bundleOf compileWith compile) (import Prelude) (import Serialize)
   (import Reader)
   (import Check)
+  (import Support)
   (import Datatype)
   (import Modules)
   (import Recognize)
@@ -29,20 +30,24 @@
                 ((and (named h kwDatum) (eq (arity nd) 3)) (and (at rs 0) (at rs 1)))
                 (else (foldr T T (lam ((r T) (acc T)) (and r acc)) 1 rs))))))
         sx)))
-  (def bundleOf
+  ; the state of reading a program's source (bootstrap/support.geb): its text read, its modules
+  ; elaborated, its forms of the datatype language expanded and the recognizers it refers to
+  ; written, and the forms read and checked; where a stage before the reading rejects the program,
+  ; the state after a form that does not read
+  (def readState
     (lam ((file T))
       (let*
         ((sx T (readSExps (children file)))
          (mx T
            (if (and (isSome sx) (userSource (get sx))) (expandModules (children (get sx))) none))
-         (kx T (if (isSome mx) (expandProgram (children (get mx))) none))
+         (kx T (if (isSome mx) (Expansion.expandProgram (children (get mx))) none))
          (rx T (if (isSome kx) (insertRecognizers (children (get kx))) none)))
-        (if (isSome rx) (readProgram (children (get rx))) none))))
+        (if (isSome rx) (readMore readStart (children (get rx)))
+          (readStep readStart (node 0 (nil T)))))))
+  (def bundleOf (lam ((file T)) (readBundle (readState file))))
   (def compileWith
     (lam ((back (Arrow T T)) (file T))
-      (let b T (bundleOf file)
-        (if (isSome b)
-          (if (isSome (checkProgram (children (child (get b) 0)))) (back (get b)) (node 0 (nil T)))
-          (node 0 (nil T))))))
+      (let* ((s ReadSt (readState file)) (b T (readBundle s)))
+        (if (if (isSome b) (if (isSome (illTypedOf s)) 0 1) 0) (back (get b)) (node 0 (nil T))))))
   (def compile (lam ((file T)) (compileWith image file))))
 (def main (lam ((file T)) (Compile.compile file)))

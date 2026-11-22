@@ -1,0 +1,205 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; A program's forms read into its bundle and checked, each form against the declarations it
+; mentions, written in the kernel's syntax. The reader (bootstrap/reader.geb) resolves a form
+; given the lists of the type abbreviations, the numeral abbreviations and the definitions before
+; it, and the kernel's checker (bootstrap/check.geb) types a term given the list of the types of
+; the definitions before it; each searches its lists in order, so that reading a program takes
+; the time of the product of its atoms and its declarations. A form's support is the set of the
+; names of its atoms. The reader looks a name up only where an atom of the form has it, and the
+; checker a definition's type only where the term refers to it, so that a form read and checked
+; against the declarations of its support alone, by the reader's and the checker's own functions,
+; is read and checked as against them all, but for the positions of the definitions, which the
+; references of the term read are given afterwards. The declarations are kept in tries
+; (bootstrap/trie.geb), each found in the time of its name's length. Requires the prelude, the
+; tries, the reader and the kernel's checker.
+
+(module Support
+  (export mentions keyOf Pick pickedInto picked ofKind firsts seconds placed ReadSt readStart
+    readStep
+    readMore
+    readBundle
+    unreadOf
+    illTypedOf
+    readForms)
+  (import Prelude)
+  (import Trie)
+  (import Reader)
+  (import Check)
+  ; the names of the atoms of an S-expression, one for each atom: a node's result puts its
+  ; subtrees' names before a list
+  (def mentions
+    (lam ((e T))
+      ((para Endo
+         (lam ((nd T) (ks (List Endo)) (acc Ts))
+           (let r Ts (foldr Endo Ts (lam ((k Endo) (a Ts)) (k a)) acc ks)
+             (if (isAtom nd) (cons (nameOf nd) r) r)))
+         e) (nil T))))
+  ; the key of the declaration of a number: the name of the number's three digits in base 256,
+  ; under which the declarations picked are told apart in the time of the key's length
+  (def keyOf (lam ((k T)) (node 0 (digitsMsb 256 k 3))))
+  ; the declarations of a trie that the names of a list have, each once, as the node over its name
+  ; and its declaration, after those picked before. A trie's value at a name is the node over the
+  ; declaration's key and the declaration; the state is the trie of the keys picked and the
+  ; declarations
+  (deftype Pick (Prod T Ts))
+  (def pickedInto
+    (lam ((ns Ts) (t T) (acc Pick))
+      (foldr T Pick
+        (lam ((n T) (acc Pick))
+          (let r T (find n t)
+            (if (isSome r)
+              (if (isSome (find (child (get r) 0) (fst acc))) acc
+                (pair (put (child (get r) 0) 1 (fst acc))
+                  (cons (node2 0 n (child (get r) 1)) (snd acc))))
+              acc)))
+        acc
+        ns)))
+  (def picked (lam ((ns Ts) (t T)) (snd (pickedInto ns t (pair empty (nil T))))))
+  ; those of a list of declarations whose declaration has a label, each the node over its name
+  ; and the declaration's first child, as the reader's lists of abbreviations hold them
+  (def ofKind
+    (lam ((k T) (ds Ts))
+      (foldr T Ts
+        (lam ((d T) (acc Ts))
+          (if (eq (label (child d 1)) k) (cons (node2 0 (child d 0) (child (child d 1) 0)) acc)
+            acc))
+        (nil T)
+        ds)))
+  ; the first and the second children of the nodes of a list
+  (def firsts (lam ((ps Ts)) (foldr T Ts (lam ((p T) (acc Ts)) (cons (child p 0) acc)) (nil T) ps)))
+  (def seconds
+    (lam ((ps Ts)) (foldr T Ts (lam ((p T) (acc Ts)) (cons (child p 1) acc)) (nil T) ps)))
+  ; a kernel term with each reference to a definition given the place the node of places holds at
+  ; the reference's position: the term's own subterms are those of an abstraction after its type,
+  ; of an application, a pair, a projection, a conditional and a list's construction, and a type
+  ; and a quoted datum are kept as they are
+  (def placed
+    (lam ((places T) (t T))
+      (para T
+        (lam ((nd T) (rs Ts))
+          (let l T (label nd)
+            (cond ((eq l Label.ref) (node Label.ref (single (child places (child nd 0)))))
+              ((eq l Label.lam) (node Label.lam (cons (child nd 0) (tail rs))))
+              ((eq l Label.app) (node l rs))
+              ((eq l Label.pair) (node l rs))
+              ((eq l Label.fst) (node l rs))
+              ((eq l Label.snd) (node l rs))
+              ((eq l Label.cond) (node l rs))
+              ((eq l Label.cons) (node l rs))
+              (else nd))))
+        t)))
+
+  ; the state of reading a program's forms: the name of the first form that does not read, when
+  ; there is one; the name of the first definition that is ill-typed, when there is one; the trie
+  ; of the declarations, a type abbreviation the node of label 1 over its type, a numeral
+  ; abbreviation the node of label 2 over its numeral's atom and a definition the node of label 3
+  ; over its type and its position, each with its key; the number of the declarations; the number
+  ; of the definitions; and their terms and their names, the latest first. A name is declared
+  ; once, so that one trie holds the three kinds
+  (deftype ReadSt (Prod T (Prod T (Prod T (Prod T (Prod T (Prod Ts Ts)))))))
+  (def mkRead
+    (lam ((un T) (ill T) (decls T) (serial T) (count T) (terms Ts) (names Ts))
+      (pair un (pair ill (pair decls (pair serial (pair count (pair terms names))))))))
+  (def unreadOf (lam ((s ReadSt)) (fst s)))
+  (def illTypedOf (lam ((s ReadSt)) (fst (snd s))))
+  (def rsDecls (lam ((s ReadSt)) (fst (snd (snd s)))))
+  (def rsSerial (lam ((s ReadSt)) (fst (snd (snd (snd s))))))
+  (def rsCount (lam ((s ReadSt)) (fst (snd (snd (snd (snd s)))))))
+  (def rsTerms (lam ((s ReadSt)) (fst (snd (snd (snd (snd (snd s))))))))
+  (def rsNames (lam ((s ReadSt)) (snd (snd (snd (snd (snd (snd s))))))))
+  (def readStart (mkRead none none empty 0 0 (nil T) (nil T)))
+  ; the state after a form that does not read: the form's name, or the empty name
+  (def unread
+    (lam ((s ReadSt) (e T))
+      (pair
+        (some
+          (if (if (isList e) (if (lt 1 (arity e)) (isAtom (child e 1)) 0) 0) (nameOf (child e 1))
+            (node 0 (nil T))))
+        (snd s))))
+  ; the state with a name declared
+  (def declared
+    (lam ((s ReadSt) (n T) (d T))
+      (mkRead none (illTypedOf s) (put n (node2 0 (keyOf (rsSerial s)) d) (rsDecls s))
+        (add (rsSerial s) 1)
+        (rsCount s)
+        (rsTerms s)
+        (rsNames s))))
+  ; a definition's term read and checked against the declarations of its support: the numeral
+  ; abbreviations its atoms name expanded; the result resolved against the type abbreviations and
+  ; the definitions that its atoms name, and the type abbreviations the numerals written for the
+  ; abbreviations name; the term typed against those definitions' types, where no definition
+  ; before it is ill-typed; and its references given the definitions' positions
+  (def readDef
+    (lam ((s ReadSt) (n T) (body T))
+      (let*
+        ((ds Ts (picked (mentions body) (rsDecls s))) (nums Ts (ofKind 2 ds))
+         (x T (expandNums nums body))
+         (tys Ts
+           (append (ofKind 1 ds)
+             (ofKind 1
+               (picked
+                 (foldr T Ts (lam ((p T) (acc Ts)) (cons (nameOf (child p 1)) acc)) (nil T) nums)
+                 (rsDecls s)))))
+         (defs Ts
+           (foldr T Ts (lam ((d T) (acc Ts)) (if (eq (label (child d 1)) 3) (cons d acc) acc))
+             (nil T)
+             ds))
+         (t T (resolve tys (firsts defs) x (nil T))))
+        (if (isSome t)
+          (let*
+            ((vs Ts (seconds defs))
+             (ty T (if (isSome (illTypedOf s)) none (typeIn (firsts vs) (nil T) (get t)))))
+            (mkRead none
+              (cond ((isSome (illTypedOf s)) (illTypedOf s)) ((isSome ty) none) (else (some n)))
+              (put n
+                (node2 0 (keyOf (rsSerial s)) (node2 3 (if (isSome ty) (get ty) 0) (rsCount s)))
+                (rsDecls s))
+              (add (rsSerial s) 1)
+              (add (rsCount s) 1)
+              (cons (placed (node 0 (seconds vs)) (get t)) (rsTerms s))
+              (cons n (rsNames s))))
+          (pair (some n) (snd s))))))
+  ; one form read: a definition as above; a type abbreviation's type read against the type
+  ; abbreviations its atoms name; a numeral abbreviation's numeral, the numeral abbreviations its
+  ; atoms name expanded. A form is read when its name is neither reserved nor declared already,
+  ; and after a form that does not read, none is read
+  (def readStep
+    (lam ((s ReadSt) (e T))
+      (cond ((isSome (unreadOf s)) s)
+        ((if (isList e)
+           (if (eq (arity e) 3)
+             (if (isAtom (child e 1))
+               (cond ((isSome (indexOf (nameOf (child e 1)) reservedNames)) 0)
+                 ((isSome (find (nameOf (child e 1)) (rsDecls s))) 0)
+                 (else 1))
+               0)
+             0)
+           0)
+         (let* ((n T (nameOf (child e 1))) (body T (child e 2)))
+           (cond ((named (child e 0) kwDef) (readDef s n body))
+             ((named (child e 0) kwDeftype)
+              (let A T (readType (ofKind 1 (picked (mentions body) (rsDecls s))) body)
+                (if (isSome A) (declared s n (node 1 (single (get A)))) (unread s e))))
+             ((named (child e 0) kwDefnum)
+              (let x T (expandNums (ofKind 2 (picked (mentions body) (rsDecls s))) body)
+                (if (if (isAtom x) (isSome (numeral (children x))) 0)
+                  (declared s n (node 2 (single x)))
+                  (unread s e))))
+             (else (unread s e)))))
+        (else (unread s e)))))
+  (deftype ReadK (Arrow ReadSt ReadSt))
+  ; the forms of a list read in order from a state
+  (def readMore
+    (lam ((s ReadSt) (es Ts))
+      ((foldr T ReadK (lam ((e T) (k ReadK) (s ReadSt)) (k (readStep s e))) (lam ((s ReadSt)) s) es)
+       s)))
+  ; the bundle of the forms read, as the reader writes it, when every form has read
+  (def readBundle
+    (lam ((s ReadSt))
+      (if (isSome (unreadOf s)) none
+        (some (node2 100 (node 101 (reverse (rsTerms s))) (node 102 (reverse (rsNames s))))))))
+  ; a program's forms read into its bundle, when they read
+  (def readForms (lam ((es Ts)) (readBundle (readMore readStart es)))))

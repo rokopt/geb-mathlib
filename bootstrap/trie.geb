@@ -1,0 +1,83 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Finite maps from names to trees, written in the kernel's syntax. A map is a list of entries,
+; each the node over a name and its value, in which a name has the value of its first entry,
+; divided among the nodes of a trie by the digits in base 16 of the name's characters, from its
+; last character to its first, each character its quotient by 16 and then its remainder: a trie
+; is a tree whose child at a digit's position is the trie of the entries whose names' digits
+; continue with that digit, and whose child at position 16 is the node over the entries whose
+; names' digits end at it, the latest first. The leaf 0, which has no children, is the empty
+; trie, since the child of a tree at a position it lacks is the leaf 0. The entries of a name are
+; among those at the end of its digits, in the order they were given, so that the value of a name
+; is that of its first entry there, whatever the other names are: names are compared as trees, and
+; the digits only divide the entries. A node's children are reached by position in constant time,
+; so that a name's entries are reached in the time of the name's length, whatever the number of
+; names the trie holds, by a fold of the name's characters whose result so far is the trie
+; reached; and a name is given a value by writing a node of seventeen children at most for each of
+; its digits. The digits are tabulated for the characters that are bytes, as a text's are; any
+; other character has the digits of the character 0. Requires the prelude.
+
+(module Trie (export empty setAt find put putNew putAll) (import Prelude)
+  ; the empty trie
+  (def empty 0)
+  ; a list with its element at a position replaced, the leaf 0 at each position before it that
+  ; the list lacks: the list is cut at the position, the elements before it kept latest first
+  (deftype Cut (Prod Ts Ts))
+  (def setAt
+    (lam ((xs Ts) (i T) (x T))
+      (let s Cut
+        (iter Cut
+          (lam ((s Cut))
+            (lcase T Cut (fst s) (pair (nil T) (cons 0 (snd s)))
+              (lam ((y T) (r Ts)) (pair r (cons y (snd s))))))
+          (pair xs (nil T))
+          i)
+        ((foldr T Endo (lam ((y T) (k Endo) (acc Ts)) (k (cons y acc))) (lam ((acc Ts)) acc)
+           (snd s)) (cons x (tail (fst s)))))))
+  (def setChild (lam ((t T) (i T) (x T)) (node 0 (setAt (children t) i x))))
+  ; the digits of each byte: the node over the bytes' quotients by 16, and that over their
+  ; remainders
+  (deftype Tab (Prod T Ts))
+  (def tabulated
+    (lam ((f (Arrow T T)))
+      (node 0
+        (snd
+          (iter Tab (lam ((s Tab)) (let c T (sub (fst s) 1) (pair c (cons (f c) (snd s)))))
+            (pair 256 (nil T))
+            256)))))
+  (def hiAt (tabulated (lam ((c T)) (div c 16))))
+  (def loAt (tabulated (lam ((c T)) (mod c 16))))
+  ; the trie of the entries whose names continue a trie's with a character
+  (def under (lam ((c T) (t T)) (child (child t (child hiAt c)) (child loAt c))))
+  ; the value of a name's first entry among the entries of a list
+  (def valueIn
+    (lam ((n T) (es Ts))
+      (foldr T T (lam ((e T) (r T)) (if (equal n (child e 0)) (some (child e 1)) r)) none es)))
+  ; the optional value of a name
+  (def find (lam ((n T) (t T)) (valueIn n (children (child (foldr T T under t (children n)) 16)))))
+  ; a trie with an entry of a name and a value before the others: the fold of the name's
+  ; characters takes the rewriting of the trie below a character to the rewriting of the trie the
+  ; character is read in, the last character's the whole trie's
+  (deftype Walk (Arrow T T))
+  (deftype Lift (Arrow Walk Walk))
+  (def put
+    (lam ((n T) (v T) (t T))
+      ((foldr T Lift
+         (lam ((c T) (acc Lift) (inner Walk))
+           (acc
+             (lam ((t T))
+               (let* ((hi T (child hiAt c)) (lo T (child loAt c)) (u T (child t hi)))
+                 (setChild t hi (setChild u lo (inner (child u lo))))))))
+         (lam ((inner Walk)) inner)
+         (children n))
+       (lam ((t T))
+         (setChild t 16 (node 0 (cons (node 0 (cons n (single v))) (children (child t 16))))))
+       t)))
+  ; a trie with a name given a value, where it has none
+  (def putNew (lam ((n T) (v T) (t T)) (if (isSome (find n t)) t (put n v t))))
+  ; a trie with an entry for each node of a list over a name and a value, in the list's order
+  ; before the others
+  (def putAll
+    (lam ((ps Ts) (t T)) (foldr T T (lam ((p T) (r T)) (put (child p 0) (child p 1) r)) t ps))))
