@@ -123,6 +123,22 @@ assert_rejected global '(def xs (nil T))
 assert_rejected bytes $'; λ\r\n(def f (pair (quote (0 "λ")) (label (nil T))))' 2:38 \
   'expected T, got (List T)'
 
+# A failure at the bottom of a deeply nested term is reported in the time of the term: each
+# subterm is checked once.
+deep() {
+  local inner="$1" open="$2" close="$3" e="$1" i
+  for i in $(seq 1 60); do e="$open$e$close"; done
+  printf '%s' "$e"
+}
+checked=$((checked + 1))
+printf '(def f %s)\n' "$(deep '(nil T)' '(add 1 ' ')')" > "$test_dir/deep-kernel.geb"
+output="$(timeout 60 "$compiler" check "$test_dir/deep-kernel.geb" 2>&1)"
+[ $? -eq 1 ] || fail_case deep-kernel "check does not exit 1 within a minute"
+case "$output" in
+  *"deep-kernel.geb:1:428: error: f does not check: expected T, got (List T)") ;;
+  *) fail_case deep-kernel "message '$output' does not locate the innermost operand" ;;
+esac
+
 assert_compiled image image '(def f (lam ((x T)) x))'
 assert_compiled quotation image '(def f (quote (11 (0 2) (99))))'
 assert_compiled lean lean "$nat (def h (lam ((n Nat)) (label (rep n))))"
