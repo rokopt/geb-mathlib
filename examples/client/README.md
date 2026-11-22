@@ -15,6 +15,7 @@ the client's program, and adds a theorem of the client's.
 
 - [The pinned dependencies](#the-pinned-dependencies)
 - [Creating the repository](#creating-the-repository)
+- [Pinning a release](#pinning-a-release)
 - [From a fresh clone](#from-a-fresh-clone)
 - [In the editor](#in-the-editor)
 - [Continuous integration](#continuous-integration)
@@ -31,6 +32,11 @@ the library is the directory `library/` of the same repository. A
 manifest's sources lie below its directory, and the submodule places the
 library's sources below the client's manifest without copying them.
 
+A release of Geb can take the submodule's place (§ Pinning a release).
+It holds the host executables, built, and the library's sources, so that
+a client that does not change the library needs neither Lake nor the
+build of the executables.
+
 ## Creating the repository
 
 Copy this directory to the new repository's root and add the submodule
@@ -45,6 +51,30 @@ git add .
 
 Changing the pinned revision is `git -C geb checkout REVISION` followed
 by `git add geb`, then a check of the client (§ Continuous integration).
+
+## Pinning a release
+
+A release of the Geb repository, made by its workflow
+`.github/workflows/release.yml` at a tag, holds an archive
+`geb-VERSION-PLATFORM.tar.gz` for each platform it is built on, beside
+the archive's SHA-256 sum, and the two editor extensions. Write the
+lines of the sums of the platforms the client is built on into
+`geb-release.sha256`, in place of the submodule:
+
+```sh
+git rm geb
+printf '/geb/\n' >> .gitignore
+cat geb-VERSION-*.tar.gz.sha256 > geb-release.sha256
+bash fetch-geb.sh
+```
+
+`fetch-geb.sh` downloads the archive of the machine's platform, checks it
+against the pinned sum and extracts it at `geb/`, where the editor's
+settings and `check.sh` read it as they read a checkout. It refuses a
+`geb/` that is not a release. Install the editor extensions from the
+release's `.vsix` files with `code-insiders --install-extension`.
+Development records need a checkout, and an edit of the library is an
+edit of the checkout, so a client that does either keeps the submodule.
 
 ## From a fresh clone
 
@@ -109,7 +139,8 @@ VS Code Insiders.
 theorems and replays their certificate, with the manifest and proof
 document the editor's settings select.
 `.github/workflows/check.yml` runs it after building the host
-executables of the submodule. The Geb repository's
+executables of the submodule, or after fetching the pinned release where
+`geb-release.sha256` exists. The Geb repository's
 `scripts/tests/test-client.sh` runs it on this template, with that
 repository's checkout in place of the submodule.
 

@@ -56,6 +56,16 @@ requested tools. Subsequent commands run those executables directly.
 The checkout keeps the successful build stamps in `.lake/geb-editor/tools/`.
 Editing a client or library Geb document requires no host rebuild.
 
+`geb.toolchainDirectory` may instead name a release of Geb, extracted from
+an archive that `scripts/release.sh` writes and the repository's release
+workflow publishes, which holds the executables, built, under `bin/`
+beside the file `geb-release.json`. The extension runs a release's
+executables as they are and builds nothing, so that neither Lake nor
+the toolchain is needed; the release's assets include both extensions'
+`.vsix` files. Development records need a checkout
+([the client template's README](../../examples/client/README.md)
+§ Pinning a release).
+
 The structural editor is Mike's Paredit, built from the upstream commit
 and [patch](patches/README.md) that `package.json` pins under
 `editorTest.paredit`. The build requires `git`, `patch` and network

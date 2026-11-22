@@ -153,6 +153,13 @@ these capabilities in a client maintained in its own repository.
    `editors/vscode/test/client.cjs` follow an import to its library
    definition, edit the module, compile the program, checking its
    examples, and prove and replay its theorems.
+   A release of the host executables, built for each platform, with the
+   library's sources and the editor extensions, made by the workflow
+   `release.yml` at a tag, takes the place of the submodule for a client
+   that changes neither the library nor a record: the client pins the
+   archives by their digests, and `fetch-geb.sh` places the release at
+   `geb/`, where the editor and `check.sh` run its executables, built, with
+   no Lake (`scripts/tests/test-release.sh`).
    This library is the modules that exist, assembled and shared. The
    library's own modules are written after step 4, in the forms it adds.
 2. Make a check take the time of what changed. The compiled compiler
@@ -6386,9 +6393,10 @@ remains.
     every input ({ref "logic"}[The logic]), and the prover's contract
     with its clients is stated
     ({ref "compatibility-contract"}[The compatibility contract]).
-    The external client needs a reproducible library checkout or vendored
-    sources beneath its manifest. Published references by digest wait on
-    the store and the freezing of the identity-bearing format.
+    The external client pins a library checkout as a submodule, or a
+    release of the host executables and the library's sources by the
+    digests of its archives. Published references by digest wait on the
+    store and the freezing of the identity-bearing format.
 *
   * Verification boundary
   * Which steps of parsing, elaboration, serialization, code generation

@@ -1,4 +1,5 @@
 """Exercise cold, warm and invalidated editor builds without downloading a toolchain."""
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -71,6 +72,26 @@ class ToolReuse(unittest.TestCase):
                      'geb-author', 'interact']
             output = subprocess.check_output(moved, cwd=root, env=env, text=True).strip()
             self.assertEqual(Path(output).resolve(), elsewhere.resolve())
+
+    def test_release(self):
+        with tempfile.TemporaryDirectory(prefix='Geb release λ ') as tmp:
+            root = Path(tmp)
+            (root / 'bin').mkdir()
+            (root / 'geb-release.json').write_text('{"format": "geb-release/v1"}')
+            tool = root / 'bin' / 'geb-author'
+            tool.write_text('#!/bin/sh\necho "$*"\n')
+            tool.chmod(0o755)
+            # No Lake is on the path: a release runs its executables as they are.
+            env = {**os.environ, 'PATH': os.path.dirname(sys.executable)}
+            def launch(*args):
+                return subprocess.run([sys.executable, str(LAUNCHER), *args], cwd=root, env=env,
+                                      capture_output=True, text=True)
+            ran = launch('run', 'geb-author', 'compile', 'a b')
+            self.assertEqual((ran.returncode, ran.stdout.strip()), (0, 'compile a b'))
+            [[binary, _]] = json.loads(launch('ensure', 'geb-author').stdout)
+            self.assertEqual(Path(binary), tool.resolve())
+            self.assertIn('the release lacks', launch('run', 'geb-kernel', 'holes').stderr)
+            self.assertIn('need a Geb checkout', launch('preserve', 'verify', 'r').stderr)
 
 
 if __name__ == '__main__':
