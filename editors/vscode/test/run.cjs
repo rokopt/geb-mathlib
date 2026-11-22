@@ -49,6 +49,9 @@ async function main() {
     for (const file of ['pair.manifest', 'Pair.geb', 'Lists.geb']) {
       copyFileSync(path.join(root, 'examples/authoring', file), path.join(project, file));
     }
+    for (const file of ['requests.manifest', 'Index.geb']) {
+      copyFileSync(path.join(root, 'examples/requests', file), path.join(project, file));
+    }
     // Proof imports outside the selected workspace folder must also be saved before execution.
     const proofs = path.join(state, 'proofs λ with spaces');
     mkdirSync(proofs);
@@ -67,7 +70,8 @@ async function main() {
       'geb.programs': [{ name: 'Editor fixture', manifest: 'pair.manifest',
         proofs: path.join(proofs, 'More.proofs.geb'),
         image: 'out/program.img', certificate: 'out/proof.cert' },
-      { name: 'Kernel fixture', manifest: 'open.manifest' }],
+      { name: 'Kernel fixture', manifest: 'open.manifest' },
+      { name: 'Requests fixture', manifest: 'requests.manifest' }],
     }));
     const workspace = path.join(state, 'editor.code-workspace');
     writeFileSync(workspace, JSON.stringify({ folders: [{ path: root }, { path: project }] }));

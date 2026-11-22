@@ -148,6 +148,26 @@ exports.run = async test => {
     await vscode.commands.executeCommand('geb.selectProgram', 'Editor fixture');
     assert.equal((await command('replay')).code, 0);
   });
+  await test('a program runs on a file, and with requests in its workspace folder', async () => {
+    await vscode.commands.executeCommand('geb.selectProgram', 'Requests fixture');
+    // The step at a file's tree, which is no event of the protocol, ends with its status 2.
+    writeFileSync(file('input'), 'abc');
+    const ran = await command('run', { entry: 'Index.step', input: 'input', output: 'output' });
+    assert.equal(ran.code, 0);
+    assert.deepEqual([...readFileSync(file('output'))], [2]);
+    assert.deepEqual(ran.task.execution.args.slice(1, 5), ['run', 'geb-author', 'run',
+      file('requests.manifest')]);
+    // Relative paths in the requests are the workspace folder's.
+    writeFileSync(file('index'), 'target λ\n');
+    writeFileSync(file('target λ'), 'the target\n');
+    const interacted = await command('interact',
+      { entry: 'Index.step', arguments: ['index', 'copy'] });
+    assert.equal(interacted.code, 0);
+    assert.equal(readFileSync(file('copy'), 'utf8'), 'the target\n');
+    assert.deepEqual(interacted.task.execution.args.slice(1, 4), ['run', '--directory', project]);
+    assert.equal((await command('interact', { entry: 'Index.step', arguments: [] })).code, 2);
+    await vscode.commands.executeCommand('geb.selectProgram', 'Editor fixture');
+  });
   await test('terminating a task releases the next command', async () => {
     const started = vscode.tasks.onDidStartTask(e => {
       if (e.execution.task.definition.type === 'geb') e.execution.terminate();

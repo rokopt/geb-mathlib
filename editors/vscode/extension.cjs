@@ -2,12 +2,16 @@
 const vscode = require('vscode');
 const path = require('node:path');
 const { mkdir } = require('node:fs/promises');
+const { execFile } = require('node:child_process');
+const { promisify } = require('node:util');
 
 const launcher = path.join(__dirname, 'tools.py');
 const proofCache = folder => path.join(folder, '.lake', 'geb-proof-cache');
 
 const actions = {
   compile: 'Compile program',
+  run: 'Run program on a file',
+  interact: 'Run program with requests',
   prove: 'Prove statements',
   replay: 'Replay certificate',
   holes: 'Show kernel holes',
@@ -64,13 +68,29 @@ function fileTask(folder, name) {
     name === 'check saved file' ? ['$geb'] : []);
 }
 
-function invocation(action, p, record) {
+// Arguments of a run with requests: a JSON array of strings, or words separated by white space.
+function argumentsOf(text) {
+  const value = text.trim();
+  if (!value.startsWith('[')) return value ? value.split(/\s+/) : [];
+  const parsed = JSON.parse(value);
+  if (!Array.isArray(parsed) || !parsed.every(a => typeof a === 'string')) {
+    throw new Error('Program arguments in brackets must be a JSON array of strings');
+  }
+  return parsed;
+}
+
+function invocation(action, p, record, given) {
   const proof = () => {
     if (!p.proofs) throw new Error(`${p.name}: configure proofs in geb.programs`);
     return p.proofs;
   };
   switch (action) {
     case 'compile': return ['python3', [launcher, 'run', 'geb-author', 'compile', p.manifest, p.image]];
+    case 'run': return ['python3', [launcher, 'run', 'geb-author', 'run', p.manifest,
+      given.entry, given.input, given.output]];
+    // Relative paths in the program's requests resolve against its workspace folder.
+    case 'interact': return ['python3', [launcher, 'run', '--directory', p.folder.uri.fsPath,
+      'geb-author', 'interact', p.manifest, given.entry, ...given.arguments]];
     case 'prove': return ['python3', [launcher, 'run', 'geb-author', action, '--cache',
       proofCache(p.folder.uri.fsPath), p.manifest, proof(), p.certificate]];
     case 'replay':
@@ -155,6 +175,52 @@ exports.activate = context => {
       }))?.[0];
     return uri?.fsPath;
   }
+  // The entry, files and arguments of a run: those given to the command, or else chosen, the
+  // previous choices for the program offered first.
+  async function runParameters(action, p, given = {}) {
+    const key = `geb.run:${p.key}`;
+    const previous = context.workspaceState.get(key) || {};
+    let entry = given.entry;
+    if (entry === undefined) {
+      const { stdout } = await promisify(execFile)('python3',
+        [launcher, 'run', 'geb-kernel', 'entries', p.manifest], { cwd: p.cwd });
+      const entries = stdout.split('\n').filter(Boolean);
+      if (!entries.length) throw new Error(`${p.name}: the manifest names no entry point`);
+      entry = entries.length === 1 ? entries[0] : (await vscode.window.showQuickPick(
+        [...entries].sort((a, b) => (b === previous.entry) - (a === previous.entry)),
+        { title: `${actions[action]}: entry point`, placeHolder: p.name }));
+      if (!entry) return;
+    }
+    const folder = uri => uri || p.folder.uri;
+    const result = { entry };
+    if (action === 'run') {
+      const file = value => value && path.resolve(p.folder.uri.fsPath, value);
+      result.input = file(given.input) || (await vscode.window.showOpenDialog({
+        title: `${actions[action]}: input`, canSelectMany: false,
+        defaultUri: folder(previous.input && vscode.Uri.file(previous.input)),
+      }))?.[0]?.fsPath;
+      if (!result.input) return;
+      result.output = file(given.output) || (await vscode.window.showSaveDialog({
+        title: `${actions[action]}: output`, saveLabel: 'Write output',
+        defaultUri: folder(previous.output && vscode.Uri.file(previous.output)),
+      }))?.fsPath;
+      if (!result.output) return;
+      if ([p.manifest, result.input].includes(result.output)) {
+        throw new Error('The output must differ from the manifest and the input');
+      }
+    } else {
+      const text = given.arguments !== undefined ? undefined : await vscode.window.showInputBox({
+        title: `${actions[action]}: arguments`, value: previous.text ?? '',
+        prompt: 'Separated by white space, or a JSON array of strings; relative paths are ' +
+          'resolved against the workspace folder',
+      });
+      if (text === undefined && given.arguments === undefined) return;
+      result.arguments = given.arguments ?? argumentsOf(text);
+      if (text !== undefined) result.text = text;
+    }
+    await context.workspaceState.update(key, { ...previous, ...result });
+    return result;
+  }
   async function run(action, destination) {
     if (!vscode.workspace.isTrusted) throw new Error('Geb commands require a trusted workspace');
     if (busy) throw new Error('A Geb command is running; wait for it or terminate its task');
@@ -166,14 +232,26 @@ exports.activate = context => {
       const p = await select();
       if (!p) return;
       const needsRecord = ['record', 'verify', 'check', 'compare'].includes(action);
-      if (destination !== undefined && (typeof destination !== 'string' || !destination.trim())) {
+      const running = ['run', 'interact'].includes(action);
+      if (running && destination !== undefined && (typeof destination !== 'object' ||
+          destination === null ||
+          ['entry', 'input', 'output'].some(f => destination[f] !== undefined &&
+            typeof destination[f] !== 'string') ||
+          (destination.arguments !== undefined && !(Array.isArray(destination.arguments) &&
+            destination.arguments.every(a => typeof a === 'string'))))) {
+        throw new Error('Run parameters are an object of an entry, input, output and arguments');
+      }
+      if (!running && destination !== undefined &&
+          (typeof destination !== 'string' || !destination.trim())) {
         throw new Error('A record destination must be a nonempty path');
       }
       const record = action === 'record' && destination !== undefined
         ? path.resolve(p.folder.uri.fsPath, destination)
         : needsRecord ? await recordPath(p, action === 'record') : undefined;
       if (needsRecord && !record) return;
-      const [command, args] = invocation(action, p, record);
+      const given = running ? await runParameters(action, p, destination) : undefined;
+      if (running && !given) return;
+      const [command, args] = invocation(action, p, record, given);
       if (!['verify', 'check'].includes(action)) await saved(p);
       if (action === 'compile' || action === 'prove') {
         const output = action === 'compile' ? p.image : p.certificate;
@@ -186,7 +264,7 @@ exports.activate = context => {
       const task = new vscode.Task({ type: 'geb', gebExecution: id }, p.folder,
         `${actions[action]} (${p.name})`, 'Geb',
         new vscode.ProcessExecution(command, args, { cwd: p.cwd }),
-        ['compile', 'prove', 'replay'].includes(action) ? ['$geb'] : []);
+        ['compile', 'prove', 'replay', 'run', 'interact'].includes(action) ? ['$geb'] : []);
       task.presentationOptions = { reveal: vscode.TaskRevealKind.Always, panel: vscode.TaskPanelKind.Shared };
       listener = vscode.tasks.onDidEndTaskProcess(event => {
         if (event.execution.task.definition.gebExecution !== id) return;
@@ -195,6 +273,9 @@ exports.activate = context => {
           vscode.window.setStatusBarMessage(`Geb: ${actions[action]} finished`, 5000);
         } else if (action === 'holes' && event.exitCode === 2) {
           vscode.window.setStatusBarMessage('Geb: open holes remain; see the task terminal', 8000);
+        } else if (action === 'interact' && event.exitCode !== undefined) {
+          vscode.window.setStatusBarMessage(
+            `Geb: the program exited with status ${event.exitCode}; see the task terminal`, 8000);
         } else {
           void vscode.window.showErrorMessage(`Geb: ${actions[action]} did not complete ` +
             `(exit ${event.exitCode ?? 'unknown'}); see the task terminal`);

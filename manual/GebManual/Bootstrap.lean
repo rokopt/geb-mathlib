@@ -199,10 +199,11 @@ these capabilities in a client maintained in its own repository.
    (`geb-kernel interact`, `geb-author interact`). The acceptance program,
    `examples/requests/`, reads an index, reads the file whose path is its
    first line, writes a line of its own where that file is missing, and
-   writes the output. Remaining: the editor's commands that run a program
-   of the selected project, on a file (`geb-author run`) and with requests,
-   and the protocol's datatypes in the library, written with its modules
-   after step 4, through which a client issues requests. General
+   writes the output. The editor runs an entry of the selected program on
+   a file (`geb-author run`) and with requests, in the program's workspace
+   folder (`geb-author interact`). Remaining: the protocol's datatypes in
+   the library, written with its modules after step 4, through which a
+   client issues requests. General
    step-bounded execution and resumption follow the bootstrap, with the
    second host ({ref "files-editions"}[Files, editions and the host
    boundary]).
@@ -5287,8 +5288,10 @@ formatting on save by default.
 The extension is in `editors/vscode/`, and contributes a task for
 formatting a saved file. Its commands select a
 program by its manifest in workspace settings and invoke the host's
-compilation, proof search, certificate replay, kernel-hole reporting and
-development preservation. The selection is remembered, source and imported
+compilation, its running of an entry on a file and with requests
+({ref "files-editions"}[Files, editions and the host boundary]), proof
+search, certificate replay, kernel-hole reporting and development
+preservation. The selection is remembered, source and imported
 proof buffers are saved before commands reading the current program, and
 results are displayed in task terminals. Compilation, proving and
 replay also publish located diagnostics in the Problems view. The preservation
@@ -6513,10 +6516,11 @@ remains.
     requests of a versioned protocol, which fixes the encodings of paths
     and bytes and returns a failure of the file system to the program as a
     result ({name}`Geb.Kernel.Requests.next`,
-    {ref "files-editions"}[Files, editions and the host boundary]). Ready
-    on the Lean host are the editor's commands that run a program. General
-    typed entry points and step-bounded execution with resumption follow
-    the bootstrap, with the second host. The proof runner uses its own entry
+    {ref "files-editions"}[Files, editions and the host boundary]), and
+    the editor runs a program on a file and with requests
+    ({ref "editing"}[Editing]). General typed entry points and
+    step-bounded execution with resumption follow the bootstrap, with the
+    second host. The proof runner uses its own entry
     through emitted Lean.
 :::
 

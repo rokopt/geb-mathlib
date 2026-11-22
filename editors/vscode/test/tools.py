@@ -62,6 +62,15 @@ class ToolReuse(unittest.TestCase):
             (root / '.lake/build/bin/geb-author').unlink()
             run()
             self.assertEqual(count(), 7)
+            # A tool may run in another directory, the build still in the checkout's.
+            elsewhere = root / 'elsewhere'
+            elsewhere.mkdir()
+            (root / 'bin' / 'tool').write_text('#!/bin/sh\npwd\n')
+            (root / '.lake/build/bin/geb-author').write_text('#!/bin/sh\npwd\n')
+            moved = [sys.executable, str(LAUNCHER), 'run', '--directory', str(elsewhere),
+                     'geb-author', 'interact']
+            output = subprocess.check_output(moved, cwd=root, env=env, text=True).strip()
+            self.assertEqual(Path(output).resolve(), elsewhere.resolve())
 
 
 if __name__ == '__main__':
