@@ -117,7 +117,7 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-cache-test-') as directory:
 
     # A development that does not read leaves the cache as it is: here a script cites a theorem
     # under a name it no longer has.
-    file = next(cache.iterdir())
+    file = next(p for p in cache.iterdir() if p.is_file())
     kept = file.read_bytes()
     out, err = prove(DOC.replace('(theorem append-nil ', '(theorem right-unit '), ok=False)
     assert 'the script of the theorem append-nil-twice does not read' in err, err
