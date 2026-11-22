@@ -9,6 +9,7 @@ public import Geb.Prototypes.Kernel.Command
 public import GebBoot
 public import GebHost.Locate
 public import GebHost.Typing
+public import GebHost.DatatypeTyping
 public import GebHost.Layers
 
 set_option doc.verso true
@@ -40,10 +41,11 @@ A failure is reported as a diagnostic, {lit}`FILE:LINE:COLUMN: error: MESSAGE`, 
 the column those of the occurrence the failure concerns in the source that holds it, each from
 one: a character that is not well formed, a parenthesis that is not closed or closes nothing, an
 atom the implementation reserves, the name of the module among whose forms the modules do not
-elaborate, or the name of the first declaration that a stage rejects. Where no occurrence is
-found the diagnostic is {lit}`INPUT: MESSAGE`. The occurrence is found from the sources
-as written ({name}`GebHost.Locate.locate`) after the compiler has rejected the program, and
-decides nothing about it.
+elaborate, a hole of a definition, or, of the first definition that a stage rejects, the term
+whose type is not the type expected there, and its name where no such term is found. Where no
+occurrence is found the diagnostic is {lit}`INPUT: MESSAGE`. The occurrence is found from the
+sources as written ({name}`GebHost.Locate.locate`) after the compiler has rejected the program,
+and decides nothing about it.
 
 ## Main definitions
 
@@ -80,15 +82,24 @@ inductive Subject where
   | declaration (name : String) (nth : Nat)
   /-- A kernel vertex inside a named definition. -/
   | term (name : String) (path : List Nat)
+  /-- A vertex of the form the expansion of the datatype language writes for a named
+  declaration. -/
+  | expanded (name : String) (path : List Nat)
+  /-- A hole at a vertex of the form the expansion of the datatype language writes for a named
+  declaration, as the form reads. -/
+  | hole (name : String) (path : List Nat)
   /-- No occurrence. -/
   | program
 
-/-- A stage's rejection of a program: what it concerns, and its message. -/
+/-- A stage's rejection of a program: what it concerns, and its message; and what the rejection
+reports besides, each with what it concerns, as the obligations of a definition's holes are. -/
 structure Rejection where
   /-- What the rejection concerns. -/
   subject : Subject
   /-- The message. -/
   message : String
+  /-- What the rejection reports besides. -/
+  more : List (Subject × String)
 
 /-- A stage's optional result, or its rejection. -/
 def required (t : Tree) (why : Unit → Rejection) : Except Rejection Tree :=
@@ -138,8 +149,8 @@ the form in words. -/
 def firstFormRejected (ok : List Tree → Bool) (es : List Tree) (msg : String → String) :
     Rejection :=
   match firstRejected ok es with
-  | some k => ⟨(formAt es k).1, msg (formAt es k).2⟩
-  | none => ⟨.program, msg "the program"⟩
+  | some k => ⟨(formAt es k).1, msg (formAt es k).2, []⟩
+  | none => ⟨.program, msg "the program", []⟩
 
 /-- The message of the seed's elaboration of a program's modules, which the elaboration in the
 compiler agrees with on what it rejects and which alone says why. -/
@@ -152,44 +163,74 @@ def modulesFailure (file : Tree) : String :=
     | .error msg => msg
     | .ok _ => unknown
 
-/-- The failure of a definition the typing names. Module elaboration writes a template's instance
-at opaque arguments under a prefix holding the reserved {lit}`%generic`, which no source writes. -/
-def checkFailure (n : String) : Rejection :=
+/-- The name a source declares of a definition the typing names, and what the definition does
+not check at. Module elaboration writes a template's instance at opaque arguments under a prefix
+holding the reserved {lit}`%generic`, which no source writes. -/
+def declaredName (n : String) : String × String :=
   let marker := "%generic"
   if (n.splitOn marker).length > 1 then
-    let name := "".intercalate (n.splitOn marker)
-    ⟨.declaration name 0, s!"{name} does not check at its template's opaque parameters"⟩
-  else ⟨.declaration n 0, s!"{n} does not check"⟩
+    ("".intercalate (n.splitOn marker), " at its template's opaque parameters")
+  else (n, "")
+
+/-- The failure of a definition the typing names. -/
+def checkFailure (n : String) : Rejection :=
+  let (name, at_) := declaredName n
+  ⟨.declaration name 0, s!"{name} does not check{at_}", []⟩
+
+/-- A hole's obligation in words: the type required of it, and the variables bound around it. -/
+def holeMessage (h : DatatypeTyping.Hole) : String :=
+  let type := match h.type with
+    | some A => s!"expected {A}"
+    | none => "no type is required of it here; (hole NAME TYPE) declares one"
+  let scope := match h.context with
+    | [] => ""
+    | cx =>
+      "; in scope: " ++ ", ".intercalate (cx.map fun (p : String × String) ↦ s!"{p.1} : {p.2}")
+  s!"hole ?{h.name}: {type}{scope}"
+
+/-- The failure of a program the typing rejects, explained by the located pass over the forms
+the expansion writes: the first failure in the forms the pass reads, where there is one, and the
+obligations of their holes; none where the pass finds neither. -/
+def explainedFailure (es : List Tree) : Option Rejection :=
+  let found := (DatatypeTyping.failing es).map fun (r : DatatypeTyping.Rejected) ↦
+    let (name, at_) := declaredName ((r.2.1.children[1]?.bind DatatypeTyping.atomText).getD "")
+    (r.2.2.fault.map fun (x : DatatypeTyping.Fault) ↦
+        (Subject.expanded name x.path, s!"{name} does not check{at_}: {x.message}"),
+      r.2.2.holes.map fun (h : DatatypeTyping.Hole) ↦ (Subject.hole name h.path, holeMessage h))
+  match (found.filterMap (·.1)) ++ found.flatMap (·.2) with
+  | (subject, message) :: rest => some ⟨subject, message, rest⟩
+  | [] => none
 
 /-- The first stage of the compiler that rejects a program, with what the rejection concerns.
 The modules that do not elaborate are those of the first form among the program's, as written,
 with which they do not. -/
 def rejection (file : Tree) : Except Rejection Unit := do
   let sx ← required (GebBoot.«Reader.readSExps» file.children) fun _ ↦
-    ⟨.text, "the text is not well formed or its parentheses do not balance"⟩
+    ⟨.text, "the text is not well formed or its parentheses do not balance", []⟩
   if (GebBoot.«Compile.userSource» sx).label = 0 then
     throw ⟨.reserved,
-      "an atom outside a quotation or a datum begins with %, which the implementation reserves"⟩
+      "an atom outside a quotation or a datum begins with %, which the implementation reserves", []⟩
   let elaborates (fs : List Tree) := (GebBoot.«Modules.expandModules» fs).label ≠ 0
   let mx ← required (GebBoot.«Modules.expandModules» sx.children) fun _ ↦
     ⟨match firstRejected elaborates sx.children with
       | some k => .form k
-      | none => .program, modulesFailure file⟩
+      | none => .program, modulesFailure file, []⟩
   let es := mx.children
   if let some n := nameString? (GebBoot.«Expansion.typeErrorOfForms» es) then
     if let some f := Typing.inProgram (file.children.map fun c ↦ Char.ofNat c.label) n then
-      throw ⟨.term n f.path, s!"{n} does not check: {f.message}"⟩
+      throw ⟨.term n f.path, s!"{n} does not check: {f.message}", []⟩
+    if let some r := explainedFailure es then throw r
     throw (checkFailure n)
   let expands (fs : List Tree) := (GebBoot.«Expansion.expandProgram» fs).label ≠ 0
   let kx ← required (GebBoot.«Expansion.expandProgram» es) fun _ ↦
     firstFormRejected expands es (s!"{·} does not expand")
   let rx ← required (GebBoot.«Recognize.insertRecognizers» kx.children) fun _ ↦
-    ⟨.program, "the recognizers of the program's datatypes cannot be written"⟩
+    ⟨.program, "the recognizers of the program's datatypes cannot be written", []⟩
   let st := GebBoot.«Support.readMore» GebBoot.«Support.readStart» rx.children
   let named (t : Tree) (msg : String → String) : Rejection :=
     match nameString? t with
-    | some n => ⟨.declaration n 0, msg n⟩
-    | none => ⟨.program, msg "a form"⟩
+    | some n => ⟨.declaration n 0, msg n, []⟩
+    | none => ⟨.program, msg "a form", []⟩
   let unread := GebBoot.«Support.unreadOf» st
   if (GebBoot.«Prelude.isSome» unread).label ≠ 0 then
     throw <| named (GebBoot.«Prelude.get» unread)
@@ -203,7 +244,7 @@ def rejection (file : Tree) : Except Rejection Unit := do
 def rejectionOf (file : Tree) : Rejection :=
   match rejection file with
   | .error r => r
-  | .ok () => ⟨.program, "the backend writes nothing for the program"⟩
+  | .ok () => ⟨.program, "the backend writes nothing for the program", []⟩
 
 /-! ## Diagnostics -/
 
@@ -243,37 +284,64 @@ def nameSpan (t : Located) : Span :=
   | some n => if n.label.2.isSome then n.label.1 else .at t.label.1.start
   | none => .at t.label.1.start
 
-/-- The occurrence a rejection concerns in a program's sources, in the order the program reads
-them, with the message at it: where a source does not read, what rejects its text; the atom
-reserved; the form of a position among the sources' forms; and the declaration of a name, at its
-position among those of the name or the last of them, or else the declaration that the name is
-written after. -/
-def occurrence (sources : List Source) (r : Rejection) : Option (String × Span × String) :=
+/-- The occurrence a subject is at in a program's sources, in the order the program reads them,
+with the message at it: where a source does not read, what rejects its text; the atom reserved;
+the form of a position among the sources' forms; the declaration of a name, at its position among
+those of the name or the last of them, or else the declaration that the name is written after;
+and the source expression of a vertex of a definition, or else the definition's declaration. -/
+def occurrenceOf (sources : List Source) (subject : Subject) (message : String) :
+    Option (String × Span × String) :=
+  let r : Subject × String := (subject, message)
   let located := sources.map fun s ↦ (s.path, locate s.text)
   let items := located.filterMap fun (p, x) ↦ x.toOption.map fun ts ↦ (p, forms ts)
-  match r.subject with
+  match r.1 with
   | .text => located.findSome? fun (p, x) ↦
     match x with
     | .error f => some (p, f.span, f.message)
     | .ok _ => none
-  | .reserved => items.findSome? fun (p, ts) ↦ (findReserved ts).map (p, ·, r.message)
+  | .reserved => items.findSome? fun (p, ts) ↦ (findReserved ts).map (p, ·, r.2)
   | .form k => ((items.flatMap fun (p, ts) ↦ ts.map (p, ·))[k]?).map fun (p, t) ↦
-    (p, nameSpan t, r.message)
+    (p, nameSpan t, r.2)
   | .declaration name nth =>
-    let exact := items.flatMap fun (p, ts) ↦ (findDeclarations ts name).map (p, ·, r.message)
+    let exact := items.flatMap fun (p, ts) ↦ (findDeclarations ts name).map (p, ·, r.2)
     (exact[nth]? <|> exact.getLast?) <|>
-      items.findSome? fun (p, ts) ↦ (findEnclosing ts name).map (p, ·, r.message)
+      items.findSome? fun (p, ts) ↦ (findEnclosing ts name).map (p, ·, r.2)
   | .term name path =>
     items.findSome? fun (p, ts) ↦
       ((Typing.occurrences ts name path).head? <|>
-        (findDeclarations ts name).head? <|> findEnclosing ts name).map (p, ·, r.message)
+        (findDeclarations ts name).head? <|> findEnclosing ts name).map (p, ·, r.2)
+  | .expanded name path =>
+    items.findSome? fun (p, ts) ↦
+      ((DatatypeTyping.occurrences ts name path).head? <|>
+        (findDeclarations ts name).head? <|> findEnclosing ts name).map (p, ·, r.2)
+  | .hole name path =>
+    items.findSome? fun (p, ts) ↦
+      ((DatatypeTyping.occurrences ts name path).head? <|>
+        (findDeclarations ts name).head? <|> findEnclosing ts name).map fun sp ↦
+        (p, sp,
+          if DatatypeTyping.holeAt ts name path == some false then
+            s!"{name} does not check: a qualified name is not visible: its module is not \
+              declared before, or does not export it"
+          else r.2)
   | .program => none
+
+/-- The diagnostic of a subject and a message of what was compiled from sources. -/
+def diagnosticOf (input : String) (sources : List Source) (subject : Subject) (message : String) :
+    Diagnostic :=
+  match occurrenceOf sources subject message with
+  | some (p, sp, msg) => ⟨p, some sp, msg⟩
+  | none => ⟨input, none, message⟩
 
 /-- The diagnostic of a rejection of what was compiled from sources. -/
 def diagnostic (input : String) (sources : List Source) (r : Rejection) : Diagnostic :=
-  match occurrence sources r with
-  | some (p, sp, msg) => ⟨p, some sp, msg⟩
-  | none => ⟨input, none, r.message⟩
+  diagnosticOf input sources r.subject r.message
+
+/-- The diagnostics of a rejection: its own, and those of what it reports besides, a line
+each. -/
+def rendered (input : String) (sources : List Source) (r : Rejection) : String :=
+  "\n".intercalate
+    ((diagnostic input sources r).render ::
+      r.more.map fun (subject, message) ↦ (diagnosticOf input sources subject message).render)
 
 /-- A program's bundle, where the compiler reads it and the kernel's checker types its terms, as
 {lit}`Compile.compileWith` takes it from the state {lit}`Compile.readState` gives. -/
@@ -331,7 +399,7 @@ is the one given where the program was compiled a layer at a time
 def compiled (back : Tree → Tree) (input : String) (sources : List Source)
     (checkNames : List String → Except String Unit) (file : Tree) (kept : Option Tree := none) :
     Except String Tree := do
-  let reject := fun _ : Unit ↦ (diagnostic input sources (rejectionOf file)).render
+  let reject := fun _ : Unit ↦ rendered input sources (rejectionOf file)
   let some b := kept <|> checkedBundle file | throw (reject ())
   let out := back b
   if out == mk 0 [] then throw (reject ())

@@ -4198,8 +4198,13 @@ import-direction rules above are enforced by
   program. `GebHost/Typing.lean` follows failed operands through the
   compiled kernel checker and maps their vertices through the source
   correspondence. Kernel program prefixes, including modules and `defn`,
-  report the offending expression and its expected and actual types;
-  datatype prefixes retain declaration diagnostics.
+  report the offending expression and its expected and actual types.
+  `GebHost/DatatypeTyping.lean` does so for the typing of the datatype
+  language: it follows the form the expansion writes for the definition the
+  typing rejects, each node's type the compiled typing's, and reports the
+  subterm whose type is not the one its form requires, with the two types
+  before their erasure, and each hole with the type required of it and the
+  variables bound around it.
   The compiler's stages find a name in a trie over the digits of its
   characters (`bootstrap/trie.geb`): the elaboration of modules holds its
   names in tries, and the typing and the reading check each form against

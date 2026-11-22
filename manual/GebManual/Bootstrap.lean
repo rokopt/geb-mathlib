@@ -176,15 +176,19 @@ these capabilities in a client maintained in its own repository.
    The bundle is that of the layers' texts joined; a layer that refers
    to the recognizer of an earlier layer's datatype that no layer before
    it refers to is compiled with the whole program.
-3. Report datatype errors and holes where they are written. Carry source
-   occurrences through module elaboration and datatype expansion. Ask the
-   stage-1 checker for the expected and actual types before their erasure.
-   For a branch returning `7` where the declared result is `Light`, the
-   diagnostic should select `7` and name the two types. Replacing it with
-   a named hole should display its context and expected type in the editor.
-   A well-typed filling checks. An open obligation prevents a completed build.
-   The kernel checker and the obligations view provide the existing interfaces
-   ({ref "editing"}[Editing]).
+3. Complete. Report datatype errors and holes where they are written. A
+   failure of the datatype language's typing is reported at the subterm
+   whose type is not the one its form requires, with the two types before
+   their erasure: for a branch returning `7` where the declared result is
+   `Light`, the diagnostic selects `7` and names `Light` and `T`. A named
+   hole in its place is reported with the type required of it and the
+   variables bound around it, as are the holes of the definitions after
+   it; a well-typed filling checks, and a definition with a hole does not.
+   The report is an untrusted pass of the host over the form the expansion
+   writes, each typing decision the compiled typing's
+   (`GebHost/DatatypeTyping.lean`), and reaches the editor as the
+   diagnostics of the check of a saved file. The obligations view reads
+   kernel forms alone ({ref "editing"}[Editing]).
 4. Add polymorphic definitions, before the library's modules are written
    (the decision on polymorphic definitions). A definition, and a
    datatype's declaration, takes type parameters of its own, supplied
@@ -226,16 +230,15 @@ these capabilities in a client maintained in its own repository.
    proof-source version 1 to 2 and the image's explicit kernel profile
    ({ref "first-authoring"}[Writing a first Geb development]).
 
-Datatype feedback and the filesystem interpreter can proceed alongside
-the library, as can the design of step 4, which changes no source.
-Develop diagnostics and holes against the same source correspondence.
-Integrate the
+The filesystem interpreter can proceed alongside the library, as can
+the design of step 4, which changes no source. Integrate the
 interpreter when the client can issue requests. Preservation work can
 start on the Roundtrip record and take up value migration when the client
 has a saved datatype. Changes to compiler sources regenerate committed
-images and merge one at a time: step 2 is complete, and those of steps
-3 and 4 follow in that order. Steps 1, 5 and 6 change the host, the
-editor and the client, and proceed beside them.
+images and merge one at a time: steps 2 and 3 are complete, step 3
+without a change to a compiler's source, and step 4 is the next. Steps 1,
+5 and 6 change the host, the editor and the client, and proceed beside
+it.
 The editor retains the selected program's navigation index and uses the
 client's proof cache ({ref "improvements"}[Improvements]). Other
 editors can reuse these services through a general protocol. Network storage follows its own
@@ -1954,12 +1957,13 @@ section below opens with a table of the states of its parts.
   * In progress
   * Complete for readable and strict documents, module imports and exports,
     kernel diagnostics and holes, proof goals and replay, and the editor
-    services described in {ref "editing"}[Editing]. The datatype language's
-    completion clears the way for explicit assembly, datatype diagnostics
-    and holes, and polymorphic definitions, which precede the library's
-    modules. The downstream client supplies the consumer for filesystem
-    requests and value migration ({ref "downstream-authoring"}[A Geb
-    library and its downstream application]).
+    services described in {ref "editing"}[Editing], and for the located
+    diagnostics and the holes of the datatype language. The datatype
+    language's completion clears the way for explicit assembly and for
+    polymorphic definitions, which precede the library's modules. The
+    downstream client supplies the consumer for filesystem requests and
+    value migration ({ref "downstream-authoring"}[A Geb library and its
+    downstream application]).
 *
   * {ref "goedel-t"}[Gödel's T]
   * Complete
@@ -4047,8 +4051,9 @@ tag := "authoring-compatibility"
     in the editors through `geb-author check`: complete; kernel typing
     failures inside expressions, with expected and actual types: complete
     for kernel program prefixes, including modules and `defn`. Holes in the datatype language
-    and located diagnostics of its typing: ready; the typed enumerator:
-    ready
+    and located diagnostics of its typing, with the types before their
+    erasure: complete, by a pass of the host over the forms the expansion
+    writes; the typed enumerator: ready
 *
   * Navigation and its index
   * Complete for definitions, hover, outlines, workspace symbols, scoped
@@ -5352,7 +5357,9 @@ compiler. Nothing is needed now.
 
 The executable `geb-compile`
 reports what rejects a program as `FILE:LINE:COLUMN: error: MESSAGE`, at
-the first failing declaration's name where a stage determines one, at the
+the term of the first failing definition whose type is not the type
+expected there, or at that definition's name where no such term is found,
+at a hole of a definition, at the
 name of the module among whose forms the modules do not elaborate, at an
 atom the implementation reserves, or at the character or parenthesis at
 which the text does not read. The spans are a derived annotation: after
@@ -5375,10 +5382,15 @@ contributes. For kernel program prefixes, {name}`GebHost.Typing.check`
 reports the failing vertex and an expected type, delegating typing
 decisions to the compiled checker. The separate, untrusted pass maps that
 vertex through the source correspondence to the original expression,
-including under binders, `let`, `defn` and modules. Prefixes containing
-datatype declarations retain declaration diagnostics. Stage-1 typing
-can supply a source type at the offending expression before erasure.
-The next editor work is to expose that information and datatype holes.
+including under binders, `let`, `defn` and modules. For a program with
+datatype declarations, `GebHost/DatatypeTyping.lean` follows the form the
+expansion writes for the definition the typing rejects, each node's type
+the compiled typing's, and reports the subterm whose type is not the one
+its form requires, with the two types before their erasure, and each
+hole with the type required of it and the variables bound around it. A
+second untrusted pass maps the vertex to the source through the forms
+module elaboration and the expansion write for the source's.
+The next editor work is to show those obligations in the obligations view.
 The VS Code client reuses the navigation index, tracks buffer versions,
 discards cancelled results and translates byte positions. A Language
 Server Protocol client would need an adapter for its negotiated position
@@ -6435,11 +6447,11 @@ remains.
     the declaration, the theorem, the hole or the step concerned, exit
     with a nonzero status and leave an existing output in place
     ({ref "editing"}[Editing], {ref "proof-holes"}[Holes and goals]).
-    For kernel prefixes the host already maps the failing vertex to the
-    original operand and reports its expected and actual types where
-    available. The analogous datatype report and a structured rejection
-    returned by the compiled entry point are ready
-    ({ref "improvements"}[Improvements]).
+    The host maps the failing vertex to the original operand and reports
+    its expected and actual types, for kernel prefixes and for the
+    datatype language's typing, and reports the obligations of the holes
+    of the datatype language. A structured rejection returned by the
+    compiled entry point is ready ({ref "improvements"}[Improvements]).
 *
   * Editing and recovery
   * Incomplete documents, obligations of holes and unattached annotations
@@ -8704,8 +8716,8 @@ the change that removes it.
   composing the stages of the compiled compiler, with the seed's message for
   modules; an entry point of the compiler returning the report as a value
   would serve a second host without restating it. The host locates an
-  operand inside a rejected kernel declaration. The datatype checker
-  still needs to report which expression failed and why
+  operand inside a rejected declaration, of kernel forms and of the
+  datatype language, with the type required and the type found
   ({ref "editing"}[Editing]). The reading's state names the first form
   that does not read and the first definition that is ill-typed, and the
   host finds the first form another stage rejects by bisection of the

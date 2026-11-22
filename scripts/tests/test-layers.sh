@@ -108,8 +108,8 @@ kept="$("$compiler" check --cache "$test_dir/c/cache" --manifest "$test_dir/c/p.
 [ $? -eq 1 ] || fail_case rejected "check with kept states does not exit 1"
 [ "$plain" = "$kept" ] || fail_case rejected "the diagnostics differ: '$plain' and '$kept'"
 case "$plain" in
-  *"app.geb:1:6: error: bad does not check"*) ;;
-  *) fail_case rejected "the diagnostic '$plain' does not locate the definition" ;;
+  *"app.geb:1:23: error: bad does not check: expected Light, got T"*) ;;
+  *) fail_case rejected "the diagnostic '$plain' does not locate the argument" ;;
 esac
 
 # A kept state whose key file is not the layers' texts is not used.
