@@ -85,12 +85,12 @@ def mismatch (raw : Tree) (types : List (Option Tree)) : Fault :=
   | Label.ref => ⟨[], "the definition is outside the preceding program"⟩
   | _ => ⟨[], "malformed kernel expression or type annotation"⟩
 
-/-- One node's diagnostic, using the compiled checker for the decision and the type. -/
+/-- One node's diagnostic, using the compiled checker for the decision and the type. Each term
+operand is checked once, in its context, and its result is the one the compiled checker is given
+where it asks for the operand's type in that context, so that the time of a failure is linear in
+the term. -/
 def checkStep (G : List Tree) (l : Nat) (cs : List (Tree × Check)) : Check := fun Γ ↦ do
   let raw := mk l (cs.map Prod.fst)
-  let rr := cs.map fun (t, r) ↦ (t, fun ctx ↦ optional (r ctx))
-  let result := GebBoot.«Check.checkNode» G raw rr Γ
-  if result.label != 0 then return result.children.getD 0 tT
   let operands : List (Nat × Ctx) :=
     match l with
     | Label.lam => [(1, (cs[0]?.map (·.1)).getD tT :: Γ)]
@@ -98,12 +98,25 @@ def checkStep (G : List Tree) (l : Nat) (cs : List (Tree × Check)) : Check := f
     | Label.fst | Label.snd => [(0, Γ)]
     | Label.cond => [(0, Γ), (1, Γ), (2, Γ)]
     | _ => []
-  for (i, ctx) in operands do
-    if let some (_, r) := cs[i]? then
-      match r ctx with
-      | .error f => throw { f with path := i :: f.path }
-      | .ok _ => pure ()
-  throw (mismatch raw (cs.map fun (_, r) ↦ (r Γ).toOption))
+  let seen : List (Nat × Ctx × Except Fault Tree) := operands.filterMap fun (i, ctx) ↦
+    cs[i]?.map fun (_, r) ↦ (i, ctx, r ctx)
+  for (i, _, result) in seen do
+    match result with
+    | .error f => throw { f with path := i :: f.path }
+    | .ok _ => pure ()
+  let rr := cs.mapIdx fun i (t, r) ↦
+    (t, fun ctx ↦
+      match seen.find? (·.1 == i) with
+      | some (_, c, result) =>
+        if (Const.equal (mk 0 ctx) (mk 0 c)).label != 0 then optional result
+        else optional (r ctx)
+      | none => optional (r ctx))
+  let result := GebBoot.«Check.checkNode» G raw rr Γ
+  if result.label != 0 then return result.children.getD 0 tT
+  throw (mismatch raw (cs.mapIdx fun i (_, r) ↦
+    match seen.find? (·.1 == i) with
+    | some (_, _, result) => result.toOption
+    | none => (r Γ).toOption))
 
 /-- The checker's type or a failed vertex, without evaluating the program's definitions. -/
 def check (G : List Tree) (Γ : Ctx) (t : Tree) : Except Fault Tree :=
