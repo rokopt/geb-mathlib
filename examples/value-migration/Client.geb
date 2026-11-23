@@ -1,0 +1,13 @@
+; Save and observe lights by their names. Only the dependency changes when their tags change.
+(module Client (export save observe) (import Files) (import Codec) (import Signal)
+  (data Byte (byte T))
+  (defn encode ((light Light)) T (pack version (rep light)))
+  (defn select ((b Byte)) Output
+    (case b
+      ((byte c)
+       (cond ((eq c 82) (emit (encode red))) ((eq c 71) (emit (encode green))) (else reject)))))
+  (defn save ((event T)) T (transform (lam ((f T)) (decode Byte f select reject)) event))
+  (defn display ((light Light)) Output
+    (emit (rep (case light ((red) (byte 82)) ((green) (byte 71))))))
+  (defn observe ((event T)) T
+    (transform (unpack version (lam ((tag T)) (decode Light tag display reject))) event)))

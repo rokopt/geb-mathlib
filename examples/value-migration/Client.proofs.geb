@@ -1,0 +1,6 @@
+; The envelope identifies Signal.Light and retains the supplied encoding version and tag.
+(proofs 1
+  (theorem light-envelope
+    (forall ((v T) (tag T))
+      (equal (Codec.pack v tag) (node 0 (cons 76 (cons v (cons tag (nil T)))))))
+    (by (normalize 64))))

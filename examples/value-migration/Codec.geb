@@ -1,0 +1,9 @@
+; Three bytes encode a Signal.Light. The first identifies the datatype (ASCII L),
+; the second its encoding version, and the third its nullary constructor tag.
+(module Codec (export pack unpack) (import Files) (data Envelope (envelope T T T))
+  (defn pack ((version T) (tag T)) T (rep (envelope 76 version tag)))
+  (defn unpack ((version T) (use (Arrow T Output)) (file T)) Output
+    (decode Envelope file
+      (lam ((e Envelope))
+        (case e ((envelope ty v tag) (if (eq ty 76) (if (eq v version) (use tag) reject) reject))))
+      reject)))

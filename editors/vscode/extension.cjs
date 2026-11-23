@@ -99,10 +99,17 @@ function invocation(action, p, record, given) {
     default: {
       const args = action === 'verify' ? [path.join(p.cwd, 'scripts/preserve.py'), action]
         : [launcher, 'preserve', action];
-      if (action === 'record') args.push(p.manifest, proof(), record, '--certificate', p.certificate);
-      else {
+      if (action === 'record') {
+        args.push(p.manifest);
+        if (p.proofs) args.push(p.proofs);
         args.push(record);
-        if (action === 'compare') args.push(p.manifest, proof());
+        if (p.proofs) args.push('--certificate', p.certificate);
+      } else {
+        args.push(record);
+        if (action === 'compare') {
+          args.push(p.manifest);
+          if (p.proofs) args.push(p.proofs);
+        }
       }
       return ['python3', args];
     }

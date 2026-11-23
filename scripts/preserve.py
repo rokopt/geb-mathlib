@@ -23,12 +23,13 @@ ROOT = Path(__file__).resolve().parent.parent
 # the field "imports"; a record without imports keeps the earlier format.
 FORMAT = "geb-development/v1"
 FORMAT_IMPORTS = "geb-development/v2"
+PROGRAM_FORMAT = "geb-program/v1"
 TOOLS = ("geb-author", "geb-compile", "geb-defs", "geb-kernel")
 ARTIFACTS = {
-    "program.img", "program.defs", "proof.cert", "compiler.img", "authoring.lean.txt",
-    "compiler.lean.txt",
+    "program.img", "program.defs", "compiler.img", "compiler.lean.txt",
     "lean-toolchain", "lake-manifest.json", "host.json",
 }
+PROOF_ARTIFACTS = {"proof.cert", "documents/proofs.csexp", "authoring.lean.txt"}
 
 
 def digest(path):
@@ -98,6 +99,9 @@ def snapshot(manifest, proofs, target):
     names = sources(saved)
     for name in names:
         copy(manifest.parent / name, target / "project" / relative(name))
+    if proofs is None:
+        return saved, None, names, []
+    proofs = proofs.absolute()
     proof = target / "proofs" / proofs.name
     copy(proofs, proof)
     extra = imports(manifest, proofs)
@@ -107,9 +111,11 @@ def snapshot(manifest, proofs, target):
 
 
 def documents(manifest, proofs, names, extra, target):
-    pairs = [(manifest, Path("manifest.csexp")), (proofs, Path("proofs.csexp"))]
+    pairs = [(manifest, Path("manifest.csexp"))]
     pairs += [(manifest.parent / name, Path("sources") / (name + ".csexp")) for name in names]
-    pairs += [(proofs.parent / name, Path("imports") / (name + ".csexp")) for name in extra]
+    if proofs is not None:
+        pairs.append((proofs, Path("proofs.csexp")))
+        pairs += [(proofs.parent / name, Path("imports") / (name + ".csexp")) for name in extra]
     for source, name in pairs:
         out = target / name
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -162,23 +168,33 @@ def verify(root):
     actual = inventory(root)
     info = json.loads((root / "record.json").read_text(encoding="utf-8"),
                       object_pairs_hook=unique_fields)
-    if not isinstance(info, dict) or info.get("format") not in (FORMAT, FORMAT_IMPORTS):
+    formats = (FORMAT, FORMAT_IMPORTS, PROGRAM_FORMAT)
+    if not isinstance(info, dict) or info.get("format") not in formats:
         raise ValueError("unsupported development record format")
-    fields = {"format", "manifest", "proofs", "sources", "files"}
+    has_proofs = info["format"] != PROGRAM_FORMAT
+    fields = {"format", "manifest", "sources", "files"}
+    if has_proofs:
+        fields.add("proofs")
     if info["format"] == FORMAT_IMPORTS:
         fields |= {"imports"}
     if set(info) != fields:
         raise ValueError("unexpected development record fields")
-    manifest, proofs = relative(info["manifest"]), relative(info["proofs"])
-    if manifest.parent != Path("project") or proofs.parent != Path("proofs"):
-        raise ValueError("the record's manifest or proofs are outside their snapshot")
+    manifest = relative(info["manifest"])
+    if manifest.parent != Path("project"):
+        raise ValueError("the record's manifest is outside its snapshot")
+    required = ARTIFACTS | {manifest.as_posix(), "documents/manifest.csexp"}
+    if has_proofs:
+        proofs = relative(info["proofs"])
+        if proofs.parent != Path("proofs"):
+            raise ValueError("the record's proofs are outside their snapshot")
+        required |= PROOF_ARTIFACTS | {proofs.as_posix()}
+    elif PROOF_ARTIFACTS & actual.keys():
+        raise ValueError("a code-only record contains proof artifacts")
     names = info["sources"]
     if not isinstance(names, list) or not names or not all(isinstance(s, str) for s in names):
         raise ValueError("invalid record source list")
     if len(set(names)) != len(names):
         raise ValueError("duplicate record source")
-    required = ARTIFACTS | {manifest.as_posix(), proofs.as_posix(),
-                            "documents/manifest.csexp", "documents/proofs.csexp"}
     for name in names:
         relative(name)
         required |= {"project/" + name, "documents/sources/" + name + ".csexp"}
@@ -204,20 +220,30 @@ def verify(root):
     return info
 
 
-def tooling(target):
+def tooling(target, has_proofs):
     for name in ("lean-toolchain", "lake-manifest.json"):
         copy(ROOT / name, target / name)
     copy(ROOT / "bootstrap/compiler.img", target / "compiler.img")
     copy(ROOT / "bootstrap/lean/GebBoot.lean", target / "compiler.lean.txt")
     # Retain the Geb source closures and the proof runner as emitted Lean, the
     # representation used by the bootstrap's existing authoring workflow.
-    for manifest in ("bootstrap/stage1.manifest", "bootstrap/authoring.manifest"):
+    manifests = ["bootstrap/stage1.manifest"]
+    if has_proofs:
+        manifests.append("bootstrap/authoring.manifest")
+    for manifest in manifests:
         path = ROOT / manifest
         inputs = [path, *(path.parent / name for name in sources(path))]
         for source in inputs:
             dest = target / "tooling" / source.relative_to(ROOT)
             if not dest.exists():
                 copy(source, dest)
+    # Native hosts are identified, not copied: their executable images are platform-specific.
+    write_json(target / "host.json", {
+        "format": "geb-host/v1",
+        "executables": {name: digest(ROOT / ".lake/build/bin" / name) for name in TOOLS},
+    })
+    if not has_proofs:
+        return
     copy(ROOT / "bootstrap/lean/GebMirror/Authoring.lean", target / "authoring.lean.txt")
     pending, seen = ["GebMirror.Authoring"], set()
     while pending:
@@ -232,14 +258,11 @@ def tooling(target):
                                   source.read_text(encoding="utf-8")))
         if module != "GebMirror.Authoring":
             copy(source, target / "tooling" / (source.relative_to(ROOT).as_posix() + ".txt"))
-    # Native hosts are identified, not copied: their executable images are platform-specific.
-    write_json(target / "host.json", {
-        "format": "geb-host/v1",
-        "executables": {name: digest(ROOT / ".lake/build/bin" / name) for name in TOOLS},
-    })
 
 
 def record(manifest, proofs, destination, certificate, predecessor=None):
+    if proofs is None and certificate is not None:
+        raise ValueError("--certificate requires a proof document")
     if destination.exists() or destination.is_symlink():
         raise ValueError("record already exists; choose a new directory to retain the old record")
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -250,12 +273,20 @@ def record(manifest, proofs, destination, certificate, predecessor=None):
         saved, proof, names, extra = snapshot(manifest, proofs, staged)
         documents(saved, proof, names, extra, staged / "documents")
         compile_program(saved, staged)
-        if certificate is None:
-            command("geb-author", "prove", saved, proof, staged / "proof.cert")
-        else:
-            copy(certificate, staged / "proof.cert")
-        command("geb-author", "replay", saved, proof, staged / "proof.cert")
-        tooling(staged)
+        metadata = {"format": PROGRAM_FORMAT}
+        if proof is not None:
+            if certificate is None:
+                command("geb-author", "prove", saved, proof, staged / "proof.cert")
+            else:
+                copy(certificate, staged / "proof.cert")
+            command("geb-author", "replay", saved, proof, staged / "proof.cert")
+            metadata = {
+                "format": FORMAT_IMPORTS if extra else FORMAT,
+                "proofs": proof.relative_to(staged).as_posix(),
+            }
+            if extra:
+                metadata["imports"] = extra
+        tooling(staged, proof is not None)
         if predecessor is not None:
             for name in ("program.img", "program.defs"):
                 if not same_artifact(staged / name, predecessor / name):
@@ -266,10 +297,8 @@ def record(manifest, proofs, destination, certificate, predecessor=None):
                 "previous_record_sha256": digest(predecessor / "record.json"),
             })
         write_json(staged / "record.json", {
-            "format": FORMAT_IMPORTS if extra else FORMAT,
+            **metadata,
             "manifest": saved.relative_to(staged).as_posix(),
-            "proofs": proof.relative_to(staged).as_posix(),
-            **({"imports": extra} if extra else {}),
             "sources": names,
             "files": inventory(staged),
         })
@@ -277,13 +306,18 @@ def record(manifest, proofs, destination, certificate, predecessor=None):
         if destination.exists() or destination.is_symlink():
             raise ValueError("record appeared while staging; nothing replaced")
         staged.rename(destination)
-    print(f"{destination}: recorded; examples checked and certificate replayed")
+    replay = " and certificate replayed" if proofs else ""
+    print(f"{destination}: recorded; examples checked{replay}")
 
 
 def check(root, info, manifest=None, proofs=None):
     compare = manifest is not None
-    manifest = manifest or root / info["manifest"]
-    proofs = proofs or root / info["proofs"]
+    if compare:
+        if ("proofs" in info) != (proofs is not None):
+            raise ValueError("supply a proof document exactly when the record contains one")
+    else:
+        manifest = root / info["manifest"]
+        proofs = root / info["proofs"] if "proofs" in info else None
     with tempfile.TemporaryDirectory(prefix="geb-preserve-") as directory:
         target = Path(directory)
         # Check a snapshot so every command observes the same source bytes.
@@ -297,9 +331,11 @@ def check(root, info, manifest=None, proofs=None):
         for name in ("program.img", "program.defs"):
             if not same_artifact(target / name, root / name):
                 raise ValueError(f"{name} differs: compilation changed; the record was not updated")
-        command("geb-author", "replay", saved, proof, root / "proof.cert")
+        if proof is not None:
+            command("geb-author", "replay", saved, proof, root / "proof.cert")
     status = "unchanged" if docs_equal else "changed"
-    print(f"{root}: documents {status}; checked core unchanged; saved certificate replayed")
+    replay = "; saved certificate replayed" if proofs else ""
+    print(f"{root}: documents {status}; checked core unchanged{replay}")
 
 
 def migrate_proof_v2(root, destination):
@@ -333,7 +369,7 @@ def main():
     actions = parser.add_subparsers(dest="action", required=True)
     create = actions.add_parser("record", help="create a new immutable development record")
     create.add_argument("manifest", type=Path)
-    create.add_argument("proofs", type=Path)
+    create.add_argument("proofs", type=Path, nargs="?", help="optional proof document")
     create.add_argument("record", type=Path)
     create.add_argument("--certificate", type=Path,
                         help="replay this certificate instead of running proof search")
@@ -343,14 +379,14 @@ def main():
     migrate.add_argument("destination", type=Path)
     for name, help_text in (
         ("verify", "verify the record's file inventory and hashes without building"),
-        ("check", "recompile archived sources and replay their saved certificate"),
+        ("check", "recompile archived sources and replay any saved certificate"),
         ("compare", "compare current sources with a record; allow documentation changes"),
     ):
         action = actions.add_parser(name, help=help_text)
         action.add_argument("record", type=Path)
         if name == "compare":
             action.add_argument("manifest", type=Path)
-            action.add_argument("proofs", type=Path)
+            action.add_argument("proofs", type=Path, nargs="?", help="proof document for a proof record")
     args = parser.parse_args()
     try:
         if args.action == "record":
@@ -358,7 +394,7 @@ def main():
                 raise ValueError("record already exists; choose a new directory")
             if not args.no_build:
                 build()
-            record(args.manifest.absolute(), args.proofs.absolute(), args.record.absolute(),
+            record(args.manifest.absolute(), args.proofs, args.record.absolute(),
                    args.certificate.absolute() if args.certificate else None)
         else:
             root = args.record.absolute()
@@ -369,8 +405,10 @@ def main():
                 if not args.no_build:
                     build()
                 if args.action == "compare":
-                    check(root, info, args.manifest.absolute(), args.proofs.absolute())
+                    check(root, info, args.manifest.absolute(), args.proofs)
                 elif args.action == "migrate-proof-v2":
+                    if "proofs" not in info:
+                        raise ValueError("proof migration requires a record with a proof document")
                     migrate_proof_v2(root, args.destination.absolute())
                 else:
                     check(root, info)

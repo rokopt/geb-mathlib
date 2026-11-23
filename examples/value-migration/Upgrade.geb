@@ -1,0 +1,7 @@
+; Read the two constructors as version 1 declared them and encode the corresponding current value.
+(module Upgrade (export migrate) (import Files) (import Codec) (import Signal)
+  (data OldLight (oldRed) (oldGreen))
+  (defn convert ((old OldLight)) Output
+    (emit (pack version (rep (case old ((oldRed) red) ((oldGreen) green))))))
+  (defn migrate ((event T)) T
+    (transform (unpack 1 (lam ((tag T)) (decode OldLight tag convert reject))) event)))

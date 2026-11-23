@@ -4013,9 +4013,10 @@ import-direction rules above are enforced by
   `slow-checks.yml` runs it. Statements over the datatype language's
   datatypes remain to be exposed.
   `scripts/preserve.py` records any manifest-based development through those
-  commands: original and canonical source documents, the documents its proof
-  document imports among them, checked core, a replayed
-  certificate, compiler artifacts, Geb tooling sources and host identities.
+  commands. Each record holds original and canonical source documents,
+  checked core, compiler artifacts, Geb tooling sources and host identities.
+  A proof record also retains the proof document and its imports, the proof
+  runner and the replayed certificate.
   Records are immutable; integrity verification runs without a compiler,
   while checking recompiles archived sources and replays saved certificates
   without proof search. Comparison with current sources reports document
@@ -4030,6 +4031,11 @@ import-direction rules above are enforced by
   and a receipt identifying the predecessor. The migration fixture checks
   relocation, retained annotations, insufficient search budgets and
   rejection without partial output.
+  In `examples/value-migration/`, the client saves a constructor of
+  `Signal.Light` in an envelope identifying its datatype and encoding
+  version. Two pinned revisions exchange the constructor tags.
+  `scripts/tests/test-value-migration.sh` checks the transported envelope
+  theorem and each client's output on the original and migrated values.
   The VS Code extension under `editors/vscode/` selects a development by its
   manifest in workspace settings and invokes compilation, proof search,
   replay, kernel-hole reporting and preservation through the host commands.

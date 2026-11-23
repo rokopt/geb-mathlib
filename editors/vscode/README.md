@@ -267,10 +267,10 @@ a running command; another Geb command can start after the task ends.
 | `Geb: Prove Statements` | `geb-author prove`: run proof scripts, check and save the certificate |
 | `Geb: Replay Certificate` | `geb-author replay`: check the saved certificate against current statements without search |
 | `Geb: Show Kernel Holes` | `geb-kernel holes --manifest`: display the context and type of each kernel-language hole |
-| `Geb: Record Development` | `preserve.py record --certificate`: retain the development using its saved proof |
+| `Geb: Record Development` | `preserve.py record`: retain the checked program, reusing its saved certificate when a proof document is configured |
 | `Geb: Verify Record Integrity` | `preserve.py verify`: check the record's inventory and hashes |
-| `Geb: Check Recorded Development` | `preserve.py check`: compile archived sources and replay the saved certificate |
-| `Geb: Compare Sources with Record` | `preserve.py compare`: compare current sources with the record and replay its certificate |
+| `Geb: Check Recorded Development` | `preserve.py check`: compile archived sources and replay any saved certificate |
+| `Geb: Compare Sources with Record` | `preserve.py compare`: compare current sources with the record and replay any saved certificate |
 
 Compilation, running, proof commands, terminal hole reporting, recording
 and comparison save modified file-backed documents in the selected
@@ -282,9 +282,10 @@ not save buffers. Commands require a trusted, local-filesystem workspace;
 syntax highlighting remains available in Restricted Mode. A remote
 workspace runs the tools on its extension host.
 
-The `proofs` field selects one entry proof document and is required by
-proof, record and comparison commands. The host resolves its imports;
-recording retains those documents with the entry document. These commands
+The `proofs` field selects the entry document for proving and replay.
+For a program without this field, recording and comparison check the
+code and its examples. With a proof document, the host also resolves its
+imports and the record retains them with the entry document. These commands
 use the selected manifest explicitly, including when a proof document
 names its default program. The task `Geb: check saved file` instead uses
 the proof document's program, independently of the editor's selection.
@@ -320,7 +321,7 @@ Neither command checks the program's examples, which
 
 A development can be compiled, proved and replayed with those commands,
 then retained by `Geb: Record Development`. Recording asks for a new
-directory and replays the selected certificate without proof search.
+directory and replays the selected certificate when the program has proofs.
 The dialog proposes `records/program-NAME` under the workspace folder;
 keep retained records with the development's versioned files.
 An existing record is rejected rather than replaced. The new record is
