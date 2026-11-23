@@ -18,7 +18,12 @@
 #             named, it runs every search, each in a process of its own,
 #             LEAN_NUM_THREADS at a time (else as many as there are
 #             processors), and also checks that every committed
-#             certificate is one a search writes.
+#             certificate is one a search writes. The searches start in
+#             the order of their times at the last passing check, which
+#             it records (.lake/certificates-check.times), the longest
+#             first and one with no record before them, so that the
+#             longest does not end the run; with no record they start as
+#             they are listed.
 #   searches  Prints the searches' names, one to a line.
 #
 # The searches recurse deeper than the default stack allows, so the
@@ -33,8 +38,19 @@ cd "$(dirname "$0")/.."
 dir=bootstrap/certificates
 fail() { echo "certificates: $1" >&2; exit 1; }
 exe="${GEB_CERTIFY:-.lake/build/bin/geb-certify}"
+times=.lake/certificates-check.times
 build() { [ -n "${GEB_CERTIFY:-}" ] || lake build geb-certify; }
 generate() { (ulimit -s "$(ulimit -Hs)"; "$exe" "$@"); }
+# The names on the standard input, in the order of the seconds recorded for them, the most
+# first and a name with no record before them, the names of equal rank as they are given.
+longest_first() {
+  if [ -f "$times" ]; then
+    awk 'NR == FNR { t[$1] = $2; next } { print (($1 in t) ? t[$1] : "inf"), $1 }' "$times" - \
+      | sort -s -k1,1gr | cut -d ' ' -f 2
+  else
+    cat
+  fi
+}
 mode="${1:-}"
 [ $# -gt 0 ] && shift
 case "$mode" in
@@ -47,14 +63,17 @@ case "$mode" in
     tmp=$(mktemp -d)
     trap 'rm -rf "$tmp"' EXIT
     if [ $# -eq 0 ]; then
-      generate --searches > "$tmp/searches"
-      GEB_CERTIFY="$exe" xargs -n 1 -P "${LEAN_NUM_THREADS:-$(nproc)}" \
-        bash scripts/certificates.sh check \
+      generate --searches | longest_first > "$tmp/searches"
+      # each search's check, and on its passing its name and its seconds in the record
+      GEB_CERTIFY="$exe" xargs -n 1 -P "${LEAN_NUM_THREADS:-$(nproc)}" bash -c \
+        'bash scripts/certificates.sh check "$2" && echo "$2 $SECONDS" >> "$1"' _ "$tmp/times" \
         < "$tmp/searches" | tee "$tmp/written" || fail "a search's check fails"
       for f in "$dir"/*.cert; do
         grep -q "^$(basename "$f" .cert)," "$tmp/written" \
           || fail "the committed $(basename "$f") is no search's"
       done
+      mkdir -p "$(dirname "$times")"
+      cp "$tmp/times" "$times"
     else
       out="$tmp/out"
       mkdir "$out"
