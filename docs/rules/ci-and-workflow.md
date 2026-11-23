@@ -96,7 +96,11 @@ own requires a prior `lake build`.
   functions run in their place (`scripts/accelerate.py`); the
   environment variable `GEB_ACCELERATION` selects another binding for
   an experiment (`shadow`, which runs both and compares them, or
-  `none`), and the committed Lean is that of the variable unset; every
+  `none`), and the committed Lean is that of the variable unset; the
+  committed images of the programs the developments of the internal
+  language are about, the modules of `bootstrap/lean/GebMirror/Image/`,
+  are those the committed image writes from their sources
+  (§ Certificates); every
   source under `bootstrap/` is a
   fixed point of `geb-fmt --chains`, formatted with each sequence of
   bindings a `let*` and each of tests a `cond` (§ Modules), and, where
@@ -296,7 +300,7 @@ The modes apply to the steps the command `geb_load` declares in those
 modules. The command `geb_program`
 (`GebTests/Prototypes/ProgramCommand.lean`) proves each step it declares
 itself, in either mode: the program the datatype language's soundness is
-stated in is loaded so, in seconds
+stated in is loaded so, from its image, in seconds
 (`GebTests/Prototypes/FreeTopos/Certified/DatatypeLoad.lean`).
 
 ## Certificates
@@ -306,7 +310,17 @@ programs (the fundamental lemma of the evaluator, weakening, substitution,
 the expansion of kernel forms and the lemmas of trees) are found by
 searches for derivations, which take from seconds to minutes compiled, and are
 committed as certificates, `bootstrap/certificates/*.cert`, as the
-bootstrap's image is. A certificate stores a development's declarations,
+bootstrap's image is. A development reads the definitions of the program
+it is about from the program's image, committed as a generated module of
+`bootstrap/lean/GebMirror/Image/` holding the image's bytes in
+hexadecimal, which `scripts/bootstrap.sh regen` writes from the
+program's manifest and `scripts/bootstrap.sh check` compares with the
+image of its sources: a development depends on its program and not on
+the compiler that compiled it, so a change to a compiler's source under
+which the program compiles to the image it compiled to rebuilds neither
+the development's modules nor those checking its certificate, and
+leaves the executable `geb-certify` unchanged. A certificate stores a
+development's declarations,
 each theorem with its certificate of the checker with a step of
 conversion, as the table of the distinct nodes of their tree
 (`GebTests/Prototypes/FreeTopos/Stored.lean`). In a certificate a
@@ -342,8 +356,10 @@ named, or with none named every search, each in a process of its own,
 continues from, and with none named also checks that every committed
 certificate is one a search writes. Where the environment variable
 `GEB_CERTIFY` names a built `geb-certify`, the script runs it and builds
-none. A change to a development's proofs, or to a program it is about,
-is followed by `regen`.
+none. A change to a program a development is about is followed by
+`scripts/bootstrap.sh regen`, which writes the program's image, and
+then, as a change to a development's proofs is, by
+`scripts/certificates.sh regen`.
 
 A search's certificates are a function of the compiled code of
 `geb-certify` and of the committed certificates it reads, so a search

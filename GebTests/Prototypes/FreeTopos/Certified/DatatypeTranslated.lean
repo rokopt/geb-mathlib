@@ -87,8 +87,8 @@ theorem extend3_le {P P' : Prog} {S : Defs} {T : Defs3} (h : extend3 P S = some 
 of the translation of the bundled compilers' program, whose definitions come before the
 connectives', and its names' indices are the bundled definitions'. -/
 theorem translated_le {PST : Prog × Defs × Defs3} (h : extended3 = some PST) :
-    ∃ ds gt defs, Weakening.bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList =
-        some ds ∧ program (ds.map Prod.snd) = some (gt, defs) ∧ (globals defs).Le PST.1.G ∧
+    ∃ ds gt defs, Datatypes.definitions = some ds ∧
+      program (ds.map Prod.snd) = some (gt, defs) ∧ (globals defs).Le PST.1.G ∧
       PST.1.o = lib.length + defs.length ∧
       PST.1.idx = fun name ↦ (Weakening.defIndex ds name.toList).getD 0 := by
   simp only [extended3, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
@@ -120,7 +120,7 @@ structure Translated (PST : Prog × Defs × Defs3) where
   /-- The globals the kernel loads. -/
   Gk : List Kernel.Glob
   /-- The program bundles. -/
-  bundled : Weakening.bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList = some ds
+  bundled : Datatypes.definitions = some ds
   /-- The program translates. -/
   program : program (ds.map Prod.snd) = some (gt, defs)
   /-- The connectives' definitions follow the translation's. -/

@@ -371,23 +371,6 @@ meta def nativeLoading : IO Bool := do
   | none | some "proof" => return false
   | some s => throw <| IO.userError s!"GEB_LOADING is {s}, neither proof nor native"
 
-/-- The value of a hexadecimal digit. -/
-meta def hexDigit (c : Char) : Option UInt8 :=
-  if '0' ≤ c ∧ c ≤ '9' then some (c.toNat - '0'.toNat).toUInt8
-  else if 'a' ≤ c ∧ c ≤ 'f' then some (c.toNat - 'a'.toNat + 10).toUInt8
-  else none
-
-/-- The bytes a string of hexadecimal digits spells, two digits to a byte, the fold carrying the
-bytes read and the high digit of the byte being read. -/
-meta def hexBytes (s : String) : Option ByteArray :=
-  (s.toList.foldl (fun (acc : Option (ByteArray × Option UInt8)) c ↦ do
-      let (bs, hi) ← acc
-      let d ← hexDigit c
-      match hi with
-      | none => some (bs, some d)
-      | some h => some (bs.push (h * 16 + d), none))
-    (some (ByteArray.empty, none))).bind fun (bs, hi) ↦ if hi.isNone then some bs else none
-
 /-- {lit}`geb_load n mirror m image "…"` declares, by {lit}`declareLoading`, the loading of the
 program {lit}`n` whose image the string spells in hexadecimal, its mirror the namespace
 {lit}`m`, beyond the declarations of it already made, in the mode {lit}`nativeLoading` reads.

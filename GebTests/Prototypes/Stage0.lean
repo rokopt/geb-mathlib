@@ -39,6 +39,7 @@ characters inside each {lit}`#guard`: core's {lit}`String.toList` depends on
 * {lit}`prelude`, {lit}`reader`, {lit}`check`, {lit}`subst` and {lit}`recognize` are sources,
   those the program whose typing's soundness is proved reads; the other programs' are their
   manifests'.
+* {lit}`bundled` gives a program's definitions, as the stage-0 compiler's front end reads them.
 * {lit}`runDatatype` compiles a program with the stage-0 compiler and runs its last
   definition; {lit}`naturals` and {lit}`roses` are programs in the datatype language.
 * {lit}`checker` returns the types of a bundle's definitions, and {lit}`seedTypes` is the
@@ -76,13 +77,6 @@ def subst : String := include_str "../../bootstrap/subst.geb"
 /-- The recognizers' source. -/
 def recognize : String := include_str "../../bootstrap/recognize.geb"
 
-/-- The definitions the proof of weakening adds to its program, the two sides of its statements:
-the type of a term weakened past a list of types inserted below a context's first part, and its
-type in the context without it; the two sides of the lookup at a variable, at its index moved past
-the inserted types and at its index; and the two sides of the lookup past the inserted types below
-no part. -/
-def weakeningStatement : String := include_str "../../bootstrap/proofs/weakening.geb"
-
 /-- The prelude and the serializer, applying the serializer to the input tree. -/
 def serializer : String :=
   include_manifest "bootstrap/serializer.manifest" ++
@@ -96,6 +90,12 @@ def compiler : String := include_manifest "bootstrap/stage0.manifest"
 elaborated and its forms of the datatype language expanded, without the image written. -/
 def bundler : String :=
   compiler ++ "(def bundleMain (lam ((file T)) (Compile.bundleOf file)))"
+
+/-- A program's definitions with their names, from its text, read and expanded by the stage-0
+compiler's front end. -/
+def bundled (text : List Char) : Option (List (List Char × Tree)) := do
+  let r ← runMain bundler.toList (nameTree text)
+  unbundle (← if r.label == 1 then r.children.head? else none)
 
 /-- Compile a program with the stage-0 compiler, given as text, read the image back, and apply
 its definition named {lit}`main` to an input tree. -/

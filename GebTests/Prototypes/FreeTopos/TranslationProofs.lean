@@ -7,8 +7,6 @@ module
 
 public import GebTests.Prototypes.FreeTopos.Translation -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.Translation -- shake: keep
-public import GebTests.Prototypes.Stage0 -- shake: keep
-public meta import GebTests.Prototypes.Stage0 -- shake: keep
 public import Geb.Prototypes.FreeTopos.Internal.ConvDevelopment -- shake: keep
 public meta import Geb.Prototypes.FreeTopos.Internal.ConvDevelopment -- shake: keep
 public import Geb.Prototypes.FreeTopos.Tactics -- shake: keep
@@ -26,12 +24,12 @@ bitstrings' addition, which the development proves first by induction on the bit
 analysis of their bits and, for the functions of the first summand, extensionality; the kernel's
 type checker at a quoted tree and a program by structural recursion by normalization, weak head
 normal forms first, rewriting by Lambek's lemma, which follows from two lemmas on lists by the
-uniqueness of the rose tree's fold. Each development checks; the time the checker takes is
-measured by {lit}`GebBench.Prototypes.FreeTopos.TranslationProofs`.
+uniqueness of the rose tree's fold. Each development checks at its file's program, which
+{lit}`GebTests.Prototypes.FreeTopos.TranslationSources` compiles from the file; the time the
+checker takes is measured by {lit}`GebBench.Prototypes.FreeTopos.TranslationProofs`.
 
 ## Main definitions
 
-* {lit}`files` — the texts of the files, each the programs and the theorems' statements.
 * {lit}`theoremsOf` — a file's program and its theorems, from the statements' definitions.
 * {lit}`treeLemmas` — the fold of a list by construction, the fusion of the rebuilding of trees
   with their unfolding, and Lambek's lemma.
@@ -52,56 +50,6 @@ namespace GebTests.Prototypes.FreeTopos.TranslationProofs
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
 open GebTests.Prototypes.FreeTopos.Translation (sizeM baseRules)
 open scoped FinEnum
-
-/-- The statements of the prelude's theorems: appending the empty list on either side, the
-associativity of appending, and appending the empty list twice. -/
-def preludeStatements : String := "
-(import Prelude)
-(def appendNilLeftL (lam ((ys Ts)) (append (nil T) ys)))
-(def appendNilLeftR (lam ((ys Ts)) ys))
-(def appendNilL (lam ((xs Ts)) (append xs (nil T))))
-(def appendNilR (lam ((xs Ts)) xs))
-(def appendAssocL (lam ((ys Ts) (zs Ts) (xs Ts)) (append (append xs ys) zs)))
-(def appendAssocR (lam ((ys Ts) (zs Ts) (xs Ts)) (append xs (append ys zs))))
-(def appendNilTwiceL (lam ((xs Ts)) (append (append xs (nil T)) (nil T))))
-(def appendNilTwiceR (lam ((xs Ts)) xs))"
-
-/-- The statements of the labels' addition: zero on the right, the successor on the right, and
-zero on the left. -/
-def natStatements : String := "
-(import Prelude)
-(def addZeroL (lam ((m T)) (add m 0)))
-(def addZeroR (lam ((m T)) (label m)))
-(def addSuccL (lam ((m T) (n T)) (add m (add n 1))))
-(def addSuccR (lam ((m T) (n T)) (add (add m n) 1)))
-(def addZeroLeftL (lam ((n T)) (add 0 n)))
-(def addZeroLeftR (lam ((n T)) (label n)))"
-
-/-- The statement of the type checker's type of a quoted tree. -/
-def checkStatements : String := "
-(import Prelude) (import Reader) (import Check)
-(def typeQuoteL (lam ((G Ts) (ctx Ts) (x T)) (typeIn G ctx (node Label.quote (single x)))))
-(def typeQuoteR (lam ((G Ts) (ctx Ts) (x T)) (some Label.tyTree)))"
-
-/-- A program by structural recursion over a datatype, and the statements of its recursion
-equations. -/
-def datatypeStatements : String := "
-(import Prelude) (import Reader) (import Check)
-(data Nat (zero) (succ Nat))
-(defn plus ((m Nat) (n Nat)) Nat (cata Nat Nat m ((zero) n) ((succ r) (succ r))))
-(def plusZeroL (lam ((n Nat)) (plus zero n)))
-(def plusZeroR (lam ((n Nat)) n))
-(def plusSuccL (lam ((m Nat) (n Nat)) (plus (succ m) n)))
-(def plusSuccR (lam ((m Nat) (n Nat)) (succ (plus m n))))"
-
-/-- The texts of the files, each the programs its theorems are about and their statements, with
-the number of its theorems: the prelude, the labels, the kernel's type checker and a program by
-structural recursion. -/
-def files : List (String × ℕ) :=
-  let pr := Kernel.Stage0Tests.prelude
-  let prc := include_manifest "bootstrap/checker.manifest"
-  [(pr ++ "\n" ++ preludeStatements, 4), (pr ++ "\n" ++ natStatements, 3),
-    (prc ++ checkStatements, 1), (prc ++ datatypeStatements, 2)]
 
 /-- The binders' types of a term's abstractions, innermost first, and the body under them, at most
 {lit}`n` of them. -/
@@ -127,15 +75,6 @@ def theoremsOf (ds : List (List Char × Tree)) (k : ℕ) : List Tree × List Goe
     let (Γ, l) := unLams 64 (ss.getD (2 * i) (Kernel.leaf 0))
     let r := (unLams 64 (ss.getD (2 * i + 1) (Kernel.leaf 0))).2
     ⟨Γ, ⟨(GoedelT.typeOf G Γ l).getD (Kernel.leaf 0), l, r⟩⟩)
-
-/-- The programs and theorems of the files, each read and expanded by the stage-0 compiler's front
-end. -/
-def results (bundler : List Char) (files : List (List Char × ℕ)) :
-    Option (List (List Tree × List GoedelT.Thm)) :=
-  files.mapM fun (text, k) ↦ do
-    let r ← Kernel.runMain bundler (Kernel.nameTree text)
-    let b ← if r.label == 1 then r.children.head? else none
-    pure (theoremsOf (← Kernel.unbundle b) k)
 
 open Internal (Term ConvDeriv ConvDecl Entry NormRule Rule)
 
@@ -315,14 +254,6 @@ def checks (D : List Tree) (ts : List GoedelT.Thm)
   | some (G, m, ts) => match dev G m ts with
     | none => true
     | some ds => Internal.checkConvThms G ds #[]
-
--- each file's development checks, the prelude's both by innermost normalization and through weak
--- head normal forms
-#guard match results Kernel.Stage0Tests.bundler.toList (files.map fun (t, k) ↦ (t.toList, k)) with
-  | some [(D₀, t₀), (D₁, t₁), (D₂, t₂), (D₃, t₃)] =>
-    checks D₀ t₀ preludeDev && checks D₀ t₀ preludeDevW && checks D₁ t₁ natDev &&
-      checks D₂ t₂ checkDev && checks D₃ t₃ treeDev
-  | _ => false
 
 end GebTests.Prototypes.FreeTopos.TranslationProofs
 

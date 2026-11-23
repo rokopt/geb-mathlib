@@ -5022,7 +5022,13 @@ and semantic dependencies are references to definitions.
   scripts that run a compiler's image on them;
   `geb-fmt --manifest` formats a manifest and its sources. The tests read a
   program's text by the term `include_manifest` and embed a program by
-  `geb_program`, whose exported definitions are the manifest's entries.
+  `geb_program`, from its definitions, whose exported definitions are the
+  manifest's entries; a development of the metalogic about a program reads
+  the program's definitions from its committed image
+  ({name}`Geb.Kernel.definitionsOfHex`), which `scripts/bootstrap.sh`
+  writes from the manifest
+  ({ref "downstream-authoring"}[A Geb library and its downstream
+  application]).
 * The first linker keeps the present well-founded order, resolves each
   import to an explicit definition, rejects unresolved and ambiguous
   references, and checks the bundle; references by digest replace frozen
@@ -7402,8 +7408,9 @@ The preservation of types by weakening is proved in the metalogic
 equals `typeIn G (append c1 c2) t`, weakening past a list of types, of
 which weakening past one is the instance at a list of one, about the
 translations of the prelude, the reader, the type checker and the
-traversal of kernel terms, `bootstrap/subst.geb`, read and expanded by
-the stage-0 compiler's front end. The two sides, as functions of `G`, `c1`, `c0` and `c2`, are equal
+traversal of kernel terms, `bootstrap/subst.geb`, read from the image of
+the program of `bootstrap/weakening-statement.manifest`. The two sides, as
+functions of `G`, `c1`, `c0` and `c2`, are equal
 by induction on rose trees with an
 induction hypothesis ({name}`Geb.FreeTopos.Internal.roseIndHyp_sound`).
 At a construction the label's bits are split, which decides every test
@@ -9164,8 +9171,13 @@ the change that removes it.
   tests. A change to a Geb source rebuilds the test modules that read it
   at elaboration and their importers, each group of sources being a
   dependency of a library of the modules that read it (`lakefile.toml`);
-  a change to a source of the stage-0 compiler, which most of the tests
-  import, still rebuilds most of them.
+  a change to a source of the stage-0 compiler rebuilds the stage tests
+  and the tests that import them, those of the kernel's programs and of
+  the metalogic's loading among them, and neither the developments about
+  the bootstrap's programs nor the modules checking their certificates,
+  which read their programs from committed images
+  ({ref "downstream-authoring"}[A Geb library and its downstream
+  application], step 7).
 * Monomorphic compositions. The datatype language has no polymorphic
   definitions, and a template's instances are distinct types, so a
   composition of computations at two types of values is a definition of

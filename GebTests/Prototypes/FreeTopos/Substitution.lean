@@ -7,6 +7,8 @@ module
 
 public import GebTests.Prototypes.FreeTopos.Weakening -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.Weakening -- shake: keep
+public import GebMirror.Image.SubstitutionStatement
+public meta import GebMirror.Image.SubstitutionStatement -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -20,7 +22,8 @@ weakened past {lit}`c1`, substituted for the variable below {lit}`c1`, in the co
 {lit}`c1` and {lit}`c`, is the type it infers for {lit}`t` in the context of {lit}`c1`,
 {lit}`a` and {lit}`c`. The substitution for the innermost variable ({lit}`bootstrap/subst.geb`)
 is the instance at the empty {lit}`c1`. The program is the weakening proof's, with the
-statement's two sides as definitions.
+statement's two sides as definitions ({lit}`bootstrap/substitution-statement.manifest`), its
+definitions read from the program's image.
 
 The statement is an equation between two functions, into the subobject classifier, of the
 environment, the contexts, the type and the substituted term: the implication of the equation of
@@ -36,6 +39,7 @@ past the substituted variable's index are the lookup in the context with it, by 
 
 ## Main definitions
 
+* {lit}`definitions` — the program's definitions, read from its image.
 * {lit}`substitution` — the statement.
 * {lit}`development` — the lemmas, each with its proof, after the weakening proof's and the
   weakening theorem.
@@ -62,29 +66,16 @@ open scoped FinEnum
 
 /-! The program. -/
 
-/-- The two sides of the statement, as definitions of the program: the type of a term with a
+/-- The program's definitions with their names, read from its image
+({name}`GebMirror.Image.substitutionStatement`): the weakening proof's, and the two sides of the
+statement as definitions ({lit}`bootstrap/proofs/substitution.geb`): the type of a term with a
 term, weakened past a context's first part, substituted for the variable below it, in the
 context without that variable, and the term's type in the context with it; and the two sides of
 the lemmas on the variable's case, the lookups at a variable's index before, at and past the
 substituted one, with the substituted term's type at it, and the lookup in the context with the
 substituted variable, and the same lookups past the head of the first part. -/
-def statement : String := "
-(def sbL (lam ((t T) (G Ts) (c1 Ts) (c Ts) (a T) (u T))
-  (typeIn G (append c1 c) (trav (substVar u) t (length c1)))))
-(def sbR (lam ((t T) (G Ts) (c1 Ts) (c Ts) (a T) (u T)) (typeIn G (append c1 (cons a c)) t)))
-(def svL (lam ((c1 Ts) (c Ts) (a T) (t T))
-  (if (lt (label t) (length c1)) (nth (append c1 c) (label t))
-    (if (eq (label t) (length c1)) (some a) (nth (append c1 c) (sub (label t) 1))))))
-(def svR (lam ((c1 Ts) (c Ts) (a T) (t T)) (nth (append c1 (cons a c)) (label t))))
-(def svS (lam ((c1 Ts) (m Ts) (a T) (y T) (t T))
-  (if (lt (label t) (length c1)) (nth m (label t))
-    (if (eq (label t) (length c1)) (some a) (nth (cons y m) (label t))))))
-(def svT (lam ((c1 Ts) (m Ts) (a T) (y T) (t T))
-  (if (lt (label t) (length c1)) (nth m (label t))
-    (if (eq (label t) (length c1)) (some a) (nth m (sub (label t) 1))))))"
-
-/-- The program: the weakening proof's, and the statement. -/
-def programText : String := Weakening.programText ++ "\n" ++ statement
+def definitions : Option (List (List Char × Tree)) :=
+  Kernel.definitionsOfHex GebMirror.Image.substitutionStatement
 
 /-! The statement. -/
 
@@ -274,10 +265,10 @@ def bySubLabels (P : Prog) (lemmas : List NormRule) (E : Array Entry) : Internal
       (bySplit2 3 4 1 (rec (bs ++ [false]) 1) (rec (bs ++ [true]) 1))
   go 4 [] 1
 
-/-- The program's definitions, read and expanded by the stage-0 compiler's front end, translated,
-with the index of each named one. -/
+/-- The program's definitions, read from its image, translated, with the index of each named
+one. -/
 def program : Option Prog := do
-  let ds ← bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
+  let ds ← definitions
   prog? ds fun name ↦ (defIndex ds name.toList).getD 0
 
 /-- The development proving the statement in a translated program: the lemmas, each with its

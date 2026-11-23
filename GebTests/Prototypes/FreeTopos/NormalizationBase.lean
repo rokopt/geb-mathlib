@@ -7,8 +7,8 @@ module
 
 public import GebTests.Prototypes.FreeTopos.Weakening -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.Weakening -- shake: keep
-public import GebTests.Prototypes.Kernel.Eval -- shake: keep
-public meta import GebTests.Prototypes.Kernel.Eval -- shake: keep
+public import GebMirror.Image.NormalizationStatement
+public meta import GebMirror.Image.NormalizationStatement -- shake: keep
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -43,7 +43,8 @@ beside it).
 * {lit}`fundamental` — the fundamental lemma's formula at a term.
 * {lit}`baseDev` — the development.
 * {lit}`developAfter` — a development's steps proved after an earlier one's theorems.
-* {lit}`extended` — the extended program, as the front end reads it.
+* {lit}`definitions` — the program's definitions, read from its image.
+* {lit}`extended` — the extended program, of those definitions.
 
 ## Implementation notes
 
@@ -267,10 +268,12 @@ def dFalse (L : Conn) (k : Deducer) : Deducer := fun Γ Φ φ ↦ do
 
 /-! The program and its extension. -/
 
-/-- The program: the prelude, the reader, the type checker, the traversal of kernel terms, the
-evaluator, and the weakening proof's statement. -/
-def programText : String :=
-  include_manifest "bootstrap/normalization.manifest" ++ Weakening.statement
+/-- The program's definitions with their names, read from its image
+({name}`GebMirror.Image.normalizationStatement`): the prelude, the reader, the type checker, the
+traversal of kernel terms, the evaluator, and the weakening proof's statement
+({lit}`bootstrap/normalization-statement.manifest`). -/
+def definitions : Option (List (List Char × Tree)) :=
+  Kernel.definitionsOfHex GebMirror.Image.normalizationStatement
 
 /-- The index of the primitive zero, after the translation's primitives. -/
 def kZero : ℕ := prims.length
@@ -1530,8 +1533,8 @@ def typeInv (P : Prog) (S : Defs) (name test : String) (lbl n : ℕ) : Step :=
       K.treeNode (v 0) (fun Γ Φ ψ ↦ kids (Φ₁.length - 1) Γ Γ Φ ψ) Γ₁ Φ₁ ψ₁) [treeTy] [] φ
     pure (⟨0, [treeTy], [], φ⟩, d))
 
-/-- The program, translated and extended, from its definitions with their names, as the front end
-reads them, and the index of each named definition. -/
+/-- The program, translated and extended, from its definitions with their names and the index
+of each named definition. -/
 def extendedOf (ds : List (List Char × Tree)) (idx : String → ℕ) : Option (Prog × Defs) := do
   extend (← prog? ds idx)
 
@@ -1544,9 +1547,9 @@ def baseDev (P : Prog) (S : Defs) : Option (List Step) := do
       typeInv P S "isProdInv" "Check.isProd" Kernel.Label.tyProd 2,
       typeInv P S "isListInv" "Check.isListTy" Kernel.Label.tyList 1])
 
-/-- The extended program, from the program's definitions as the front end reads them. -/
+/-- The extended program, from the program's definitions as its image holds them. -/
 def extended : Option (Prog × Defs) := do
-  let ds ← bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
+  let ds ← definitions
   extendedOf ds fun name ↦ (defIndex ds name.toList).getD 0
 
 end GebTests.Prototypes.FreeTopos.Normalization

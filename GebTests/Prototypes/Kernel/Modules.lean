@@ -11,6 +11,8 @@ public import Geb.Prototypes.Kernel.Strict -- shake: keep
 public meta import Geb.Prototypes.Kernel.Strict -- shake: keep
 public import GebTests.Prototypes.Kernel.Identity -- shake: keep
 public meta import GebTests.Prototypes.Kernel.Identity -- shake: keep
+public import GebTests.Prototypes.Kernel.SExpTree -- shake: keep
+public meta import GebTests.Prototypes.Kernel.SExpTree -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -187,14 +189,6 @@ def quotedChains : String :=
 #guard (readSExps quotedChains.toList).isSome &&
   ((readSExps quotedChains.toList).bind expandModules).map (·.map canonOf) ==
     (readSExps quotedChains.toList).map (·.map canonOf)
-
-/-- An S-expression as the Geb reader represents it: an atom the node of label 1 over its
-characters' codes, a list the node of label 2 over its elements. -/
-def sexpTree : SExp → Tree :=
-  RoseTree.elim fun a rs ↦
-    match a with
-    | some s => mk 1 (s.map fun c ↦ leaf c.toNat)
-    | none => mk 2 rs
 
 /-- The elaboration of modules written in Geb, applied to a text's S-expressions: the node of
 label 1 over the node of the elaborated forms, or the leaf 0. -/

@@ -7,6 +7,8 @@ module
 
 public import GebTests.Prototypes.FreeTopos.Weakening -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.Weakening -- shake: keep
+public import GebMirror.Image.Expansion
+public meta import GebMirror.Image.Expansion -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -39,6 +41,7 @@ case analysis of the tree, of its children and of their labels' bits proves to b
 
 ## Main definitions
 
+* {lit}`definitions` — the program's definitions, read from its image.
 * {lit}`development` — the lemmas, each with its proof.
 * {lit}`program`, {lit}`certificate` — the translated program, and the development found in it,
   whose declarations {lit}`bootstrap/certificates/tree-cases.cert` stores.
@@ -60,9 +63,11 @@ open GebTests.Prototypes.FreeTopos.Weakening
 open Internal (Term NormRule Entry ConvDeriv ConvDecl Definition)
 open scoped FinEnum
 
-/-- The program: the prelude, the reader, the type checker and the expansion of the datatype
-language. -/
-def programText : String := include_manifest "bootstrap/expansion.manifest"
+/-- The program's definitions with their names, read from its image
+({name}`GebMirror.Image.expansion`): the prelude, the reader, the type checker and the expansion
+of the datatype language ({lit}`bootstrap/expansion.manifest`). -/
+def definitions : Option (List (List Char × Tree)) :=
+  Kernel.definitionsOfHex GebMirror.Image.expansion
 
 /-! The lemmas. -/
 
@@ -146,10 +151,10 @@ the rewriting under a test, and the lemmas of trees. -/
 def development (P : Prog) : Option (List Step) := do
   pure (unfoldingThms P ++ (← genericLemmas P) ++ maskTest P ++ headLemmas P)
 
-/-- The program's definitions, read and expanded by the stage-0 compiler's front end, translated,
-with the index of each named one. -/
+/-- The program's definitions, read from its image, translated, with the index of each named
+one. -/
 def program : Option Prog := do
-  let ds ← bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
+  let ds ← definitions
   prog? ds fun name ↦ (defIndex ds name.toList).getD 0
 
 /-- The development in a translated program; the name of the first lemma not proved, where one is

@@ -9,6 +9,10 @@ public import GebTests.Prototypes.FreeTopos.TranslationProofs -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.TranslationProofs -- shake: keep
 public import Geb.Prototypes.FreeTopos.Internal.Logic -- shake: keep
 public meta import Geb.Prototypes.FreeTopos.Internal.Logic -- shake: keep
+public import Geb.Prototypes.Kernel.Image -- shake: keep
+public meta import Geb.Prototypes.Kernel.Image -- shake: keep
+public import GebMirror.Image.WeakeningStatement
+public meta import GebMirror.Image.WeakeningStatement -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -21,7 +25,8 @@ infers for {lit}`t` weakened past the types {lit}`c0`, inserted below {lit}`c1`,
 of {lit}`c1`, {lit}`c0` and {lit}`c2`, is the type it infers for {lit}`t` in the context of
 {lit}`c1` and {lit}`c2`. The program is the prelude, the reader, the checker and the traversal of
 kernel terms ({lit}`bootstrap/subst.geb`), whose weakening the statement cites, with the
-statement's two sides as definitions, read and expanded by the stage-0 compiler's front end.
+statement's two sides as definitions ({lit}`bootstrap/weakening-statement.manifest`), its
+definitions read from the program's image.
 
 The statement is an equation between the two sides as functions of the environment and the
 contexts, proved by induction on rose trees with the induction hypothesis
@@ -46,6 +51,7 @@ bits.
 
 ## Main definitions
 
+* {lit}`definitions` — the program's definitions, read from its image.
 * {lit}`prog?` — the translated program.
 * {lit}`development` — the lemmas, each with its proof.
 * {lit}`weakening` — the statement.
@@ -72,21 +78,13 @@ open scoped FinEnum
 
 /-! The program. -/
 
-/-- The two sides of the statement, as definitions of the program
-({name}`Geb.Kernel.Stage0Tests.weakeningStatement`). -/
-def statement : String := Kernel.Stage0Tests.weakeningStatement
-
-/-- The program: the prelude, the reader, the type checker, the traversal of kernel terms, whose
-weakening the statement cites, and the statement. -/
-def programText : String :=
-  include_manifest "bootstrap/weakening.manifest" ++ statement
-
-/-- A program's definitions with their names, read and expanded by the stage-0 compiler's
-front end. -/
-def bundled (bundlerText text : List Char) : Option (List (List Char × Tree)) := do
-  let r ← Kernel.runMain bundlerText (Kernel.nameTree text)
-  let b ← if r.label == 1 then r.children.head? else none
-  Kernel.unbundle b
+/-- The program's definitions with their names, read from its image
+({name}`GebMirror.Image.weakeningStatement`): the prelude, the reader, the type checker, the
+traversal of kernel terms, whose weakening the statement cites, and the two sides of the statement
+as definitions ({lit}`bootstrap/proofs/weakening.geb`). The image is the one
+{lit}`scripts/bootstrap.sh` writes from the program's sources. -/
+def definitions : Option (List (List Char × Tree)) :=
+  Kernel.definitionsOfHex GebMirror.Image.weakeningStatement
 
 /-- The index of a program's definition among the translation's constants. -/
 def defIndex (ds : List (List Char × Tree)) (name : List Char) : Option ℕ :=
@@ -651,10 +649,10 @@ def weakening (P : Prog) : Internal.Thm :=
   ⟨0, [treeTy], [], Term.eq (Term.app (call (P.idx "wkL") [] []) (v 0))
     (Term.app (call (P.idx "wkR") [] []) (v 0))⟩
 
-/-- The program's definitions, read and expanded by the stage-0 compiler's front end, translated,
-with the index of each named one. -/
+/-- The program's definitions, read from its image, translated, with the index of each named
+one. -/
 def program : Option Prog := do
-  let ds ← bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
+  let ds ← definitions
   prog? ds fun name ↦ (defIndex ds name.toList).getD 0
 
 /-- The development proving the statement in a translated program: the lemmas, each with its
