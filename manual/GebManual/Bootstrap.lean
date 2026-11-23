@@ -211,8 +211,7 @@ together.
    a source of the compilers and of no program a development is about:
    it regenerates the compiler's image and the Lean the compiler emits,
    and, the bundles of the existing sources being unchanged, no mirror
-   and no certificate. Step 7 precedes it, so that the checks it runs are
-   the compilers'.
+   and no certificate. By step 7 the checks it runs are the compilers'.
 5. In progress. Run the client and give it filesystem requests on the Lean
    host. The requests are complete: a program is a step of type `T → T`
    from its start, with the protocol's version and its arguments, or from a
@@ -260,50 +259,74 @@ together.
    revisions, checked record and saved input. Migrate its documents and value,
    account for changes to its elaborated definitions, replay its proof and compare
    the two clients' output on the original and migrated inputs.
-7. Confine the checks that a change to a compiler runs to the programs
-   it changes. The modules of the developments about the bootstrap's
-   programs, those of the evaluator's fundamental lemma and of the
-   datatype language's soundness among them
-   (`GebTests/Prototypes/FreeTopos/NormalizationBase.lean`,
-   `GebTests/Prototypes/FreeTopos/DatatypeBase.lean`), compile the
-   program they are about at elaboration, by the stage-0 compiler's
-   source under Lean's evaluator, and so import the stage tests
-   (`GebTests/Prototypes/Stage0.lean`, `GebTests/Prototypes/Stage1.lean`),
-   whose libraries need the compilers' sources, the manifests and the
-   committed image (`lakefile.toml`). The generator of the certificates,
-   `geb-certify`, imports those modules, and its bytes key the searches
+7. Complete. Confine the checks that a change to a compiler runs to the
+   programs it changes. A development about one of the bootstrap's
+   programs, the evaluator's fundamental lemma and the datatype
+   language's soundness among them, reads the program's definitions from
+   the program's image ({name}`Geb.Kernel.definitionsOfHex`), committed
+   as a generated module of `bootstrap/lean/GebMirror/Image/` that holds
+   the image's bytes in hexadecimal, as the image of each layer of the
+   metalogic's program is committed beside the layer's mirror
+   (`bootstrap/lean/GebMirror/Metalogic/Load/`). `scripts/bootstrap.sh
+   regen` writes each module from the program's manifest by the
+   committed compiler, and `scripts/bootstrap.sh check` compares it with
+   the image of the sources. Each program has a manifest of its own: the
+   expansion's and that of the datatype language's soundness
+   (`bootstrap/expansion.manifest`,
+   `bootstrap/datatype-soundness.manifest`), and those of the statements
+   of weakening, of substitution, of the expansion's identity and of the
+   evaluator's fundamental lemma (`bootstrap/weakening-statement.manifest`,
+   `substitution-statement.manifest`, `expansion-statement.manifest`,
+   `normalization-statement.manifest`), the statements' definitions
+   sources under `bootstrap/proofs/`. The developments' modules, the
+   generator of the
+   certificates, `geb-certify`, whose bytes key the searches
    (`docs/rules/ci-and-workflow.md` § Certificates), and the modules of
-   `GebTests/Prototypes/FreeTopos/Certified/` that check the
-   certificates of the datatype language's soundness import them too. A
-   change to a source of a compiler or to the image therefore rebuilds
-   the developments' modules, checks their certificates again and runs
-   every search, also where it leaves the bundle of each program a
-   development is about unchanged;
-   {ref "measurements"}[The measurements] gives the times of the checks
-   and of the searches. A development is to depend on its
-   program's bundle and not on what compiles it. The metalogic's program
-   is committed so, the image of each of its layers beside the layer's
-   mirror (`bootstrap/lean/GebMirror/Metalogic/Load/`), which
-   `scripts/bootstrap.sh check` compares with the image of its sources;
-   whether the developments read their programs from images committed
-   likewise, or a search is keyed by the content identities of the
-   definitions it reads ({ref "content-identity"}[Content identity]), is
-   settled in the design. The acceptance: after a change to
-   `bootstrap/modules.geb` under which every manifest's program compiles
-   to the bundle it compiled to, with the image and the emitted Lean
-   regenerated, Lake
-   rebuilds no module of the developments and none of `Certified/`, the
-   bytes of `geb-certify` are unchanged, and `scripts/pre-push.sh` runs
-   no search. Two further changes shorten the checks of a change that
-   does alter such a program (step 12). In the measured run the longest
-   search began among the last and finished last. Schedule the longest
-   searches first and compare total elapsed time at the same number of
-   workers. The modules that check the certificates of the
-   datatype language's soundness import one another in a chain, for the
-   declarations each development continues from, so that Lake builds
-   them in turn, the checks of `Certified/DatatypeCata.lean` in one
-   module; with the declarations in modules apart from the checks, Lake
-   builds the checks at the same time.
+   `GebTests/Prototypes/FreeTopos/Certified/` import neither the stage
+   tests (`GebTests/Prototypes/Stage0.lean`,
+   `GebTests/Prototypes/Stage1.lean`) nor a module of a library that
+   needs a compiler's source (`lakefile.toml`). A development so depends
+   on its program's image and not on what compiles it: its theorems are
+   about the program the image holds, which the check of the fixed
+   points compares with the image of the sources. The test of the
+   metalogic's loading
+   (`GebTests/Prototypes/FreeTopos/Agreement/Load.lean`) compiles its
+   program by the stage-0 compiler's source, and is rebuilt with the
+   compilers. The acceptance holds in one run: after a definition that
+   no source uses is added to `bootstrap/modules.geb`, and the image and
+   the emitted Lean are regenerated (`scripts/bootstrap.sh regen`), the
+   image and `bootstrap/lean/GebBoot.lean` differ, and no mirror and no
+   module of `GebMirror/Image/` does; Lake finds the developments'
+   modules, those of `Certified/` and `geb-certify` up to date
+   (`lake build --no-build`), and neither the stage tests nor the test of
+   the metalogic's loading; and the bytes of `geb-certify` are unchanged,
+   and with them the inputs of the searches that `scripts/pre-push.sh`
+   compares with those of its last passing run, so that it runs no
+   search. Two further
+   changes shorten the checks of a change that does alter such a program
+   (step 12); {ref "measurements"}[The measurements] gives their times
+   and memory. `scripts/certificates.sh check` starts the searches in
+   the order of their times at its last passing run, the longest first,
+   so that the longest search, which is listed among the last, does not
+   end the run with the other workers idle: at four workers the run
+   takes the time of the longest search, 129 minutes in one run, where
+   the order of the list takes 169 in another, and by the times of
+   either run the order takes 10 to 13 in 100 from it. The developments
+   of the datatype language's
+   soundness are read from their certificates in one module
+   (`Certified/DatatypeDeclarations.lean`); each module that checks them
+   imports it and no other check, the checks at structural recursion one
+   module to a development, and one module composes the checks by
+   validity (`Certified/DatatypeValid.lean`), so that Lake builds the
+   checks at the same time. With every check to build, the test library
+   builds in 41 minutes at four processes, where the modules importing
+   one another in a chain build in 95; the longest check takes 30 of
+   them. The processes of the checks reach 14.8 gigabytes of resident
+   memory together, so on a host with less the evaluations run in turn
+   under the lock of a file that the environment variable
+   `GEB_EVALUATION_LOCK` names
+   (`GebTests/Prototypes/ProgramCommand.lean`), which `ci.yml` sets for
+   its build.
 8. Write the library's modules in the forms of step 4. Provide lists and
    optional values generic in their element types, byte strings, and the
    path, event, action, request, result and failure types used for file
@@ -385,8 +408,8 @@ together.
     or of the metalogic's, so that each is followed by the regeneration
     of the mirrors, by `scripts/certificates.sh regen` and by
     `scripts/proofs.sh`. A change that holds several of them is followed
-    by one regeneration, and each made alone by its own. They follow
-    step 7, whose further changes shorten their checks. Convert the
+    by one regeneration, and each made alone by its own. The
+    further changes of step 7 shorten their checks. Convert the
     bootstrap sources after step 8 has exercised the generic forms in
     the library. The reader has no dependency on those forms.
 13. Reuse a checked program when compiling examples and running a client.
@@ -408,9 +431,8 @@ together.
 tag := "downstream-order"
 %%%
 
-Steps 1, 2 and 3 are complete. Give step 7 first priority on the compiler
-to remove repeated proof checks from each iteration on step 4. The record
-and migration fixtures of step 6 are complete. The table distinguishes work that can start now
+Steps 1, 2, 3 and 7 are complete, as are the record and migration
+fixtures of step 6. The table distinguishes work that can start now
 from acceptance that needs the library or an upgraded client.
 
 :::table +header
@@ -418,10 +440,6 @@ from acceptance that needs the library or an upgraded client.
   * Step
   * When to start
   * Artifacts to check
-*
-  * 7, the checks that a change to a compiler runs
-  * First on the compiler
-  * The developments' modules and the search keys
 *
   * 9, a dependency named by its manifest
   * Now, using the library and client of step 1
@@ -440,7 +458,7 @@ from acceptance that needs the library or an upgraded client.
   * The host tools and editor package
 *
   * 4, polymorphic definitions
-  * Design alongside 7. Integrate after the build dependencies are separated
+  * Now, the build dependencies being separated by 7
   * The compiler's image and the Lean the compiler emits
 *
   * 8, the library's modules
@@ -456,13 +474,12 @@ from acceptance that needs the library or an upgraded client.
   * The migrated value and the successor record
 *
   * 12, the sources that developments are about
-  * After 7. Convert sources to the generic forms after 8
+  * Convert sources to the generic forms after 8
   * The compiler's image, the mirrors and the certificates
 :::
 
-Once step 7 separates the developments from the stage tests, step 4
-can proceed. Scheduling searches and splitting the certificate checks
-in step 7 can continue alongside it. Load each compiler once per
+Step 7 separates the developments from the stage tests, so step 4
+can proceed. Load each compiler once per
 stage-test comparison before or alongside step 4.
 The stage-0 example comparison took 3.0 seconds with repeated loading
 and 0.5 seconds with one load ({ref "improvements"}[Improvements]).
@@ -471,7 +488,7 @@ more examples. Work on dependency manifests, host tools and editor
 reports can proceed in parallel. Exercise them together in the client
 as each becomes available. Prefer the client upgrade to converting
 `bootstrap/` in step 12. The constant-depth reader can move forward
-after step 7 if the reader's stack limits the client or the compiler.
+if the reader's stack limits the client or the compiler.
 
 The proof work in {ref "the-next-phase"}[The next phase] proceeds alongside
 the client. Expose datatype-level statements before writing library

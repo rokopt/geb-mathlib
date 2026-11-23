@@ -67,6 +67,13 @@ jobs:
     timeout-minutes: 360
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      # The modules checking the stored developments import none of one
+      # another, so Lake builds them at the same time, and each check
+      # holds gigabytes of resident memory; under the lock, set for the
+      # steps that follow, they run one at a time, within the hosted
+      # runner's memory (docs/rules/ci-and-workflow.md § Certificates).
+      - name: Name the lock of the developments' checks
+        run: echo "GEB_EVALUATION_LOCK=$RUNNER_TEMP/geb-evaluation.lock" >> "$GITHUB_ENV"
       - uses: leanprover/lean-action@ba3fdfe5c4476c925da13bf11a005ddb47e47aee  # v1
         with:
           build: true

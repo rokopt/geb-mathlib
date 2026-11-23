@@ -6,9 +6,9 @@ Authors: Terence Rokop
 module
 
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeAccepted
-public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramSound
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeValid
 public meta import GebTests.Prototypes.FreeTopos.Certified.DatatypeAccepted -- shake: keep
-public meta import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramSound -- shake: keep
+public meta import GebTests.Prototypes.FreeTopos.Certified.DatatypeValid -- shake: keep
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in

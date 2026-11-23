@@ -737,6 +737,84 @@ include that difference. The certificates' sizes at the three are in
 conversion], and the stored certificates are those of derivations,
 which the modules check by the base checker.
 
+With the searches of the datatype language's soundness at structural
+recursion and of a whole program among them, `scripts/certificates.sh
+check` runs every search, each in a process of its own, four at a time,
+on sixteen cores, in two runs, each beside a build of the test library
+and the first also beside another workspace's searches. In the order of
+the list it takes 168.7 minutes: the search of `datatype-cata`, the
+longest at 9138 seconds, begins 16 minutes into the run and ends it, and
+the searches' times sum to 526 minutes. In the order of the times it
+records at a passing run, the longest first, it takes 129.2 minutes, the
+time of the search of `datatype-cata` in that run, 7751 seconds, the
+searches' times summing to 467 minutes. Each worker taking the next
+search of the order as it becomes free, the times of the first run give
+10120 seconds in the order of the list, the time measured, and 9138
+with the longest first; those of the second give 8875 and 7751, the
+time measured: the order takes 10 to 13 in 100 from the run, which the
+longest search bounds. The certificates are the committed ones byte for
+byte in both runs. The search of `datatype-cata` reaches 11.5 gigabytes
+of resident memory, and the four longest searches, begun together, 19.1
+together.
+
+The modules that check the developments of the datatype language's
+soundness each import the developments' declarations
+(`GebTests/Prototypes/FreeTopos/Certified/DatatypeDeclarations.lean`)
+and no other check, the checks at structural recursion one module to a
+development, so that Lake builds them at the same time, where modules
+importing one another in a chain, for the declarations each development
+continues from, are built in turn. On sixteen cores, four processes at a
+time (`LEAN_NUM_THREADS`), each run beside four searches, the build of
+the test library with every check to build takes 40.7 minutes with the
+modules apart and 95.5 with them in the chain. The check of
+`DatatypeCata`, the longest, began 11 minutes into the build apart, in
+the order Lake starts the modules; in another run, in which it began
+among the first, the build takes 34.0 minutes. The modules build, in
+seconds, and their processes reach, in gigabytes of resident memory:
+
+:::table +header
+*
+  * Module
+  * In the chain
+  * Apart
+  * Resident memory apart
+*
+  * `Datatype`, `DatatypeList`, `DatatypeForms`
+  * 37, 143, 505
+  * 33, 103, 684
+  * 1.3, 2.0, 3.4
+*
+  * `DatatypeDatum`, `DatatypeCase`
+  * 115, 186
+  * 121, 342
+  * 2.8, 2.9
+*
+  * `DatatypeCata`, and apart with it `DatatypeCataClauses`,
+    `DatatypeCataChain`, `DatatypeCataSound`, `DatatypeCataCore` and
+    `DatatypeCataSrc`
+  * 3807
+  * 1771, 394, 518, 109, 170, 274
+  * 9.5, 6.0, 5.5, 1.8, 3.4, 6.7
+*
+  * `DatatypeGenerated`, `DatatypeClosed`
+  * 627, 72
+  * 406, 35
+  * 3.8, 1.9
+*
+  * `DatatypeProgram`, `DatatypeProgramKinds`, `DatatypeProgramData`,
+    `DatatypeProgramSound`
+  * 118, 302, 280, 116
+  * 70, 175, 163, 84
+  * 2.6, 4.8, 3.6, 1.9
+:::
+
+The modules' times sum to 91 minutes apart and 105 in the chain, whose
+process reaches 9.0 gigabytes at the checks of `DatatypeCata`; the
+processes apart reach 14.2 gigabytes together, and 14.8 in the other
+run. A host with less memory than the checks reach together, as the
+hosted runner of `ci.yml`, runs the evaluations in turn under a lock
+(`docs/rules/ci-and-workflow.md` § Certificates).
+
 # The searches' remaining time
 %%%
 tag := "searches-remaining"

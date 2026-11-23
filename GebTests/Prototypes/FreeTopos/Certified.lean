@@ -11,9 +11,15 @@ public import GebTests.Prototypes.FreeTopos.Certified.Datatype
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeAccepted
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeCase
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeCata
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeCataChain
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeCataClauses
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeCataCore
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeCataSound
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeCataSrc
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeClosed
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeConclusion
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeDatum
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeDeclarations
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeEntry
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeFolds
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeForms
@@ -40,6 +46,7 @@ public import GebTests.Prototypes.FreeTopos.Certified.DatatypeProgramTheory
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeRelation
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeStatements
 public import GebTests.Prototypes.FreeTopos.Certified.DatatypeTranslated
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeValid
 public import GebTests.Prototypes.FreeTopos.Certified.Expansion
 public import GebTests.Prototypes.FreeTopos.Certified.Normalization
 public import GebTests.Prototypes.FreeTopos.Certified.Substitution

@@ -31,7 +31,8 @@ the trees they declared are the program's. It declares the loading of the whole 
 from the steps, and the equality of the exported globals with their mirrors. The command
 {lit}`kernel_rfl` declares a theorem proved by reflexivity, checked by the kernel alone, and the
 command {lit}`evaluation_axiom` an axiom that a Boolean is true, declared after Lean's evaluator has
-evaluated it.
+evaluated it, the evaluation holding the lock of the file the environment variable
+{lit}`GEB_EVALUATION_LOCK` names where it names one.
 
 ## Implementation notes
 
@@ -179,13 +180,27 @@ syntax (name := kernelRfl) "kernel_rfl " ident " : " term : command
       | none, none => throwError "not an equation"
     addDecl <| .thmDecl { name := n, levelParams := [], type := ty, value := prf }
 
+/-- Runs an action holding the exclusive lock of the file the environment variable
+{lit}`GEB_EVALUATION_LOCK` names, where it names one, and as it is where the variable is unset.
+Lake builds at the same time the modules that import none of one another, each in a process of its
+own, and the evaluation of a stored development's check holds the development and those it
+continues from in memory; under the variable the evaluations of the processes run one at a time,
+each of the others waiting for the lock, so that a host's memory need hold one of them. The variable
+changes no module's output. -/
+meta def withEvaluationLock {α : Type} (act : MetaM α) : MetaM α := do
+  let some path ← IO.getEnv "GEB_EVALUATION_LOCK" | act
+  let h ← IO.FS.Handle.mk path .append
+  h.lock
+  try act finally h.unlock
+
 /-- {lit}`evaluation_axiom n : b = true` declares the axiom {lit}`n` that the Boolean {lit}`b` is
 true, after Lean's evaluator has evaluated {lit}`b` to {lit}`true`. The fact is established by
 evaluation alone, in either loading mode: a Boolean whose kernel reduction is out of reach, such as
 the check of a development a certificate stores, is stated so, and the axiom is listed by
 {lit}`#print axioms` for every declaration that depends on it. A doc comment before the command
 documents the axiom; it is written in Markdown, under {lit}`set_option doc.verso false in`, since
-elaborating a Verso docstring reduces the declaration's statement. -/
+elaborating a Verso docstring reduces the declaration's statement. The evaluation runs under
+{name}`withEvaluationLock`. -/
 syntax (name := evaluationAxiom)
   (docComment)? "evaluation_axiom " ident " : " term : command
 
@@ -198,7 +213,7 @@ syntax (name := evaluationAxiom)
     let ty ← instantiateMVars ty
     let some (_, b, t) := ty.eq? | throwError "not an equation"
     unless t.isConstOf ``Bool.true do throwError "not an equation of a Boolean with true"
-    unless ← unsafe Meta.evalExpr Bool (mkConst ``Bool) b do
+    unless ← withEvaluationLock (unsafe Meta.evalExpr Bool (mkConst ``Bool) b) do
       throwError "the Boolean evaluates to false"
     addDecl <| .axiomDecl { name := n, levelParams := [], type := ty, isUnsafe := false }
     addDocString' n mkNullNode (stx[0].getOptional?.map TSyntax.mk)
