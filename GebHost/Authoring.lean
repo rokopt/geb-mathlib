@@ -118,29 +118,6 @@ def writtenSources (paths : List System.FilePath) : IO (List Compiler.Source) :=
     let s ← Compiler.Source.read path
     return if (readBasic s.text).isSome then none else some s
 
-/-- A manifest's compiled program and the text from which its examples are checked; with a
-directory of kept states, the program is compiled a layer at a time
-({name}`GebHost.Layers.bundle`). -/
-def readProgram (path : System.FilePath) (cache : Option System.FilePath := none) :
-    IO (Manifest × ByteArray × Tree) := do
-  let m ← Manifest.readProgram path
-  let paths := Manifest.sourcePaths path m
-  let layers ← (Compiler.layerPaths path m).mapM fun srcs ↦
-    srcs.foldlM (init := ByteArray.empty) fun acc src ↦ do
-      let d ← readDocument src m.profile
-      discard <| IO.ofExcept (notesOf d.doc)
-      return (acc ++ sourceBytes d.doc.eraseNotes).push 10
-  let text := layers.foldl (· ++ ·) ByteArray.empty
-  let kept ← match cache with
-    | some dir => Layers.bundle dir layers
-    | none => pure none
-  let b ← match kept with
-    | some b => pure b
-    | none => compile path.toString (← writtenSources paths) text
-  let some ds := unbundle b | throw <| IO.userError "malformed bundle"
-  IO.ofExcept (m.checkEntries (ds.map fun d ↦ String.ofList d.1))
-  return (m, text, b)
-
 /-- The spans of examples in the order of the document's notes. A note is attached only
 in a declaration block, so a quoted note or an opaque field contributes no occurrence. -/
 def exampleSpans (items : List Locate.Located) : List Locate.Span :=
@@ -167,10 +144,15 @@ def exampleLocation (path : System.FilePath) (index : Nat) : IO String := do
   return s!"{path}:{sp.start.line}:{column sp.start 0}-{sp.stop.line}:{column sp.stop 1}: error"
 
 /-- Check every note's example by compiling and evaluating its two tree-valued expressions. -/
-def checkExamples (manifest : System.FilePath) (m : Manifest) (text : ByteArray) : IO Unit := do
-  for path in Manifest.sourcePaths manifest m do
-    let d ← readDocument path m.profile
-    let notes ← IO.ofExcept (notesOf d.doc)
+def checkExamples (manifest : System.FilePath) (m : Manifest) (text : ByteArray)
+    (state : Option Layers.State := none)
+    (notes : Option (List (System.FilePath × List (Document.Path × Note))) := none) : IO Unit := do
+  let sources ← match notes with
+    | some ns => pure ns
+    | none => (Manifest.sourcePaths manifest m).mapM fun p ↦ do
+      return (p, ← IO.ofExcept (notesOf (← readDocument p m.profile).doc))
+  let trace := (← IO.getEnv "GEB_LAYERS_TRACE").isSome
+  for (path, notes) in sources do
     let mut index := 0
     for (name, fields) in notes do
       let declaration := ".".intercalate (name.map String.ofList)
@@ -181,7 +163,12 @@ def checkExamples (manifest : System.FilePath) (m : Manifest) (text : ByteArray)
             "(def __geb_example_expected (lam ((input T)) ".toList ++
             canonOf value ++ "))\n".toList
           try
-            let b ← compile path.toString [] (text ++ bytesOf suffix)
+            let bytes := bytesOf suffix
+            let kept := state.bind (Layers.advance · bytes) |>.bind Layers.State.bundle
+            if trace then IO.eprintln s!"layers: example {declaration} reuse {kept.isSome}"
+            let b ← match kept with
+              | some b => pure b
+              | none => compile path.toString [] (text ++ bytes)
             let some actual := runEntry b "__geb_example_actual".toList (leaf 0)
               | throw <| IO.userError s!"example of {declaration} does not return a tree"
             let some expected := runEntry b "__geb_example_expected".toList (leaf 0)
@@ -193,6 +180,37 @@ def checkExamples (manifest : System.FilePath) (m : Manifest) (text : ByteArray)
           catch e =>
             throw <| IO.userError s!"{← exampleLocation path index}: {e}"
           index := index + 1
+
+/-- A manifest's compiled program and the text from which its examples are checked; with a
+directory of kept states, the program is compiled a layer at a time
+({name}`GebHost.Layers.compile`). Each requested example extends the same final state with
+its two expressions. If the layers require whole-program compilation, the example uses it too. -/
+def readProgram (path : System.FilePath) (cache : Option System.FilePath := none)
+    (examples := false) :
+    IO (Manifest × ByteArray × Tree) := do
+  let m ← Manifest.readProgram path
+  let paths := Manifest.sourcePaths path m
+  let mut layers := #[]
+  let mut notes := #[]
+  for layer in Compiler.layerPaths path m do
+    let mut bytes := ByteArray.empty
+    for src in layer do
+      let d ← readDocument src m.profile
+      let fields ← IO.ofExcept (notesOf d.doc)
+      if examples && !fields.isEmpty then notes := notes.push (src, fields)
+      bytes := (bytes ++ sourceBytes d.doc.eraseNotes).push 10
+    layers := layers.push bytes
+  let text := layers.foldl (· ++ ·) ByteArray.empty
+  let state ← match cache with
+    | some dir => Layers.compile dir layers.toList
+    | none => pure none
+  let b ← match state.bind Layers.State.bundle with
+    | some b => pure b
+    | none => compile path.toString (← writtenSources paths) text
+  let some ds := unbundle b | throw <| IO.userError "malformed bundle"
+  IO.ofExcept (m.checkEntries (ds.map fun d ↦ String.ofList d.1))
+  if examples then checkExamples path m text state (some notes.toList)
+  return (m, text, b)
 
 /-! ## Developments -/
 
@@ -572,8 +590,7 @@ structure Session where
 that does not read is the diagnostic of what rejects it. -/
 def Session.read (manifest proofs : String) (cache : Option System.FilePath := none) :
     IO Session := do
-  let (m, text, b) ← readProgram manifest cache
-  checkExamples manifest m text
+  let (m, _, b) ← readProgram manifest cache (examples := true)
   let docs ← development proofs m.profile
   let written ← writtenSources (docs.map (·.1))
   let input := sourcesTree docs

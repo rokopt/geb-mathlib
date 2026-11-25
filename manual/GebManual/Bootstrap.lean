@@ -178,9 +178,9 @@ together.
    layers' texts and the compiler's identity (`GebHost/Layers.lean`), so
    that a client's check reads the state after the library's layer where
    it compiled a vendored copy, and compiles the layers that changed.
-   The bundle is that of the layers' texts joined; a layer that refers
-   to the recognizer of an earlier layer's datatype that no layer before
-   it refers to is compiled with the whole program.
+   The bundle is that of the layers' texts joined. When a layer first
+   uses an earlier datatype's recognizer, the reader inserts it at its
+   marker in the saved kernel forms and reads the forms again.
 3. Complete. Report datatype errors and holes where they are written. A
    failure of the datatype language's typing is reported at the subterm
    whose type is not the one its form requires, with the two types before
@@ -220,7 +220,7 @@ together.
    image and the Lean the compiler emits, and, the bundles of the
    existing sources being unchanged, no mirror, no image of a
    development's program and no certificate.
-5. In progress. Run the client and give it filesystem requests on the Lean
+5. Complete. Run the client and give it filesystem requests on the Lean
    host. The requests are complete: a program is a step of type `T → T`
    from its start, with the protocol's version and its arguments, or from a
    state and a request's result, to its end with an exit status or to a
@@ -236,14 +236,14 @@ together.
    folder (`geb-author interact`). The protocol's datatypes are the
    library's module `Requests` (step 8), which the acceptance program
    imports and through which the client template issues its requests.
-   Remaining: the host has to preserve the application's arguments.
-   `GebAuthorMain.lean` reads `--cache` anywhere in the command line.
-   Run the index example with an index file named `--cache` and an output
-   path. The manifest run and the image run must both read that index,
-   write the same bytes and return the same status. Measure elapsed time
-   and peak resident memory as the target file grows. The file benchmark
-   in {ref "definitions-and-images"}[Definitions and images] measured about
-   480 megabytes for one mebibyte of input on the plain representation.
+   Application arguments after the entry are passed through. The index
+   example reads an index named `--cache` and writes the same bytes
+   with the same status from a manifest or an image
+   (`scripts/tests/test-requests.sh`). With target files of 1 KiB,
+   64 KiB and 1 MiB, the image run took 0.04, 0.14 and 1.78 seconds
+   and reached 81, 97 and 369 MiB of resident memory. The uncached
+   manifest run took 0.12, 0.22 and 1.87 seconds and reached 87, 99
+   and 373 MiB, medians of three runs on one Linux arm64 host.
    The requests are the read and the write of a whole file;
    requests to write to the standard output, to read the standard input
    and to list a directory are added with their first consumers, while
@@ -420,27 +420,23 @@ together.
     further changes of step 7 shorten their checks. Convert the
     bootstrap sources after step 8 has exercised the generic forms in
     the library. The reader has no dependency on those forms.
-13. Reuse a checked program when compiling examples and running a client.
-    In `GebAuthorMain.lean`, `compile`, `run` and `interact` each read the
-    program without the layer cache of step 2. For every example,
-    `checkExamples` in `GebHost/Authoring.lean` compiles the whole program
-    with the example's two expressions appended. Proving and replaying a
-    development also check its examples. Use the workspace's kept layers
-    for the three commands and reuse the checked prefix across examples
-    where step 2 permits it. Measure a cold run, an unchanged repeat and
-    an edit to the client layer, varying the number of examples. On the
-    template's layered program, the warm commands must reuse the unchanged
-    library layer. Compare the image bytes, runtime outputs and example
-    verdicts with uncached runs. Changing a library definition must still
-    expose a failing example in a client that uses it.
+13. Complete. Compile, run and interact reuse the workspace's kept
+    manifest layers. Compile, prove and replay evaluate each example
+    from the same checked program state. When a client or example first
+    uses an earlier datatype's recognizer, the reader inserts it at its
+    declaration in the saved kernel forms. The comparison with uncached
+    commands checks image bytes, runtime outputs and example verdicts, including
+    a change to a library that falsifies a client example
+    (`scripts/tests/test-client.sh`,
+    {ref "improvements"}[Improvements]).
 
 ### The order of the remaining steps
 %%%
 tag := "downstream-order"
 %%%
 
-Steps 1, 2, 3, 4, 7, 8, 9 and 11 are complete, as are the record and migration
-fixtures of step 6. The table distinguishes work that can start now
+Steps 1 through 5, 7 through 9, 11 and 13 are complete, as are the record
+and migration fixtures of step 6. The table distinguishes work that can start now
 from acceptance that needs an upgraded client.
 
 :::table +header
@@ -452,14 +448,6 @@ from acceptance that needs an upgraded client.
   * 10, a release and a description of the language
   * Now, the generic forms of step 4 among the forms it describes
   * Release archives, editor packages and the manual
-*
-  * 13, kept layers for commands and checked examples
-  * Now, using step 2. Fix argument forwarding in step 5 alongside it
-  * The host tools and editor package
-*
-  * 5, file requests through the library
-  * Now, with the protocol types of 8. Its argument forwarding is fixed with 13
-  * The host tools and the downstream client
 *
   * 6, acceptance of the client upgrade
   * After the client reads and writes its first saved datatype through 5 and 8
@@ -474,9 +462,8 @@ Load each compiler once per stage-test comparison before the next change
 to a compiler's source.
 The stage-0 example comparison took 3.0 seconds with repeated loading
 and 0.5 seconds with one load ({ref "improvements"}[Improvements]).
-Use the existing client to measure step 13 with the examples in the library's
-modules. Exercise host-tool changes in the client with the editor's
-reports. Prefer the client upgrade to converting
+Exercise host-tool changes in the client with the editor's reports.
+Prefer the client upgrade to converting
 `bootstrap/` in step 12. The constant-depth reader can move forward
 if the reader's stack limits the client or the compiler.
 
@@ -9200,10 +9187,9 @@ the change that removes it.
   of a check without the directory and half as much again, the states
   written after each layer, and a check with every state kept about a
   quarter of it. The bundle is the one compiled without the directory,
-  byte for byte (`scripts/tests/test-layers.sh`); a layer that refers
-  to the recognizer of an earlier layer's datatype that no layer before
-  it refers to, which the whole program writes in the earlier layer, is
-  compiled with the whole program. `scripts/bootstrap.sh` still
+  byte for byte (`scripts/tests/test-layers.sh`). Where a later layer
+  first refers to an earlier datatype's recognizer, the reader inserts
+  it into the saved kernel forms at the datatype's original position. `scripts/bootstrap.sh` still
   compiles each layer of a manifest with the layers before it by the
   image under the evaluator; its check, which compiles every manifest's
   program beside the fixed points, took 14.1 minutes before these
@@ -9234,9 +9220,18 @@ the change that removes it.
   Prove Statements share the selected workspace folder's proof cache.
   In the downstream client, the first prove searches two theorems. An
   unchanged repeat takes both from the cache and writes the identical
-  replayable certificate. As the library acquires examples, measure the
-  cost of `checkExamples` in `GebHost/Authoring.lean`, which recompiles
-  the program with each example's two expressions.
+  replayable certificate. The compile, run and interact commands share
+  the workspace's kept layers. Each example extends the final state in
+  memory with its own two expressions. On one Linux arm64 host, the
+  template with 15, 22 and 46 examples took respectively 1133, 1518 and
+  2856 milliseconds to compile without a cache. With an empty layer
+  cache the times were 209, 223 and 264 milliseconds, on an unchanged
+  repeat 157, 178 and 213, and after adding one definition to the client
+  layer 188, 217 and 247. These are medians of five invocations of the
+  executable, repeating the client's example to vary the count. In the
+  same four conditions, running `Client.run` on three bytes took 124,
+  147, 94 and 123 milliseconds. Copying those bytes through the
+  template's `Copy.step` took 124, 139, 95 and 129 milliseconds.
 * The equivalence of the word-level codec with
   {name}`Geb.RoseTree.wire`, tested and not proved, which is the first
   of the decision gates of the value-representation chapter.

@@ -8,14 +8,15 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 mkdir -p .lake
 if [ -f geb/geb-release.json ]; then author=(geb/bin/geb-author)
 else author=(lake -d geb exe geb-author); fi
-"${author[@]}" compile client.manifest .lake/client.img
-"${author[@]}" prove client.manifest Client.proofs.geb .lake/client.cert
-"${author[@]}" replay client.manifest Client.proofs.geb .lake/client.cert
+cache=(--cache .lake/geb-proof-cache)
+"${author[@]}" compile "${cache[@]}" client.manifest .lake/client.img
+"${author[@]}" prove "${cache[@]}" client.manifest Client.proofs.geb .lake/client.cert
+"${author[@]}" replay "${cache[@]}" client.manifest Client.proofs.geb .lake/client.cert
 # The copy of the file the index names, and the line written where that file is missing.
 printf '.lake/copy.source\n' > .lake/copy.index
 printf 'the source\n' > .lake/copy.source
-"${author[@]}" interact client.manifest Copy.step .lake/copy.index .lake/copy.found
+"${author[@]}" interact "${cache[@]}" client.manifest Copy.step .lake/copy.index .lake/copy.found
 cmp .lake/copy.source .lake/copy.found
 rm .lake/copy.source
-"${author[@]}" interact client.manifest Copy.step .lake/copy.index .lake/copy.missing
+"${author[@]}" interact "${cache[@]}" client.manifest Copy.step .lake/copy.index .lake/copy.missing
 printf 'missing\n' | cmp - .lake/copy.missing

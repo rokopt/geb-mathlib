@@ -77,6 +77,15 @@ expect no-arguments 2 "$kernel" interact program.img Index.step
 expect author 0 "$author" interact "$manifest" Index.step index author
 same author author 'target λ.txt'
 
+# The application's first argument may also be the host option's spelling.
+cp index ./--cache
+expect option-image 0 "$kernel" interact program.img Index.step --cache image-copy
+expect option-manifest 0 "$author" interact "$manifest" Index.step --cache manifest-copy
+expect option-cached 0 "$author" interact --cache layers "$manifest" Index.step --cache cached-copy
+same option-image image-copy 'target λ.txt'
+same option-manifest manifest-copy image-copy
+same option-cached cached-copy image-copy
+
 # The client's entry maps a file to a file, so its result is no action of the protocol.
 client="$repo_root/examples/client"
 mkdir client
