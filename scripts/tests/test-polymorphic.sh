@@ -99,8 +99,10 @@ cat > instances.expected <<'EOF'
 (Lists.length T)
 (Lists.map T Client.Light)
 (Lists.map T T)
+(Optional.none Bytes.Bytes)
 (Optional.none T)
 (Optional.orElse T)
+(Optional.some Bytes.Bytes)
 (Optional.some T)
 EOF
 same instances instances instances.expected

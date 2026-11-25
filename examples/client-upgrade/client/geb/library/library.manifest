@@ -1,0 +1,6 @@
+; The shared library: the composition of functions, optional values and lists, each generic in its
+; types, byte strings, and the datatypes of a program's requests to its host. A client takes
+; these sources in order by naming this manifest.
+(program library (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources Functions.geb Optional.geb Lists.geb Bytes.geb Requests.geb Saved.geb)
+  (entries))

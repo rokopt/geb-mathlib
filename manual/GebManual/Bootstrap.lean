@@ -251,8 +251,8 @@ together.
    step-bounded execution and resumption follow the bootstrap, with the
    second host ({ref "files-editions"}[Files, editions and the host
    boundary]).
-6. In progress. Migrate the client and its first saved datatype value.
-   Code-only records and the migration fixture are complete. `scripts/preserve.py`
+6. Complete. Migrate the client and its first saved datatype value.
+   `scripts/preserve.py`
    records the requests example, rechecks its examples after relocation, and compares
    its canonical documents, image and elaborated definitions. The Roundtrip record
    still replays its proof. In `examples/value-migration/` two pinned revisions of
@@ -261,11 +261,23 @@ together.
    same constructor in version 2. Both records check, the envelope theorem replays
    after transport, and the old and upgraded applications give the same output for
    each migrated value ({ref "first-authoring"}[Writing a first Geb development]).
-   The downstream upgrade remains. Once the client saves its first datatype through
-   the library of steps 5 and 8, retain the readable sources, manifest, dependency
-   revisions, checked record and saved input. Migrate its documents and value,
-   account for changes to its elaborated definitions, replay its proof and compare
-   the two clients' output on the original and migrated inputs.
+   The client template saves a datatype of its own, `Settings.Order`, through the
+   library of steps 5 and 8: the library's module `Saved` writes a value's encoding
+   after the identifier of its datatype and the version of its encoding, and the
+   requests of `Requests` write and read it. The template's previous revision, with
+   the library at the revision it pins, and the setting it saved are kept under
+   `examples/client-upgrade/`, pinned by SHA-256 in `SHA256SUMS`.
+   `scripts/tests/test-client-upgrade.sh` records that revision, upgrades it to the
+   template and the library of the checkout, transports its certificate and records
+   the successor, and checks both records. The upgraded declaration places a
+   constructor before the one the saved setting names, whose tag it takes, and
+   `Upgrade.migrate` writes the saved order at the new version. The upgraded client
+   refuses the original setting, and from the migrated setting writes the output the
+   previous client writes from the original. The documents of the unchanged sources
+   are unchanged, and the definitions whose content identifiers
+   (`geb-defs --identities`) change are those the new constructor changes and those
+   referring to them. The editor's acceptance (`editors/vscode/test/client.cjs`) saves,
+   migrates and applies a setting through the extension.
 7. Complete. Confine the checks that a change to a compiler runs to the
    programs it changes. A development about one of the bootstrap's
    programs, the evaluator's fundamental lemma and the datatype
@@ -434,9 +446,8 @@ together.
 tag := "downstream-order"
 %%%
 
-Steps 1 through 5, 7 through 9, 11 and 13 are complete, as are the record
-and migration fixtures of step 6. The table distinguishes work that can start now
-from acceptance that needs an upgraded client.
+Steps 1 through 9, 11 and 13 are complete. The table gives when each
+remaining step starts and the artifacts that check it.
 
 :::table +header
 *
@@ -448,10 +459,6 @@ from acceptance that needs an upgraded client.
   * Now, the language guide and its checked examples are in place
   * Release archives, editor packages and the manual
 *
-  * 6, acceptance of the client upgrade
-  * After the client reads and writes its first saved datatype through 5 and 8
-  * The migrated value and the successor record
-*
   * 12, the sources that developments are about
   * Now, 8 having exercised the generic forms the sources are converted to
   * The compiler's image, the mirrors and the certificates
@@ -462,8 +469,7 @@ to a compiler's source.
 The stage-0 example comparison took 3.0 seconds with repeated loading
 and 0.5 seconds with one load ({ref "improvements"}[Improvements]).
 Exercise host-tool changes in the client with the editor's reports.
-Prefer the client upgrade to converting
-`bootstrap/` in step 12. The constant-depth reader can move forward
+The constant-depth reader can move forward
 if the reader's stack limits the client or the compiler.
 
 The proof work in {ref "the-next-phase"}[The next phase] proceeds alongside
@@ -481,13 +487,15 @@ regenerate metalogic mirrors. Changes to the proof runner for datatype
 statements or tactics needed by a proof script regenerate its emitted Lean
 (`scripts/authoring.sh regen`).
 
-For acceptance of the upgrade, open a fresh clone of the client with its
-pinned Geb checkout in VS Code Insiders.
-Follow an import into the pinned library, edit and check a generic
-definition, and build the same manifest in the editor and CI. Run the
-client to write a typed value. Upgrade the pin, migrate the saved input,
-replay the client's theorem, and check the output of the upgraded client
-on that input. Other editors can reuse the navigation index and proof cache
+The acceptance of the client upgrade is in two parts.
+`scripts/tests/client-acceptance.sh` opens a fresh clone of the client with its
+pinned Geb checkout in VS Code Insiders, follows an import into the pinned
+library, edits and checks a generic definition, builds the manifest that CI
+builds, and runs the client to write, migrate and apply a typed value.
+`scripts/tests/test-client-upgrade.sh` upgrades the pin of the client's
+previous revision, migrates the saved input, transports and replays the
+client's theorem, and checks the output of the upgraded client on that input
+(step 6). Other editors can reuse the navigation index and proof cache
 through a general protocol. Network storage follows its own acceptance
 condition. The second host and the comparison of machines follow the
 bootstrap.
@@ -6750,9 +6758,11 @@ remains.
     development]). In `examples/value-migration/`, a saved light names
     its datatype and encoding version. The executable migration reads
     the old constructor tag and writes the corresponding new one.
-    The downstream application's first saved datatype through the library
-    remains to be migrated. A change of a certificate's encoding is
-    detected by replay of the committed records
+    The client template saves its setting in the envelope of the library's
+    module `Saved`, and the upgrade from its previous revision migrates the
+    setting that revision saved (`scripts/tests/test-client-upgrade.sh`).
+    A change of a certificate's encoding is detected by replay of the
+    committed records
     (`scripts/authoring.sh check`, `scripts/tests/test-preservation.sh`).
     The record migration covers proof-source version 1 to 2.
 *

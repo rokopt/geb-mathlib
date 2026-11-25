@@ -1,0 +1,17 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Optional values, generic in the type of the value. The uses of {geb}`Optional.Option` at one
+; type are one datatype in every module, so a function of one module returns an optional value
+; that a function of another consumes. A datatype's fields hold trees and the values of
+; datatypes, so the type is the trees or a datatype: the optional values of a type of lists, of
+; pairs or of functions are rejected where they are used.
+
+(module Optional (export Option none some orElse)
+  ; The optional values of a type: none, or a value of the type.
+  (data (Option A) (none) (some A))
+  ; The value of an optional value, or a default where there is none.
+  (note (example (Optional.orElse T 0 (Optional.some T 7)) 7)
+    (example (Optional.orElse T 0 (Optional.none T)) 0))
+  (defn (orElse A) ((d A) (m (Option A))) A (case m ((some A x) x) ((none A) d))))

@@ -110,6 +110,7 @@ jobs:
           bash scripts/tests/test-proof-scripts.sh
           bash scripts/tests/test-proof-cache.sh
           bash scripts/tests/test-client.sh
+          bash scripts/tests/test-client-upgrade.sh
           bash scripts/tests/test-support.sh
           bash scripts/tests/test-layers.sh
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0

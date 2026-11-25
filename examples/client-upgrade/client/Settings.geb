@@ -1,0 +1,99 @@
+; A setting saved between runs of the client: the order in which {geb}`Settings.apply` writes a
+; file's bytes. {geb}`Settings.choose`, run by {lit}`geb-author interact` with a letter and the path
+; of a setting, saves the order the letter names in the envelope of the library's module
+; {geb}`Saved`. {geb}`Settings.apply`, run with the paths of a setting, an input and an output,
+; writes the input's bytes to the output in the saved order. Each exits with status 0 when it has
+; written its output, 1 when a request fails or the setting is not one of this version, 2 with
+; other arguments and 3 when the host's protocol is not version 0.
+
+(module Settings
+  (export Order forward mirrored datatype version save savedTag argument choose apply)
+  (import Optional)
+  (import Lists)
+  (import Bytes)
+  (import Requests)
+  (import Saved)
+  (import Client)
+  ; The order of a file's bytes: as they are, or followed by the same bytes in the opposite order.
+  (data Order (forward) (mirrored))
+  ; The identifier of {geb}`Settings.Order` among the datatypes the client saves, the letter O.
+  (def datatype 79)
+  ; The version of the encoding of {geb}`Settings.Order`, the tag of its constructor in a byte.
+  (def version 1)
+  ; The bytes saving an order.
+  (note (example (rep (Settings.save Settings.mirrored)) (quote (0 (79) (1) (1)))))
+  (defn save ((order Order)) Bytes (pack datatype version (bytes (cons (rep order) (nil T)))))
+  ; The tag that bytes save at a version of the encoding of {geb}`Settings.Order`, where they save
+  ; one.
+  (note (example (Optional.orElse T 9 (Settings.savedTag 1 (datum Bytes.Bytes (0 (79) (1) (1))))) 1)
+    (example (Optional.orElse T 9 (Settings.savedTag 2 (datum Bytes.Bytes (0 (79) (1) (1))))) 9)
+    (example (Optional.orElse T 9 (Settings.savedTag 1 (datum Bytes.Bytes (0 (79) (1) (1) (1)))))
+      9))
+  (defn savedTag ((v T) (saved Bytes)) (Option T)
+    (case (unpack datatype v saved) ((none Bytes) (none T))
+      ((some Bytes encoding)
+       (case encoding
+         ((bytes & cs)
+          (lcase T (Option T) cs (none T)
+            (lam ((tag T) (rest (List T)))
+              (lcase T (Option T) rest (some T tag) (lam ((c T) (more (List T))) (none T))))))))))
+  ; The action continuing from the order that bytes save, or the end of the run with status 1.
+  (defn load ((saved Bytes) (use (Arrow Order Action))) Action
+    (case (savedTag version saved) ((none T) (done 1))
+      ((some T tag) (decode Order tag use (done 1)))))
+  ; The action continuing from the order a letter names, f or m, or the end of the run with
+  ; status 2.
+  (defn named ((letter Bytes) (use (Arrow Order Action))) Action
+    (case letter
+      ((bytes & cs)
+       (lcase T Action cs (done 2)
+         (lam ((c T) (rest (List T)))
+           (cond ((eq c 102) (use forward)) ((eq c 109) (use mirrored)) (else (done 2))))))))
+  ; The bytes of a file in an order.
+  (defn arrange ((order Order) (file Bytes)) Bytes
+    (case file ((bytes & cs) (case order ((forward) file) ((mirrored) (bytes (mirror cs)))))))
+  ; The state the program resumes in: reading the setting, with the paths of the input and the
+  ; output; reading the input, with the order and the output's path; or writing.
+  (data State (readingSetting Path Path) (readingInput Order Path) (writing))
+  ; The argument at a position, or the empty path where there is none.
+  (defn argument ((args (List Bytes)) (i T)) Bytes
+    (orElse Bytes (bytes (nil T)) (nth Bytes args i)))
+  ; The action after a request's result: the next request, or the end of the run.
+  (defn after ((st State) (r Result)) Action
+    (case r ((failed f) (done 1))
+      ((succeeded & xs)
+       (case st
+         ((readingSetting input out)
+          (load (contents xs)
+            (lam ((order Order)) (call (read input) (rep (readingInput order out))))))
+         ((readingInput order out) (call (write out (arrange order (contents xs))) (rep writing)))
+         ((writing) (done 0))))))
+  ; The step of a program that begins with an action of its arguments and continues by
+  ; {geb}`Settings.after`.
+  (defn step ((begin (Arrow (List Bytes) Action)) (e T)) T
+    (rep
+      (decode Event e
+        (lam ((ev Event))
+          (case ev ((start v & args) (if (eq v 0) (begin args) (done 3)))
+            ((resume s r) (decode State s (lam ((st State)) (after st r)) (done 2)))))
+        (done 2))))
+  ; The program saving the order a letter names at a path.
+  (note
+    (example (Settings.choose (quote (0 (0) (0 (109)) (0 (115)))))
+      (quote (1 (1 (0 (115)) (0 (79) (1) (1))) (2)))))
+  (defn choose ((e T)) T
+    (step
+      (lam ((args (List Bytes)))
+        (if (eq (length Bytes args) 2)
+          (named (argument args 0)
+            (lam ((order Order)) (call (write (argument args 1) (save order)) (rep writing))))
+          (done 2)))
+      e))
+  ; The program writing an input's bytes to an output in the order a setting saves.
+  (defn apply ((e T)) T
+    (step
+      (lam ((args (List Bytes)))
+        (if (eq (length Bytes args) 3)
+          (call (read (argument args 0)) (rep (readingSetting (argument args 1) (argument args 2))))
+          (done 2)))
+      e)))

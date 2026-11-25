@@ -1338,3 +1338,31 @@ The upgraded manifest selects the new dependency and adds the migration
 module. The client and its envelope theorem have the same canonical source
 documents. The fixture compares the elaborated definitions and transports the
 old certificate with `geb-author transport` before recording the successor.
+
+The client template (`examples/client/`) saves a datatype of its own through
+the shared library. `Settings.choose` saves an order of a file's bytes, a
+value of `Settings.Order`, by the library's module `Saved`, which writes the
+encoding after the datatype's identifier and the encoding's version, and
+`Settings.apply` reads it and writes a file's bytes in that order. The
+template's previous revision is kept in `examples/client-upgrade/` with the
+library at the revision it pins, each source pinned by SHA-256 in
+`SHA256SUMS`, beside the setting it saved, `mirrored.v1`. The template is the
+upgrade: it pins the library of its checkout, declares `Settings.reversed`
+before `Settings.mirrored`, so that the tag of a saved mirrored order denotes
+the reversed one, writes version 2, and adds `Upgrade.migrate`.
+
+```
+bash scripts/tests/test-client-upgrade.sh /tmp/client-upgrade
+```
+
+The test records the previous revision, checks that the record keeps each
+pinned source, and places the template and the library of the checkout in a
+copy of the revision, as a pin is moved. It transports the certificate,
+records the successor and checks both records. Each document whose source is
+unchanged is unchanged. The definitions are compared by their content
+identifiers, which `geb-defs --identities` writes. A definition refers to
+another by position, so the inserted constructor changes the terms of the
+definitions after it, but an identifier changes only with the definition or a
+definition it refers to. The upgraded client refuses the setting that the
+previous revision saved, and writes from its migration the output that the
+previous client writes from the original.

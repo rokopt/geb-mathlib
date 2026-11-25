@@ -71,7 +71,8 @@ expect launcher 0 env PATH="$test_dir/no-lake:$PATH" \
   bash -c 'cd "$1/geb" && python3 "$2" run geb-kernel entries ../client.manifest' \
   _ "$client" "$repo_root/editors/vscode/tools.py"
 checked=$((checked + 1))
-[ "$(cat "$test_dir/launcher.out")" = "$(printf 'Client.mirror\nClient.run\nCopy.step')" ] ||
+entries='Client.mirror\nClient.run\nCopy.step\nSettings.choose\nSettings.apply\nUpgrade.migrate'
+[ "$(cat "$test_dir/launcher.out")" = "$(printf "$entries")" ] ||
   fail_case launcher "listed $(cat "$test_dir/launcher.out")"
 
 # A pin whose digest the archive does not have is refused, and geb/ is left in place.
