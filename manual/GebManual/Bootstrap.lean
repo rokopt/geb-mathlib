@@ -119,9 +119,12 @@ waiting or deferred).
 tag := "downstream-authoring"
 %%%
 
-A library can be written in Geb on the Lean host. `bootstrap/seq.geb` supplies
-the parameterized modules `Seq` and `Option`. An application can include that
-source in its manifest, import `(Seq T)` and reverse the bytes of a file.
+A library is written in Geb on the Lean host. `library/` supplies the
+composition of functions, optional values and lists, each generic in its
+types, byte strings and the datatypes of a program's requests to its host.
+An application names the library's manifest as a layer of its own, imports
+its modules, and writes a file's bytes followed by their reversal or copies
+the file that an index names.
 `examples/roundtrip/` assembles a library and client in separate layers
 with a checked example, a theorem written in Geb and a record whose
 certificate replays after relocation. The next milestone combines
@@ -132,10 +135,9 @@ the order in which those that remain are taken and which of them proceed
 together.
 
 1. Complete. Assemble and share the first library. The library is
-   `library/`: its manifest lists `seq.geb`, the bootstrap's source by a
-   symbolic link, and `Bytes.geb`, whose module `Bytes` exports the
-   reversal of a list of bytes and of a file, with a checked example, and
-   whose proof document `Bytes.proofs.geb` holds a theorem. The client
+   `library/`: its manifest lists the sources of its modules (step 8),
+   whose notes hold checked examples, and its proof document
+   `Bytes.proofs.geb` holds a theorem. The client
    template `examples/client/` is the root of a repository whose Git
    submodule `geb/` pins the Geb and library revisions, the library being
    a directory of the Geb repository, and places the library's sources
@@ -165,9 +167,6 @@ together.
    `geb/`, where the editor and `check.sh` run its executables, built, with
    no Lake (`scripts/tests/test-release.sh`). No release is published
    (step 10).
-   This library is the modules that exist, assembled and shared. The
-   library's own modules are written at step 8, in the forms step 4
-   adds.
 2. Complete. Make a check take the time of what changed. Each stage's
    time is linear in the program: the elaboration of modules holds its
    names in tries, and the typing and the reading check each form
@@ -205,8 +204,9 @@ together.
    is one definition
    ({ref "polymorphic-definitions"}[Polymorphic definitions]). The
    program of `examples/polymorphic/` is the acceptance: its library
-   layer declares optional values, lists and the composition of
-   functions generic in their types; one module of its application layer
+   layer, the shared library (step 8), declares optional values, lists
+   and the composition of functions generic in their types; one module
+   of its application layer
    uses the lists at the trees and at a datatype of its own, and the
    composition at two lists of types; and another returns an optional
    value that the first consumes at the same element type, neither
@@ -233,11 +233,10 @@ together.
    first line, writes a line of its own where that file is missing, and
    writes the output. The editor runs an entry of the selected program on
    a file (`geb-author run`) and with requests, in the program's workspace
-   folder (`geb-author interact`). Remaining: the protocol's datatypes in
-   the library, written with its modules at step 8, through which a
-   client issues requests, a program declaring them itself until then,
-   in their order of constructors, as `examples/requests/Index.geb`
-   does. The host also has to preserve the application's arguments.
+   folder (`geb-author interact`). The protocol's datatypes are the
+   library's module `Requests` (step 8), which the acceptance program
+   imports and through which the client template issues its requests.
+   Remaining: the host has to preserve the application's arguments.
    `GebAuthorMain.lean` reads `--cache` anywhere in the command line.
    Run the index example with an index file named `--cache` and an output
    path. The manifest run and the image run must both read that index,
@@ -335,22 +334,38 @@ together.
    `GEB_EVALUATION_LOCK` names
    (`GebTests/Prototypes/ProgramCommand.lean`), which `ci.yml` sets for
    its build.
-8. Write the library's modules in the forms of step 4. Provide lists and
-   optional values generic in their element types, byte strings, and the
-   path, event, action, request, result and failure types used for file
-   access (step 5). They are sources of the
-   library's own. `library/seq.geb` is `bootstrap/seq.geb` by a symbolic
-   link, a source of the stage-1 compiler, of the proof runner, of the
-   metalogic and of the program of the datatype language's soundness, so
-   that a change to it is a change of step 12; the library's manifest
-   lists it until the library's own modules take its place. The client
-   template imports the library's modules, and the manual renders a page
-   for each ({ref "documentation"}[Documentation]). The acceptance is
-   that of step 4. The program of `examples/requests/` imports the protocol
-   types. Exercise both branches in the separate client by copying the
-   file named in an index and writing the specified response when that file
-   is missing. A change to a library module regenerates no artifact under
-   `bootstrap/`.
+8. Complete. Write the library's modules in the forms of step 4. The
+   modules `Functions`, `Optional` and `Lists` declare the composition of
+   functions, optional values and lists, each generic in its types; the
+   module `Bytes` declares byte strings; and the module `Requests` the
+   path, failure, result, request, action and event types of file access
+   (step 5), the constructors of each datatype in the protocol's order,
+   with the bytes a read succeeds with. Each is a source of the library's
+   own, named after its module, and none is a source of a program under
+   `bootstrap/`, so that a change to a library module regenerates no
+   artifact there; `bootstrap/seq.geb`, whose templates the compilers
+   import, is converted to these forms at step 12. A declaration's note
+   holds examples, which a compile of the library or of a client checks.
+   The library's theorem is stated of a function of lists of trees,
+   `Bytes.firstLine`: statements are not yet written over datatypes
+   ({ref "the-next-phase"}[The next phase]), and a generic declaration is
+   compiled at the instances a program uses, which a library's theorem
+   cannot assume of a client. The acceptance is that of step 4, at the
+   library's modules: the program of `examples/polymorphic/` takes the
+   library as its library layer (`scripts/tests/test-polymorphic.sh`).
+   The program of `examples/requests/` imports the protocol types
+   (`scripts/tests/test-requests.sh`). Each of the two names the
+   library's manifest through a symbolic link to `library/` below its own
+   directory, which a manifest's paths do not leave. The client template
+   imports the library's modules: `Client.geb` uses the lists at the
+   trees, and `Copy.geb` copies the file an index names by requests,
+   writing a line of its own where that file is missing, and the
+   template's `check.sh` runs it where the file exists and where it is
+   missing (`scripts/tests/test-client.sh`). The manual renders a page
+   for each module from its source, on which the library compiles, its
+   examples are checked and its theorem is proved as the chapter builds
+   ({ref "library"}[The Geb library],
+   {ref "documentation"}[Documentation]).
 9. Complete. Name a dependency by its manifest. The client template
    names `geb/library/library.manifest` as a layer. Adding a source to
    the library's manifest includes it in the client at that position.
@@ -434,9 +449,9 @@ together.
 tag := "downstream-order"
 %%%
 
-Steps 1, 2, 3, 4, 7 and 9 are complete, as are the record and migration
+Steps 1, 2, 3, 4, 7, 8 and 9 are complete, as are the record and migration
 fixtures of step 6. The table distinguishes work that can start now
-from acceptance that needs the library or an upgraded client.
+from acceptance that needs an upgraded client.
 
 :::table +header
 *
@@ -456,20 +471,16 @@ from acceptance that needs the library or an upgraded client.
   * Now, using step 2. Fix argument forwarding in step 5 alongside it
   * The host tools and editor package
 *
-  * 8, the library's modules
-  * Now, in the forms of step 4
-  * Library sources and manual pages
-*
   * 5, file requests through the library
-  * With the protocol types of 8
-  * The downstream client
+  * Now, with the protocol types of 8. Its argument forwarding is fixed with 13
+  * The host tools and the downstream client
 *
   * 6, acceptance of the client upgrade
   * After the client reads and writes its first saved datatype through 5 and 8
   * The migrated value and the successor record
 *
   * 12, the sources that developments are about
-  * Convert sources to the generic forms after 8
+  * Now, 8 having exercised the generic forms the sources are converted to
   * The compiler's image, the mirrors and the certificates
 :::
 
@@ -477,8 +488,8 @@ Load each compiler once per stage-test comparison before the next change
 to a compiler's source.
 The stage-0 example comparison took 3.0 seconds with repeated loading
 and 0.5 seconds with one load ({ref "improvements"}[Improvements]).
-Use the existing client to measure step 13 before the library acquires
-more examples. Work on host tools and editor
+Use the existing client to measure step 13, at the examples the library's
+modules hold. Work on host tools and editor
 reports can proceed in parallel. Exercise them together in the client
 as each becomes available. Prefer the client upgrade to converting
 `bootstrap/` in step 12. The constant-depth reader can move forward
@@ -5613,8 +5624,15 @@ file and the declaration the comment stands before
 {ref "first-authoring"}[Writing a first Geb development] includes
 the Pair development with `gebProgram` from `manual/GebManual/Geb.lean`.
 The manual renders its source and prose, checks examples and references,
-and replays the certificate. Generating a page for each library module
-in a downstream manifest would extend this inclusion as the library grows.
+and replays the certificate. {ref "library"}[The Geb library] includes
+the shared library a source to a section, each a page of its own, with
+`gebSource`, which compiles the program and checks its examples, prose
+and references, and the library's proof document with `gebProofs`, which
+proves its theorems as the chapter builds, the library keeping no
+certificate. A declaration is a link target of the manual's, named by its
+program and its qualified name, so that a reference to it resolves from
+another page and the declarations of two programs that name one module
+stay apart.
 
 The alternative, docstrings in the emitted Lean, would render Geb's
 prose beside the Lean denotations, generated artifacts, rather than the

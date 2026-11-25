@@ -1,0 +1,50 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Functions of lists, generic in the types of their elements. A use supplies a type for each type
+; parameter before its arguments, as the kernel's {lit}`(nil A)` and {lit}`(foldr A B f z xs)` do,
+; so one module uses a function at several types with no import for each. {geb}`Lists.find` and
+; {geb}`Lists.nth` return the optional values of {geb}`Optional.Option`, whose type is the trees
+; or a datatype.
+
+(module Lists (export length append reverse map find nth) (import Optional)
+  ; The number of the elements of a list.
+  (note (example (Lists.length T (cons 7 (cons 8 (nil T)))) 2))
+  (defn (length A) ((xs (List A))) T (foldr A T (lam ((x A) (n T)) (add n 1)) 0 xs))
+  ; The elements of the first list followed by those of the second.
+  (note (example (node 0 (Lists.append T (cons 7 (nil T)) (cons 8 (nil T)))) (quote (0 (7) (8)))))
+  (defn (append A) ((xs (List A)) (ys (List A))) (List A)
+    (foldr A (List A) (lam ((x A) (r (List A))) (cons x r)) ys xs))
+  ; The elements of a list in the opposite order.
+  (note
+    (example (node 0 (Lists.reverse T (cons 7 (cons 8 (cons 9 (nil T)))))) (quote (0 (9) (8) (7)))))
+  (defn (reverse A) ((xs (List A))) (List A)
+    ((foldr A (Arrow (List A) (List A))
+       (lam ((x A) (k (Arrow (List A) (List A))) (acc (List A))) (k (cons x acc)))
+       (lam ((acc (List A))) acc)
+       xs) (nil A)))
+  ; The list of the values of a function at the elements of a list.
+  (note
+    (example (node 0 (Lists.map T T (lam ((x T)) (add x 1)) (cons 7 (cons 8 (nil T)))))
+      (quote (0 (8) (9)))))
+  (defn (map A B) ((f (Arrow A B)) (xs (List A))) (List B)
+    (foldr A (List B) (lam ((x A) (r (List B))) (cons (f x) r)) (nil B) xs))
+  ; The first element of a list that a test accepts, where there is one.
+  (note
+    (example
+      (Optional.orElse T 0 (Lists.find T (lam ((x T)) (lt 7 x)) (cons 7 (cons 8 (cons 9 (nil T))))))
+      8))
+  (defn (find A) ((p (Arrow A T)) (xs (List A))) (Option A)
+    (foldr A (Option A) (lam ((x A) (r (Option A))) (if (p x) (some A x) r)) (none A) xs))
+  ; The element of a list at a position, the first at 0, where the list is longer.
+  (note (example (Optional.orElse T 0 (Lists.nth T (cons 7 (cons 8 (nil T))) 1)) 8)
+    (example (Optional.orElse T 0 (Lists.nth T (cons 7 (cons 8 (nil T))) 2)) 0))
+  (defn (nth A) ((xs (List A)) (i T)) (Option A)
+    (lcase A (Option A)
+      (iter (List A)
+        (lam ((ys (List A))) (lcase A (List A) ys (nil A) (lam ((y A) (r (List A))) r)))
+        xs
+        i)
+      (none A)
+      (lam ((x A) (r (List A))) (some A x)))))

@@ -1,0 +1,47 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The requests of a program to its host, in the datatypes of the protocol whose version is
+; {name}`Geb.Kernel.Requests.version`. A program run by {lit}`geb-kernel interact` or
+; {lit}`geb-author interact` is a step from trees to trees: the host applies it to the
+; representation of an {geb}`Requests.Event` and reads its result as that of an
+; {geb}`Requests.Action`, performs the request of a {geb}`Requests.call` and applies the step
+; again to the state returned with it and the request's {geb}`Requests.Result`. The constructors
+; of each datatype stand in the protocol's order, which fixes the trees the host reads and writes
+; ({name}`Geb.Kernel.Requests.decodeAction`, {name}`Geb.Kernel.Requests.startEvent`,
+; {name}`Geb.Kernel.Requests.resumeEvent`).
+
+(module Requests
+  (export Path Failure other notFound denied Result failed succeeded Request read write Action done
+    call
+    Event
+    start
+    resume
+    contents)
+  (import Bytes)
+  ; A path: the bytes of its UTF-8 text, a relative path resolved against the host's working
+  ; directory.
+  (deftype Path Bytes)
+  ; Why a request failed: another failure than the two named, with the system's message; the path
+  ; names no file; or the system refuses access.
+  (data Failure (other Bytes) (notFound) (denied))
+  ; The result of a request: a failure, or the values the request succeeds with. A read succeeds
+  ; with the file's bytes, which {geb}`Requests.contents` gives, and a write with nothing.
+  (data Result (failed Failure) (succeeded & T))
+  ; A request: the read of the file at a path, or the write of bytes to the file at a path,
+  ; which creates the file or replaces its contents.
+  (data Request (read Path) (write Path Bytes))
+  ; What a step returns: the end of the run with its exit status, a number below 256, or a
+  ; request with the state in which the program resumes.
+  (data Action (done T) (call Request T))
+  ; What a step receives: the start, with the protocol's version and the arguments given to the
+  ; host, or the state returned with a request and the request's result.
+  (data Event (start T & Bytes) (resume T Result))
+  ; The bytes a read succeeds with: the first of the values where it is a byte string, and the
+  ; empty byte string otherwise.
+  (note (example (rep (Requests.contents (cons (quote (0 (7) (8))) (nil T)))) (quote (0 (7) (8))))
+    (example (rep (Requests.contents (nil T))) (quote (0))))
+  (defn contents ((values (List T))) Bytes
+    (lcase T Bytes values (bytes (nil T))
+      (lam ((x T) (r (List T))) (decode Bytes x (lam ((b Bytes)) b) (bytes (nil T)))))))

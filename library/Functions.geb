@@ -1,0 +1,12 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The composition of functions, generic in its types. A use supplies a type for each type
+; parameter before its arguments: {lit}`(compose A B C g f)` is the function from {lit}`A` to
+; {lit}`C` that applies {lit}`f` and then {lit}`g`.
+
+(module Functions (export compose)
+  ; The composition of two functions, the second applied first.
+  (note (example (Functions.compose T T T (lam ((x T)) (add x 1)) (lam ((x T)) (mul x 2)) 3) 7))
+  (defn (compose A B C) ((g (Arrow B C)) (f (Arrow A B))) (Arrow A C) (lam ((x A)) (g (f x)))))

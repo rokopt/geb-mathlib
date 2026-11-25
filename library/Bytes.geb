@@ -2,13 +2,15 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; Files as lists of bytes. {lit}`geb-kernel run` reads a file as the tree of label 0 whose
-; children are the leaves of its bytes, and writes a tree's children as bytes. The theorems in
-; {lit}`Bytes.proofs.geb` are about {geb}`Bytes.reverse`.
+; Byte strings. A value of {geb}`Bytes.Bytes` is the node of label 0 over the leaves of its
+; bytes, the tree that {lit}`geb-kernel run` reads a file as and whose children it writes as
+; bytes; a case analysis gives the list of the bytes. The theorem in {lit}`Bytes.proofs.geb` is
+; about {geb}`Bytes.firstLine`.
 
-(module Bytes (export reverse reverseFile) (import (Seq T) as Ts)
-  ; The elements of a list of bytes in the opposite order.
-  (defn reverse ((xs (List T))) (List T) (Ts.reverse xs))
-  ; The file of the bytes of a file in the opposite order.
-  (note (example (Bytes.reverseFile (quote (0 (7) (8) (9)))) (quote (0 (9) (8) (7)))))
-  (defn reverseFile ((f T)) T (node 0 (reverse (children f)))))
+(module Bytes (export Bytes bytes firstLine)
+  ; A byte string, each byte the leaf of its value.
+  (data Bytes (bytes & T))
+  ; The bytes of a list before its first line feed.
+  (note (example (node 0 (Bytes.firstLine (cons 97 (cons 10 (cons 98 (nil T)))))) (quote (0 (97)))))
+  (defn firstLine ((cs (List T))) (List T)
+    (foldr T (List T) (lam ((c T) (r (List T))) (if (eq c 10) (nil T) (cons c r))) (nil T) cs)))

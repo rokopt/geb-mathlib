@@ -1,4 +1,4 @@
 ; The pinned library precedes the application that imports it.
 (program client (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
-  (layers (library (manifest geb/library/library.manifest)) (application Client.geb))
-  (entries Client.mirror Client.run))
+  (layers (library (manifest geb/library/library.manifest)) (application Client.geb Copy.geb))
+  (entries Client.mirror Client.run Copy.step))
