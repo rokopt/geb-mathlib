@@ -28,10 +28,10 @@ Two stages read the whole program: the typing checks every form with the markers
 program's datatypes, of which a form reads those of the datatypes declared before it, and the
 recognizer of a datatype is written where its marker stands when any form refers to it. A layer
 is therefore compiled with the markers of its own and the earlier layers' datatypes; and where a
-layer refers to the recognizer of an earlier layer's datatype that no layer before it referred
-to, which the whole program would write in the earlier layer, the composition gives nothing and
-the caller compiles the program whole. It gives nothing, likewise, for a program a stage rejects,
-whose failure the whole compilation reports.
+layer first refers to the recognizer of an earlier layer's datatype, the reader inserts it at
+the datatype's marker in the saved kernel forms and reads those forms again. The elaboration,
+expansion and datatype typing of the earlier layers are reused. For a program a stage rejects,
+the composition gives nothing and the whole compilation reports the failure.
 
 A state is kept as the image of a tree: the declarations of the expansion, the typing's and the
 reading's declarations as the entries of their tries, which are built again when the state is
@@ -85,12 +85,14 @@ structure State where
   markers : List Tree
   /-- Those of the markers whose recognizer no layer has written. -/
   pending : List Tree
+  /-- The erased kernel forms, in source order, before inserting recognizers. -/
+  kernelForms : List Tree
   /-- The state of the reading. -/
   reading : Reading
 
 /-- The states before a program. -/
 def State.start : State :=
-  ⟨0, GebBoot.«Modules.stStart», [], GebBoot.«Expansion.start», [], [],
+  ⟨0, GebBoot.«Modules.stStart», [], GebBoot.«Expansion.start», [], [], [],
     GebBoot.«Support.readStart»⟩
 
 /-- The value of an optional tree as the compiler represents it. -/
@@ -128,8 +130,8 @@ def unwritten (markers refs : List Tree) (m : Tree) : Bool :=
 
 /-- The state after one more layer, given its text: its modules elaborated, its forms expanded,
 checked with the markers of its own and the earlier layers' datatypes, erased, the recognizers it
-refers to written, and the forms read and checked. Nothing where a stage rejects the layer, or
-where the layer refers to the recognizer of an earlier layer's datatype that is not written. -/
+refers to written, and the forms read and checked. A first reference to an earlier marker
+requires rereading the kernel forms from the start. Nothing where a stage rejects the layer. -/
 def advance (s : State) (text : ByteArray) : Option State := do
   let (count, modules, es) ← elaborated s.count s.modules text
   guard ((GebBoot.«Typing.Tx.member» (mk 2 es)).label ≠ 0)
@@ -144,13 +146,16 @@ def advance (s : State) (text : ByteArray) : Option State := do
   let own := GebBoot.«Recognize.markers» ks
   let markers := s.markers ++ own
   let refs := ks.flatMap GebBoot.«Recognize.memberAtoms»
-  guard (s.pending.all (unwritten markers refs))
-  let fs ← ks.mapM (written markers refs)
-  let reading := GebBoot.«Support.readMore» s.reading fs.flatten
+  let kernelForms := s.kernelForms ++ ks
+  let (forms, refs, start) := if s.pending.all (unwritten markers refs) then (ks, refs, s.reading)
+    else (kernelForms, s.kernelForms.flatMap GebBoot.«Recognize.memberAtoms» ++ refs,
+      GebBoot.«Support.readStart»)
+  let fs ← forms.mapM (written markers refs)
+  let reading := GebBoot.«Support.readMore» start fs.flatten
   guard ((GebBoot.«Support.unreadOf» reading).label ≠ 1 ∧
     (GebBoot.«Support.illTypedOf» reading).label ≠ 1)
   return ⟨count, modules, x.2.1, typing, markers,
-    s.pending ++ own.filter (unwritten markers refs), reading⟩
+    (s.pending ++ own).filter (unwritten markers refs), kernelForms, reading⟩
 
 /-- The state after a layer whose later stages' states are known, given its text: the state of
 the elaboration of modules alone, computed again. -/
@@ -179,7 +184,7 @@ def trie (es : List Tree) : Tree :=
 def State.kept (s : State) : Tree :=
   Kernel.mk 0 [Kernel.mk 0 s.decls,
     Kernel.mk 0 [Kernel.mk 0 (entries s.typing.2.1.1), s.typing.2.1.2, Kernel.mk 0 s.typing.2.2],
-    Kernel.mk 0 s.markers, Kernel.mk 0 s.pending,
+    Kernel.mk 0 s.markers, Kernel.mk 0 s.pending, Kernel.mk 0 s.kernelForms,
     Kernel.mk 0 [Kernel.mk 0 (entries s.reading.2.2.1), s.reading.2.2.2.1, s.reading.2.2.2.2.1,
       Kernel.mk 0 s.reading.2.2.2.2.2.1, Kernel.mk 0 s.reading.2.2.2.2.2.2]]
 
@@ -187,12 +192,12 @@ def State.kept (s : State) : Tree :=
 before a program. -/
 def State.ofKept (t : Tree) : Option State :=
   match t.children with
-  | [decls, typing, markers, pending, reading] =>
+  | [decls, typing, markers, pending, kernelForms, reading] =>
     match typing.children, reading.children with
     | [td, serial, ms], [rd, rserial, count, terms, names] =>
       some ⟨0, State.start.modules, decls.children,
         (GebBoot.«Expansion.start».1, (trie td.children, serial), ms.children),
-        markers.children, pending.children,
+        markers.children, pending.children, kernelForms.children,
         (GebBoot.«Prelude.none», GebBoot.«Prelude.none», trie rd.children, rserial, count,
           terms.children, names.children)⟩
     | _, _ => none
@@ -200,7 +205,7 @@ def State.ofKept (t : Tree) : Option State :=
 
 /-- The version of the kept states' form and of this composition, part of what a kept state is
 kept under. -/
-def version : String := "geb-layers/1"
+def version : String := "geb-layers/2"
 
 /-- The identity of the compiled compiler: a hash of the Lean it is compiled from. -/
 def compilerId : UInt64 := (include_str "../bootstrap/lean/GebBoot.lean").hash
@@ -238,11 +243,11 @@ def store (dir : System.FilePath) (key : ByteArray) (s : State) : IO Unit := do
   put img (writeImage s.kept)
   put k key
 
-/-- A program's checked bundle from the texts of its layers, with a directory of kept states:
+/-- The compiler state after a program's layers, with a directory of kept states:
 the state kept after the longest run of the first layers is read, the layers of the run
 elaborated again, the layers after it compiled, and the state after each kept. Nothing where the
 composition gives nothing. -/
-def bundle (dir : System.FilePath) (layers : List ByteArray) : IO (Option Tree) := do
+def compile (dir : System.FilePath) (layers : List ByteArray) : IO (Option State) := do
   let prefixes := (List.range (layers.length + 1)).map fun k ↦ layers.take k
   let trace (msg : String) (t0 : Nat) : IO Unit := do
     if (← IO.getEnv "GEB_LAYERS_TRACE").isSome then
@@ -273,7 +278,11 @@ def bundle (dir : System.FilePath) (layers : List ByteArray) : IO (Option Tree) 
         store dir (keyOf (prefixes.getD (k + 1) [])) s
         trace s!"store {k + 1}" t1
       | none => return none
-  return s.bundle
+  return some s
+
+/-- The checked bundle at the end of the kept layers. -/
+def bundle (dir : System.FilePath) (layers : List ByteArray) : IO (Option Tree) := do
+  return (← compile dir layers).bind State.bundle
 
 end GebHost.Layers
 

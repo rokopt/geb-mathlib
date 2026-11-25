@@ -15,15 +15,19 @@ import GebHost.Editor
 
 open Geb.Kernel Geb.Kernel.Document
 
-/-- The directory of caches that the option {lit}`--cache DIRECTORY` names among the arguments,
-and the arguments without the option. -/
-def cacheOption (args : List String) : Option System.FilePath × List String :=
-  match args.idxOf? "--cache" with
-  | some i =>
-    match args[i + 1]? with
-    | some dir => (some dir, args.take i ++ args.drop (i + 2))
-    | none => (none, args)
-  | none => (none, args)
+/-- Read a host cache option before the command or immediately after its name. All arguments
+following the entry of an interactive program belong to that program. Proof and saved-file
+commands also accept the option after their positional arguments. -/
+def cacheOption : List String → Option System.FilePath × List String
+  | "--cache" :: dir :: args => (some dir, args)
+  | cmd :: "--cache" :: dir :: args => (some dir, cmd :: args)
+  | cmd :: args => Id.run do
+    if ["check", "prove", "replay"].contains cmd then
+      if let some i := args.idxOf? "--cache" then
+        if let some dir := args[i + 1]? then
+          return (some dir, cmd :: (args.take i ++ args.drop (i + 2)))
+    return (none, cmd :: args)
+  | [] => (none, [])
 
 /-- Execute proofs, check a file, compile a program or run one of its definitions on a file or as
 the step of a program that makes requests of its host
@@ -43,16 +47,15 @@ public def main (args : List String) : IO UInt32 := do
     | ["navigation-server", manifest] => GebHost.Navigation.serve manifest
     | ["navigation", manifest] => GebHost.Navigation.run manifest
     | ["compile", manifest, output] =>
-      let (m, text, b) ← GebHost.Authoring.readProgram manifest
-      GebHost.Authoring.checkExamples manifest m text
+      let (_, _, b) ← GebHost.Authoring.readProgram manifest caches (examples := true)
       IO.FS.writeBinFile output (writeImage b)
       return 0
     | ["run", manifest, name, input, output] =>
-      let (_, _, b) ← GebHost.Authoring.readProgram manifest
+      let (_, _, b) ← GebHost.Authoring.readProgram manifest caches
       Command.runBundle manifest b name input output
       return 0
     | "interact" :: manifest :: name :: arguments =>
-      let (_, _, b) ← GebHost.Authoring.readProgram manifest
+      let (_, _, b) ← GebHost.Authoring.readProgram manifest caches
       GebHost.Requests.interactBundle manifest b name arguments
     | ["documents", manifest, proofs] =>
       let m ← Manifest.read manifest
@@ -64,7 +67,7 @@ public def main (args : List String) : IO UInt32 := do
       GebHost.Authoring.execute "prove" manifest.toString proofs certificate caches
     | ["replay", proofs, certificate] =>
       let manifest ← GebHost.Authoring.manifestOf proofs
-      GebHost.Authoring.execute "replay" manifest.toString proofs certificate
+      GebHost.Authoring.execute "replay" manifest.toString proofs certificate caches
     | ["transport", proofs, certificate, output] =>
       let manifest ← GebHost.Authoring.manifestOf proofs
       GebHost.Authoring.transport manifest.toString proofs certificate output
@@ -72,7 +75,7 @@ public def main (args : List String) : IO UInt32 := do
       GebHost.Authoring.transport manifest proofs certificate output
     | [mode, manifest, proofs, certificate] =>
       GebHost.Authoring.execute mode manifest proofs certificate
-        (if mode == "prove" then caches else none)
+        caches
     | ["convert", spelling, manifest, input, output] =>
       let m ← Manifest.read manifest
       let d ← GebHost.Authoring.readDocument input m.profile
@@ -85,11 +88,11 @@ public def main (args : List String) : IO UInt32 := do
       IO.FS.writeBinFile output (GebHost.Authoring.bytesOf text)
       return 0
     | _ =>
-      IO.eprintln "usage: geb-author compile MANIFEST IMAGE\n\
-        geb-author run MANIFEST NAME INPUT OUTPUT\n\
-        geb-author interact MANIFEST NAME [ARGUMENT...]\n\
+      IO.eprintln "usage: geb-author compile [--cache DIRECTORY] MANIFEST IMAGE\n\
+        geb-author run [--cache DIRECTORY] MANIFEST NAME INPUT OUTPUT\n\
+        geb-author interact [--cache DIRECTORY] MANIFEST NAME [ARGUMENT...]\n\
         geb-author prove [--cache DIRECTORY] [MANIFEST] PROOFS CERTIFICATE\n\
-        geb-author replay [MANIFEST] PROOFS CERTIFICATE\n\
+        geb-author replay [--cache DIRECTORY] [MANIFEST] PROOFS CERTIFICATE\n\
         geb-author transport [MANIFEST] PROOFS CERTIFICATE OUTPUT\n\
         geb-author check [--cache DIRECTORY] FILE\n\
         geb-author documents MANIFEST PROOFS\n\

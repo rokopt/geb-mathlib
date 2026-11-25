@@ -11,7 +11,7 @@
 # second layer, for which the state after the first is read and not
 # computed. It asserts the same of a program whose second layer refers to
 # the recognizer of a datatype of the first that the first does not refer
-# to, which is compiled whole; that a program a stage rejects has the
+# to, whose kernel forms are reread; that a program a stage rejects has the
 # diagnostic it has without the directory; and that a kept state whose
 # key file differs from the layers' texts is not used.
 #
@@ -93,11 +93,13 @@ assert_same first "$test_dir/a"
 grep -q 'advance 1' "$test_dir/first.trace" || fail_case first "the first layer was not compiled"
 
 # The second layer refers to the recognizer of a datatype of the first, which the first does not
-# refer to: the program is compiled whole, and has the same image.
+# refer to. Its recognizer is inserted in the saved kernel forms at its original position.
 stage "$test_dir/b" '(data Light (red) (green))' \
   '(defn dec ((t T)) Light (decode Light t (lam ((l Light)) l) red))'
 assert_same recognizer "$test_dir/b"
 assert_same recognizer-again "$test_dir/b"
+grep -q 'load 2 (true)' "$test_dir/recognizer-again.trace" ||
+  fail_case recognizer-again "the state with the earlier recognizer was not reused"
 
 # A program the second layer's typing rejects has the diagnostic it has compiled whole.
 stage "$test_dir/c" "$lib" '(def bad (Lights.next 7))'

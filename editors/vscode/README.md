@@ -302,8 +302,11 @@ defaults are
 `.lake/geb-editor/program-NAME/program.img` and
 `.lake/geb-editor/program-NAME/proof.cert`, with the display name encoded
 as a URI component. Parent directories are created for those outputs.
-Prove Statements shares the folder's `.lake/geb-proof-cache` with the
-saved-file check. Its terminal reports how many theorems it took from
+Compile, run, interact, prove, replay and the saved-file check share
+the workspace folder's kept program layers under `.lake/geb-proof-cache`.
+Compile, prove and replay check each example against the program, reusing
+the final compiler state where the layers compose. The Prove Statements
+terminal reports how many theorems it took from
 the cache and how many it proved. It replays the resulting certificate
 before writing it. Integrity verification needs only Python.
 A rejected program or failed proof leaves an existing output in place.

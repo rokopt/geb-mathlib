@@ -82,7 +82,8 @@ exports.run = async test => {
     assert.equal(readFileSync(source, 'utf8'), text);
     assert.ok(readFileSync(image).length > 0);
     assert.deepEqual(result.task.execution.args,
-      [path.resolve(__dirname, '../tools.py'), 'run', 'geb-author', 'compile', file('pair.manifest'), image]);
+      [path.resolve(__dirname, '../tools.py'), 'run', 'geb-author', 'compile', '--cache',
+        file('.lake/geb-proof-cache'), file('pair.manifest'), image]);
     assert.equal(result.task.execution.options.cwd, path.resolve(__dirname, '../../..'));
   });
   await test('prove and replay use the same selected program and certificate', async () => {
@@ -169,13 +170,13 @@ exports.run = async test => {
     const ran = await command('run', { entry: 'Index.step', input: 'input', output: 'output' });
     assert.equal(ran.code, 0);
     assert.deepEqual([...readFileSync(file('output'))], [2]);
-    assert.deepEqual(ran.task.execution.args.slice(1, 5), ['run', 'geb-author', 'run',
-      file('requests.manifest')]);
+    assert.deepEqual(ran.task.execution.args.slice(1, 7), ['run', 'geb-author', 'run',
+      '--cache', file('.lake/geb-proof-cache'), file('requests.manifest')]);
     // Relative paths in the requests are the workspace folder's.
-    writeFileSync(file('index'), 'target λ\n');
+    writeFileSync(file('--cache'), 'target λ\n');
     writeFileSync(file('target λ'), 'the target\n');
     const interacted = await command('interact',
-      { entry: 'Index.step', arguments: ['index', 'copy'] });
+      { entry: 'Index.step', arguments: ['--cache', 'copy'] });
     assert.equal(interacted.code, 0);
     assert.equal(readFileSync(file('copy'), 'utf8'), 'the target\n');
     assert.deepEqual(interacted.task.execution.args.slice(1, 4), ['run', '--directory', project]);

@@ -84,17 +84,17 @@ function invocation(action, p, record, given) {
     if (!p.proofs) throw new Error(`${p.name}: configure proofs in geb.programs`);
     return p.proofs;
   };
+  const cached = ['geb-author', action, '--cache', proofCache(p.folder.uri.fsPath)];
   switch (action) {
-    case 'compile': return ['python3', [launcher, 'run', 'geb-author', 'compile', p.manifest, p.image]];
-    case 'run': return ['python3', [launcher, 'run', 'geb-author', 'run', p.manifest,
+    case 'compile': return ['python3', [launcher, 'run', ...cached, p.manifest, p.image]];
+    case 'run': return ['python3', [launcher, 'run', ...cached, p.manifest,
       given.entry, given.input, given.output]];
     // Relative paths in the program's requests resolve against its workspace folder.
     case 'interact': return ['python3', [launcher, 'run', '--directory', p.folder.uri.fsPath,
-      'geb-author', 'interact', p.manifest, given.entry, ...given.arguments]];
-    case 'prove': return ['python3', [launcher, 'run', 'geb-author', action, '--cache',
-      proofCache(p.folder.uri.fsPath), p.manifest, proof(), p.certificate]];
+      ...cached, p.manifest, given.entry, ...given.arguments]];
+    case 'prove':
     case 'replay':
-      return ['python3', [launcher, 'run', 'geb-author', action, p.manifest, proof(), p.certificate]];
+      return ['python3', [launcher, 'run', ...cached, p.manifest, proof(), p.certificate]];
     case 'holes': return ['python3', [launcher, 'run', 'geb-kernel', 'holes', '--manifest', p.manifest]];
     default: {
       const args = action === 'verify' ? [path.join(p.cwd, 'scripts/preserve.py'), action]
