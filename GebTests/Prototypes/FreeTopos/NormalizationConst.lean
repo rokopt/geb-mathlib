@@ -7,6 +7,7 @@ module
 
 public import GebTests.Prototypes.FreeTopos.NormalizationBase -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.NormalizationBase -- shake: keep
+public import Geb.Prototypes.Kernel.Eval -- shake: keep
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in

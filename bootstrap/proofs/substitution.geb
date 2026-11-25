@@ -1,0 +1,29 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The two sides of the statement of substitution, as definitions, after those of weakening: the type
+; of a term with a term, weakened past a context's first part, substituted for the variable below
+; it, in the context without that variable, and the term's type in the context with it; and the two
+; sides of the lemmas on the variable's case, the lookups at a variable's index before, at and past
+; the substituted one, with the substituted term's type at it, and the lookup in the context with
+; the substituted variable, and the same lookups past the head of the first part.
+
+(def sbL
+  (lam ((t T) (G Ts) (c1 Ts) (c Ts) (a T) (u T))
+    (typeIn G (append c1 c) (trav (substVar u) t (length c1)))))
+(def sbR (lam ((t T) (G Ts) (c1 Ts) (c Ts) (a T) (u T)) (typeIn G (append c1 (cons a c)) t)))
+(def svL
+  (lam ((c1 Ts) (c Ts) (a T) (t T))
+    (cond ((lt (label t) (length c1)) (nth (append c1 c) (label t)))
+      ((eq (label t) (length c1)) (some a))
+      (else (nth (append c1 c) (sub (label t) 1))))))
+(def svR (lam ((c1 Ts) (c Ts) (a T) (t T)) (nth (append c1 (cons a c)) (label t))))
+(def svS
+  (lam ((c1 Ts) (m Ts) (a T) (y T) (t T))
+    (cond ((lt (label t) (length c1)) (nth m (label t))) ((eq (label t) (length c1)) (some a))
+      (else (nth (cons y m) (label t))))))
+(def svT
+  (lam ((c1 Ts) (m Ts) (a T) (y T) (t T))
+    (cond ((lt (label t) (length c1)) (nth m (label t))) ((eq (label t) (length c1)) (some a))
+      (else (nth m (sub (label t) 1))))))

@@ -16,5 +16,8 @@ One module for each such program, and for the program a theorem is stated about 
 the kernel loads for its definitions, the Lean the bootstrap compiler emits from it, regenerated and
 compared by `scripts/bootstrap.sh`. The metalogic's is a module per layer of its program, beside the
 modules of `GebMirror.Metalogic.Load`, which declare the program's loading through each layer, each
-step checked by the kernel; those are imported where the loading is used, not here.
+step checked by the kernel; those are imported where the loading is used, not here. The modules of
+`GebMirror.Image` hold the images of the programs the developments of the internal language are
+about, each the string of its bytes in hexadecimal, from which a development reads its program's
+definitions; they too are imported where they are read.
 -/

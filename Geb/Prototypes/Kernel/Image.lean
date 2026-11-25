@@ -36,6 +36,8 @@ byte and denotes {lit}`geb-kernel/v1` implicitly. Both formats are read; writers
 * {lit}`migrateImage` — validate an image and give it the explicit-profile header.
 * {lit}`runEntry` — the application of a bundle's named definition to an input tree.
 * {lit}`ofBytes`, {lit}`toBytes` — a file's bytes as a tree, and a tree's children as bytes.
+* {lit}`hexBytes`, {lit}`definitionsOfHex` — the bytes a string of hexadecimal digits spells, and
+  the definitions of the program whose image they are.
 
 ## Main statements
 
@@ -168,6 +170,29 @@ def ofBytes (b : ByteArray) : Tree := mk 0 (b.data.toList.map fun x ↦ leaf x.t
 def toBytes (t : Tree) : Option ByteArray :=
   (t.children.mapM fun c ↦ if c.label < 256 then some c.label.toUInt8 else none).map
     fun l ↦ ⟨l.toArray⟩
+
+/-- The value of a hexadecimal digit, the letters in lower case. -/
+def hexDigit (c : Char) : Option UInt8 :=
+  let n := c.toNat
+  if 48 ≤ n ∧ n ≤ 57 then some (n - 48).toUInt8
+  else if 97 ≤ n ∧ n ≤ 102 then some (n - 87).toUInt8
+  else none
+
+/-- The bytes a string of hexadecimal digits spells, two digits to a byte, the fold carrying the
+bytes read and the high digit of the byte being read. -/
+def hexBytes (s : String) : Option ByteArray :=
+  (s.toList.foldl (fun (acc : Option (ByteArray × Option UInt8)) c ↦ do
+      let (bs, hi) ← acc
+      let d ← hexDigit c
+      match hi with
+      | none => some (bs, some d)
+      | some h => some (bs.push (h * 16 + d), none))
+    (some (ByteArray.empty, none))).bind fun (bs, hi) ↦ if hi.isNone then some bs else none
+
+/-- The definitions, each with its name, of the program whose image a string spells in
+hexadecimal, where the string spells an image that reads to a bundle. -/
+def definitionsOfHex (s : String) : Option (List (List Char × Tree)) :=
+  ((hexBytes s).bind readImage).bind unbundle
 
 end Geb.Kernel
 

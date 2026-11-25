@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebTests.Prototypes.FreeTopos.TranslationProofs
+public import GebTests.Prototypes.FreeTopos.TranslationSources
 
 set_option doc.verso true in
 /-!
@@ -113,7 +113,7 @@ set_option compiler.extract_closed false in
 /-- The measurements of the files. Closed terms are not extracted, so that each check runs when it
 is timed rather than when the program starts. -/
 def run : IO Unit :=
-  reports (results Kernel.Stage0Tests.bundler.toList (files.map fun (t, k) ↦ (t.toList, k)))
+  reports (results (files.map fun (t, k) ↦ (t.toList, k)))
 
 end GebBench.Prototypes.FreeTopos.TranslationProofs
 

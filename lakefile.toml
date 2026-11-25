@@ -124,7 +124,11 @@ weak.linter.hashCommand = false
 # their importers and no other test. A source a module reads that one of
 # its imports already reads is covered by the import. Lake resolves a
 # module to the last library declared that can build it, so these
-# libraries follow `GebTests`, whose root covers every test module.
+# libraries follow `GebTests`, whose root covers every test module. The
+# developments of the internal language read no source: each reads the
+# definitions of the program it is about from the program's image, a
+# generated module of `GebMirror.Image`, and so is rebuilt where that
+# image changes and not where a compiler's source does.
 [[input_file]]
 name = "preludeSource"
 path = "bootstrap/prelude.geb"
@@ -210,19 +214,6 @@ name = "evalSource"
 path = "bootstrap/eval.geb"
 text = true
 
-# The statements that the proof of weakening and the datatype language's soundness add to their
-# programs. The modules of the soundness read the second through the program's manifest, and
-# import the stage-1 tests, whose library needs it.
-[[input_file]]
-name = "weakeningStatement"
-path = "bootstrap/proofs/weakening.geb"
-text = true
-
-[[input_file]]
-name = "datatypeSoundnessStatement"
-path = "bootstrap/proofs/datatype-soundness.geb"
-text = true
-
 # The manifests of the programs, which tests read at elaboration and through which they read
 # sources. Every module reading one imports the stage-0 tests, whose library needs them.
 [[input_dir]]
@@ -263,7 +254,7 @@ name = "GebTestsStage0"
 globs = ["GebTests.Prototypes.Stage0"]
 needs = ["@/preludeSource", "@/trieSource", "@/serializeSource", "@/readerSource",
   "@/checkSource", "@/supportSource", "@/datatypeSource", "@/expansionSource", "@/modulesSource",
-  "@/recognizeSource", "@/compileSource", "@/substSource", "@/weakeningStatement", "@/manifests"]
+  "@/recognizeSource", "@/compileSource", "@/substSource", "@/manifests"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]
@@ -278,8 +269,7 @@ text = true
 [[lean_lib]]
 name = "GebTestsStage1"
 globs = ["GebTests.Prototypes.Stage1"]
-needs = ["@/compilerImage", "@/stage1Sources", "@/seqSource", "@/datatypeSoundnessStatement",
-  "@/hygieneSource"]
+needs = ["@/compilerImage", "@/stage1Sources", "@/seqSource", "@/hygieneSource"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]
@@ -311,14 +301,18 @@ moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 weak.linter.hashCommand = false
 
 # The program the datatype language's soundness is stated in, which the kernel loads to its
-# mirror's definitions; declared after the library of the certificates' modules, whose glob
-# covers the module.
+# mirror's definitions, read from its image, a module of GebMirror.Image; the module reads the
+# program's manifest besides, for its entries. Declared after the library of the certificates'
+# modules, whose glob covers the module.
+[[input_file]]
+name = "datatypeSoundnessManifest"
+path = "bootstrap/datatype-soundness.manifest"
+text = true
+
 [[lean_lib]]
 name = "GebTestsDatatypeSoundness"
 globs = ["GebTests.Prototypes.FreeTopos.Certified.DatatypeLoad"]
-needs = ["@/preludeSource", "@/readerSource", "@/checkSource", "@/seqSource", "@/stage1Sources",
-  "@/recognizeSource", "@/substSource", "@/evalSource", "@/weakeningStatement",
-  "@/datatypeSoundnessStatement"]
+needs = ["@/datatypeSoundnessManifest"]
 moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
 
 [lean_lib.moreServerOptions]
@@ -426,7 +420,9 @@ weak.linter.style.header = false
 # scripts/bootstrap.sh; generated, as GebBoot is, one module per program under
 # bootstrap/lean/GebMirror/, which the root module imports. The metalogic's is a
 # module per layer of its program, beside the generated loading of the program
-# through each layer (GebMirror.Metalogic.Load).
+# through each layer (GebMirror.Metalogic.Load). The modules of GebMirror.Image
+# hold the images of the programs the developments of the internal language are
+# about, each the string of its bytes in hexadecimal.
 [[lean_lib]]
 name = "GebMirror"
 srcDir = "bootstrap/lean"

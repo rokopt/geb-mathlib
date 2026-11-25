@@ -7,7 +7,8 @@ module
 
 public import GebTests.Prototypes.FreeTopos.Agreement.Base
 public import GebTests.Prototypes.FreeTopos.Agreement.Fold
-public import GebTests.Prototypes.Kernel.Modules
+public import GebTests.Prototypes.Kernel.SExpTree
+public import Geb.Prototypes.Kernel.Image
 public import Geb.Prototypes.Kernel.Printer
 public import GebTests.Prototypes.CheckMirror
 

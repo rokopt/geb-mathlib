@@ -1,0 +1,10 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The type checker and the stage-0 expansion of the datatype language, with the statement of the
+; expansion's identity on the kernel's forms.
+
+(program expansion-statement (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources prelude.geb reader.geb check.geb datatype.geb proofs/expansion.geb)
+  (entries))

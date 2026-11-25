@@ -9,6 +9,8 @@ public import GebTests.Prototypes.FreeTopos.Substitution -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.Substitution -- shake: keep
 public import GebTests.Prototypes.FreeTopos.TreeCases -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos.TreeCases -- shake: keep
+public import GebMirror.Image.ExpansionStatement
+public meta import GebMirror.Image.ExpansionStatement -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -24,7 +26,8 @@ or by {lit}`deftype` or {lit}`defnum`.
 The predicates are folds written in Geb beside the statement, and the statement is an equation of
 two functions of the forms, each a mask: the conditional on the predicate of the forms between a
 side and {lit}`none`. The program is the prelude, the reader, the type checker and the expansion,
-with those definitions.
+with those definitions ({lit}`bootstrap/expansion-statement.manifest`), its definitions read from
+the program's image.
 
 The proof is a development of lemmas, each an equation of two functions under a mask, in four
 stages. The expression's identity: under the mask of the expression's predicate, the expansion of
@@ -49,7 +52,8 @@ case analysis of trees then splits.
 
 ## Main definitions
 
-* {lit}`statement` — the predicates, the two sides and the terms of the lemmas, in Geb.
+* {lit}`definitions` — the program's definitions, read from its image, the predicates, the two
+  sides and the terms of the lemmas among them.
 * {lit}`exprSteps`, {lit}`formSteps`, {lit}`runSteps`, {lit}`programSteps` — the identities of
   the expression, the step at a form, the run and the program.
 * {lit}`development` — the lemmas, each with its proof.
@@ -76,82 +80,12 @@ open GebTests.Prototypes.FreeTopos.Translation (baseRules)
 open Internal (Term NormRule Entry ConvDeriv ConvDecl Definition)
 open scoped FinEnum
 
-/-- The expansion at a node of a variable label and children, and at a form, as definitions. -/
-def statement : String := "
-(import Prelude) (import Reader) (import Datatype)
-(deftype KP (Prod T T))
-(def kTrees (lam ((ps (List KP)))
-  (foldr KP Ts (lam ((p KP) (acc Ts)) (cons (fst p) acc)) (nil T) ps)))
-(def kAll (lam ((ps (List KP))) (foldr KP T (lam ((p KP) (r T)) (and (snd p) r)) 1 ps)))
-(def kstep (lam ((l T) (ps (List KP)))
-  (let raw T (node l (kTrees ps))
-    (pair raw
-      (and (kAll ps)
-        (if (isList raw)
-          (let h T (at (children raw) 0)
-            (if (named h kwCase) 0
-              (if (named h kwCata) 0
-                (if (named h kwRep) 0
-                  (if (named h kwDecode) 0 (if (named h kwDatum) 0 1))))))
-          1))))))
-(def ke (lam ((e T)) (snd (fold KP kstep e))))
-(def allKe (lam ((cs Ts)) (foldr T T (lam ((c T) (r T)) (and (ke c) r)) 1 cs)))
-(def xL (lam ((e T) (s Ts)) (if (ke e) (expandExpr s e) none)))
-(def xR (lam ((e T) (s Ts)) (if (ke e) (some e) none)))
-(deftype XF (Arrow Ts T))
-(def xLs (lam ((cs Ts))
-  (foldr T (List XF) (lam ((c T) (acc (List XF))) (cons (xL c) acc)) (nil XF) cs)))
-(def xRs (lam ((cs Ts))
-  (foldr T (List XF) (lam ((c T) (acc (List XF))) (cons (xR c) acc)) (nil XF) cs)))
-(def accOf (lam ((ms Ts))
-  (foldr T Opts (lam ((m T) (acc Opts)) (pair (both m (fst acc)) (cons (get m) (snd acc))))
-    (pair 1 (nil T)) ms)))
-(def expAll (lam ((cs Ts) (s Ts))
-  (foldr T Ts (lam ((c T) (acc Ts)) (cons (expandExpr s c) acc)) (nil T) cs)))
-(def appAll (lam ((fs (List XF)) (s Ts))
-  (foldr XF Ts (lam ((f XF) (acc Ts)) (cons (f s) acc)) (nil T) fs)))
-(def g1L (lam ((cs Ts) (s Ts)) (if (and (allKe cs) 1) (accOf (expAll cs s)) (pair 0 (nil T)))))
-(def g1R (lam ((cs Ts) (s Ts))
-  (if (and (allKe cs) 1) (accOf (appAll (xLs cs) s)) (pair 0 (nil T)))))
-(def g2L (lam ((cs Ts) (s Ts))
-  (if (and (allKe cs) 1) (accOf (appAll (xRs cs) s)) (pair 0 (nil T)))))
-(def g2R (lam ((cs Ts) (s Ts)) (if (and (allKe cs) 1) (pair 1 cs) (pair 0 (nil T)))))
-(def formOk (lam ((e T))
-  (if (isList e)
-    (if (eq (arity e) 3)
-      (let h T (at (children e) 0)
-        (if (named h kwData) 0
-          (if (named h kwDef) (ke (at (children e) 2))
-            (if (named h kwDeftype) 1 (named h kwDefnum)))))
-      0)
-    0)))
-(def envAfter (lam ((e T) (env Ts))
-  (let es Ts (children e)
-    (if (named (at es 0) kwDeftype)
-      (append env (single (node2 7 (nameOf (at es 1)) (expandAliases env (at es 2)))))
-      env))))
-(def fL (lam ((e T) (env Ts) (out Ts)) (if (formOk e) (xpStep (pair 1 (pair env out)) e) xpFail)))
-(def long3 (lam ((r Ts)) (eq (arity (node 0 (cons 0 (cons 0 (cons 0 (cons 0 r)))))) 3)))
-(def kf (lam ((es Ts)) (foldr T T (lam ((e T) (r T)) (and (formOk e) r)) 1 es)))
-(def runX (lam ((es Ts) (s XP))
-  ((foldr T XPK (lam ((e T) (k XPK) (s XP)) (k (xpStep s e))) (lam ((s XP)) s) es) s)))
-(def revApp (lam ((es Ts) (acc Ts))
-  ((foldr T Endo (lam ((x T) (k Endo) (acc Ts)) (k (cons x acc))) (lam ((acc Ts)) acc) es) acc)))
-(def rL (lam ((es Ts) (env Ts) (out Ts))
-  (if (kf es) (let s XP (runX es (pair 1 (pair env out))) (pair (fst s) (snd (snd s))))
-    (pair 0 (nil T)))))
-(def rR (lam ((es Ts) (env Ts) (out Ts)) (if (kf es) (pair 1 (revApp es out)) (pair 0 (nil T)))))
-(def pL (lam ((es Ts)) (if (kf es) (expandProgram es) none)))
-(def pR (lam ((es Ts)) (if (kf es) (some (node 0 es)) none)))
-(def revL (lam ((xs Ts) (zs Ts) (acc Ts)) (revApp (revApp xs acc) zs)))
-(def revR (lam ((xs Ts) (zs Ts) (acc Ts)) (revApp acc (append xs zs))))
-(def fR (lam ((e T) (env Ts) (out Ts))
-  (if (formOk e) (pair 1 (pair (envAfter e env) (cons e out))) xpFail)))"
-
-/-- The program: the prelude, the reader, the type checker, the expansion of the datatype language
-and the statement. -/
-def programText : String :=
-  include_manifest "bootstrap/expansion.manifest" ++ statement
+/-- The program's definitions with their names, read from its image
+({name}`GebMirror.Image.expansionStatement`): the prelude, the reader, the type checker, the
+expansion of the datatype language and the statement, the expansion at a node of a variable label
+and children, and at a form, as definitions ({lit}`bootstrap/proofs/expansion.geb`). -/
+def definitions : Option (List (List Char × Tree)) :=
+  Kernel.definitionsOfHex GebMirror.Image.expansionStatement
 
 /-! The folds at a construction. -/
 
@@ -648,10 +582,10 @@ def development (P : Prog) : Option (List Step) := do
     condSteps P ++ accSteps P ++ (← applySteps P) ++ exprSteps P ++ formSteps P ++ revSteps P ++
     runSteps P ++ projSteps P ++ programSteps P)
 
-/-- The program's definitions, read and expanded by the stage-0 compiler's front end, translated,
-with the index of each named one. -/
+/-- The program's definitions, read from its image, translated, with the index of each named
+one. -/
 def program : Option Prog := do
-  let ds ← bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
+  let ds ← definitions
   prog? ds fun name ↦ (defIndex ds name.toList).getD 0
 
 /-- The development in a translated program, its last lemma the statement; the name of the first

@@ -8,8 +8,8 @@ module
 public import GebTests.Prototypes.FreeTopos.NormalizationRel -- shake: keep
 public import GebTests.Prototypes.FreeTopos.Stored
 public meta import GebTests.Prototypes.FreeTopos.NormalizationRel -- shake: keep
-public import GebTests.Prototypes.Stage1 -- shake: keep
-public meta import GebTests.Prototypes.Stage1 -- shake: keep
+public import GebMirror.Image.DatatypeSoundness
+public meta import GebMirror.Image.DatatypeSoundness -- shake: keep
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -46,6 +46,7 @@ first.
 
 ## Main definitions
 
+* {lit}`definitions` — the program's definitions, read from its image.
 * {lit}`extend3` — the program extended by the relation, the environments' relations, the
   coherences, and each fold's definitions.
 * {lit}`datatypeφ` — the soundness of the datatype language's typing at a source form.
@@ -77,14 +78,16 @@ open scoped FinEnum
 open Internal (Term)
 open GebTests.Prototypes.FreeTopos.Normalization
 
-/-- The program, of the manifest {lit}`bootstrap/datatype-soundness.manifest`: the prelude, the
-reader, the kernel's type checker, the lists of the datatype language, the stage-1 typing and
-expansion, the recognizers, the traversal of kernel terms, the evaluator, the weakening proof's
-statement, whose development the base of the fundamental lemma proves, and the definitions the
-soundness's statement adds: the source forms the reader gives and the expansion writes, at a
-function on trees, the reader's name of a named context's variable, and whether a name is one of
-the implementation's. -/
-def programText : String := include_manifest "bootstrap/datatype-soundness.manifest"
+/-- The definitions, with their names, of the program of the manifest
+{lit}`bootstrap/datatype-soundness.manifest`, read from its image
+({name}`GebMirror.Image.datatypeSoundness`): the prelude, the reader, the kernel's type checker,
+the lists of the datatype language, the stage-1 typing and expansion, the recognizers, the
+traversal of kernel terms, the evaluator, the weakening proof's statement, whose development the
+base of the fundamental lemma proves, and the definitions the soundness's statement adds: the
+source forms the reader gives and the expansion writes, at a function on trees, the reader's name
+of a named context's variable, and whether a name is one of the implementation's. -/
+def definitions : Option (List (List Char × Tree)) :=
+  Kernel.definitionsOfHex GebMirror.Image.datatypeSoundness
 
 /-- The number of folds the statement composes, each defined by its argument and its fold. -/
 def nFolds : ℕ := 6
@@ -656,7 +659,7 @@ def kidsEq (P : Prog) (T : Defs3) (k : ℕ) (shape : KidsShape) : Step :=
 
 /-- The program, translated and extended for the datatype language's soundness. -/
 def extended3 : Option (Prog × Defs × Defs3) := do
-  let ds ← bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
+  let ds ← definitions
   let (P, S) ← extendedOf ds fun name ↦ (defIndex ds name.toList).getD 0
   let (P3, T) ← extend3 P S
   pure (P3, S, T)

@@ -57,6 +57,7 @@ import GebTests.Prototypes.FreeTopos.StoredWriter
 import GebTests.Prototypes.FreeTopos.Substitution
 import GebTests.Prototypes.FreeTopos.Translation
 import GebTests.Prototypes.FreeTopos.TranslationProofs
+import GebTests.Prototypes.FreeTopos.TranslationSources
 import GebTests.Prototypes.FreeTopos.TreeCases
 import GebTests.Prototypes.FreeTopos.Weakening
 import GebTests.Prototypes.InteractionNet
@@ -72,6 +73,7 @@ import GebTests.Prototypes.Kernel.Identity
 import GebTests.Prototypes.Kernel.Modules
 import GebTests.Prototypes.Kernel.Printer
 import GebTests.Prototypes.Kernel.Requests
+import GebTests.Prototypes.Kernel.SExpTree
 import GebTests.Prototypes.Kernel.SourceAnnotation
 import GebTests.Prototypes.Kernel.Strict
 import GebTests.Prototypes.LF

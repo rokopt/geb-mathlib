@@ -127,7 +127,7 @@ theorem hasLogic {PST : Prog × Defs × Defs3} (h : extended3 = some PST) :
 /-- The constants of the translation of the bundled compilers' program, where the program
 bundles and translates. -/
 def translatedGlobals : Option Internal.Globals := do
-  let ds ← Weakening.bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
+  let ds ← Datatypes.definitions
   let (_, defs) ← Translation.program (ds.map Prod.snd)
   pure (Translation.globals defs)
 
@@ -139,7 +139,7 @@ evaluation_axiom translatedAccepted : acceptedIn translatedGlobals id = true
 /-- The bundled definitions of the compilers' program with the kernel types the translation
 records for them, where the program bundles and translates. -/
 def bundledTypes : Option (List (List Char × PartialHorn.Tree) × List PartialHorn.Tree) := do
-  let ds ← Weakening.bundled Geb.Kernel.Stage0Tests.bundler.toList programText.toList
+  let ds ← Datatypes.definitions
   let (gt, _) ← Translation.program (ds.map Prod.snd)
   pure (ds, gt)
 

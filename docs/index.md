@@ -3807,8 +3807,10 @@ import-direction rules above are enforced by
   (`Geb.Kernel.bundle`), writes and reads its image, a header with separate
   format and kernel-profile versions
   over the word-level serialization (`Geb.Kernel.writeImage`,
-  `Geb.Kernel.readImage`), and runs a bundle's named definition
-  (`Geb.Kernel.runEntry`); `Command.lean` is the host driver of the
+  `Geb.Kernel.readImage`), runs a bundle's named definition
+  (`Geb.Kernel.runEntry`), and reads a program's definitions from an
+  image spelled in hexadecimal (`Geb.Kernel.definitionsOfHex`), as a
+  generated module holds one; `Command.lean` is the host driver of the
   executable `geb-kernel`, which builds images from source and runs them
   on files. Format 2 explicitly identifies profile `geb-kernel/v1`, which
   format 1 implies. `geb-kernel migrate-image INPUT OUTPUT` validates
@@ -4166,10 +4168,12 @@ import-direction rules above are enforced by
   every term, `GebTests/Prototypes/EvalMirror.lean` its evaluator equal to
   `Geb.Kernel.Eval.eval` at every level of fuel, environment and term, and
   `GebTests/Prototypes/ProgramCommand.lean` declares a
-  program's loading from its text through the stage-0 compiler's front
-  end (the command `geb_program`), which
-  `GebTests/Prototypes/FreeTopos/Agreement/Load.lean` uses for the
-  metalogic's program.
+  program's loading from its definitions, which a term gives (the command
+  `geb_program`): `GebTests/Prototypes/FreeTopos/Agreement/Load.lean`
+  gives the metalogic's as the stage-0 compiler's front end reads them
+  from its sources, and
+  `GebTests/Prototypes/FreeTopos/Certified/DatatypeLoad.lean` those of the
+  program of the datatype language's soundness as its image holds them.
   `bootstrap/identity.geb` computes content identity in Geb, BLAKE3 by
   arithmetic on natural numbers, a definition's payload, its CID, the
   migration, the linker, the names re-keyed by identifiers and the
@@ -4810,13 +4814,19 @@ import-direction rules above are enforced by
   are read. Tested in `GebTests/Prototypes/FreeTopos/`:
   `Translation.lean` computes with the library, `TranslationProofs.lean`
   proves theorems of Gödel's T about the translated
-  programs, `Agreement/Translation.lean` proves the translation written
+  programs, which `TranslationSources.lean` compiles from their sources,
+  `Agreement/Translation.lean` proves the translation written
   again in the datatype language, `bootstrap/free-topos/translation.geb`,
   equal to it at every program, translated program's constants and
   theorem of Gödel's T, by the method of the checker's agreement, and
   `Weakening.lean` and `Substitution.lean` prove that the kernel's type
   checker written in Geb, `bootstrap/check.geb`, preserves
-  types by the weakening and substitution of `bootstrap/subst.geb`;
+  types by the weakening and substitution of `bootstrap/subst.geb`, each
+  of these developments, as those after them, reading the definitions of
+  the program it is about from the program's image, a module of
+  `bootstrap/lean/GebMirror/Image/` that `scripts/bootstrap.sh` writes
+  from the program's manifest (`Geb.Kernel.definitionsOfHex`), so that it
+  depends on the program and not on a compiler's source;
   `NormalizationBase.lean`, `NormalizationConst.lean`,
   `NormalizationRel.lean` and `Normalization.lean` prove, as one theorem
   of the internal language over all terms, the fundamental lemma of a

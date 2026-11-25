@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import GebMirror.DatatypeSoundness
+public meta import GebMirror.Image.DatatypeSoundness -- shake: keep
 public import GebTests.Prototypes.ProgramCommand
 
 set_option doc.verso true in
@@ -19,11 +20,13 @@ terms and the evaluator, and the statements of weakening and of the soundness) a
 definitions, one for each of the program's definitions: the program's mirror,
 {lit}`GebMirror.DatatypeSoundness`. This module states, and the kernel checks, that loading the
 program with {name}`Geb.Kernel.load` gives globals whose denotations are the mirror's
-definitions. The command {lit}`geb_program` of {lit}`GebTests.Prototypes.ProgramCommand` declares
-the program's definitions, globals and loading, one definition at a time, each step proved by the
-checker-evaluator's equation at each node of the definition. The trees of the program's
-definitions are compiled besides, so that Lean's evaluator compares them with the definitions
-that the soundness's own reading of the program gives.
+definitions. The program's definitions are read from its image
+({name}`GebMirror.Image.datatypeSoundness`), which {lit}`scripts/bootstrap.sh` writes from the
+program's sources. The command {lit}`geb_program` of {lit}`GebTests.Prototypes.ProgramCommand`
+declares the program's definitions, globals and loading, one definition at a time, each step
+proved by the checker-evaluator's equation at each node of the definition. The trees of the
+program's definitions are compiled besides, so that Lean's evaluator compares them with the
+definitions that the soundness's own reading of the program gives.
 
 ## Main definitions
 
@@ -55,8 +58,9 @@ set_option maxRecDepth 100000 in
 set_option maxHeartbeats 20000000 in
 -- the kernel checks the checker-evaluator's equation at each node of each of the definitions
 set_option Elab.async false in
-geb_program _root_.GebMirror.datatypeSoundness from "bootstrap/datatype-soundness.manifest"
-  mirror GebMirror.DatatypeSoundness
+geb_program _root_.GebMirror.datatypeSoundness
+  of Geb.Kernel.definitionsOfHex GebMirror.Image.datatypeSoundness
+  from "bootstrap/datatype-soundness.manifest" mirror GebMirror.DatatypeSoundness
 
 open GebMirror (datatypeSoundness)
 

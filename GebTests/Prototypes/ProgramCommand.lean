@@ -5,18 +5,19 @@ Authors: Terence Rokop
 -/
 module
 
+public import Aesop
 public import Geb.Prototypes.Kernel.LoadCommand
 public import Mathlib.Tactic.NormNum
-public meta import Geb.Prototypes.Kernel.Command
-public meta import GebTests.Prototypes.Stage0 -- shake: keep
+public meta import Geb.Prototypes.Kernel.Manifest
 public meta import Lean.Elab.Command
 
 set_option doc.verso true in
 /-!
 # Commands embedding a Geb program in Lean
 
-The command {lit}`geb_program` reads a Geb program's manifest and sources at elaboration, runs the
-stage-0 compiler's front end on them, and declares, by
+The command {lit}`geb_program` evaluates a term giving a Geb program's definitions with their
+names, such as the reading of the program's committed image
+({name}`Geb.Kernel.definitionsOfHex`), and declares, by
 {name}`Geb.Kernel.LoadCommand.declareLoading`, for each of the program's definitions not yet
 declared, its tree, its global and the globals before it, each global's value the definition of the
 same name that the bootstrap compiler's Lean backend emits from the program, and the step of loading
@@ -51,12 +52,12 @@ namespace GebTests.Prototypes.ProgramCommand
 
 open Geb Geb.Kernel Geb.Kernel.LoadCommand Lean Elab Command
 
-/-- {lit}`geb_program n from "M" mirror m` embeds the program whose manifest is the file {lit}`M`,
-its sources joined as the host driver joins them, read and expanded by the stage-0 compiler's front
-end: {lit}`n` is the list of its definitions' trees, {lit}`n.d` followed by each index; {lit}`n.g`
-followed by an index is the global its definition loads, at its type {lit}`n.ty` followed by the
-index, and the definition of that name in the namespace {lit}`m`, the Lean the bootstrap compiler
-emits from the program, whose type is that type's denotation;
+/-- {lit}`geb_program n of t from "M" mirror m` embeds the program whose definitions, each with its
+name, the term {lit}`t` evaluates to, an optional list of them, and whose manifest is the file
+{lit}`M`: {lit}`n` is the list of its definitions' trees, {lit}`n.d` followed by each index;
+{lit}`n.g` followed by an index is the global its definition loads, at its type {lit}`n.ty`
+followed by the index, and the definition of that name in the namespace {lit}`m`, the Lean the
+bootstrap compiler emits from the program, whose type is that type's denotation;
 {lit}`n.pre` followed by an index is the list of the globals before it; {lit}`n.step` followed by
 an index states that the definition loads its global after them, checked by the kernel;
 {lit}`n.load_eq` states that the program loads to its globals, composed from the steps;
@@ -68,27 +69,28 @@ and, for each name {lit}`x` among the manifest's entries, {lit}`n.x_heq` states 
 global of the definition of that name. A name {lit}`n` beginning with {lit}`_root_` is taken from
 the root namespace, and the declarations of {lit}`n` already made are checked rather than made
 again. -/
-syntax (name := gebProgram) "geb_program " ident " from " str " mirror " ident : command
+syntax (name := gebProgram)
+  "geb_program " ident " of " term " from " str " mirror " ident : command
 
 /-- The elaborator of {lit}`geb_program`. -/
 @[command_elab gebProgram] meta def elabGebProgram : CommandElab := fun stx ↦ do
   let n ← programName stx[1].getId
-  let some path := stx[3].isStrLit? | throwUnsupportedSyntax
-  let m := stx[5].getId
+  let some path := stx[5].isStrLit? | throwUnsupportedSyntax
+  let m := stx[7].getId
   let manifest ← Manifest.read path
   let exported := manifest.entries.map Name.mkSimple
-  -- the sources are read as bytes, a character to a byte, as the hosts read them
-  let text := Command.chars (← Command.joinSources (Manifest.sourcePaths path manifest))
-  let r ← match runMain Geb.Kernel.Stage0Tests.bundler.toList (nameTree text) with
-    | some r => pure r
-    | none => throwError "the front end does not run"
-  let some b := (if r.label == 1 then r.children.head? else none)
-    | throwError "the program does not read"
-  let some ds := unbundle b | throwError "the bundle does not unbundle"
-  let some globs := load (ds.map Prod.snd) | throwError "the program does not load"
   let treeT := mkConst ``Kernel.Tree
   let globT := mkConst ``Kernel.Glob
   let listOf (t : Expr) : Expr := mkApp (mkConst ``List [0]) t
+  -- the term's value, at the type of an optional list of named definitions
+  let defsT := mkApp (mkConst ``Option [0]) <| listOf <|
+    mkApp2 (mkConst ``Prod [0, 0]) (listOf (mkConst ``Char)) treeT
+  let defs ← liftTermElabM do
+    let e ← Term.elabTermEnsuringType stx[3] defsT
+    Term.synthesizeSyntheticMVarsNoPostponing
+    unsafe Meta.evalExpr (Option (List (List Char × Tree))) defsT (← instantiateMVars e)
+  let some ds := defs | throwError "the term gives no definitions"
+  let some globs := load (ds.map Prod.snd) | throwError "the program does not load"
   let optOf (t : Expr) : Expr := mkApp (mkConst ``Option [0]) t
   let some' (t e : Expr) : Expr := mkApp2 (mkConst ``Option.some [0]) t e
   let eqOf (t a b : Expr) : Expr := mkApp3 (mkConst ``Eq [1]) t a b

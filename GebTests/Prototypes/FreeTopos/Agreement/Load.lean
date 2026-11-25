@@ -8,6 +8,8 @@ module
 public import GebMirror.Metalogic.Load
 public import GebTests.Prototypes.ProgramCommand
 public import GebTests.Prototypes.CheckMirror
+public import Geb.Prototypes.Kernel
+public meta import GebTests.Prototypes.Stage0 -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -23,7 +25,9 @@ gives globals whose denotations are the mirror's definitions; in the mode {lit}`
 of the loading are axioms ({lit}`docs/rules/ci-and-workflow.md` § Loading modes).
 
 The command {lit}`geb_program` of {lit}`GebTests.Prototypes.ProgramCommand` declares the
-program's definitions, globals and loading, one definition at a time. Among the globals are the
+program's definitions, as the stage-0 compiler's front end reads them from the sources
+({name}`Geb.Kernel.Stage0Tests.bundled`), its globals and its loading, one definition at a time.
+Among the globals are the
 check of a development, at the type of the function from constants, entries and declarations to a
 state; the translations of a program, of its constants and of a theorem of Gödel's T; and the
 prover's entry points, the preparation of rules, the proofs by normalization and by induction and
@@ -110,8 +114,9 @@ set_option maxHeartbeats 20000000 in
 -- the generated modules of GebMirror.Metalogic.Load declare the program's definitions and the
 -- steps of its loading; the kernel evaluates the checker-evaluator on each exported definition
 set_option Elab.async false in
-geb_program _root_.GebMirror.metalogic from "bootstrap/metalogic.manifest"
-  mirror GebMirror.Metalogic
+geb_program _root_.GebMirror.metalogic
+  of Geb.Kernel.Stage0Tests.bundled (include_manifest "bootstrap/metalogic.manifest").toList
+  from "bootstrap/metalogic.manifest" mirror GebMirror.Metalogic
 
 open GebMirror (metalogic)
 
