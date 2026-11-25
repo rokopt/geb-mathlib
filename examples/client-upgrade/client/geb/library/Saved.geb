@@ -1,0 +1,30 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Values saved outside a program, each in a byte string that names the datatype of the value and
+; the version of its encoding. A constructor's tag is its position among the constructors of its
+; declaration, so that a revision of the declaration can change the value a saved tag denotes. Such
+; a revision writes a new version, a program reads a saved value only at the datatype and version
+; it names, and a value saved at an earlier version is migrated by a program that reads that
+; version and writes the new one.
+
+(module Saved (export pack unpack) (import Optional) (import Bytes)
+  ; The bytes saving an encoding: the identifier of its datatype and the version of the encoding,
+  ; a byte each, followed by the encoding's bytes.
+  (note (example (rep (Saved.pack 79 1 (Bytes.bytes (cons 1 (nil T))))) (quote (0 (79) (1) (1)))))
+  (defn pack ((datatype T) (version T) (encoding Bytes)) Bytes
+    (case encoding ((bytes & cs) (bytes (cons datatype (cons version cs))))))
+  ; The encoding that bytes save, where they name the datatype and the version given.
+  (note (example (rep (Saved.unpack 79 1 (datum Bytes.Bytes (0 (79) (1) (1))))) (quote (1 (0 (1)))))
+    (example (rep (Saved.unpack 79 2 (datum Bytes.Bytes (0 (79) (1) (1))))) 0)
+    (example (rep (Saved.unpack 79 1 (datum Bytes.Bytes (0 (79))))) 0))
+  (defn unpack ((datatype T) (version T) (saved Bytes)) (Option Bytes)
+    (case saved
+      ((bytes & cs)
+       (lcase T (Option Bytes) cs (none Bytes)
+         (lam ((d T) (rest (List T)))
+           (lcase T (Option Bytes) rest (none Bytes)
+             (lam ((v T) (encoding (List T)))
+               (if (eq d datatype) (if (eq v version) (some Bytes (bytes encoding)) (none Bytes))
+                 (none Bytes))))))))))

@@ -113,6 +113,21 @@ exports.run = async (test, checkTask) => {
     assert.equal((await copy()).code, 0);
     assert.deepEqual(readFileSync(file('editor.copy')), readFileSync(file('copy.missing')));
   });
+  await test('the editor saves, migrates and applies a setting as the CI check', async () => {
+    const file = name => path.join(client, '.lake', name);
+    const same = (a, b) => assert.deepEqual(readFileSync(file(a)), readFileSync(file(b)));
+    const interact = (entry, ...args) => command('interact', { entry, arguments: args });
+    assert.equal((await interact('Settings.choose', 'm', '.lake/editor.saved')).code, 0);
+    same('editor.saved', 'settings.saved');
+    assert.equal(
+      (await interact('Upgrade.migrate', '.lake/settings.v1', '.lake/editor.migrated')).code, 0);
+    same('editor.migrated', 'settings.migrated');
+    assert.equal((await interact('Settings.apply', '.lake/settings.v1', '.lake/settings.input',
+      '.lake/editor.refused')).code, 1);
+    assert.equal((await interact('Settings.apply', '.lake/editor.migrated', '.lake/settings.input',
+      '.lake/editor.output')).code, 0);
+    same('editor.output', 'settings.output');
+  });
   for (const file of [library, path.join(client, 'Client.proofs.geb')]) {
     await test(`check saved file ${path.relative(client, file)}`, async () => {
       const editor = await vscode.window.showTextDocument(

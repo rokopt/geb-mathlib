@@ -1,0 +1,43 @@
+; The copy of the file that an index names, by the requests of the library's module
+; {geb}`Requests`. The program is run by {lit}`geb-author interact` with two arguments, the path
+; of an index and the path of an output. It reads the index, whose first line is the path of
+; another file, reads that file and writes its bytes to the output. Where that file is missing it
+; writes the line of {geb}`Copy.missing` instead. It exits with status 0 when it has written the
+; output, 1 when the index or the write fails, 2 without the two arguments and 3 when the host's
+; protocol is not version 0.
+
+(module Copy (export missing step) (import Optional) (import Lists) (import Bytes) (import Requests)
+  ; The state the program resumes in, with the output's path while it reads.
+  (data State (readingIndex Path) (readingTarget Path) (writing))
+  ; The line written to the output where the file the index names is missing.
+  (defn missing () Bytes (datum Bytes (0 (109) (105) (115) (115) (105) (110) (103) (10))))
+  ; The read of the index, the output's path kept in the state.
+  (defn begin ((args (List Bytes))) Action
+    (case (nth Bytes args 0) ((none Bytes) (done 2))
+      ((some Bytes index)
+       (case (nth Bytes args 1) ((none Bytes) (done 2))
+         ((some Bytes out) (call (read index) (rep (readingIndex out))))))))
+  ; The read of the file whose path is the first line of the index's bytes.
+  (defn target ((index Bytes) (out Path)) Action
+    (case index ((bytes & cs) (call (read (bytes (firstLine cs))) (rep (readingTarget out))))))
+  ; The action after a request's result: the next request, or the end of the run.
+  (defn after ((st State) (r Result)) Action
+    (case st
+      ((readingIndex out)
+       (case r ((failed f) (done 1)) ((succeeded & xs) (target (contents xs) out))))
+      ((readingTarget out)
+       (case r
+         ((failed f) (case f ((notFound) (call (write out missing) (rep writing))) (else (done 1))))
+         ((succeeded & xs) (call (write out (contents xs)) (rep writing)))))
+      ((writing) (case r ((failed f) (done 1)) ((succeeded & xs) (done 0))))))
+  ; The program's step. At the start of version 0 with the arguments {lit}`a` and {lit}`b`, it
+  ; reads {lit}`a` and keeps {lit}`b` in its state.
+  (note
+    (example (Copy.step (quote (0 (0) (0 (97)) (0 (98))))) (quote (1 (0 (0 (97))) (0 (0 (98)))))))
+  (defn step ((e T)) T
+    (rep
+      (decode Event e
+        (lam ((ev Event))
+          (case ev ((start v & args) (if (eq v 0) (begin args) (done 3)))
+            ((resume s r) (decode State s (lam ((st State)) (after st r)) (done 2)))))
+        (done 2)))))

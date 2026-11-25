@@ -8,6 +8,12 @@ layer. The library supplies its sources in order before the client's.
 functions at the trees. `Copy.geb` imports the library's module
 `Requests` and copies the file that an index names by requests of the
 host, writing a line of its own where that file is missing.
+`Settings.geb` saves a datatype of the client's, the order in which it
+writes a file's bytes, in the envelope of the library's module `Saved`,
+which names the datatype and the version of its encoding. `Upgrade.geb`
+migrates an order that the client's previous revision saved at version 1,
+before `Settings.Order` declared `reversed`; the Geb repository's
+`examples/client-upgrade/` keeps that revision.
 `Client.proofs.geb` imports the library's proof document, so that the
 library's theorems are proved again against the client's program, and
 adds a theorem of the client's.
@@ -137,6 +143,11 @@ through Lake and later commands reuse them until their inputs change.
 - `Geb: Run Program with Requests` compiles the program and runs the
   entry point `Copy.step` with the arguments it asks for, the path of an
   index and the path of an output, relative to the client's directory.
+  With the entry point `Settings.choose` and the arguments `m` and a
+  path it saves the order `mirrored` there, with `Settings.apply` and
+  that path, an input's and an output's it writes the input mirrored, and
+  with `Upgrade.migrate` it writes at the current version an order saved
+  at version 1.
 - `Geb: Prove Statements` uses the client's `.lake/geb-proof-cache`
   to prove `Client.proofs.geb` and the library's
   document it imports and saves the certificate;
@@ -157,8 +168,9 @@ VS Code Insiders.
 
 `check.sh` compiles the program and checks its examples, proves its
 theorems and replays their certificate, with the manifest and proof
-document the editor's settings select, and runs `Copy.step` where the
-file its index names exists and where it is missing.
+document the editor's settings select, runs `Copy.step` where the
+file its index names exists and where it is missing, and saves, applies
+and migrates an order of `Settings.Order`.
 `.github/workflows/check.yml` runs it after building the host
 executables of the submodule, or after fetching the pinned release where
 `geb-release.sha256` exists. The Geb repository's

@@ -4039,6 +4039,14 @@ import-direction rules above are enforced by
   version. Two pinned revisions exchange the constructor tags.
   `scripts/tests/test-value-migration.sh` checks the transported envelope
   theorem and each client's output on the original and migrated values.
+  The client template saves `Settings.Order` in the envelope of the shared
+  library's module `Saved` (`library/Saved.geb`) by the requests of
+  `Requests`, and `examples/client-upgrade/` keeps its previous revision, with
+  the library at the revision it pins, and the setting that revision saved.
+  `scripts/tests/test-client-upgrade.sh` upgrades that revision to the
+  template and library of the checkout, migrates the setting by
+  `Upgrade.migrate`, and compares the records' documents, the definitions'
+  content identifiers and the two clients' output.
   The VS Code extension under `editors/vscode/` selects a development by its
   manifest in workspace settings and invokes compilation, proof search,
   replay, kernel-hole reporting and preservation through the host commands.
