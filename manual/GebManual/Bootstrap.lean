@@ -193,7 +193,7 @@ together.
    writes, each typing decision the compiled typing's
    (`GebHost/DatatypeTyping.lean`), and reaches the editor as the
    diagnostics of the check of a saved file. The obligations view reads
-   kernel forms alone ({ref "editing"}[Editing]).
+   these reports from open buffers ({ref "editing"}[Editing]).
 4. Complete. Add polymorphic definitions, before the library's modules
    are written (the decision on polymorphic definitions). A definition, a
    function and a datatype's declaration take type parameters of their
@@ -394,26 +394,16 @@ together.
     Insiders, follows an import into the library, and checks and runs the
     same program as its CI workflow. Each form the chapter states is an
     example that the manual's build checks.
-11. Report in the editor as a source is edited. The check of a saved
-    file is a task that VS Code runs on request, where efm-langserver
-    runs it at each save (`editors/efm-langserver/config.yaml`); the
-    extension is to run it at each save, under a setting. The
-    obligations view and `geb-kernel holes` read kernel forms alone and
-    reject a program of modules or of datatypes, whose holes the check
-    reports (step 3). In an unsaved datatype definition, the view must
-    show the hole's source occurrence, expected datatype and local
-    variables, and clear the obligation after a well-typed filling.
-    A delayed response to an earlier edit must leave the current report
-    intact ({ref "editing"}[Editing]). A false example in an imported
-    library currently fails the client's build with the declaration's name.
-    The diagnostic in Problems must select the failing example in the
-    library source (`editors/vscode/test/client.cjs`). The grammar gives
-    scopes to comments, quoted atoms, parentheses, holes, numerals and
-    `&`, and none to the names of the forms. Navigation resolves an occurrence to its
-    declaration; the references to a declaration, and its renaming,
-    follow from the same resolution. Test these operations against the
-    open buffers in `editors/vscode/test/`. They require no change to
-    the compiler's sources.
+11. Complete. Report in the editor as a source is edited. Under
+    `geb.checkOnSave` the extension checks each saved source. The
+    obligations view reads open buffers and shows a datatype hole at its
+    source occurrence with its expected type and local variables. A
+    well-typed filling clears the obligation and a delayed reply to an
+    earlier edit is discarded. A false example in an imported library
+    selects its example form in Problems. Find All References and Rename
+    Symbol use the declaration resolver across open buffers, and the
+    grammar scopes the names of forms at list heads
+    (`editors/vscode/test/`, {ref "editing"}[Editing]).
 12. Change the sources that developments are about, one change after
     another. The reader in constant depth changes `bootstrap/reader.geb`;
     the definitions of the steps of the folds of `typeIn`, `trav` and
@@ -449,7 +439,7 @@ together.
 tag := "downstream-order"
 %%%
 
-Steps 1, 2, 3, 4, 7, 8 and 9 are complete, as are the record and migration
+Steps 1, 2, 3, 4, 7, 8, 9 and 11 are complete, as are the record and migration
 fixtures of step 6. The table distinguishes work that can start now
 from acceptance that needs an upgraded client.
 
@@ -462,10 +452,6 @@ from acceptance that needs an upgraded client.
   * 10, a release and a description of the language
   * Now, the generic forms of step 4 among the forms it describes
   * Release archives, editor packages and the manual
-*
-  * 11, the editor's reports and navigation
-  * Now, using the datatype diagnostics of step 3
-  * The editor package and host tools
 *
   * 13, kept layers for commands and checked examples
   * Now, using step 2. Fix argument forwarding in step 5 alongside it
@@ -488,10 +474,9 @@ Load each compiler once per stage-test comparison before the next change
 to a compiler's source.
 The stage-0 example comparison took 3.0 seconds with repeated loading
 and 0.5 seconds with one load ({ref "improvements"}[Improvements]).
-Use the existing client to measure step 13, at the examples the library's
-modules hold. Work on host tools and editor
-reports can proceed in parallel. Exercise them together in the client
-as each becomes available. Prefer the client upgrade to converting
+Use the existing client to measure step 13 with the examples in the library's
+modules. Exercise host-tool changes in the client with the editor's
+reports. Prefer the client upgrade to converting
 `bootstrap/` in step 12. The constant-depth reader can move forward
 if the reader's stack limits the client or the compiler.
 
@@ -5740,13 +5725,14 @@ have no editor navigation interface.
 
 Format Document formats an unsaved buffer through the existing document
 formatter, retaining comments and annotations; one undo restores the original
-text. Malformed input leaves the buffer unchanged. The Geb Kernel Obligations
-view checks the selected manifest's source snapshots with the existing kernel
-hole checker. It displays each obligation's expected type and context and links
+text. Malformed input leaves the buffer unchanged. The Geb Obligations view
+checks the selected manifest's source snapshots
+with the kernel hole checker or the datatype typing pass. It displays each
+obligation's expected type and context and links
 to its source occurrences, invalidating the report when an input changes.
 A completed check is distinguished from open obligations or rejected input.
-These editor services write no files and do not extend the datatype language's
-hole checker or proof search.
+Find All References and Rename Symbol follow the same resolution as Go to
+Definition. Rename checks the proposed source snapshots for capture.
 
 A tree-sitter grammar for Geb is derived from the same profile when the
 editors that use tree-sitter need it, from tree-sitter-scheme as a base,

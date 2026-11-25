@@ -57,6 +57,19 @@ bytes of its line. -/
   col : Nat
   deriving DecidableEq, Repr, Inhabited
 
+/-- The number of UTF-16 code units in valid UTF-8 bytes. A four-byte sequence gives a
+surrogate pair. The byte validator checks each sequence before advancing to the next one. -/
+def utf16Length? (bytes : ByteArray) : Option Nat := Id.run do
+  let mut next := 0
+  let mut units := 0
+  for i in [:bytes.size] do
+    if i == next then
+      unless bytes.validateUTF8At i do return none
+      let b := (bytes.data[i]?.getD 0).toNat
+      next := i + if b < 128 then 1 else if b < 224 then 2 else if b < 240 then 3 else 4
+      units := units + if b < 240 then 1 else 2
+  return if next == bytes.size then some units else none
+
 /-- The position after a character at a position. -/
 def Pos.next (p : Pos) (ch : Char) : Pos :=
   if ch == '\n' then ⟨p.line + 1, 1⟩ else ⟨p.line, p.col + 1⟩

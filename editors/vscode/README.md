@@ -47,7 +47,7 @@ lake build geb-author geb-kernel geb-fmt geb-compile geb-defs
 `geb-author` compiles programs, checks their examples, proves and
 replays proof documents, and answers the editor's navigation, formatting
 and hole requests; `geb-kernel` lists a manifest's sources, reports
-kernel holes and runs an image's definition on a file; `geb-fmt` formats
+holes and runs an image's definition on a file; `geb-fmt` formats
 files; `geb-compile` and `geb-defs` are run by `scripts/preserve.py` for
 records. The extension uses Python 3 to check the selected checkout's
 host sources, dependency sources, build configuration, toolchain and
@@ -109,7 +109,8 @@ The formatter and the document type are described in the
 
 ## Diagnostics
 
-The extension contributes, for each workspace folder, the task
+Set `geb.checkOnSave` to check saved Geb files automatically.
+The extension also contributes, for each workspace folder, the task
 `Geb: check saved file`, which runs `geb-author check` on the
 active file in the folder's `geb.toolchainDirectory`, and the command
 writes nothing. Both file tasks are listed under Tasks: Run Task, and a
@@ -155,7 +156,11 @@ aliases and module instances. An instance's declaration opens its
 template's source. Hover displays the source signature and its preceding
 documentation; comments before a declaration's note are included.
 The Outline view lists the current file's declarations, and Go to Symbol
-in Workspace searches the selected program.
+in Workspace searches the selected program. Find All References lists
+occurrences of the resolved declaration. Rename Symbol edits those
+occurrences across the selected sources, proof documents and manifest
+entries, retaining import qualifiers. It checks the proposed buffers
+for name capture before returning a workspace edit.
 
 Local references navigate to their binders, respecting shadowing, sequential
 bindings and pattern branches. The selected program's `proofs` entry and
@@ -194,7 +199,10 @@ object from standard input with `file`, one-based byte `line` and
 under absolute paths. Optional `proofs` names the entry proof document;
 `recover: true` enables editor recovery. A zero line and column requests
 the declaration index alone. The optional `operation` selects `target`,
-`completion`, `document` or `workspace`. Omitting it returns the full
+`completion`, `document`, `workspace`, `references` or `rename`.
+The last two return located references. For `rename`, `newName` supplies
+the new declaration name and each reference includes its replacement.
+Omitting the operation returns the full
 single-request result. The result contains `symbols`, an optional
 `target`, `completions`, an optional `atomSpan` for completion replacement,
 `incomplete` file paths and `errors`. Each symbol names its file, full
@@ -205,15 +213,15 @@ and kinds are JSON strings. Spans are
 `[startLine, startColumn, endLine, endColumn]`, with inclusive endpoints.
 The interface uses the existing document lexer and module renamer.
 
-The Explorer's Geb Kernel Obligations view is populated by
-`Geb: Refresh Kernel Obligations`. It displays each hole's expected type,
+The Explorer's Geb Obligations view is populated by
+`Geb: Refresh Obligations`. It displays each hole's expected type,
 its context and links to every source occurrence. After the first refresh,
 edits refresh the view automatically from unsaved snapshots. Changed
 inputs invalidate the previous report; rejected input is shown as not
 checked. A completed check with no holes is distinguished from a report
-of open obligations. This view uses the existing kernel hole checker and
-accepts its kernel forms; datatype holes and proof synthesis are separate
-work. The terminal command `Geb: Show Kernel Holes` remains available.
+of open obligations. Kernel holes share the constraints of the kernel
+checker. Datatype holes show the expected type and variables at each
+occurrence. The terminal command `Geb: Show Holes` prints the report.
 
 `geb-author format-buffer` accepts `{text}` and an optional `crlf: true`,
 and returns formatted byte text. `geb-author editor-holes MANIFEST` accepts
@@ -266,7 +274,7 @@ a running command; another Geb command can start after the task ends.
 | `Geb: Run Program with Requests` | `geb-author interact`: compile the manifest and run an entry point as a program that reads and writes files |
 | `Geb: Prove Statements` | `geb-author prove`: run proof scripts, check and save the certificate |
 | `Geb: Replay Certificate` | `geb-author replay`: check the saved certificate against current statements without search |
-| `Geb: Show Kernel Holes` | `geb-kernel holes --manifest`: display the context and type of each kernel-language hole |
+| `Geb: Show Holes` | `geb-kernel holes --manifest`: display the context and type of each hole |
 | `Geb: Record Development` | `preserve.py record`: retain the checked program, reusing its saved certificate when a proof document is configured |
 | `Geb: Verify Record Integrity` | `preserve.py verify`: check the record's inventory and hashes |
 | `Geb: Check Recorded Development` | `preserve.py check`: compile archived sources and replay any saved certificate |
@@ -299,9 +307,9 @@ saved-file check. Its terminal reports how many theorems it took from
 the cache and how many it proved. It replays the resulting certificate
 before writing it. Integrity verification needs only Python.
 A rejected program or failed proof leaves an existing output in place.
-Hole reporting is limited to the kernel forms accepted by the current
-host: exit status `2` means open obligations, `0` means complete, and `1`
-means rejection. Open obligations are displayed without being reported
+For kernel and datatype holes, exit status `2` means open obligations,
+`0` means complete and `1` means rejection. Open obligations are displayed without
+being reported
 as a completed program.
 
 The two run commands offer the manifest's entry points, or take the only
@@ -346,7 +354,7 @@ the choices they ask for.
 
 The editor suite includes unsaved imports, local and proof navigation,
 scoped completion, Unicode names, recovery, outlines, workspace symbols,
-buffer formatting and navigable kernel obligations. To run only that fixture,
+buffer formatting and navigable obligations. To run only that fixture,
 pass `--navigation` to `node editors/vscode/test/run.cjs` after building
 `geb-author`.
 

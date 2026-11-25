@@ -14,7 +14,7 @@ const actions = {
   interact: 'Run program with requests',
   prove: 'Prove statements',
   replay: 'Replay certificate',
-  holes: 'Show kernel holes',
+  holes: 'Show holes',
   record: 'Record development',
   verify: 'Verify record integrity',
   check: 'Check recorded development',
@@ -125,7 +125,7 @@ exports.activate = context => {
   const current = entries => entries.find(p => p.key === context.workspaceState.get('geb.program'))
     || (entries.length === 1 ? entries[0] : undefined);
   require('./navigation.cjs').register(context, () => current(programs()));
-  const editing = require('./editing.cjs').register(context, () => current(programs()));
+  const editing = require('./editing.cjs').register(context, () => current(programs()), proofCache);
   function refresh() {
     try { status.text = `Geb: ${current(programs())?.name || 'Select program'}`; }
     catch { status.text = 'Geb: Configure programs'; }

@@ -10,16 +10,16 @@ public import Geb.Prototypes.Kernel.Holes
 
 set_option doc.verso true in
 /-!
-# Editor formatting and kernel obligations
+# Editor formatting and source obligations
 
 Formatting reads an editor buffer and returns the existing document formatter's bytes without
-writing a file. Kernel obligations are checked over a manifest's source snapshots and located
+writing a file. Obligations are checked over a manifest's source snapshots and located
 in those same snapshots. Recovered syntax is never passed to the hole checker.
 
 ## Main definitions
 
 * {lit}`format` — format a buffer through the document formatter.
-* {lit}`holes` — check kernel holes and report their types, contexts and source occurrences.
+* {lit}`holes` — check holes and report their types, contexts and source occurrences.
 * {lit}`run` — the JSON command-line interface.
 
 ## Tags
@@ -66,15 +66,25 @@ def occurrences (name : Ident) : Locate.Located → List Locate.Span :=
       if t.children[1]?.any (·.label.2 == some name) then [l.1] else []
     else rs.flatMap Prod.snd
 
-/-- Kernel holes over the exact snapshots supplied by the editor. Each obligation has its
-declaring context and every source occurrence; a complete report has no obligations. -/
+/-- Obligations from exact editor snapshots. Kernel holes share their inferred constraints;
+datatype holes retain the expected type and local context of each source occurrence. -/
 def holes (manifest : String) (request : Lean.Json) : IO Lean.Json := do
   let snapshots ← IO.ofExcept (snapshotsOf request)
   let sources ← Navigation.readSources manifest snapshots
   let text := ['\n'].intercalate (sources.map fun src ↦
     let doc := src.doc.eraseNotes
     printAt (defaultLayout .profile 100 doc) doc)
-  let report ← IO.ofExcept (Holes.check Command.holesBudget text)
+  let some checked := Compiler.kernelObligations text | do
+    let hs ← IO.ofExcept (Compiler.datatypeHoles manifest text
+      (sources.map fun s ↦ ⟨s.file, Command.chars s.bytes⟩))
+    let bytes (s : String) := charsJson s.toList
+    let rows := hs.map fun (h, file, span) ↦
+      let ctx := h.context.map fun (n, ty) ↦ Json.object [("name", bytes n), ("type", bytes ty)]
+      let site := Json.object [("file", Lean.toJson file), ("span", Navigation.spanJson span)]
+      Json.object [("name", bytes h.name), ("target", bytes (h.type.getD "?")),
+        ("context", Lean.toJson ctx), ("occurrences", Lean.toJson [site])]
+    return Json.object [("complete", Lean.toJson hs.isEmpty), ("holes", Lean.toJson rows)]
+  let report ← IO.ofExcept checked
   let metas := (report.holes.flatMap fun h ↦ Holes.metasOf h.target).foldl
     (fun ms m ↦ if ms.contains m then ms else ms ++ [m]) []
   let hs := report.holes.map fun h ↦
