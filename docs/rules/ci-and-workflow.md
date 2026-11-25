@@ -354,7 +354,11 @@ into. Either command takes the names of searches to run, which
 named, or with none named every search, each in a process of its own,
 `LEAN_NUM_THREADS` at a time, reading the committed certificates it
 continues from, and with none named also checks that every committed
-certificate is one a search writes. Where the environment variable
+certificate is one a search writes. With none named the searches start
+in the order of their times at the last passing check, the longest
+first, which it records in `.lake/certificates-check.times`, a search
+with no record starting before them; with no record they start as they
+are listed. Where the environment variable
 `GEB_CERTIFY` names a built `geb-certify`, the script runs it and builds
 none. A change to a program a development is about is followed by
 `scripts/bootstrap.sh regen`, which writes the program's image, and
