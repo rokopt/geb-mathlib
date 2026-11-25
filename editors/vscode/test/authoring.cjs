@@ -168,6 +168,15 @@ exports.run = async test => {
     assert.equal((await command('interact', { entry: 'Index.step', arguments: [] })).code, 2);
     await vscode.commands.executeCommand('geb.selectProgram', 'Editor fixture');
   });
+  await test('a program without proofs records and compares its checked sources', async () => {
+    await vscode.commands.executeCommand('geb.selectProgram', 'Requests fixture');
+    const destination = file('records/requests');
+    assert.equal((await command('record', destination)).code, 0);
+    assert.equal(JSON.parse(readFileSync(path.join(destination, 'record.json'))).format,
+      'geb-program/v1');
+    assert.equal((await command('compare')).code, 0);
+    await vscode.commands.executeCommand('geb.selectProgram', 'Editor fixture');
+  });
   await test('terminating a task releases the next command', async () => {
     const started = vscode.tasks.onDidStartTask(e => {
       if (e.execution.task.definition.type === 'geb') e.execution.terminate();

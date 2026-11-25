@@ -99,6 +99,7 @@ jobs:
           bash scripts/tests/test-release.sh
           bash scripts/tests/test-authoring.sh
           bash scripts/tests/test-preservation.sh
+          bash scripts/tests/test-value-migration.sh
           bash scripts/tests/test-proof-scripts.sh
           bash scripts/tests/test-proof-cache.sh
           bash scripts/tests/test-client.sh

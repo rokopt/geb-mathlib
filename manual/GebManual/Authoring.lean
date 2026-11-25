@@ -1182,9 +1182,9 @@ datatypes and completion of datatype soundness remain separate work.
 
 # Preserving a development
 
-The preservation workflow applies the same compilation, example checking,
-document conversion and certificate replay to any program manifest and
-proof document accepted by the current authoring commands. For the
+The preservation workflow compiles a program manifest, checks its examples
+and converts its documents. When supplied a proof document it also replays
+the certificate. For the
 development under `examples/roundtrip/`, whose manifest orders a library
 and its application in separate layers:
 
@@ -1197,20 +1197,32 @@ python3 scripts/preserve.py compare /tmp/roundtrip-record \
   examples/roundtrip/roundtrip.manifest examples/roundtrip/Roundtrip.proofs.geb
 ```
 
+For a code-only program, omit the proof document from both commands.
+
+```
+python3 scripts/preserve.py record examples/requests/requests.manifest /tmp/requests-record
+python3 scripts/preserve.py check /tmp/requests-record
+python3 scripts/preserve.py compare /tmp/requests-record examples/requests/requests.manifest
+```
+
+`geb-program/v1` retains the original and canonical program documents,
+checked image, elaborated definitions, compiler inputs and host identities.
+The proof document, its imports, the proof runner and the certificate are
+additional artifacts of a development with proofs.
+
 `record`, `check` and `compare` build the host executables first. Pass
 `--no-build` before the subcommand to use the executables already built
 in this checkout.
 
-`record` first copies the manifest, every source in its order, and the
-proof document with the documents it imports, retaining their original
-bytes and relative paths.
-It compiles those copies, checks the examples, produces and replays a
-certificate, and writes canonical copies of the complete documents.
-The record also holds the checked image, the elaborated definitions,
-the exact compiler image and emitted compiler, the emitted proof runner,
-the Geb source closures of the compiler and proof runner, the Lean
-toolchain and dependency lockfile, and the SHA-256 identities of the
-native host executables. Native executables and installed dependencies
+`record` first copies the manifest and every source in its order, retaining
+their original bytes and relative paths. It compiles those copies, checks
+the examples and writes canonical copies of the documents. With a proof
+document it also copies that document and its imports, produces a certificate
+and replays it. Each record holds the checked image, the elaborated definitions,
+the exact compiler image and emitted compiler, the compiler's Geb source
+closure, the Lean toolchain and dependency lockfile, and the SHA-256 identities
+of the native host executables. A proof record also retains the emitted proof
+runner and its Geb source closure. Native executables and installed dependencies
 are not copied; rebuilding a historical native host is outside this
 workflow. The retained images, emitted code and source inputs are
 available to a future migration.
@@ -1236,7 +1248,7 @@ authenticate it nor establish a theorem.
 
 `check` reads the archived sources with the current host, compares their
 canonical documents, checked image and elaborated definitions with the
-record, and replays its saved certificate, checking examples again.
+record, checks the examples again and replays any saved certificate.
 It performs no proof search and does not regenerate the record. A moved
 record therefore remains checkable after the original project is removed,
 provided the current host still reads its profile and reproduces its core.
@@ -1300,3 +1312,29 @@ records, rejected certificates and unsupported source versions publish
 no new record. The migration establishes these checks for the accepted
 development. It is neither a general preservation theorem nor a migration
 between semantic editions or datatype representations.
+
+## Migrating a saved datatype
+
+In `examples/value-migration/`, each manifest selects a revision of
+`Signal.Light` pinned by SHA-256 in `SHA256SUMS`. A saved file has three
+bytes. The first is ASCII `L`, the identifier of this datatype within the
+application. The second is the encoding version, and the third is the tag.
+Version 1 declares red before green. Version 2 reverses them, so simply
+changing the version byte would turn red into green.
+
+```
+bash scripts/tests/test-value-migration.sh /tmp/light-upgrade
+```
+
+Use a new directory to retain both checked records and the files written
+by their applications. The fixture compares the old writer's red value
+with the retained `red.v1`. For each constructor, `Upgrade.migrate` reads
+version 1 and writes the corresponding version 2 value. `Client.observe`
+then produces the same byte as before the upgrade. An unknown datatype,
+unsupported version, invalid tag or malformed envelope ends the application
+before it writes its output.
+
+The upgraded manifest selects the new dependency and adds the migration
+module. The client and its envelope theorem have the same canonical source
+documents. The fixture compares the elaborated definitions and transports the
+old certificate with `geb-author transport` before recording the successor.

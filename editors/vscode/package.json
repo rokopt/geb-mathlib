@@ -176,7 +176,7 @@
               "proofs": {
                 "type": "string",
                 "minLength": 1,
-                "description": "Entry proof document path; required for prove, replay, record and compare."
+                "description": "Entry proof document for proving, replaying and recording a development with proofs."
               },
               "image": {
                 "type": "string",

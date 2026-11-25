@@ -1,0 +1,2 @@
+; The encoding version belongs to the declaration of the saved datatype.
+(module Signal (export Light red green version) (data Light (red) (green)) (def version 1))

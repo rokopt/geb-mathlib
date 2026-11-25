@@ -1,0 +1,32 @@
+; Apply a partial file transformation through version 0 of the host requests.
+; A rejected input ends the application with status 1 before any write.
+(module Files (export Output reject emit transform) (data Output (reject) (emit T))
+  (data State (reading T) (writing))
+  (data Event (start T T T) (resume State T))
+  (data Request (read T) (write T T))
+  (data Action (done T) (call Request State))
+  (data ReadResult (readFailed T) (didRead T))
+  (data WriteResult (writeFailed T) (didWrite))
+  (defn transform ((f (Arrow T Output)) (event T)) T
+    (rep
+      (decode Event event
+        (lam ((e Event))
+          (case e
+            ((start version input output)
+             (if (eq version 0) (call (read input) (reading output)) (done 2)))
+            ((resume state result)
+             (case state
+               ((reading path)
+                (decode ReadResult result
+                  (lam ((r ReadResult))
+                    (case r
+                      ((didRead input)
+                       (case (f input) ((emit output) (call (write path output) writing))
+                         ((reject) (done 1))))
+                      ((readFailed error) (done 1))))
+                  (done 2)))
+               ((writing)
+                (decode WriteResult result
+                  (lam ((r WriteResult)) (case r ((didWrite) (done 0)) (else (done 1))))
+                  (done 2)))))))
+        (done 2)))))

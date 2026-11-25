@@ -245,25 +245,21 @@ together.
    step-bounded execution and resumption follow the bootstrap, with the
    second host ({ref "files-editions"}[Files, editions and the host
    boundary]).
-6. Migrate the client and its first saved datatype value. Two parts can
-   start now. Extend `scripts/preserve.py` to record a program without a
-   proof document. Relocate the record, recheck its examples and compare
-   its canonical documents, image and elaborated definitions. Use
-   `examples/roundtrip/record/` to check that a record with a proof still
-   replays. For the value migration, keep the readable sources, manifest,
-   dependency revisions, checked record and an input saved by the old
-   application. Edition 0 changes with the compiler. In a datatype with
-   two nullary constructors, exchanging their order makes the old tag
-   zero a valid encoding of the other constructor. Give the saved value
-   an envelope identifying its datatype and encoding version. Exercise
-   the exchange of constructors across two pinned revisions. The new
-   reader must reject a different datatype or an unknown encoding version.
-   Migrate the documents and value from the known old version. Compare
-   the elaborated definitions or account for their change, and replay the
-   proof. Run the upgraded application on the migrated input and compare
-   its output with the old application's output on the saved input. The
-   existing migrations cover proof-source version 1 to 2 and the image's explicit kernel profile
-   ({ref "first-authoring"}[Writing a first Geb development]).
+6. In progress. Migrate the client and its first saved datatype value.
+   Code-only records and the migration fixture are complete. `scripts/preserve.py`
+   records the requests example, rechecks its examples after relocation, and compares
+   its canonical documents, image and elaborated definitions. The Roundtrip record
+   still replays its proof. In `examples/value-migration/` two pinned revisions of
+   `Signal.Light` exchange its nullary constructors. The application reads the datatype
+   identifier and encoding version before decoding the tag. The migration writes the
+   same constructor in version 2. Both records check, the envelope theorem replays
+   after transport, and the old and upgraded applications give the same output for
+   each migrated value ({ref "first-authoring"}[Writing a first Geb development]).
+   The downstream upgrade remains. Once the client saves its first datatype through
+   the library of steps 5 and 8, retain the readable sources, manifest, dependency
+   revisions, checked record and saved input. Migrate its documents and value,
+   account for changes to its elaborated definitions, replay its proof and compare
+   the two clients' output on the original and migrated inputs.
 7. Confine the checks that a change to a compiler runs to the programs
    it changes. The modules of the developments about the bootstrap's
    programs, those of the evaluator's fundamental lemma and of the
@@ -413,9 +409,8 @@ tag := "downstream-order"
 %%%
 
 Steps 1, 2 and 3 are complete. Give step 7 first priority on the compiler
-to remove repeated proof checks from each iteration on step 4. Start the
-record and migration fixtures of step 6 at the same time, before clients
-accumulate saved values. The table distinguishes work that can start now
+to remove repeated proof checks from each iteration on step 4. The record
+and migration fixtures of step 6 are complete. The table distinguishes work that can start now
 from acceptance that needs the library or an upgraded client.
 
 :::table +header
@@ -427,10 +422,6 @@ from acceptance that needs the library or an upgraded client.
   * 7, the checks that a change to a compiler runs
   * First on the compiler
   * The developments' modules and the search keys
-*
-  * 6, code-only records and the saved-value fixture
-  * Now, using the requests example and the Roundtrip record
-  * New records beside their predecessors
 *
   * 9, a dependency named by its manifest
   * Now, using the library and client of step 1
@@ -4295,7 +4286,8 @@ tag := "authoring-compatibility"
     version 1 to 2: the same certificate payload replays under both versions,
     the decorated document is retained except for its version atom, and a new
     record retains the unchanged compiled program and identifies its predecessor.
-    This does not migrate semantic editions or datatype representations.
+    The saved-value fixture migrates both constructors of `Signal.Light`
+    across a change to their order in edition 0.
 *
   * The datatype language's completion
     ({ref "datatype-completion"}[The datatype language's completion])
@@ -6640,16 +6632,14 @@ remains.
     `bootstrap/stage1/typing.geb` does. An example is a note of the
     document's schema, and a record keeps a development's inputs with
     their digests ({ref "first-authoring"}[Writing a first Geb
-    development]). Remaining: a value stored outside its program names
-    the declaration it is a value of only through the format of its
-    envelope, which is changed by hand. The stored values are the
-    certificates and the caches: a change of a certificate's encoding is
-    detected by the replay of the committed records
-    (`scripts/authoring.sh check`, `scripts/tests/test-preservation.sh`),
-    and a cache is disposable. The downstream application's first saved
-    datatype supplies the consumer for a reference to its declaration,
-    a versioned value encoding and an executable migration. The existing
-    record migration covers proof-source version 1 to 2.
+    development]). In `examples/value-migration/`, a saved light names
+    its datatype and encoding version. The executable migration reads
+    the old constructor tag and writes the corresponding new one.
+    The downstream application's first saved datatype through the library
+    remains to be migrated. A change of a certificate's encoding is
+    detected by replay of the committed records
+    (`scripts/authoring.sh check`, `scripts/tests/test-preservation.sh`).
+    The record migration covers proof-source version 1 to 2.
 *
   * Library behavior
   * Dependencies are frozen; an implementation is replaced only with
@@ -6698,9 +6688,10 @@ remains.
     definitions and the certificate are files of their own in a record.
     The corpus is the committed records of `examples/authoring/` and
     `examples/roundtrip/` and the compilers' image and emitted Lean,
-    each regenerated or replayed in continuous integration. A record
-    currently requires a proof document. Recording a code-only program
-    is ready as an extension of the same workflow.
+    each regenerated or replayed in continuous integration. A code-only
+    record retains the program and compiler. Checking it recompiles the
+    archived sources, rechecks the examples and compares the canonical
+    documents, image and elaborated definitions.
 *
   * Diagnostics
   * A structured result of success or error with its source occurrence;
