@@ -3,11 +3,14 @@
 This directory is the template of a client of the shared Geb library,
 laid out as the root of a repository of its own. Its program,
 `client.manifest`, names `geb/library/library.manifest` as its library
-layer. The library supplies its sources in order before `Client.geb`, which imports
-the library's module `Bytes` and the instance `(Seq T)` of its
-parameterized module `Seq`. `Client.proofs.geb` imports the library's
-proof document, so that the library's theorems are proved again against
-the client's program, and adds a theorem of the client's.
+layer. The library supplies its sources in order before the client's.
+`Client.geb` imports the library's module `Lists` and uses its generic
+functions at the trees. `Copy.geb` imports the library's module
+`Requests` and copies the file that an index names by requests of the
+host, writing a line of its own where that file is missing.
+`Client.proofs.geb` imports the library's proof document, so that the
+library's theorems are proved again against the client's program, and
+adds a theorem of the client's.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -108,14 +111,16 @@ that editor commands use the submodule's host tools and read the client's
 files where they are. The first use checks the tools through Lake. Later
 commands reuse them until their build inputs or executables change.
 
-- Go to Definition on `Bytes.reverse` in `Client.geb` opens its
-  definition in `geb/library/Bytes.geb`, and Hover shows its
-  documentation.
+- Go to Definition on `reverse` in `Client.geb` opens its definition in
+  `geb/library/Lists.geb`, and Hover shows its documentation.
 - `Geb: Compile Program` compiles the program and checks the examples of
   its notes, the library's and the client's.
 - `Geb: Run Program on a File` compiles the program and applies the entry
   point `Client.run`, a definition from trees to trees, to a file it asks
   for, writing the output file it asks for.
+- `Geb: Run Program with Requests` compiles the program and runs the
+  entry point `Copy.step` with the arguments it asks for, the path of an
+  index and the path of an output, relative to the client's directory.
 - `Geb: Prove Statements` uses the client's `.lake/geb-proof-cache`
   to prove `Client.proofs.geb` and the library's
   document it imports and saves the certificate;
@@ -136,7 +141,8 @@ VS Code Insiders.
 
 `check.sh` compiles the program and checks its examples, proves its
 theorems and replays their certificate, with the manifest and proof
-document the editor's settings select.
+document the editor's settings select, and runs `Copy.step` where the
+file its index names exists and where it is missing.
 `.github/workflows/check.yml` runs it after building the host
 executables of the submodule, or after fetching the pinned release where
 `geb-release.sha256` exists. The Geb repository's

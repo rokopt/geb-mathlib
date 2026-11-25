@@ -384,7 +384,7 @@ text = true
 [[lean_lib]]
 name = "GebManual"
 srcDir = "manual"
-needs = ["@/referencesBib", "@/authoringExample"]
+needs = ["@/referencesBib", "@/authoringExample", "@/library"]
 moreLeanArgs = [
   "-Dweak.verso.code.warnLineLength=100",
   "-Dweak.linter.hashCommand=false",
@@ -465,6 +465,13 @@ name = "GebHost"
 name = "authoringExample"
 path = "examples/authoring"
 filter = {extension = ["geb", "manifest", "cert"]}
+
+# The manual includes the shared library's modules and proves its theorems from these files
+# at elaboration.
+[[input_dir]]
+name = "library"
+path = "library"
+filter = {extension = ["geb", "manifest"]}
 
 [[lean_exe]]
 name = "geb-author"

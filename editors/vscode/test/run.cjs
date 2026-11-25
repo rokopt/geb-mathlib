@@ -2,7 +2,7 @@
 const { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath,
   runTests } = require('@vscode/test-electron');
 const { execFileSync } = require('node:child_process');
-const { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } = require('node:fs');
+const { copyFileSync, cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } = require('node:fs');
 const path = require('node:path');
 const { editorTest } = require('../package.json');
 
@@ -52,6 +52,8 @@ async function main() {
     for (const file of ['requests.manifest', 'Index.geb']) {
       copyFileSync(path.join(root, 'examples/requests', file), path.join(project, file));
     }
+    // The requests program names the shared library's manifest below its own.
+    cpSync(path.join(root, 'library'), path.join(project, 'library'), { recursive: true });
     // Proof imports outside the selected workspace folder must also be saved before execution.
     const proofs = path.join(state, 'proofs λ with spaces');
     mkdirSync(proofs);

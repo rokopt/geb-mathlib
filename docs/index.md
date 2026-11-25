@@ -3836,7 +3836,8 @@ import-direction rules above are enforced by
   program and applies a definition to a file, and `geb-kernel entries
   MANIFEST` lists its entry points. `examples/requests/` is a program that
   reads the file an index names and writes it to an output, writing a
-  line of its own where that file is missing
+  line of its own where that file is missing, through the datatypes of
+  the shared library's module `Requests` (`library/Requests.geb`)
   (`GebTests/Prototypes/Kernel/Requests.lean`,
   `scripts/tests/test-requests.sh`). `Manifest.lean` reads a program's
   manifest, its edition, the profile of its sources, its sources in order
@@ -4192,8 +4193,9 @@ import-direction rules above are enforced by
   the expansion of the datatype language, and
   `GebTests/Prototypes/Kernel/Modules.lean` compares it with
   `Geb.Kernel.expandModules`, on declarations with type parameters among
-  the others; `examples/polymorphic/` is a program of two layers that
-  declares and uses them, which `scripts/tests/test-polymorphic.sh`
+  the others; `examples/polymorphic/` is a program whose library layer,
+  the shared library under `library/`, declares them and whose
+  application layer uses them, which `scripts/tests/test-polymorphic.sh`
   compiles and runs. `bootstrap/printer.geb` prints a bundle in the
   readable syntax, which `GebTests/Prototypes/Kernel/Printer.lean` compares
   with `Geb.Kernel.printProgram`.

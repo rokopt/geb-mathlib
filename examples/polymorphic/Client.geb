@@ -2,11 +2,11 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; A client of the generic modules of {lit}`Generic.geb`. {geb}`Finder.firstAbove` returns an
-; optional value that {geb}`Client.run` consumes: both name the instance of
-; {geb}`Optional.Option` at the trees, which neither module exports. {geb}`Client.run` uses
-; {geb}`Lists.map` and {geb}`Lists.length` at the trees and at a datatype of its own, and
-; {geb}`Functions.compose` at two lists of types.
+; A client of the shared library's generic modules. {geb}`Finder.firstAbove` returns an optional
+; value that {geb}`Client.run` consumes: both name the instance of {geb}`Optional.Option` at the
+; trees, which neither module exports. {geb}`Client.run` uses {geb}`Lists.map` and
+; {geb}`Lists.length` at the trees and at a datatype of its own, and {geb}`Functions.compose` at
+; two lists of types.
 
 (module Finder (export firstAbove) (import Optional) (import Lists)
   ; The first of the bytes of a list that is greater than a bound, where there is one.

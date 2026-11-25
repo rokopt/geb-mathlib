@@ -2,12 +2,11 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; Theorems about the reversal of lists of bytes. A client's proof document imports this one and
-; is proved against the client's program.
+; A theorem about the first line of a list of bytes. A client's proof document imports this one
+; and is proved against the client's program.
 
 (proofs 6 (program library)
-  ; Reversing a list of two elements exchanges them, at every pair of elements.
-  (theorem reverse-pair
-    (forall ((x T) (y T))
-      (equal (Bytes.reverse (cons x (cons y (nil T)))) (cons y (cons x (nil T)))))
+  ; The first line of bytes that begin with a line feed is empty, at every list of the bytes
+  ; after it.
+  (theorem first-line-empty (forall ((cs (List T))) (equal (Bytes.firstLine (cons 10 cs)) (nil T)))
     (by (normalize 256))))

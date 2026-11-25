@@ -1,5 +1,5 @@
 ; A program that reads the file an index names and writes its bytes to an output, through the
-; requests the host performs.
+; requests the host performs, whose datatypes are the shared library's.
 (program requests (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
-  (sources Index.geb)
+  (layers (library (manifest library/library.manifest)) (application Index.geb))
   (entries Index.step))

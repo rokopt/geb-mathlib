@@ -3,9 +3,10 @@
 # scripts/tests/test-polymorphic.sh
 #
 # Test of declarations with type parameters on the program of
-# examples/polymorphic/, whose library layer declares optional values,
-# lists and the composition of functions generic in their types and whose
-# application layer uses them. Asserts that the program compiles from its
+# examples/polymorphic/, whose library layer is the shared library under
+# library/, which declares optional values, lists and the composition of
+# functions generic in their types, and whose application layer uses them.
+# Asserts that the program compiles from its
 # manifest, by geb-compile and by geb-author, which checks its examples;
 # that the image compiled a layer at a time with a directory of kept states
 # is the same image, when no state is kept and when the library's is; that
@@ -14,10 +15,10 @@
 # named by its use, the optional values of the trees that one module
 # returns and another consumes among them, and no instance of a module with
 # parameters; and that geb-doc resolves the references of the sources'
-# comments. Asserts that a declaration inspecting the trees of its type
-# parameter is rejected at the term that does so though nothing uses it,
-# and that a use at a term where a type stands is rejected at the
-# declaration that writes the use.
+# comments. Asserts of the library's text followed by a further module that a
+# declaration inspecting the trees of its type parameter is rejected at the
+# term that does so though nothing uses it, and that a use at a term where a
+# type stands is rejected at the declaration that writes the use.
 #
 # Exit 0 if all scenarios pass; exit non-zero with the failure count
 # otherwise.
@@ -112,21 +113,22 @@ fi
 expect doc 0 env -C "$repo_root" lake env "$bin/geb-doc" --check "$manifest"
 
 # A declaration that inspects the trees of its type parameter is rejected though nothing uses it,
-# at the term that does so.
-cp "$example/Generic.geb" opaque.geb
+# at the term that does so. The module that declares it follows the text of the library layer.
+expect join 0 "$bin/geb-kernel" join "$manifest" library.geb library
+cp library.geb opaque.geb
 printf '%s\n' '(module Peek (export peek)' '  (defn (peek A) ((x A)) T (label x)))' >> opaque.geb
 expect opaque 1 "$bin/geb-compile" check opaque.geb
-line=$(($(wc -l < "$example/Generic.geb") + 2))
+line=$(($(wc -l < library.geb) + 2))
 reports opaque "opaque.geb:$line:35: error: Peek.peek does not check at its opaque type parameters: expected T, got A"
 
 # A use at a term where a type stands is rejected at the declaration that writes the use.
-cp "$example/Generic.geb" use.geb
+cp library.geb use.geb
 printf '%s\n' '(module Use (import Lists)' '  (defn count ((xs (List T))) T (length xs)))' >> use.geb
 expect use 1 "$bin/geb-compile" check use.geb
 reports use "use.geb:$line:9: error: Use.count does not check: the instance (Lists.length xs) it requires does not check: the type is not declared before"
 
 # A use at a number of types other than that of the parameters is rejected.
-cp "$example/Generic.geb" arity.geb
+cp library.geb arity.geb
 printf '%s\n' '(module Arity (import Optional)' '  (defn none2 ((t T)) (Option T T) (none T)))' >> arity.geb
 expect arity 1 "$bin/geb-compile" check arity.geb
 reports arity "Optional.Option is used at 2 types and takes 1"
