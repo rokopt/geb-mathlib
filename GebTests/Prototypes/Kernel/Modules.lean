@@ -25,7 +25,12 @@ qualified names, imported unqualified or under a name. A module with parameters 
 each import, a sort parameter by a type and an operation by a term of its type. A name bound in a
 term is renamed into the private namespace; a quoted datum and a hole are preserved.
 A clash, an import naming no module or leaving a
-parameter unsupplied, and an export naming nothing are rejected with a message. The elaboration
+parameter unsupplied, and an export naming nothing are rejected with a message. A definition, a
+function and a datatype take type parameters of their own: a use denotes an instance, named by
+its use and written once for each list of arguments, whose type abbreviations are expanded, and
+the declaration is elaborated at opaque arguments where it is declared; a use at another number
+of types, and a datatype applied in its own declaration to types other than its parameters, are
+rejected. The elaboration
 written in Geb, {lit}`bootstrap/modules.geb`, agrees with Lean's, and the stage-0 compiler
 compiles a module of the datatype language. A module's identifier is unchanged by renaming the
 module and its members, and changed, with the root's, by a change of one of its definitions;
@@ -232,6 +237,146 @@ def moduleTexts : List String :=
 #guard moduleTexts.all fun text ↦
   runMain elaborator.toList (mk 0 (text.toList.map fun c ↦ leaf c.toNat)) ==
     some (expectedModules text.toList)
+
+/-- A module of definitions, a datatype and a function over it, each with a type parameter. -/
+def generic : String :=
+  "(module L (export id Option none some get) (def (id A) (lam ((x A)) x))" ++
+    " (data (Option A) (none) (some A))" ++
+    " (defn (get A) ((d A) (m (Option A))) A (case m ((some A x) x) ((none A) d))))"
+
+/-- Programs with declarations that take type parameters, and programs the elaboration rejects
+for them. -/
+def polyTexts : List String :=
+  ["(def (id A) (lam ((x A)) x)) (def main (lam ((t T)) (id T t)))",
+    generic ++ " (import L) (def main (lam ((t T)) (get T 7 (some T (id T t)))))" ++
+      " (def two (get (List T) (nil T) (none (List T))))",
+    generic ++ " (import L as Q) (def main (lam ((t T)) (Q.id T (L.id T t))))",
+    "(def (id A) (lam ((x A)) x)) (def a id)",
+    "(def (id A) (lam ((x A)) x)) (def a (id T T 1))",
+    "(def (id A) (lam ((x A)) x)) (def a (id))",
+    "(data (Tree A) (tip) (fork A (List (Tree A)))) (deftype N T) (def t (tip N))" ++
+      " (def u (tip T)) (deftype M (List N)) (def v (tip M)) (def w (tip (List T)))",
+    "(data (Nest A) (nest0) (nest1 A (Nest (Prod A A)))) (def t (nest0 T))",
+    "(def (id A) (lam ((x A)) x))" ++
+      " (module M (parameter S) (export f g) (def (g B) (lam ((x S) (y B)) y))" ++
+      " (def f (lam ((x S)) (id S (g S x x)))))" ++
+      " (import (M T) as MT) (def main (lam ((t T)) (MT.g (List T) t (nil T))))",
+    "(deftype (P A) (Prod A A))", "(defnum (n A) 0)", "(def (f) 0)", "(def (f A A) 0)",
+    "(def (f T) 0)", "(def ((f) A) 0)", "(def (f (A)) 0)", "(def (f A) 0) (def (f B) 0)",
+    "(data (Box A) (box A & T))" ++
+      " (defn (unbox A) ((b (Box A))) A (case b ((box A x & rest) x)))" ++
+      " (defn (boxed A) ((b (Box A))) T (case b ((box A _ & rest) (node 0 rest))))" ++
+      " (def main (lam ((t T)) (unbox T (box T t (nil T)))))",
+    "(def (id A) (lam ((x A)) x)) (def f (lam ((id (Arrow T T)) (y T)) (id y)))",
+    "(data (Option A) (none) (some A))" ++
+      " (module Seq (parameter A) (export len) (def len (lam ((xs (List A))) 0)))" ++
+      " (import (Seq (Option T)) as OS) (def n (OS.len (nil (Option T))))",
+    "(def (id A) (lam ((x A)) x))" ++
+      " (def (both A B) (lam ((x A) (y B)) (pair (id A x) (id B y))))" ++
+      " (def m (both T (List T) 1 (nil T))) (def k (both T T))",
+    "(data (Option A) (none) (some A)) (data (Tree A) (tip) (fork A (List (Tree A))))" ++
+      " (def d (datum (Option T) (0)))" ++
+      " (def e (lam ((t T)) (decode (Option (List T)) t (lam ((o (Option (List T)))) 1) 0)))" ++
+      " (def s (lam ((t (Tree T))) (cata (Tree T) T t ((tip T) 0) ((fork T x kids) 1))))",
+    "(def (q A) (quote (0 q A))) (def r (q T)) (def h (hole q))",
+    "(data (Option A) (none) (some A)) (def f (lam ((x Option)) x))",
+    "(data (Option A) (none) (some A)) (def f (lam ((x (Option T T))) x))",
+    "(data (Option A) (none) (some A))" ++
+      " (module M (parameter S) (parameter (f (S) (Option S))) (export g)" ++
+      " (def g (lam ((x S)) (f x))))" ++
+      " (import (M T (lam ((x T)) (some T x)))) (def main (lam ((t T)) (g t)))",
+    "(module A (export Pair mk) (data (Pair X Y) (mk X Y)))" ++
+      " (module B (import A) (export swap)" ++
+      " (defn (swap X Y) ((p (Pair X Y))) (Pair Y X) (case p ((mk X Y a b) (mk Y X b a)))))" ++
+      " (def main (B.swap T (List T) (A.mk T (List T) 1 (nil T))))"]
+
+-- the elaboration written in Geb agrees with Lean's on declarations with type parameters
+#guard polyTexts.all fun text ↦
+  runMain elaborator.toList (mk 0 (text.toList.map fun c ↦ leaf c.toNat)) ==
+    some (expectedModules text.toList)
+
+-- which of them elaborate
+#guard polyTexts.map (fun t ↦ ((readSExps t.toList).bind expandModules).isSome) =
+  [true, true, true, false, true, false, true, false, true, false, false, false, false, false,
+    false, false, false, true, true, true, true, true, true, false, false, true, true]
+
+/-- The names of the forms a text's modules elaborate to, but those of the forms at opaque
+arguments: of each form, the atom after its keyword. -/
+def formNames (text : String) : Option (List String) :=
+  ((readSExps text.toList).bind expandModules).map fun fs ↦
+    (dropGeneric fs).map fun f ↦ String.ofList ((f.children[1]?.bind (·.label)).getD [])
+
+-- an instance is named by its use and written once, before the declaration that first uses it:
+-- uses at arguments equal once their type abbreviations are expanded denote one instance
+#guard formNames (polyTexts.getD 6 "") =
+  some ["N", "(Tree T).A", "(Tree T)", "t", "u", "M", "(Tree (List T)).A", "(Tree (List T))", "v",
+    "w"]
+-- a definition's instance at each list of arguments: its parameters' abbreviations, the instances
+-- its body uses, and the definition
+#guard formNames (polyTexts.getD 20 "") =
+  some ["(both T (List T)).A", "(both T (List T)).B", "(id T).A", "(id T)", "(id (List T)).A",
+    "(id (List T))", "(both T (List T))", "m", "(both T T).A", "(both T T).B", "(both T T)", "k"]
+-- a datatype of one module used by a function of another, at the arguments of each use
+#guard formNames (polyTexts.getD 26 "") =
+  some ["(B.swap T (List T)).X", "(B.swap T (List T)).Y", "(A.Pair T (List T)).X",
+    "(A.Pair T (List T)).Y", "(A.Pair T (List T))", "(A.Pair (List T) T).X",
+    "(A.Pair (List T) T).Y", "(A.Pair (List T) T)", "(B.swap T (List T))", "main"]
+-- a declaration in a module with parameters takes the module's and then its own; an argument of
+-- an import is a type that uses a declaration with type parameters
+#guard formNames (polyTexts.getD 8 "") =
+  some ["/MT.S", "(id T).A", "(id T)", "(/MT.g T).B", "(/MT.g T)", "/MT.f", "(/MT.g (List T)).B",
+    "(/MT.g (List T))", "main"]
+#guard formNames (polyTexts.getD 19 "") =
+  some ["(Option T).A", "(Option T)", "/OS.A", "/OS.len", "n"]
+
+-- a declaration with type parameters is elaborated once at opaque arguments where it is declared,
+-- in a form every reader drops
+#guard ((readSExps "(def (id A) (lam ((x A)) x))".toList).bind expandModules).map
+    (·.map fun f ↦ String.ofList (spellOf f)) =
+  some ["(8:%generic (5:%sort 3:%t0) (deftype 12:(id 3:%t0).A 3:%t0)" ++
+    " (def 10:(id 3:%t0) (lam ((3:%%x 12:(id 3:%t0).A)) 3:%%x)))"]
+#guard readProgram "(def (id A) (lam ((x A)) x))".toList = some []
+
+-- an atom of an instance's name that is not a token is spelled by its length
+#guard instName "f".toList [atom "a b".toList, slist [atom "List".toList, atom "".toList]] =
+  "(f 3:a b (List 0:))".toList
+
+-- a use at a number of types other than the parameters', a parameter that is reserved or named
+-- twice, and a datatype applied in its own declaration to types other than its parameters, are
+-- rejected with a message
+#guard diagnose "(def (id A) (lam ((x A)) x)) (def a id)".toList =
+  some "id is used at 0 types and takes 1"
+#guard diagnose (polyTexts.getD 24 "").toList = some "Option is used at 2 types and takes 1"
+#guard diagnose "(def (f T) 0)".toList = some "T is reserved or declared before"
+#guard diagnose "(def (f A A) 0)".toList = some "A is reserved or declared before"
+#guard diagnose "(def (f) 0)".toList = some "f names no type parameter"
+#guard diagnose "(deftype (P A) (Prod A A))".toList =
+  some "only a def, a defn and a data take type parameters"
+#guard diagnose (polyTexts.getD 7 "").toList =
+  some "modules or declarations nest or instantiate beyond their number"
+
+-- instances of the kernel's forms run: a definition at two lists of arguments
+#guard runMain ("(def (id A) (lam ((x A)) x))" ++
+    " (def (twice A) (lam ((f (Arrow A A)) (x A)) (f (f x))))" ++
+    " (def main (lam ((t T)) (twice T (lam ((x T)) (add x 1)) (id T t))))").toList (leaf 5) =
+  some (leaf 7)
+#guard runMain ("(def (id A) (lam ((x A)) x))" ++
+    " (def (both A B) (lam ((x A) (y B)) (pair (id A x) (id B y))))" ++
+    " (def main (lam ((t T)) (node (fst (both T (List T) t (cons t (nil T))))" ++
+    " (snd (both T (List T) t (cons t (nil T)))))))").toList (leaf 5) = some (mk 5 [leaf 5])
+
+-- a datatype with a type parameter and a function over it, compiled by the stage-0 compiler: a
+-- function of one module returns an optional value that the root consumes
+#guard [(leaf 5, leaf 5), (leaf 0, leaf 7)].all fun (t, r) ↦
+  runDatatype compiler.toList (generic ++
+    " (module F (import L) (export pick)" ++
+    " (defn pick ((t T)) (Option T) (if t (some T t) (none T))))" ++
+    " (import L) (def main (lam ((t T)) (get T 7 (F.pick (id T t)))))").toList t == some r
+-- a constructor's type arguments precede the variables of its pattern, the remaining children's
+-- among them
+#guard runDatatype compiler.toList (polyTexts.getD 17 "").toList (leaf 5) = some (leaf 5)
+-- an operation of a module with parameters at a type that uses a declaration with type parameters
+#guard runDatatype compiler.toList (polyTexts.getD 25 "").toList (leaf 5) = some (mk 1 [leaf 5])
 
 -- a module of the datatype language, compiled by the stage-0 compiler
 #guard runDatatype compiler.toList ("(module Opt (export Maybe nothing just fromMaybe)" ++

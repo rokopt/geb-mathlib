@@ -284,6 +284,59 @@ run_cmd do
       runImage img (nameTree p.toList) != some (mk 0 []) && agreesOn img compiler.toList p.toList do
     throw (IO.userError "the stage-1 compiler rejects a template the typing admits")
 
+-- the stage-1 compiler checks a declaration with type parameters at opaque sorts where it is
+-- declared: it rejects a function applying a primitive of trees to a value of its parameter's
+-- type, one representing such a value, and one applying the primitive to a field of that type of
+-- a datatype's instance, though nothing uses them and the stage-0 compiler compiles them; it
+-- rejects a constructor's instance at one type where the datatype's instance at another is
+-- required, and the instance of a datatype at a type of lists, which a field does not hold; and
+-- it compiles, as the stage-0 compiler does, a datatype and a function over it used at the trees
+-- and at a datatype, and modules of which one returns an optional value that another consumes,
+-- with a function over lists and a composition each at two lists of types
+#eval show IO Unit from do
+  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let main := " (def main (lam ((t T)) t))"
+  let option := "(data (Option A) (none) (some A))"
+  let orElse := " (defn (orElse A) ((d A) (m (Option A))) A (case m ((some A x) x) ((none A) d)))"
+  for p in ["(defn (peek A) ((x A)) T (label x))" ++ main,
+      "(defn (peek A) ((x A)) T (rep x))" ++ main,
+      option ++ " (defn (peek A) ((m (Option A))) T" ++
+        " (case m ((some A x) (label x)) ((none A) 0)))" ++ main] do
+    unless runImage img (nameTree p.toList) == some (mk 0 []) do
+      throw (IO.userError s!"the stage-1 compiler compiles {p}")
+    if runMain compiler.toList (nameTree p.toList) == some (mk 0 []) then
+      throw (IO.userError s!"the stage-0 compiler rejects {p}")
+  for p in [option ++ " (data Light (red) (green))" ++
+        " (defn use ((t T)) (Option Light) (some T t))" ++ main,
+      option ++ " (def lists (none (List T)))" ++ main] do
+    unless runImage img (nameTree p.toList) == some (mk 0 []) do
+      throw (IO.userError s!"the stage-1 compiler compiles {p}")
+  unless [option ++ orElse ++ " (data Light (red) (green))" ++
+        " (def main (lam ((t T)) (node (orElse T t (none T))" ++
+        " (cons (rep (orElse Light red (some Light green))) (nil T)))))",
+      "(module Optional (export Option none some orElse) " ++ option ++ orElse ++ ")" ++
+        " (module Lists (export map find) (import Optional)" ++
+        " (defn (map A B) ((f (Arrow A B)) (xs (List A))) (List B)" ++
+        " (foldr A (List B) (lam ((x A) (r (List B))) (cons (f x) r)) (nil B) xs))" ++
+        " (defn (find A) ((p (Arrow A T)) (xs (List A))) (Option A)" ++
+        " (foldr A (Option A) (lam ((x A) (r (Option A))) (if (p x) (some A x) r))" ++
+        " (none A) xs)))" ++
+        " (module Functions (export compose)" ++
+        " (defn (compose A B C) ((g (Arrow B C)) (f (Arrow A B))) (Arrow A C)" ++
+        " (lam ((x A)) (g (f x)))))" ++
+        " (module Finder (export first) (import Optional) (import Lists)" ++
+        " (defn first ((xs (List T))) (Option T) (find T (lam ((x T)) x) xs)))" ++
+        " (module Client (export run) (import Optional) (import Lists) (import Functions)" ++
+        " (import Finder) (data Light (red) (green))" ++
+        " (defn lightOf ((x T)) Light (if x green red))" ++
+        " (defn shade ((l Light)) T (case l ((red) 1) ((green) 2)))" ++
+        " (defn run ((t T)) T (node (orElse T 0 (first (children t)))" ++
+        " (map Light T shade (map T Light lightOf (children t))))))" ++
+        " (def main (lam ((t T)) (Client.run" ++
+        " ((Functions.compose T T T (lam ((x T)) x) (lam ((x T)) x)) t))))"].all fun p ↦
+      runImage img (nameTree p.toList) != some (mk 0 []) && agreesOn img compiler.toList p.toList do
+    throw (IO.userError "the stage-1 compiler rejects declarations with type parameters")
+
 -- module elaboration removes chains before the datatype typing: both compilers emit the same
 -- image as the nested forms, and the stage-1 compiler checks their datatype annotations
 #eval show IO Unit from do

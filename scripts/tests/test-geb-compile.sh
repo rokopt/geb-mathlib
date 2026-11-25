@@ -98,6 +98,50 @@ assert_rejected template \
   ; a comment before the declaration
   (def f (lam ((x A)) (label x))))' 3:30 \
   "M.f does not check at its template's opaque parameters: expected T, got A"
+# A declaration with type parameters is checked at opaque arguments where it is declared, whether
+# or not it is used, and reported at the term that does not check, its types as the declaration
+# writes them; a use is reported in the declaration that writes it, whose arguments follow the
+# type arguments.
+option='(data (Option A) (none) (some A))'
+assert_rejected parameter \
+  '(module M (export peek)
+  (defn (peek A) ((x A)) T (label x)))' 2:35 \
+  'M.peek does not check at its opaque type parameters: expected T, got A'
+assert_rejected parameter-field '(data (Box A) (box A))
+(defn (open A) ((b (Box A))) T (case b ((box A x) (label x))))' 2:58 \
+  'open does not check at its opaque type parameters: expected T, got A'
+assert_rejected parameter-result "$option
+(defn (get A) ((d A) (m (Option A))) A (case m ((some A x) d) ((none A) m)))" 2:73 \
+  'get does not check at its opaque type parameters: expected A, got (Option A)'
+assert_rejected parameter-use '(def (id A) (lam ((x A)) x))
+(def (bad A) (lam ((x A)) (id (List A) x)))' 2:40 \
+  'bad does not check at its opaque type parameters: expected (List A), got A'
+assert_rejected parameter-template \
+  '(module M (parameter S) (export f)
+  (defn (g B) ((x S) (y B)) S (label y)))' 2:38 \
+  "M.g does not check at its template's opaque parameters and its own opaque type parameters"
+assert_rejected instance-argument '(defn (keep A) ((x A)) A x)
+(defn use ((t T)) T (keep (List T) t))' 2:36 'use does not check: expected (List T), got T'
+assert_rejected instance-type "$option
+(data Light (red) (green))
+(defn use ((t T)) (Option Light) (some T t))" 3:34 \
+  'use does not check: expected (Option Light), got (Option T)'
+assert_rejected type-argument '(defn (keep A) ((x A)) A x)
+(defn use ((t T)) T (keep t))' 2:7 \
+  'use does not check: the instance (keep t) it requires does not check: the type is not'
+assert_rejected type-arguments '(def (id A) (lam ((x A)) x))
+(def a id)' 2:6 'id is used at 0 types and takes 1'
+assert_rejected parameter-hole '(defn (keep A) ((x A)) A ?todo)' 1:26 \
+  'hole ?todo: expected A; in scope: x : A'
+# A datatype's field holds a tree, a value of a datatype or one of a type parameter, so its instance
+# at a type of lists is rejected, at the declaration that uses it, by the constructor whose field
+# is of that type.
+assert_rejected instance-field "$option
+(def lists (none (List T)))" 2:6 \
+  'lists does not check: the instance (some (List T)) it requires does not check: expected T'
+assert_compiled parameters image "$option"'
+(defn (get A) ((d A) (m (Option A))) A (case m ((some A x) x) ((none A) d)))
+(def main (lam ((t T)) (get T t (some T 7))))'
 assert_rejected nested '(module A (export g)
   (module B (export f) (def f (lam ((x T)) x)))
   (def g (lam ((x T)) (B.f y))))' 3:28 'A.g does not check: y is not declared before'

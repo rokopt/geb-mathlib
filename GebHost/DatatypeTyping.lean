@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Kernel.Image
+public import Geb.Prototypes.Kernel.Modules
 public import GebHost.Locate
 public import GebBoot
 
@@ -37,13 +38,16 @@ The failure's vertex is a path in the form the expansion writes, which {lit}`occ
 in the source: the nested bindings and conditionals that module elaboration writes for
 {lit}`let*` and {lit}`cond`, the abstractions over one binder for an abstraction over several,
 the parts of a case analysis and of a structural recursion, and the abstraction and the binding of
-the result that a {lit}`defn` is.
+the result that a {lit}`defn` is. Module elaboration writes a use of a declaration with type
+parameters as the atom of its instance's name, so the arguments of an application of an instance
+follow its type arguments in the source ({lit}`sourcePath`).
 
 ## Main definitions
 
 * {lit}`failing` — the first form the typing rejects, with the environment it is checked in.
 * {lit}`explain` — the failure and the holes of a rejected form.
 * {lit}`occurrences` — the source spans of a vertex of a definition's expanded form.
+* {lit}`sourcePath` — a path of an expanded form as a path of the form the source writes.
 
 ## Tags
 
@@ -148,17 +152,43 @@ def domains : Tree → List Tree :=
 def codomainAfter (A : Tree) (n : Nat) : Option Tree :=
   (List.range n).foldl (fun a _ ↦ a.bind fun t ↦ (arrowParts t).map (·.2)) (some A)
 
-/-- A name's characters: a source binder's without the prefix module elaboration gives it, and
-a name of a template's instance at opaque arguments, which module elaboration writes under a
-prefix holding the reserved {lit}`%generic`, as the template writes it. -/
+/-- A name's characters: a source binder's without the prefix module elaboration gives it; a
+name of a template's instance at opaque arguments, which module elaboration writes under a
+prefix holding the reserved {lit}`%generic`, as the template writes it; and the type
+abbreviation of a parameter of an instance of a declaration with type parameters, which module
+elaboration writes after the instance's name, as the declaration writes the parameter. -/
 def nameText (n : Tree) : String :=
   let cs := n.children.map fun c ↦ Char.ofNat c.label
   match cs with
   | '%' :: '%' :: rest => String.ofList rest
   | _ =>
-    match (String.ofList cs).splitOn "%generic." with
-    | [whole] => whole
-    | parts => parts.getLast?.getD (String.ofList cs)
+    match useOf? cs with
+    | some (_, _, c :: suffix) => String.ofList (c :: suffix)
+    | _ =>
+      match (String.ofList cs).splitOn "%generic." with
+      | [whole] => whole
+      | parts => parts.getLast?.getD (String.ofList cs)
+
+/-- The name of an opaque sort in its source spelling: that of a type abbreviation of it among
+those given, as a parameter is at opaque arguments, or else its own. -/
+def sortText (aliases : List Tree) (n : Tree) : String :=
+  match aliases.find? fun a ↦ (a.children[1]?.map (same · (mk 6 [n]))).getD false with
+  | some a => nameText (a.children.getD 0 n)
+  | none => nameText n
+
+/-- A datatype's name in its source spelling: that of an instance of a declaration with type
+parameters as its use, an opaque sort among its arguments by the name of a type abbreviation of
+it. -/
+def dataText (aliases : List Tree) (n : Tree) : String :=
+  match useOf? (n.children.map fun c ↦ Char.ofNat c.label) with
+  | some (f, args, []) =>
+    let arg : SExp → String := RoseTree.elim fun a rs ↦
+      match a with
+      | some ('%' :: s) => sortText aliases (mk 0 (('%' :: s).map fun c ↦ leaf c.toNat))
+      | some s => String.ofList s
+      | none => "(" ++ " ".intercalate rs ++ ")"
+    "(" ++ " ".intercalate (nameText (mk 0 (f.map fun c ↦ leaf c.toNat)) :: args.map arg) ++ ")"
+  | _ => nameText n
 
 /-- A type in its source spelling, a datatype by its name and an opaque sort by the name of a
 type abbreviation of it among those given, as a template's parameter is at the template's opaque
@@ -171,11 +201,8 @@ def typeText (aliases : List Tree) : Tree → String :=
     | 2, [(_, a), (_, b)] => s!"(Prod {a} {b})"
     | 3, [(_, a), (_, b)] => s!"(Arrow {a} {b})"
     | 4, [(_, a)] => s!"(List {a})"
-    | 5, [(n, _)] => nameText n
-    | 6, [(n, _)] =>
-      match aliases.find? fun a ↦ (a.children[1]?.map (same · (mk 6 [n]))).getD false with
-      | some a => nameText (a.children.getD 0 n)
-      | none => nameText n
+    | 5, [(n, _)] => dataText aliases n
+    | 6, [(n, _)] => sortText aliases n
     | _, _ => "an unreadable type"
 
 /-- The form of a type, which the typing reads back as the type. -/
@@ -645,13 +672,32 @@ def placeOf (t : Located) (path : List Nat) : Option Place :=
         | q => q
   | _ => none
 
+/-- A path in a form the expansion writes, as a path in the form with each use of a declaration
+with type parameters as the source writes it: where a list's first element is the atom of an
+instance's name, the list's other elements follow the instance's type arguments in the source. -/
+def sourcePath (form : Tree) (path : List Nat) : List Nat :=
+  (path.foldl (init := (some form, ([] : List Nat))) fun (u?, acc) i ↦
+    match u? with
+    | none => (none, acc ++ [i])
+    | some u =>
+      let types := if u.label = 2 then
+          ((u.children.head?.bind atomText).bind fun h ↦
+            (useOf? h.toList).map (·.2.1.length)).getD 0
+        else 0
+      (u.children[i]?, acc ++ [if i = 0 then 0 else i + types])).2
+
+/-- The name a declaration's form declares: the atom after its keyword, or the atom that begins
+the list there where the declaration takes type parameters. -/
+def declaredAtom (t : Located) : List Char :=
+  ((t.children[1]?.bind declNameAtom).bind (·.label.2)).getD []
+
 /-- The source spans of a vertex of a declaration's expanded form, the declaration found by its
 name in the flat program, within its modules. -/
 def occurrences (items : List Located) (name : String) (path : List Nat) : List Span :=
   let visit : Located → List (List Char) → List Span :=
     RoseTree.para fun l cs pre ↦
       let t := RoseTree.node l (cs.map Prod.fst)
-      let n := (t.children[1]?.bind (·.label.2)).getD []
+      let n := declaredAtom t
       let here := pre ++ [n]
       if headIs "module".toList t then (cs.drop 2).flatMap fun (_, r) ↦ r here
       else if headIs "data".toList t then
@@ -670,7 +716,7 @@ def holeAt (items : List Located) (name : String) (path : List Nat) : Option Boo
   let visit : Located → List (List Char) → List Bool :=
     RoseTree.para fun l cs pre ↦
       let t := RoseTree.node l (cs.map Prod.fst)
-      let n := (t.children[1]?.bind (·.label.2)).getD []
+      let n := declaredAtom t
       let here := pre ++ [n]
       if headIs "module".toList t then (cs.drop 2).flatMap fun (_, r) ↦ r here
       else if qualified here != name then []

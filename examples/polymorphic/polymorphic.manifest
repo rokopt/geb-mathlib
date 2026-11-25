@@ -1,0 +1,5 @@
+; A program whose library layer declares optional values, lists and the composition of functions
+; with type parameters, and whose application layer uses them at several types.
+(program polymorphic (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (layers (library Generic.geb) (application Client.geb))
+  (entries Client.run))

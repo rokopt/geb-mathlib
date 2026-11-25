@@ -42,7 +42,10 @@ the column those of the occurrence the failure concerns in the source that holds
 one: a character that is not well formed, a parenthesis that is not closed or closes nothing, an
 atom the implementation reserves, the name of the module among whose forms the modules do not
 elaborate, a hole of a definition, or, of the first definition that a stage rejects, the term
-whose type is not the type expected there, and its name where no such term is found. Where no
+whose type is not the type expected there, and its name where no such term is found. The
+instance of a declaration with type parameters that a stage rejects is reported in the source
+that declares or uses it: at opaque arguments, where the declaration is checked, at the
+declaration's term; at types a source writes, at the declaration that writes the use. Where no
 occurrence is found the diagnostic is {lit}`INPUT: MESSAGE`. The occurrence is found from the
 sources as written ({name}`GebHost.Locate.locate`) after the compiler has rejected the program,
 and decides nothing about it.
@@ -130,11 +133,13 @@ def nameString? (t : Tree) : Option String :=
   | some (c :: cs) => some (String.ofList (c :: cs))
   | _ => none
 
-/-- The name of a form: the atom after its head, where it has one. -/
+/-- The name of a form: the atom after its head, or the atom that begins the list there, as in
+a declaration with type parameters, where it has one. -/
 def formName? (e : Tree) : Option String :=
-  e.children[1]?.bind fun n ↦
+  let atom? (n : Tree) : Option String :=
     if (GebBoot.«Reader.isAtom» n).label ≠ 0 then nameString? (GebBoot.«Reader.nameOf» n)
     else none
+  e.children[1]?.bind fun n ↦ (atom? n).orElse fun _ ↦ n.children.head?.bind atom?
 
 /-- A form of a program at a position, as a rejection's subject and in words: the declaration
 of the atom after its head, at its position among the forms before it of that name, where it has
@@ -163,19 +168,57 @@ def modulesFailure (file : Tree) : String :=
     | .error msg => msg
     | .ok _ => unknown
 
+/-- Whether an argument of an instance's name is opaque: a sort module elaboration writes. -/
+def opaqueArg (e : SExp) : Bool := e.label.any (·.head? == some '%')
+
 /-- The name a source declares of a definition the typing names, and what the definition does
 not check at. Module elaboration writes a template's instance at opaque arguments under a prefix
-holding the reserved {lit}`%generic`, which no source writes. -/
+holding the reserved {lit}`%generic`, which no source writes, and names an instance of a
+declaration with type parameters by its use ({name}`Geb.Kernel.instName`). -/
 def declaredName (n : String) : String × String :=
   let marker := "%generic"
-  if (n.splitOn marker).length > 1 then
-    ("".intercalate (n.splitOn marker), " at its template's opaque parameters")
-  else (n, "")
+  let template (n : String) : String × String :=
+    if (n.splitOn marker).length > 1 then
+      ("".intercalate (n.splitOn marker), " at its template's opaque parameters")
+    else (n, "")
+  match useOf? n.toList with
+  | some (f, args, _) =>
+    let (name, at_) := template (String.ofList f)
+    let types := " ".intercalate (args.map fun a ↦ String.ofList (spellOf a))
+    (name,
+      if !args.any opaqueArg then s!"{at_} at the type arguments {types}"
+      else if at_.isEmpty then " at its opaque type parameters"
+      else s!"{at_} and its own opaque type parameters")
+  | none => template n
 
-/-- The failure of a definition the typing names. -/
-def checkFailure (n : String) : Rejection :=
+/-- The declaration a source writes that the failure of an instance at types a source writes is
+reported at, with the instance's name: the form that first uses the instance, or the form
+that first uses that form's instance, and so on to a form that is no instance; given each
+instance with the name of the form that first uses it. Nothing for a name that is no such
+instance's. -/
+def userOf (users : List (Ident × Ident)) (n : String) : Option (String × String) :=
+  match useOf? n.toList with
+  | some (f, args, _) =>
+    if args.any opaqueArg then none
+    else
+      let step (name : Ident) : Ident :=
+        match useOf? name with
+        | some (g, as, _) => (users.lookup (instName g as)).getD name
+        | none => name
+      let user := (List.range (users.length + 1)).foldl (fun name _ ↦ step name) n.toList
+      if user == n.toList then none
+      else some ((declaredName (String.ofList user)).1, String.ofList (instName f args))
+  | none => none
+
+/-- The failure of a definition the typing names, given each instance with the name of the form
+that first uses it. -/
+def checkFailure (users : List (Ident × Ident)) (n : String) : Rejection :=
   let (name, at_) := declaredName n
-  ⟨.declaration name 0, s!"{name} does not check{at_}", []⟩
+  match userOf users n with
+  | some (user, use) =>
+    ⟨.declaration user 0, s!"{user} does not check: the instance {use} it requires does not check",
+      [(.declaration name 0, s!"{name} does not check{at_}")]⟩
+  | none => ⟨.declaration name 0, s!"{name} does not check{at_}", []⟩
 
 /-- A hole's obligation in words: the type required of it, and the variables bound around it. -/
 def holeMessage (h : DatatypeTyping.Hole) : String :=
@@ -190,14 +233,31 @@ def holeMessage (h : DatatypeTyping.Hole) : String :=
 
 /-- The failure of a program the typing rejects, explained by the located pass over the forms
 the expansion writes: the first failure in the forms the pass reads, where there is one, and the
-obligations of their holes; none where the pass finds neither. -/
-def explainedFailure (es : List Tree) : Option Rejection :=
+obligations of their holes; none where the pass finds neither. The failure of an instance at
+types a source writes is reported at the declaration that uses the instance, given each instance
+with the name of the form that first uses it, and besides at the declaration the instance is
+of. -/
+def explainedFailure (users : List (Ident × Ident)) (es : List Tree) : Option Rejection :=
   let found := (DatatypeTyping.failing es).map fun (r : DatatypeTyping.Rejected) ↦
-    let (name, at_) := declaredName ((r.2.1.children[1]?.bind DatatypeTyping.atomText).getD "")
-    (r.2.2.fault.map fun (x : DatatypeTyping.Fault) ↦
-        (Subject.expanded name x.path, s!"{name} does not check{at_}: {x.message}"),
-      r.2.2.holes.map fun (h : DatatypeTyping.Hole) ↦ (Subject.hole name h.path, holeMessage h))
-  match (found.filterMap (·.1)) ++ found.flatMap (·.2) with
+    let n := (r.2.1.children[1]?.bind DatatypeTyping.atomText).getD ""
+    let (name, at_) := declaredName n
+    let path (p : List Nat) : List Nat := DatatypeTyping.sourcePath r.2.1 p
+    (r.2.2.fault.toList.flatMap fun (x : DatatypeTyping.Fault) ↦
+        -- The type abbreviation of a parameter has no place in the declaration's term.
+        let parameter := match useOf? n.toList with
+          | some (_, _, suffix) => !suffix.isEmpty
+          | none => false
+        let own := (if parameter then Subject.declaration name 0
+          else Subject.expanded name (path x.path), s!"{name} does not check{at_}: {x.message}")
+        match userOf users n with
+        | some (user, use) =>
+          [(Subject.declaration user 0,
+            s!"{user} does not check: the instance {use} it requires does not check: \
+              {x.message}"), own]
+        | none => [own],
+      r.2.2.holes.map fun (h : DatatypeTyping.Hole) ↦
+        (Subject.hole name (path h.path), holeMessage h))
+  match (found.flatMap (·.1)) ++ found.flatMap (·.2) with
   | (subject, message) :: rest => some ⟨subject, message, rest⟩
   | [] => none
 
@@ -217,10 +277,15 @@ def rejection (file : Tree) : Except Rejection Unit := do
       | none => .program, modulesFailure file, []⟩
   let es := mx.children
   if let some n := nameString? (GebBoot.«Expansion.typeErrorOfForms» es) then
-    if let some f := Typing.inProgram (file.children.map fun c ↦ Char.ofNat c.label) n then
-      throw ⟨.term n f.path, s!"{n} does not check: {f.message}", []⟩
-    if let some r := explainedFailure es then throw r
-    throw (checkFailure n)
+    let text := file.children.map fun c ↦ Char.ofNat c.label
+    -- An instance has no declaration of its name in the source, so the pass over the forms the
+    -- expansion writes explains it.
+    if (useOf? n.toList).isNone then
+      if let some f := Typing.inProgram text n then
+        throw ⟨.term n f.path, s!"{n} does not check: {f.message}", []⟩
+    let users := ((readSExps text).map instanceUsers).getD []
+    if let some r := explainedFailure users es then throw r
+    throw (checkFailure users n)
   let expands (fs : List Tree) := (GebBoot.«Expansion.expandProgram» fs).label ≠ 0
   let kx ← required (GebBoot.«Expansion.expandProgram» es) fun _ ↦
     firstFormRejected expands es (s!"{·} does not expand")

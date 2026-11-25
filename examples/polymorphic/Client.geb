@@ -1,0 +1,34 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; A client of the generic modules of {lit}`Generic.geb`. {geb}`Finder.firstAbove` returns an
+; optional value that {geb}`Client.run` consumes: both name the instance of
+; {geb}`Optional.Option` at the trees, which neither module exports. {geb}`Client.run` uses
+; {geb}`Lists.map` and {geb}`Lists.length` at the trees and at a datatype of its own, and
+; {geb}`Functions.compose` at two lists of types.
+
+(module Finder (export firstAbove) (import Optional) (import Lists)
+  ; The first of the bytes of a list that is greater than a bound, where there is one.
+  (defn firstAbove ((k T) (xs (List T))) (Option T) (find T (lam ((x T)) (lt k x)) xs)))
+
+(module Client (export run) (import Optional) (import Lists) (import Functions) (import Finder)
+  (data Light (red) (green))
+  ; The light of a byte: green for a byte other than zero.
+  (defn lightOf ((x T)) Light (if x green red))
+  ; The number of a light.
+  (defn shade ((l Light)) T (case l ((red) 1) ((green) 2)))
+  ; The file of the first byte above 2 of a file, 0 where it has none; of the number of its
+  ; bytes; of that number counted through their lights and increased by two; and of the shades
+  ; of the lights of its bytes.
+  (note (example (Client.run (quote (0 (1) (3) (0) (5)))) (quote (0 (3) (4) (6) (2) (2) (1) (2))))
+    (example (Client.run (quote (0))) (quote (0 (0) (0) (2)))))
+  (defn run ((f T)) T
+    (let*
+      ((xs (List T) (children f)) (ls (List Light) (map T Light lightOf xs))
+       (shades (Arrow T T) (compose T Light T shade lightOf))
+       (twice (Arrow (List Light) T)
+         (compose (List Light) T T (lam ((n T)) (add n 2)) (length Light))))
+      (node 0
+        (cons (orElse T 0 (firstAbove 2 xs))
+          (cons (length T xs) (cons (twice ls) (map T T shades xs))))))))

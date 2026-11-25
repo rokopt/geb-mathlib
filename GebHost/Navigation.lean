@@ -161,9 +161,11 @@ def localBinders (file : String) (t : Locate.Located) : List Symbol :=
   bs.filterMap fun b ↦ b.children.head?.bind fun n ↦ localSymbol file n b
 
 /-- Scope at an occurrence in a term. Binding scopes follow the module renamer's roles;
-quoted data and hole identities contain no references. -/
+quoted data and hole identities contain no references. A name declared with type parameters is
+followed by as many types as a function gives its spelling, in a term and in a pattern. -/
 def termScope (file : String) (pos : Locate.Pos) (t : Locate.Located)
-    (role : Role := .term) (locals : List Symbol := []) : Scope :=
+    (role : Role := .term) (locals : List Symbol := []) (types : Ident → Nat := fun _ ↦ 0) :
+    Scope :=
   RoseTree.para (fun l (rs : List (Locate.Located × (Role → List Symbol → Scope)))
       (role : Role)
       (locals : List Symbol) ↦ Id.run do
@@ -171,6 +173,10 @@ def termScope (file : String) (pos : Locate.Pos) (t : Locate.Located)
     let here : Scope := { locals, active := role != .datum, types := role == .type }
     if role == .datum then return here
     if l.2.isSome then return here
+    let typesOf (n : Option Locate.Located) : Nat := ((n.bind (·.label.2)).map types).getD 0
+    if role == .pattern then
+      return ((rs.drop 1 |>.take (typesOf (rs.head?.map Prod.fst))).findSome? fun c ↦
+        if contains c.1.label.1 pos then some (c.2 .type []) else none).getD { active := false }
     let childAt (i : Nat) (r : Role) (ls : List Symbol) :=
       rs[i]?.filter (fun c ↦ contains c.1.label.1 pos) |>.map (fun c ↦ c.2 r ls)
     let all (r : Role) (ls : List Symbol) :=
@@ -187,7 +193,11 @@ def termScope (file : String) (pos : Locate.Pos) (t : Locate.Located)
     if role == .clause then
       if nodes.head?.bind (·.children.head?) |>.any (fun c ↦ contains c.label.1 pos) then
         return {}
-      let fields := nodes.head?.toList.flatMap fun p ↦ p.children.drop 1
+      let arity := typesOf (nodes.head?.bind (·.children.head?))
+      if nodes.head?.toList.flatMap (·.children.drop 1 |>.take arity) |>.any
+          (fun n ↦ contains n.label.1 pos) then
+        return (rs.head?.map fun c ↦ c.2 .pattern locals).getD {}
+      let fields := nodes.head?.toList.flatMap fun p ↦ p.children.drop (1 + arity)
       let marker (n : Locate.Located) := n.label.2 == some ['&'] || n.label.2 == some ['_']
       if fields.any (fun n ↦ marker n && contains n.label.1 pos) then
         return { active := false }
@@ -233,9 +243,11 @@ def termScope (file : String) (pos : Locate.Pos) (t : Locate.Located)
       if kw == "cata" then
         if let some s := (childAt 1 .type []).orElse fun _ ↦ childAt 2 .type [] then return s
       return (childAt (start - 1) .term locals).getD here
-    let types := if kw == "foldr" || kw == "lcase" then 2
-      else if ["fold", "para", "iter", "nil", "decode"].contains kw then 1 else 0
-    for i in List.range types do
+    let count := if kw == "foldr" || kw == "lcase" then 2
+      else if ["fold", "para", "iter", "nil", "decode"].contains kw then 1
+      else if nodes.head?.any fun h ↦ h.label.2.any fun s ↦ locals.any (·.name == s) then 0
+      else typesOf nodes.head?
+    for i in List.range count do
       if let some s := childAt (i + 1) .type [] then return s
     return (all .term locals).getD here) t role locals
 
@@ -262,7 +274,7 @@ structure Site (α : Type) where
 /-- The position-independent declaration index and the module state for its continuation. -/
 structure State where
   /-- The compiler's module state. -/
-  elaboration : ElabState := ⟨[], [], [], [], [], []⟩
+  elaboration : ElabState := {}
   /-- Declarations in source order. -/
   symbols : List Symbol := []
   /-- The first declaration of each name, including during recovery from duplicates. -/
@@ -284,14 +296,19 @@ def State.withSymbol (st : State) (s : Symbol) : State :=
 def marker : Ident := "%navigation".toList
 
 /-- The compiler's renaming, with one free occurrence marked by its resolved name. -/
-def probe (vis : Visible) (pos : Locate.Pos) (t : Locate.Located)
+def probe (vis : Visible) (polys : Polys) (pos : Locate.Pos) (t : Locate.Located)
     (role : Role) (bound : List Ident := []) : Option Ident :=
   let marked := RoseTree.para (fun l rs r bs ↦
-    let ordinary := renameStep vis l.2 (rs.map fun (a, f) ↦ (erase a, f)) r bs
-    -- The renamer handles a clause's constructor directly, without recursing at that atom.
+    let ordinary := renameStep vis polys l.2 (rs.map fun (a, f) ↦ (erase a, f)) r bs
+    -- The renamer handles a clause's constructor directly, without recursing at that atom, and
+    -- likewise the name that begins a use of a declaration with type parameters.
     let ctor := if r == .clause then
         match l.2, rs with
         | none, [(p, _), _] => if p.label.2.isNone then p.children.head? else none
+        | _, _ => none
+      else if r == .term || r == .type then
+        match l.2, rs with
+        | none, (h, _) :: _ => if r == .term && h.label.2.any bs.contains then none else some h
         | _, _ => none
       else none
     let pattern := ctor.filter (fun c ↦ contains c.label.1 pos) |>.bind (·.label.2)
@@ -314,9 +331,10 @@ def probe (vis : Visible) (pos : Locate.Pos) (t : Locate.Located)
     | _, _ => rs.findSome? Prod.snd) marked
 
 /-- Resolve an occurrence in a declaration using the roles its elaborator assigns. -/
-def declarationTarget (vis : Visible) (pos : Locate.Pos) (t : Locate.Located) : Option Ident :=
+def declarationTarget (vis : Visible) (polys : Polys) (pos : Locate.Pos) (t : Locate.Located) :
+    Option Ident :=
   let lookupAt (e : Locate.Located) (r : Role) (bs : List Ident := []) :=
-    if contains e.label.1 pos then probe vis pos e r bs else none
+    if contains e.label.1 pos then probe vis polys pos e r bs else none
   match t.children with
   | k :: _ :: rest =>
     match k.label.2.map textOf, rest with
@@ -343,27 +361,30 @@ def completionSpan (pos : Locate.Pos) : Locate.Located → Option Locate.Span :=
     else cs.findSome? id
 
 /-- The local scope of a declaration's signature or body. -/
-def declarationScope (file : String) (pos : Locate.Pos) (t : Locate.Located) : Scope :=
+def declarationScope (file : String) (pos : Locate.Pos) (t : Locate.Located)
+    (types : Ident → Nat := fun _ ↦ 0) : Scope :=
+  let scope (e : Locate.Located) (r : Role := .term) (ls : List Symbol := []) : Scope :=
+    termScope file pos e r ls types
   if Locate.headIs "data".toList t || Locate.headIs "tree-data".toList t then
     ((t.children.drop 2).flatMap (·.children.drop 1) |>.find?
-      (fun f ↦ contains f.label.1 pos)).map (fun f ↦ termScope file pos f .type)
+      (fun f ↦ contains f.label.1 pos)).map (fun f ↦ scope f .type)
         |>.getD { active := false }
   else match t.children with
   | k :: _ :: ps :: res :: body :: [] =>
     if k.label.2 == some "defn".toList then
-      if contains ps.label.1 pos then termScope file pos ps .binders
-      else if contains res.label.1 pos then termScope file pos res .type
+      if contains ps.label.1 pos then scope ps .binders
+      else if contains res.label.1 pos then scope res .type
       else if contains body.label.1 pos then
-        termScope file pos body .term (localBinders file ps |>.reverse)
+        scope body .term (localBinders file ps |>.reverse)
       else { active := false }
-    else termScope file pos t
+    else scope t
   | k :: _ :: body :: [] =>
-    termScope file pos body (if k.label.2 == some "deftype".toList then .type else .term)
+    scope body (if k.label.2 == some "deftype".toList then .type else .term)
   | [k, _, ps, res] =>
     if k.label.2 == some "defn".toList then
-      if contains ps.label.1 pos then termScope file pos ps .binders
+      if contains ps.label.1 pos then scope ps .binders
       else if after pos res.label.1.stop then { locals := (localBinders file ps).reverse }
-      else termScope file pos res .type
+      else scope res .type
     else { active := false }
   | [k, name] =>
     { active := after pos name.label.1.stop &&
@@ -399,12 +420,12 @@ def documentProse (doc : Doc) : List (Ident × List Char) :=
 /-- Add a named declaration to the index and recognize its name as its own target. -/
 def addSymbol (src : Source) (pre : Ident) (t : Locate.Located) (st : State) : State :=
   match t.children with
-  | k :: n :: _ => match k.label.2, n.label.2 with
-    | some kw, some name =>
-      let name := qualify pre name
-      let sym := Symbol.mk name (textOf kw) src.file t.label.1 n.label.1
+  | k :: n :: _ => match k.label.2, Locate.declNameAtom n with
+    | some kw, some a =>
+      let name := qualify pre (a.label.2.getD [])
+      let sym := Symbol.mk name (textOf kw) src.file t.label.1 a.label.1
         (signatureOf t) (src.prose.lookup name |>.getD [])
-      { st.withSymbol sym with targets := ⟨src.file, n.label.1, fun _ ↦ some name⟩ :: st.targets }
+      { st.withSymbol sym with targets := ⟨src.file, a.label.1, fun _ ↦ some name⟩ :: st.targets }
     | _, _ => st
   | _ => st
 
@@ -416,15 +437,29 @@ def step (depth : Nat) (rec : Source → Ident → State → Locate.Located →
   let e := compilerForm t
   let mut out := st
   if let k :: n :: body := t.children then
-    if let some name := n.label.2 then
+    if let some name := (Locate.declNameAtom n).bind (·.label.2) then
       if !isKw (erase k) "module" then
-        let vis := if isKw (erase k) "data" || isKw (erase k) "tree-data" then
+        -- A declaration's type parameters are declared under its name, in scope in it alone.
+        let params := if n.label.2.isNone then n.children.drop 1 else []
+        for p in params do
+          if let some sym := localSymbol src.file p p "type parameter" then
+            let sym := { sym with name := qualify (qualify pre name) sym.name }
+            out := { out.withSymbol sym with
+              targets := ⟨src.file, p.label.1, fun _ ↦ some sym.name⟩ :: out.targets }
+        let own := params.filterMap fun p ↦
+          p.label.2.map fun a ↦ (a, qualify (qualify pre name) a)
+        let vis := own ++ if isKw (erase k) "data" || isKw (erase k) "tree-data" then
             (name, qualify pre name) :: st.elaboration.vis else st.elaboration.vis
+        let polys := st.elaboration.polys
+        let types (s : Ident) : Nat :=
+          match (vis.lookup s).bind fun fl ↦ polys.lookup fl with
+          | some ref => ref.arity
+          | none => 0
         let focus (p : Locate.Pos) : Focus :=
-          let scope := declarationScope src.file p t
+          let scope := declarationScope src.file p t types
           let localTarget := (atomAtPosition p t).bind fun atom ↦
             scope.locals.find? (·.name == atom)
-          ⟨declarationTarget vis p t, scope, vis, localTarget⟩
+          ⟨declarationTarget vis polys p t, scope, vis, localTarget⟩
         out := { out with sites := ⟨src.file, t.label.1, focus⟩ :: out.sites }
       if declHeads.contains (k.label.2.getD []) then out := addSymbol src pre t out
       if isKw (erase k) "module" then
@@ -468,7 +503,7 @@ def step (depth : Nat) (rec : Source → Ident → State → Locate.Located →
       for (param, arg) in params.zip (t.children[1]?.toList.flatMap (·.children.drop 1)) do
         let role := if param.children[1]?.any (·.label.isSome) then Role.type else Role.term
         out := { out with targets := ⟨src.file, arg.label.1, fun pos ↦
-          probe vis pos arg role⟩ :: out.targets }
+          probe vis st.elaboration.polys pos arg role⟩ :: out.targets }
     if let some n := t.children[1]?.bind fun n ↦
         if n.label.2.isSome then some n else n.children.head? then
       out := { out with targets := ⟨src.file, n.label.1, fun _ ↦ some p⟩ :: out.targets }

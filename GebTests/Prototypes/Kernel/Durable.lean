@@ -166,7 +166,10 @@ def unnoted : String := "(def f (lam ((x T)) x)) (module M (export g) (def g (la
 #guard (erasedText "(def f (lam ((x T)) x)) (note (link geb f))".toList) matches .error _
 #guard (erasedText "(note) (note) (def f (lam ((x T)) x))".toList) matches .error _
 #guard (erasedText "(note) (quote x)".toList) matches .error _
-#guard (erasedText "(note) (def (f) x)".toList) matches .error _
+#guard (erasedText "(note) (def () x)".toList) matches .error _
+#guard (erasedText "(note) (def ((f) A) x)".toList) matches .error _
+-- a note documents a declaration with type parameters, named by the atom its name's list begins
+#guard (erasedText "(note) (def (f A) (lam ((x A)) x))".toList) matches .ok (some _)
 #guard (erasedText "(module M (export g) (note) (import N) (def g 0))".toList) matches .error _
 
 end Geb.Kernel.Document.DurableTests

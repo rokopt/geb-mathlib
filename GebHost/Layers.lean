@@ -61,7 +61,7 @@ namespace GebHost.Layers
 
 /-- The state of the elaboration of modules, as {lit}`bootstrap/modules.geb` declares it. -/
 abbrev Modules : Type :=
-  Tree × (Tree × (List Tree × (Tree × (List Tree × (List Tree × List Tree)))))
+  Tree × (Tree × (List Tree × (Tree × (List Tree × (List Tree × (List Tree × Tree))))))
 
 /-- The state of the typing over supports, as {lit}`bootstrap/stage1/expansion.geb` declares
 it. -/
@@ -72,7 +72,8 @@ abbrev Reading : Type := Tree × (Tree × (Tree × (Tree × (Tree × (List Tree 
 
 /-- The stages' states after some of a program's layers. -/
 structure State where
-  /-- The number of the module forms read, which bounds the depth of the modules' nesting. -/
+  /-- The number of the module forms and of the declarations with type parameters read, which
+  bounds the depth of nesting and of instantiation. -/
   count : Nat
   /-- The state of the elaboration of modules. -/
   modules : Modules
@@ -89,14 +90,14 @@ structure State where
 
 /-- The states before a program. -/
 def State.start : State :=
-  ⟨0, GebBoot.«Modules.mkSt» GebBoot.«Trie.empty» [] GebBoot.«Trie.empty» [] [] [], [],
-    GebBoot.«Expansion.start», [], [], GebBoot.«Support.readStart»⟩
+  ⟨0, GebBoot.«Modules.stStart», [], GebBoot.«Expansion.start», [], [],
+    GebBoot.«Support.readStart»⟩
 
 /-- The value of an optional tree as the compiler represents it. -/
 def some? (t : Tree) : Option Tree := if t.label = 1 then t.children.head? else none
 
 /-- The forms of a layer's text as module elaboration writes them after the layers before it,
-with the count of module forms and the state of the elaboration after it, when the text reads,
+with the count that bounds the depth of the elaboration and its state after it, when the text reads,
 names none of the implementation's names and its modules elaborate. -/
 def elaborated (count : Nat) (modules : Modules) (text : ByteArray) :
     Option (Nat × Modules × List Tree) := do

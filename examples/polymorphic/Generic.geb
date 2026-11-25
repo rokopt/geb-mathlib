@@ -1,0 +1,29 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Optional values, lists and the composition of functions, each generic in its types: a
+; declaration takes type parameters of its own after its name, and a use supplies a type for
+; each, as {lit}`(nil A)` and {lit}`(foldr A B f z xs)` do. A use at given types denotes an
+; instance, so the uses of {geb}`Optional.Option` at one type are one datatype in every module.
+
+(module Optional (export Option none some orElse)
+  ; The optional values of a type whose values the trees represent, the trees or a datatype: none,
+  ; or a value of the type.
+  (data (Option A) (none) (some A))
+  ; The value of an optional value, or a default where there is none.
+  (defn (orElse A) ((d A) (m (Option A))) A (case m ((some A x) x) ((none A) d))))
+
+(module Lists (export length map find) (import Optional)
+  ; The number of the elements of a list.
+  (defn (length A) ((xs (List A))) T (foldr A T (lam ((x A) (n T)) (add n 1)) 0 xs))
+  ; The list of the values of a function at the elements of a list.
+  (defn (map A B) ((f (Arrow A B)) (xs (List A))) (List B)
+    (foldr A (List B) (lam ((x A) (r (List B))) (cons (f x) r)) (nil B) xs))
+  ; The first element of a list that a test accepts, where there is one.
+  (defn (find A) ((p (Arrow A T)) (xs (List A))) (Option A)
+    (foldr A (Option A) (lam ((x A) (r (Option A))) (if (p x) (some A x) r)) (none A) xs)))
+
+(module Functions (export compose)
+  ; The composition of two functions, the second applied first.
+  (defn (compose A B C) ((g (Arrow B C)) (f (Arrow A B))) (Arrow A C) (lam ((x A)) (g (f x)))))
