@@ -30,11 +30,13 @@
       "owner": "geb",
       "fileLocation": ["autoDetect", "${workspaceFolder}"],
       "pattern": {
-        "regexp": "^(.+):(\\d+):(\\d+): error: (.*)$",
+        "regexp": "^(.+?):(\\d+):(\\d+)(?:-(\\d+):(\\d+))?: error: (.*)$",
         "file": 1,
         "line": 2,
         "column": 3,
-        "message": 4
+        "endLine": 4,
+        "endColumn": 5,
+        "message": 6
       }
     }],
     "configurationDefaults": {
@@ -48,7 +50,7 @@
     "commands": [
       {
         "command": "geb.inspectHoles",
-        "title": "Refresh Kernel Obligations",
+        "title": "Refresh Obligations",
         "category": "Geb",
         "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
       },
@@ -96,7 +98,7 @@
       },
       {
         "command": "geb.holes",
-        "title": "Show Kernel Holes",
+        "title": "Show Holes",
         "category": "Geb",
         "enablement": "isWorkspaceTrusted && workspaceFolderCount != 0"
       },
@@ -126,7 +128,7 @@
       }
     ],
     "views": {
-      "explorer": [{ "id": "geb.obligations", "name": "Geb Kernel Obligations",
+      "explorer": [{ "id": "geb.obligations", "name": "Geb Obligations",
         "when": "isWorkspaceTrusted" }]
     },
     "menus": {
@@ -147,6 +149,12 @@
     "configuration": {
       "title": "Geb",
       "properties": {
+        "geb.checkOnSave": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "description": "Check a saved Geb file and report diagnostics in Problems."
+        },
         "geb.toolchainDirectory": {
           "type": "string",
           "default": ".",

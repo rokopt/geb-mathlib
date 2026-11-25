@@ -417,6 +417,45 @@ def checkedBundle (file : Tree) : Option Tree :=
   else if (GebBoot.«Prelude.isSome» (GebBoot.«Support.illTypedOf» st)).label ≠ 0 then none
   else some (GebBoot.«Prelude.get» b)
 
+/-- Use the kernel's shared-hole constraints when the program lifts to kernel terms. Datatype
+and generic declarations must be inspected before erasure, including unused generic bodies. -/
+def kernelObligations (text : List Char) : Option (Except String Holes.Report) := do
+  let forms ← readSExps text
+  let extended := Geb.RoseTree.para fun l (rs : List (SExp × Bool)) ↦
+    let args := rs.map Prod.fst
+    l.isNone && (isPolyDecl args || args.head?.any (fun k ↦ isKw k "data" || isKw k "tree-data") ||
+      (args.head?.any (isKw · "module") && (rs.drop 2).any Prod.snd))
+  guard (!forms.any extended)
+  let lifted ← (Holes.liftProgram text).toOption
+  return Holes.obligationsOf Command.holesBudget lifted >>= Holes.validate
+
+/-- Datatype obligations at their source occurrences, using the same expanded forms and
+typing contexts as the compiler's diagnostics. An unrelated rejection is reported as an error. -/
+def datatypeHoles (what : String) (text : List Char) (sources : List Source) :
+    Except String (List (DatatypeTyping.Hole × String × Locate.Span)) := do
+  let file := ofBytes (⟨(text.map (·.toNat.toUInt8)).toArray⟩)
+  if (checkedBundle file).isSome then return []
+  let rejected := fun _ : Unit ↦ rendered what sources (rejectionOf file)
+  let some sx := Layers.some? (GebBoot.«Reader.readSExps» file.children) | throw (rejected ())
+  unless (GebBoot.«Compile.userSource» sx).label != 0 do throw (rejected ())
+  let some mx := Layers.some? (GebBoot.«Modules.expandModules» sx.children) | throw (rejected ())
+  let located := sources.map fun s ↦ (s.path, (Locate.locate s.text).toOption.getD [])
+  let mut holes := []
+  for (_, form, out) in DatatypeTyping.failing mx.children do
+    if out.fault.isSome || out.holes.isEmpty then throw (rejected ())
+    let flat := (form.children[1]?.bind DatatypeTyping.atomText).getD ""
+    let name := (declaredName flat).1
+    for h in out.holes do
+      let path := DatatypeTyping.sourcePath form h.path
+      let sites := located.flatMap fun (p, ts) ↦
+        if DatatypeTyping.holeAt ts name path == some true then
+          (DatatypeTyping.occurrences ts name path).map fun span ↦ (h, p, span)
+        else []
+      if sites.isEmpty then throw (rejected ())
+      holes := holes ++ sites
+  if holes.isEmpty then throw (rejected ())
+  return holes
+
 /-- The names of the definitions of a bundle. -/
 def definedNames (b : Tree) : List String :=
   ((b.children.getD 1 (mk 0 [])).children).filterMap nameString?

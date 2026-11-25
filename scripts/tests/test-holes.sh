@@ -62,6 +62,14 @@ status=$?
 [ "$status" -eq 1 ] || fail_case ill-typed "exit status $status is not 1"
 grep -q 'f is ill-typed' got.illtyped || fail_case ill-typed "the definition is not named"
 
+printf '(module M (data Light (red)) (defn f ((x Light)) Light ?body))\n' > datatype.geb
+checked=$((checked + 1))
+"$kernel" holes datatype.geb > got.datatype
+status=$?
+[ "$status" -eq 2 ] || fail_case datatype "exit status $status is not 2"
+grep -q 'hole ?body: expected M.Light; in scope: x : M.Light' got.datatype ||
+  fail_case datatype "the obligation lost its datatype or local variable"
+
 if [ "$failed" -ne 0 ]; then
   echo "test-holes: $failed failure(s) in $checked scenario(s)" >&2
   exit 1

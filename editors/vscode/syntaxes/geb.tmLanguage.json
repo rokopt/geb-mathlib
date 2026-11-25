@@ -7,7 +7,14 @@
       "name": "string.quoted.double.geb", "begin": "\"", "end": "\"",
       "patterns": [{ "name": "constant.character.escape.geb", "match": "\\\\(?:.|$)" }]
     },
-    { "name": "punctuation.section.parens.geb", "match": "[()]" },
+    {
+      "begin": "\\(",
+      "beginCaptures": { "0": { "name": "punctuation.section.parens.geb" } },
+      "end": "(module|parameter|export|import|def|defn|deftype|defnum|data|tree-data|case|cata|lam|let\\*?|cond|if|pair|fst|snd|node|label|children|nil|cons|rep|foldr?|para|lcase|iter|quote|datum|decode|hole|note|example|link|program|proofs|theorem|by)(?=[\\s();\"]|$)|(?=[^\\s;])",
+      "endCaptures": { "1": { "name": "keyword.control.form.geb" } },
+      "patterns": [{ "name": "comment.line.semicolon.geb", "begin": ";", "end": "$" }]
+    },
+    { "name": "punctuation.section.parens.geb", "match": "\\)" },
     { "name": "variable.other.hole.geb", "match": "\\?[A-Za-z_./:*+=-][A-Za-z0-9_./:*+=-]*" },
     { "name": "constant.numeric.geb", "match": "(?<![A-Za-z0-9_./:*+=?-])[0-9]+(?![A-Za-z0-9_./:*+=-])" },
     { "name": "keyword.operator.rest.geb", "match": "&" }

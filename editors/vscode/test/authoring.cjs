@@ -140,6 +140,20 @@ exports.run = async test => {
     assert.equal((await command('compile')).code, 0);
     await diagnostics(doc, found => found.length === 0);
   });
+  await test('check on save reports and clears errors without a task', async () => {
+    const config = vscode.workspace.getConfiguration('geb', vscode.Uri.file(source));
+    await config.update('checkOnSave', true, vscode.ConfigurationTarget.WorkspaceFolder);
+    try {
+      const doc = await replace(source, original.replace('(fst (pair x y))', 'unit'));
+      await doc.save();
+      await diagnostics(doc, ds => ds.some(d => d.message.includes('expected T, got Unit')));
+      await replace(source, original);
+      await doc.save();
+      await diagnostics(doc, ds => ds.length === 0);
+    } finally {
+      await config.update('checkOnSave', undefined, vscode.ConfigurationTarget.WorkspaceFolder);
+    }
+  });
   await test('kernel holes report obligations separately from a completed program', async () => {
     await vscode.commands.executeCommand('geb.selectProgram', 'Kernel fixture');
     assert.equal((await command('holes')).code, 2);

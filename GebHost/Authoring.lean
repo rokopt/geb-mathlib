@@ -141,11 +141,37 @@ def readProgram (path : System.FilePath) (cache : Option System.FilePath := none
   IO.ofExcept (m.checkEntries (ds.map fun d ↦ String.ofList d.1))
   return (m, text, b)
 
+/-- The spans of examples in the order of the document's notes. A note is attached only
+in a declaration block, so a quoted note or an opaque field contributes no occurrence. -/
+def exampleSpans (items : List Locate.Located) : List Locate.Span :=
+  let visit := RoseTree.para fun l (rs : List (Locate.Located × List Locate.Span)) ↦
+    let t := RoseTree.node l (rs.map Prod.fst)
+    if Locate.headIs kwNote t then
+      (t.children.drop 1 |>.filter (Locate.headIs kwExample)).map (·.label.1)
+    else if Locate.headIs kwModule t then (rs.drop 2).flatMap Prod.snd else []
+  items.flatMap visit
+
+/-- Locate a rejected example in an authoring source. Columns in an editor range count UTF-16
+units, with an exclusive end. A strict encoding has no corresponding source range. -/
+def exampleLocation (path : System.FilePath) (index : Nat) : IO String := do
+  let bytes ← IO.FS.readBinFile path
+  let text := Command.chars bytes
+  if (readBasic text).isSome then return path.toString
+  let .ok items := Locate.locate text | return path.toString
+  let some sp := (exampleSpans items)[index]? | return path.toString
+  let lines := text.splitOn '\n'
+  let column (p : Locate.Pos) (after : Nat) :=
+    let count := p.col - 1 + after
+    let raw := bytesOf ((lines.getD (p.line - 1) []).take count)
+    (Locate.utf16Length? raw).getD count + 1
+  return s!"{path}:{sp.start.line}:{column sp.start 0}-{sp.stop.line}:{column sp.stop 1}: error"
+
 /-- Check every note's example by compiling and evaluating its two tree-valued expressions. -/
 def checkExamples (manifest : System.FilePath) (m : Manifest) (text : ByteArray) : IO Unit := do
   for path in Manifest.sourcePaths manifest m do
     let d ← readDocument path m.profile
     let notes ← IO.ofExcept (notesOf d.doc)
+    let mut index := 0
     for (name, fields) in notes do
       let declaration := ".".intercalate (name.map String.ofList)
       for field in fields do
@@ -154,15 +180,19 @@ def checkExamples (manifest : System.FilePath) (m : Manifest) (text : ByteArray)
             canonOf term ++ "))\n".toList ++
             "(def __geb_example_expected (lam ((input T)) ".toList ++
             canonOf value ++ "))\n".toList
-          let b ← compile path.toString [] (text ++ bytesOf suffix)
-          let some actual := runEntry b "__geb_example_actual".toList (leaf 0)
-            | throw <| IO.userError s!"{path}: example of {declaration} does not return a tree"
-          let some expected := runEntry b "__geb_example_expected".toList (leaf 0)
-            | throw <| IO.userError s!"{path}: expected value of {declaration} \
-                does not return a tree"
-          unless decide (actual = expected) do
-            throw <| IO.userError s!"{path}: example of {declaration} \
-              differs from its expected value"
+          try
+            let b ← compile path.toString [] (text ++ bytesOf suffix)
+            let some actual := runEntry b "__geb_example_actual".toList (leaf 0)
+              | throw <| IO.userError s!"example of {declaration} does not return a tree"
+            let some expected := runEntry b "__geb_example_expected".toList (leaf 0)
+              | throw <| IO.userError s!"expected value of {declaration} \
+                  does not return a tree"
+            unless decide (actual = expected) do
+              throw <| IO.userError s!"example of {declaration} \
+                differs from its expected value"
+          catch e =>
+            throw <| IO.userError s!"{← exampleLocation path index}: {e}"
+          index := index + 1
 
 /-! ## Developments -/
 

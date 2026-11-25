@@ -58,3 +58,11 @@ test('the authoring fixture tokenizes with LF and CRLF identically', () => {
   assert.deepEqual(tokens(text), tokens(text.replaceAll('\n', '\r\n')));
   assert.equal(tokens(text).at(-1).scopes.at(-1), 'source.geb');
 });
+
+test('form keywords are scoped at the head of a list', () => {
+  const ts = tokens('(module M ( ; head follows\n   def modern (quote (0 "module")))) ; (case');
+  for (const head of ['module', 'def', 'quote']) {
+    assert.equal(ts.find(t => t.text === head).scopes.at(-1), 'keyword.control.form.geb');
+  }
+  assert.equal(ts.filter(t => t.scopes.includes('keyword.control.form.geb')).length, 3);
+});

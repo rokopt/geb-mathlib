@@ -34,6 +34,28 @@ exports.run = async test => {
       assert.equal(document.isDirty, true);
       assert.equal(readFileSync(file, 'utf8'), original);
     });
+    await test('references and rename preserve qualified uses across open buffers', async () => {
+      const pos = at('P.first x');
+      const refs = await vscode.commands.executeCommand('vscode.executeReferenceProvider', document.uri, pos);
+      const texts = await Promise.all(refs.map(async ref =>
+        (await vscode.workspace.openTextDocument(ref.uri)).getText(ref.range)));
+      assert.ok(texts.includes('P.first') && texts.includes('first') && texts.includes('Pair.first'));
+      const edit = await vscode.commands.executeCommand('vscode.executeDocumentRenameProvider',
+        document.uri, pos, 'fstOfPair');
+      const changes = edit.entries().flatMap(([uri, edits]) => edits.map(e => [path.basename(uri.fsPath), e.newText]));
+      for (const wanted of [['Pair.geb', 'fstOfPair'], ['Lists.geb', 'P.fstOfPair'],
+        ['Pair.geb', 'Pair.fstOfPair'], ['Pair.proofs.geb', 'Pair.fstOfPair']]) {
+        assert.ok(changes.some(([f, t]) => f === wanted[0] && t === wanted[1]), JSON.stringify(changes));
+      }
+      const collision = await vscode.commands.executeCommand('vscode.executeDocumentRenameProvider',
+        document.uri, pos, 'left').then(result => result, () => undefined);
+      assert.ok(!collision?.size, 'a rename that captures Pair.left must produce no edits');
+      const quoted = document.positionAt(document.getText().lastIndexOf('"λ😀"') + 1);
+      const unicode = await vscode.commands.executeCommand('vscode.executeDocumentRenameProvider',
+        document.uri, quoted, 'δ😀');
+      assert.deepEqual(unicode.get(document.uri).map(e => e.newText), ['"δ😀"', '"δ😀"']);
+      assert.equal(readFileSync(file, 'utf8'), original);
+    });
     await test('hover shows the declaration and its note-associated documentation', async () => {
       const hovers = await vscode.commands.executeCommand('vscode.executeHoverProvider',
         document.uri, at('Pair.first x'));
@@ -193,6 +215,44 @@ exports.run = async test => {
       await vscode.commands.executeCommand('undo');
       assert.equal(draft.getText(), before);
       await vscode.window.showTextDocument(document);
+    });
+    await test('datatype obligations follow unsaved edits and discard a delayed reply', async () => {
+      const before = document.getText(), pane = await vscode.window.showTextDocument(document);
+      const datatype = '\n(module Signals (data Light (red) (green))' +
+        '\n  (defn choose ((x Light)) Light ?choice))\n';
+      const ext = vscode.extensions.getExtension('geb-mathlib.geb-language');
+      const service = require(path.join(ext.extensionPath, 'host.cjs'));
+      const call = service.call;
+      let release, observed;
+      const held = new Promise(resolve => { release = resolve; });
+      const ready = new Promise(resolve => { observed = resolve; });
+      try {
+        await pane.edit(edit => edit.insert(document.positionAt(before.length), datatype));
+        const open = await vscode.commands.executeCommand('geb.inspectHoles');
+        const [hole] = open.holes;
+        assert.equal(Buffer.from(hole.target).toString(), 'Signals.Light');
+        assert.equal(Buffer.from(hole.context[0].name).toString(), 'x');
+        await vscode.commands.executeCommand('geb.openObligation', hole.occurrences[0]);
+        assert.equal(document.getText(vscode.window.activeTextEditor.selection), '?choice');
+        service.call = async (...args) => {
+          const result = await call(...args);
+          if (args[1][0] === 'editor-holes') { observed(); await held; }
+          return result;
+        };
+        const delayed = vscode.commands.executeCommand('geb.inspectHoles');
+        await ready;
+        service.call = call;
+        await pane.edit(e => e.replace(vscode.window.activeTextEditor.selection, 'x'));
+        assert.equal((await vscode.commands.executeCommand('geb.inspectHoles')).complete, true);
+        release();
+        assert.equal(await delayed, undefined);
+        assert.equal(readFileSync(file, 'utf8'), original);
+      } finally {
+        service.call = call;
+        release();
+        await pane.edit(e => e.replace(new vscode.Range(document.positionAt(0),
+          document.positionAt(document.getText().length)), before));
+      }
     });
     await test('kernel obligations locate repeated holes and update after unsaved filling', async () => {
       await vscode.commands.executeCommand('geb.selectProgram', 'Kernel fixture');

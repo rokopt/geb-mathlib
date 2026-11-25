@@ -67,15 +67,8 @@ def atomSpelling : Spelling :=
 
 /-- Check consecutive UTF-8 sequences with the byte validator. This uses a bounded scan;
 constructing a Lean string would pull choice-dependent validity proofs into navigation. -/
-def validUTF8 (text : List Char) : Bool := Id.run do
-  let bytes := Authoring.bytesOf text
-  let mut next := 0
-  for i in [:bytes.size] do
-    if i == next then
-      unless bytes.validateUTF8At i do return false
-      let b := (bytes.data[i]?.getD 0).toNat
-      next := i + if b < 128 then 1 else if b < 224 then 2 else if b < 240 then 3 else 4
-  return next == bytes.size
+def validUTF8 (text : List Char) : Bool :=
+  (Locate.utf16Length? (Authoring.bytesOf text)).isSome
 
 /-- A single-line atom for insertion into a UTF-8 editor buffer. Arbitrary bytes that do not
 form UTF-8 use the profile's hexadecimal escapes. -/
@@ -475,7 +468,10 @@ def step (depth : Nat) (rec : Source → Ident → State → Locate.Located →
               let sym := (localSymbol src.file n sig
                 (if sig.label.2.isSome then "type parameter" else "parameter")).map fun s ↦
                 { s with name := qualify inner s.name }
-              nested := sym.toList.foldl State.withSymbol { nested with elaboration }
+              nested := { nested with elaboration }
+              if let some s := sym then
+                nested := { nested.withSymbol s with targets :=
+                  ⟨src.file, s.selection, fun _ ↦ some s.name⟩ :: nested.targets }
         for b in body.filter (!Locate.headIs "parameter".toList ·) do
           match rec src inner nested b with
           | .ok next => nested := next
@@ -795,10 +791,68 @@ structure Cache where
   /-- Documents before import resolution, reusable even beyond an invalidated prefix. -/
   parsed : List Source := []
 
+/-- The lexical and explicit target at a byte position in the current index. -/
+def State.focusAt (st : State) (file : String) (pos : Locate.Pos) : Focus :=
+  let atSite {α : Type} (sites : List (Site α)) : Option α :=
+    (sites.find? fun s ↦ s.file == file && contains s.span pos).map (fun s ↦ s.resolve pos)
+  let f := (atSite st.sites).getD {}
+  { f with target := (atSite st.targets).getD f.target }
+
+/-- The declaration denoted by a focus, including binders and template instances. -/
+def State.resolve (st : State) (f : Focus) : Option Symbol :=
+  f.localTarget.orElse fun _ ↦ f.target.bind fun n ↦
+    st.byName.get? (textOf (sourceName st.origins n))
+
+/-- Atom spellings and their byte ranges. -/
+def atoms (t : Locate.Located) : List (Ident × Locate.Span) :=
+  RoseTree.elim (fun l cs ↦ l.2.map (fun n ↦ [(n, l.1)]) |>.getD cs.flatten) t
+
+/-- Examples execute after the program has been compiled. Their two terms and explicit Geb
+links resolve against the final declarations, including those in later sources. -/
+def noteSites (st : State) (src : Source) : List (Site Focus) :=
+  let vis := st.elaboration.vis
+  let term (t : Locate.Located) : Site Focus := ⟨src.file, t.label.1, fun p ↦
+    let scope := termScope src.file p t
+    let bound := if scope.active then
+      (atomAtPosition p t).bind fun n ↦ scope.locals.find? (·.name == n) else none
+    ⟨probe vis st.elaboration.polys p t .term, scope, vis, bound⟩⟩
+  let visit := RoseTree.para fun l (rs : List (Locate.Located × List (Site Focus))) ↦
+    let t := RoseTree.node l (rs.map Prod.fst)
+    if Locate.headIs kwModule t then (rs.drop 2).flatMap Prod.snd
+    else if Locate.headIs kwNote t then (t.children.drop 1).flatMap fun field ↦
+      if Locate.headIs kwExample field then (field.children.drop 1).map term
+      else if Locate.headIs kwLink field && field.children[1]?.bind (·.label.2) == some "geb".toList
+        then field.children[2]?.toList.map fun n ↦
+          ⟨src.file, n.label.1, fun _ ↦ { target := n.label.2 }⟩
+      else []
+    else []
+  src.forms.flatMap visit
+
+/-- Source occurrences resolving to the selected declaration. Test the written suffix before
+calling the resolver so unrelated expressions need no traversal. -/
+def references (st : State) (sources : List Source) (target : Symbol) (base newName : Ident) :
+    List Lean.Json := Id.run do
+  let mut refs := []
+  for src in sources do
+    for (name, span) in src.forms.flatMap atoms do
+      let direct := name == base || ('.' :: base).isSuffixOf name
+      let member := target.kind == "module" && (target.name ++ ['.']).isPrefixOf name
+      unless direct || member do continue
+      let some found := st.resolve (st.focusAt src.file span.start) | continue
+      let same := found.file == target.file && found.selection == target.selection
+      unless (same && direct) || (member && found.name == name) do continue
+      let replacement := if same then name.take (name.length - base.length) ++ newName
+        else target.name.take (target.name.length - base.length) ++ newName ++
+          name.drop target.name.length
+      refs := Json.object [("file", Lean.toJson src.file), ("span", spanJson span),
+        ("declaration", Lean.toJson (src.file == target.file && span == target.selection)),
+        ("replacement", Lean.toJson ((spellAtom replacement).map Char.toNat))] :: refs
+  return refs.reverse
+
 /-- Update the index from the first changed input and resolve one editor operation. -/
 def queryCached (old : Cache) (manifest : System.FilePath) (file : String)
     (pos : Locate.Pos) (snapshots : List (String × String)) (proofs operation : String)
-    (recover : Bool) : IO (Lean.Json × Cache) := do
+    (recover : Bool) (newName : Ident := []) : IO (Lean.Json × Cache) := do
   let read (path : System.FilePath) : IO Source := do
     let real := (← IO.FS.realPath path).toString
     let bytes ← sourceBytes real snapshots
@@ -845,19 +899,37 @@ def queryCached (old : Cache) (manifest : System.FilePath) (file : String)
   let pos := match atomSpan with
     | some span => if contains span pos then pos else span.stop
     | none => pos
-  let atSite {α : Type} (sites : List (Site α)) : Option α :=
-    (sites.find? fun s ↦ s.file == file && contains s.span pos).map (fun s ↦ s.resolve pos)
+  let findRefs := operation == "references" || operation == "rename"
+  let noteSources := if findRefs then sources else sources.filter (·.file == file)
+  st := { st with sites := noteSources.flatMap (noteSites st) ++ st.sites }
   let focus := if atCursor.any (fun h ↦ h.source.comments.any (contains · pos)) then
       { scope := { active := false } }
-    else
-      let f := (atSite st.sites).getD {}
-      { f with target := (atSite st.targets).getD f.target }
-  let name := focus.target.map (sourceName st.origins)
-  let target := focus.localTarget.orElse fun _ ↦ name.bind fun n ↦ st.byName.get? (String.ofList n)
+    else st.focusAt file pos
+  let target := st.resolve focus
+  let base := if findRefs || operation == "prepareRename" then target.bind fun t ↦ do
+      let src ← ordered.find? (·.source.file == t.file)
+      src.source.forms.findSome? (atomAtPosition t.selection.start)
+    else none
+  let mut refs := []
+  if findRefs then
+    if let some t := target then
+      if let some n := base then
+        let readManifest (p : System.FilePath) := do
+          sourceBytes (← IO.FS.realPath p).toString snapshots
+        let m ← Manifest.read manifest readManifest
+        let manifests ← (manifest :: m.dependencies.map (Manifest.resolve manifest ·.1)).mapM read
+        for src in manifests do
+          let entries := src.forms.flatMap fun f ↦
+            f.children.filter (Locate.headIs "entries".toList)
+          for entry in entries.flatMap (·.children.drop 1) do
+            st := { st with targets :=
+              ⟨src.file, entry.label.1, fun _ ↦ entry.label.2⟩ :: st.targets }
+        refs := references st (sources ++ proofSources ++ manifests) t n newName
   let symbols := if operation == "document" then st.symbols.filter (·.file == file)
     else if operation == "all" || operation == "workspace" then st.symbols else []
   let result := Json.object [("symbols", Lean.toJson (symbols.map (·.json operation))),
-    ("target", if operation == "all" || operation == "target" then
+    ("references", Lean.toJson refs), ("baseName", Lean.toJson (base.map (·.map Char.toNat))),
+    ("target", if ["all", "target", "references", "rename"].contains operation then
       target.map (·.json operation) |>.getD .null else .null),
     ("completions", Lean.toJson (if operation == "all" || operation == "completion" then
       (completions st focus).map (·.json operation) else [])),
@@ -884,7 +956,9 @@ def request (cache : Cache) (manifest : String) (input : String) : IO (Lean.Json
   let proofs := (json.getObjValAs? String "proofs").toOption.getD ""
   let recover := (json.getObjValAs? Bool "recover").toOption.getD false
   let op := (json.getObjValAs? String "operation").toOption.getD "all"
+  let newName := (json.getObjValAs? String "newName").toOption.getD ""
   queryCached cache manifest file ⟨line, column⟩ snapshots proofs op recover
+    (Command.chars newName.toUTF8)
 
 /-- Read one JSON navigation request from standard input and write its JSON result. -/
 def run (manifest : String) : IO UInt32 := do

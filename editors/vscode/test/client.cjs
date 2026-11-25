@@ -82,9 +82,15 @@ exports.run = async (test, checkTask) => {
     console.log(`Client repeat Compile Program task: ${Math.round(performance.now() - warm)} ms`);
   });
   await test('an edit of the library module is checked by the client\'s compile', async () => {
-    // A false example fails the compile, which reports it without a position.
-    await replace(library, original.replace('(quote (0 (9) (8) (7)))', '(quote (0 (7) (8) (9)))'));
+    // The Problems range includes the entire false example in the imported source.
+    const term = '(node 0 (Lists.reverse T (cons 7 (cons 8 (cons 9 (nil T))))))';
+    const failing = `(example ${term}\n      (quote (0 (7) (8) (9))))`;
+    const wrong = await replace(library, original.replace(
+      `(example ${term} (quote (0 (9) (8) (7))))`, `(future "λ😀") ${failing}`));
     assert.equal((await command('compile')).code, 1);
+    const [example] = await diagnostics(wrong, ds => ds.length === 1 &&
+      ds[0].message.includes('differs from its expected value'));
+    assert.equal(wrong.getText(example.range), failing);
     const document = await replace(library, original.replace('(k (cons x acc))', '(k (cons x unit))'));
     assert.equal((await command('compile')).code, 1);
     await diagnostics(document, found => found.length === 1 &&
