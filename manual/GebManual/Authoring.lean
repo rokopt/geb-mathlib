@@ -1214,7 +1214,7 @@ additional artifacts of a development with proofs.
 `--no-build` before the subcommand to use the executables already built
 in this checkout.
 
-`record` first copies the manifest and every source in its order, retaining
+`record` first copies the manifest, its dependency manifests and every source in order, retaining
 their original bytes and relative paths. It compiles those copies, checks
 the examples and writes canonical copies of the documents. With a proof
 document it also copies that document and its imports, produces a certificate

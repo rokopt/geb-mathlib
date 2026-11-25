@@ -123,7 +123,7 @@ directory of kept states, the program is compiled a layer at a time
 ({name}`GebHost.Layers.bundle`). -/
 def readProgram (path : System.FilePath) (cache : Option System.FilePath := none) :
     IO (Manifest × ByteArray × Tree) := do
-  let m ← Manifest.read path
+  let m ← Manifest.readProgram path
   let paths := Manifest.sourcePaths path m
   let layers ← (Compiler.layerPaths path m).mapM fun srcs ↦
     srcs.foldlM (init := ByteArray.empty) fun acc src ↦ do

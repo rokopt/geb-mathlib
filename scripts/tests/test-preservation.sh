@@ -40,13 +40,19 @@ with tempfile.TemporaryDirectory(prefix='geb-preservation-test-') as directory:
     original_proofs = proofs.read_text()
     record = root / 'records' / 'first'
 
-    # Quoted layer names and a manifest directory containing spaces do not affect ordering.
+    # A dependency manifest, quoted layer name and directory containing spaces survive relocation.
+    dep = project / 'lib' / 'box.manifest'
+    dep.write_text('(program box (edition 0) (document (syntax authoring 0) (schema 0) '
+                   '(prose verso 0)) (sources Box.geb) (entries))\n')
+    manifest.write_text(manifest.read_text().replace('lib/Box.geb', '(manifest lib/box.manifest)'))
     run('record', manifest, proofs, record, cwd=root)
     listing = subprocess.check_output([str(repo / '.lake/build/bin/geb-kernel'),
                                        'sources', str(manifest)], text=True)
     assert listing == 'lib/Box.geb\nRoundtrip.geb\n'
     info = json.loads((record / 'record.json').read_text())
     assert info['sources'] == ['lib/Box.geb', 'Roundtrip.geb']
+    assert (record / 'project/lib/box.manifest').read_bytes() == dep.read_bytes()
+    assert (record / 'documents/dependencies/lib/box.manifest.csexp').is_file()
     for name in info['sources']:
         assert (record / 'project' / name).read_bytes() == (project / name).read_bytes()
         assert (record / 'documents/sources' / (name + '.csexp')).is_file()

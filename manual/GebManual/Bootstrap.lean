@@ -139,8 +139,8 @@ together.
    template `examples/client/` is the root of a repository whose Git
    submodule `geb/` pins the Geb and library revisions, the library being
    a directory of the Geb repository, and places the library's sources
-   below the client's manifest, which lists them in the order of the
-   library's. Its proof document imports the library's and is proved
+   below the client's manifest, which names the library by its manifest
+   (step 9). Its proof document imports the library's and is proved
    against the client's program. Its settings name the submodule as
    `geb.toolchainDirectory`; the extension contributes the saved-file
    tasks, which use the tools from that checkout. Prove Statements and
@@ -351,19 +351,14 @@ together.
    file named in an index and writing the specified response when that file
    is missing. A change to a library module regenerates no artifact under
    `bootstrap/`.
-9. Name a dependency by its manifest. A client's manifest lists the
-   sources of the library, by their paths below the client, in the order
-   of the library's manifest, and nothing compares the two lists, so
-   that a source added to the library changes the manifest of every
-   client. A layer is to name the manifest of a dependency and take its
-   sources in that manifest's order, the dependency below the client's
-   directory as its sources are
-   ({ref "files-editions"}[Files, editions and the host boundary]); its
-   revision is pinned as it is, by the submodule or by the digests of a
-   release. The acceptance: the client template's manifest names
-   `geb/library/library.manifest`; a source added to the library changes
-   no client's manifest; a client of two libraries names each; and a
-   module that two of them declare is rejected.
+9. Complete. Name a dependency by its manifest. The client template
+   names `geb/library/library.manifest` as a layer. Adding a source to
+   the library's manifest includes it in the client at that position.
+   The submodule or release digests pin the revision.
+   `scripts/tests/test-manifest.sh` compiles a client of two libraries
+   and checks that a module declared by both is rejected, even with
+   disjoint exports ({ref "files-editions"}[Files, editions and the
+   host boundary]).
 10. Give a client the tools without a build of them, and a description
     of the language. The host executables import the kernel's modules,
     which import mathlib, so that a client building them fetches
@@ -439,7 +434,7 @@ together.
 tag := "downstream-order"
 %%%
 
-Steps 1, 2, 3, 4 and 7 are complete, as are the record and migration
+Steps 1, 2, 3, 4, 7 and 9 are complete, as are the record and migration
 fixtures of step 6. The table distinguishes work that can start now
 from acceptance that needs the library or an upgraded client.
 
@@ -448,10 +443,6 @@ from acceptance that needs the library or an upgraded client.
   * Step
   * When to start
   * Artifacts to check
-*
-  * 9, a dependency named by its manifest
-  * Now, using the library and client of step 1
-  * The client manifest
 *
   * 10, a release and a description of the language
   * Now, the generic forms of step 4 among the forms it describes
@@ -487,7 +478,7 @@ to a compiler's source.
 The stage-0 example comparison took 3.0 seconds with repeated loading
 and 0.5 seconds with one load ({ref "improvements"}[Improvements]).
 Use the existing client to measure step 13 before the library acquires
-more examples. Work on dependency manifests, host tools and editor
+more examples. Work on host tools and editor
 reports can proceed in parallel. Exercise them together in the client
 as each becomes available. Prefer the client upgrade to converting
 `bootstrap/` in step 12. The constant-depth reader can move forward
@@ -5010,7 +5001,13 @@ and semantic dependencies are references to definitions.
   `GebHost/Navigation.lean`).
   The programs' manifests are `bootstrap/*.manifest`. A program compiled a
   part at a time writes `(layers (NAME PATH…)…)` in place of its sources,
-  as the metalogic does. The grammar is as narrow as present programs
+  as the metalogic does. A layer `(NAME (manifest PATH))` takes all the
+  sources of the named manifest as one client layer, including sources
+  of its dependencies, in the order it declares them. The client keeps
+  its own entries. Each dependency uses the program's document profile.
+  Paths in a dependency are relative to its directory. Repeated sources,
+  repeated or cyclic manifest dependencies, and module names declared by
+  two dependencies are rejected. The grammar is as narrow as present programs
   require: the fields stand in this order and nothing else is read. A
   source is resolved against the manifest's directory and may not leave
   it, so no scan of directories or working directory decides the order of
@@ -5044,7 +5041,9 @@ and semantic dependencies are references to definitions.
   entry points; `geb-kernel join` writes its text, or that of its layers
   up to one of them, and `geb-kernel layers` lists its layers, for the
   scripts that run a compiler's image on them;
-  `geb-fmt --manifest` formats a manifest and its sources. The tests read a
+  `geb-kernel dependencies` lists the dependency manifests relative to
+  the root manifest. `geb-fmt --manifest` formats the manifests and
+  their sources. The tests read a
   program's text by the term `include_manifest` and embed a program by
   `geb_program`, from its definitions, whose exported definitions are the
   manifest's entries; a development of the metalogic about a program reads

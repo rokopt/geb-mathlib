@@ -52,7 +52,7 @@ syntax (name := includeManifest) "include_manifest " str : term
 /-- The elaborator of {lit}`include_manifest`. -/
 @[term_elab includeManifest] meta def elabIncludeManifest : TermElab := fun stx _ ↦ do
   let some path := stx[1].isStrLit? | throwUnsupportedSyntax
-  let m ← Manifest.read path
+  let m ← Manifest.readProgram path
   let bytes ← Command.joinSources (Manifest.sourcePaths path m)
   return mkStrLit (String.ofList (Command.chars bytes))
 

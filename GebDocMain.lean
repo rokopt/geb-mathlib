@@ -68,7 +68,7 @@ def versoFailures (env : Environment) (d : Document.Doc) : List String :=
 def manifestFailures (env : Environment) (R : Resolver) (path : System.FilePath) :
     IO (List (String × String)) := do
   let m ← Manifest.read path
-  let files := path :: Manifest.sourcePaths path m
+  let files := Manifest.documentPaths path m
   let docs ← files.mapM fun f ↦ return (f, ← readFile f)
   let decls := docs.flatMap fun (_, d) ↦ match d with
     | .ok d => declsOf d

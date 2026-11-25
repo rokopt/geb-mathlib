@@ -71,6 +71,13 @@ with tempfile.TemporaryDirectory(prefix='geb-navigation-') as tmp:
     assert result['target']['file'] == str(lib)
     assert result['target']['documentation'] == (
         'The documented identity.\nWithout a space after the semicolon.')
+    # Both manifest buffers supersede the files on disk for the same navigation request.
+    dep = root / 'lib.manifest'
+    dep.write_text(manifest.read_text().replace('Library.geb Use.geb', 'Use.geb'))
+    buffers = [dict(path=str(manifest), text=manifest.read_text().replace(
+        '(sources Library.geb Use.geb)', '(layers (lib (manifest lib.manifest)) (app Use.geb))')),
+        dict(path=str(dep), text=dep.read_text().replace('sources Use.geb', 'sources Library.geb'))]
+    assert query('X.identity x', snapshots=buffers)['target']['file'] == str(lib)
     assert query('forward (G')['target']['name'] == 'B.forward'
     assert query('G.ident x')['target']['name'] == 'Generic.ident'
     assert query('Generic Tree')['target']['name'] == 'Generic'

@@ -1,5 +1,5 @@
 ; The shared library: the parameterized modules of the bootstrap's sequences, and the module of
-; files read as lists of bytes. A client lists these sources, in this order, before its own.
+; files read as lists of bytes. A client takes these sources in order by naming this manifest.
 (program library (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
   (sources seq.geb Bytes.geb)
   (entries Bytes.reverse Bytes.reverseFile))
