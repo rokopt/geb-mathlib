@@ -344,6 +344,21 @@ permits an axiom so declared only where the modules of
 `GebMeta.evaluationAxiomModules` declare it, and `#print axioms` lists it
 for every declaration that depends on it.
 
+The developments of the datatype language's soundness are read from
+their certificates in one module, `Certified/DatatypeDeclarations.lean`,
+with the lists of the declarations each continues from. A module that
+checks them imports it and no other check, the checks at structural
+recursion one module to a development, so that Lake builds the checks at
+the same time, `LEAN_NUM_THREADS` of them, each in a process of its own;
+`Certified/DatatypeValid.lean` composes them by validity. A check holds
+gigabytes of resident memory (the manual's chapter on the cost of
+checking gives each), so where the environment variable
+`GEB_EVALUATION_LOCK` names a file, the evaluations of `evaluation_axiom`
+hold its exclusive lock and run one at a time, the processes of the
+other modules waiting for it. `ci.yml` sets the variable for its build,
+whose hosted runner's memory holds one check at a time; Lake does not
+track the variable, which changes no module's output.
+
 `scripts/certificates.sh regen` runs the searches, by the executable
 `geb-certify`, and writes the certificates; `scripts/certificates.sh
 check` writes them into a temporary directory and compares them with the

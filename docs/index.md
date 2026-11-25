@@ -4895,7 +4895,12 @@ import-direction rules above are enforced by
   § Certificates), a development that continues from others being checked
   after their statements and composed by validity, and the certificates
   one search writes being checked one after another by one evaluation
-  (`Certified/Chain.lean`). The constants of the datatype language's
+  (`Certified/Chain.lean`). The developments of the datatype language's
+  soundness are read in one module (`Certified/DatatypeDeclarations.lean`),
+  which each module checking them imports with no other check, so that
+  Lake builds the checks at the same time, and one module composes them
+  by validity (`Certified/DatatypeValid.lean`). The constants of the
+  datatype language's
   soundness are ones the check accepts, each definition compiling over
   those before it (`Certified/DatatypeAccepted.lean`), so that the
   program has models, and the soundness of a whole program, as one

@@ -5,11 +5,13 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebTests.Prototypes.FreeTopos.Certified.Basic
-public meta import GebTests.Prototypes.FreeTopos.Certified.Basic -- shake: keep
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeDeclarations
+public meta import GebTests.Prototypes.FreeTopos.Certified.DatatypeDeclarations -- shake: keep
 public import GebTests.Prototypes.FreeTopos.DatatypeBase
 public meta import GebTests.Prototypes.FreeTopos.DatatypeBase -- shake: keep
 public import GebTests.Prototypes.ProgramCommand
+public import GebTests.Prototypes.FreeTopos.Certified.Basic
+public meta import GebTests.Prototypes.FreeTopos.Certified.Basic -- shake: keep
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -23,9 +25,15 @@ language's soundness the soundness at an atom: an atom that the stage-1 typing w
 a type, and that the reader written in Geb resolves, resolves to a term whose evaluation by the
 evaluator written in Geb converges to a value related at that type.
 
+The module imports the developments' declarations
+({lit}`GebTests.Prototypes.FreeTopos.Certified.DatatypeDeclarations`) and no other check. That the
+developments' theorems are valid in every model of the program is proved in
+{lit}`GebTests.Prototypes.FreeTopos.Certified.DatatypeValid`.
+
 ## Main statements
 
 * {lit}`atom_proved` — the development proves the soundness at an atom.
+* {lit}`proved` — the checks of the developments, which Lean's evaluator decides.
 
 ## References
 
@@ -43,11 +51,6 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.Certified.Datatype
 
 open Geb Geb.FreeTopos GebTests.Prototypes.FreeTopos.Datatypes
-
-/-- The developments, read from their certificates, one after another. -/
-def decls : List Internal.Decl :=
-  ofText (include_str "../../../../bootstrap/certificates/datatype-base.cert") ++
-    ofText (include_str "../../../../bootstrap/certificates/datatype-atom.cert")
 
 set_option doc.verso false in
 /-- The developments check in the extended program and the last declaration states the soundness

@@ -5,8 +5,11 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebTests.Prototypes.FreeTopos.Certified.Datatype
-public meta import GebTests.Prototypes.FreeTopos.Certified.Datatype -- shake: keep
+public import GebTests.Prototypes.FreeTopos.Certified.DatatypeDeclarations
+public meta import GebTests.Prototypes.FreeTopos.Certified.DatatypeDeclarations -- shake: keep
+public import GebTests.Prototypes.FreeTopos.DatatypeBase
+public meta import GebTests.Prototypes.FreeTopos.DatatypeBase -- shake: keep
+public import GebTests.Prototypes.ProgramCommand
 public import GebTests.Prototypes.FreeTopos.DatatypeList
 public meta import GebTests.Prototypes.FreeTopos.DatatypeList -- shake: keep
 meta import GebMeta -- shake: keep
@@ -21,9 +24,18 @@ The development of {lit}`GebTests.Prototypes.FreeTopos.DatatypeList`, stored in
 datatype language's soundness the soundness at the keywords' forms, one keyword at a time, given
 the soundness at their elements, the binding of a name last.
 
+The module imports the developments' declarations
+({lit}`GebTests.Prototypes.FreeTopos.Certified.DatatypeDeclarations`) and no other check. The
+validity of the theorems of the developments after these is composed from it in
+{lit}`GebTests.Prototypes.FreeTopos.Certified.DatatypeValid`.
+
 ## Main statements
 
 * {lit}`let_proved` — the developments prove the soundness at a binding of a name.
+* {lit}`decls_valid` — the developments' theorems are valid in every model of the program.
+* {lit}`valid_after` — the theorems of a development that checks after the theorems of valid
+  declarations are valid.
+* {lit}`proved`, {lit}`theorems` — the checks of the developments, which Lean's evaluator decides.
 
 ## References
 
@@ -43,10 +55,6 @@ namespace GebTests.Prototypes.FreeTopos.Certified.DatatypeList
 open Geb Geb.FreeTopos GebTests.Prototypes.FreeTopos.Datatypes
 open GebTests.Prototypes.FreeTopos.Weakening (Prog)
 open GebTests.Prototypes.FreeTopos.Normalization (Defs)
-
-/-- The developments, the soundness at the keywords' forms after the base's and the atom's. -/
-def decls : List Internal.Decl :=
-  Datatype.decls ++ ofText (include_str "../../../../bootstrap/certificates/datatype-list.cert")
 
 set_option doc.verso false in
 /-- The developments check in the extended program and the last declaration states the soundness
