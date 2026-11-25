@@ -235,6 +235,19 @@ def gebSource : BlockCommandOf DocumentConfig
     let blocks ← render m.name decls d.doc
     ``(Verso.Doc.Block.concat #[$blocks,*])
 
+/-- Show the complete text of a manifest or one of its sources, including module boundaries.
+The program must compile, define the named entries and pass its examples. -/
+@[block_command ]
+def gebListing : BlockCommandOf DocumentConfig
+  | cfg => do
+    let manifest : System.FilePath := cfg.manifest
+    let (m, _, _) ← GebHost.Authoring.readProgram manifest (examples := true)
+    let path := Geb.Kernel.Manifest.resolve manifest cfg.document
+    unless path == manifest || (Geb.Kernel.Manifest.sourcePaths manifest m).contains path do
+      throwError "{path} is neither {manifest} nor one of its sources"
+    let source ← IO.FS.readFile path
+    ``(Verso.Doc.Block.code $(quote source.trimAsciiEnd.toString))
+
 /-- Include a proof document only after the program's examples check and the prover written in
 Geb proves the document's theorems, the certificate it finds replaying; nothing is written. -/
 @[block_command ]

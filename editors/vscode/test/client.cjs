@@ -1,7 +1,7 @@
 // The acceptance of a client of the shared library, run by scripts/tests/client-acceptance.sh in
-// the folder of a fresh clone, with the extensions installed from the packages its submodule built.
+// the folder of a fresh clone, with the extensions installed from the pinned checkout or release.
 const assert = require('node:assert/strict');
-const { readFileSync } = require('node:fs');
+const { readFileSync, unlinkSync, writeFileSync } = require('node:fs');
 const path = require('node:path');
 const vscode = require('vscode');
 const { command, replace, diagnostics } = require('./authoring.cjs');
@@ -16,11 +16,10 @@ exports.run = async (test, checkTask) => {
     const extension = vscode.extensions.getExtension('geb-mathlib.geb-language');
     assert.ok(extension);
     assert.ok(!extension.extensionPath.startsWith(geb), 'not run from the submodule\'s sources');
-    const pinned = JSON.parse(readFileSync(path.join(geb, 'editors/vscode/package.json'), 'utf8'));
-    assert.equal(extension.packageJSON.version, pinned.version);
+    assert.equal(extension.packageJSON.version, process.env.GEB_TEST_LANGUAGE_VERSION);
     const paredit = vscode.extensions.getExtension('MikeDelmonaco.paredit');
     assert.ok(paredit);
-    assert.equal(paredit.packageJSON.version, pinned.editorTest.paredit.version);
+    assert.equal(paredit.packageJSON.version, process.env.GEB_TEST_PAREDIT_VERSION);
     await extension.activate();
   });
   await test('go to definition follows an import into the library', async () => {
@@ -102,6 +101,17 @@ exports.run = async (test, checkTask) => {
   await test('prove and replay the client\'s and the library\'s theorems', async () => {
     assert.equal((await command('prove')).code, 0);
     assert.equal((await command('replay')).code, 0);
+  });
+  await test('the editor runs the same Copy.step as the client CI check', async () => {
+    const file = name => path.join(client, '.lake', name);
+    const copy = () => command('interact', {
+      entry: 'Copy.step', arguments: ['.lake/copy.index', '.lake/editor.copy'] });
+    writeFileSync(file('copy.source'), readFileSync(file('copy.found')));
+    assert.equal((await copy()).code, 0);
+    assert.deepEqual(readFileSync(file('editor.copy')), readFileSync(file('copy.found')));
+    unlinkSync(file('copy.source'));
+    assert.equal((await copy()).code, 0);
+    assert.deepEqual(readFileSync(file('editor.copy')), readFileSync(file('copy.missing')));
   });
   for (const file of [library, path.join(client, 'Client.proofs.geb')]) {
     await test(`check saved file ${path.relative(client, file)}`, async () => {

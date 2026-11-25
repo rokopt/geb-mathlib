@@ -459,9 +459,12 @@ of the run and publishes nothing.
 A client pins a release by the sums of its archives and places it at
 `geb/` by `examples/client/fetch-geb.sh`, where the editor's launcher
 (`editors/vscode/tools.py`) runs its executables and builds nothing.
-`scripts/tests/test-release.sh` packages a release of the checkout,
-serves it from a directory, and checks a client made from the template
-against it.
+`scripts/tests/test-release.sh` checks the packaged archive locally.
+After publication, the release workflow runs
+`scripts/tests/client-acceptance.sh WORKDIR --release TAG` in VS Code
+Insiders on a fresh clone of the template client. It fetches the
+published archive and both VSIX files, follows an import into the
+pinned library, and compares the editor's run with the client CI check.
 
 ## Action pinning policy
 

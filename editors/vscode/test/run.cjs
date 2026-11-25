@@ -12,7 +12,7 @@ async function main() {
   const cache = path.join(extension, 'node_modules/.cache/editor');
   mkdirSync(cache, { recursive: true });
   // --client DIRECTORY runs test/client.cjs in VS Code Insiders on a client's folder, with the
-  // packages its submodule geb/ built installed (scripts/tests/client-acceptance.sh).
+  // packages its submodule geb/ built or the VSIX files fetched together with a release.
   const clientAt = process.argv.indexOf('--client');
   const client = clientAt < 0 ? undefined : path.resolve(process.argv[clientAt + 1]);
   const executable = await downloadAndUnzipVSCode({
@@ -97,10 +97,12 @@ async function main() {
 // The client's extensions are the installed packages, so the development extension the test
 // runner requires is an empty one.
 async function runClient(client, executable, state, extensions, install) {
-  const packages = path.join(client, 'geb/editors/vscode');
-  const { editorTest: pinned } = require(path.join(packages, 'package.json'));
+  const at = process.argv.indexOf('--packages');
+  const source = at < 0 ? path.join(client, 'geb/editors/vscode') : path.resolve(__dirname, '..');
+  const packages = at < 0 ? source : path.resolve(process.argv[at + 1]);
+  const { version, editorTest: pinned } = require(path.join(source, 'package.json'));
   install(path.join(packages, 'geb-language.vsix'));
-  install(path.join(packages, `paredit-${pinned.paredit.version}.vsix`));
+  install(path.join(packages, at < 0 ? `paredit-${pinned.paredit.version}.vsix` : 'geb-paredit.vsix'));
   const stub = path.join(state, 'stub');
   mkdirSync(stub);
   writeFileSync(path.join(stub, 'package.json'), JSON.stringify({
@@ -110,7 +112,8 @@ async function runClient(client, executable, state, extensions, install) {
     vscodeExecutablePath: executable,
     extensionDevelopmentPath: stub,
     extensionTestsPath: path.join(__dirname, 'editor.cjs'),
-    extensionTestsEnv: { GEB_TEST_CLIENT: client },
+    extensionTestsEnv: { GEB_TEST_CLIENT: client, GEB_TEST_LANGUAGE_VERSION: version,
+      GEB_TEST_PAREDIT_VERSION: pinned.paredit.version },
     launchArgs: [client, '--extensions-dir', extensions, '--user-data-dir', state,
       '--disable-gpu', '--skip-welcome', '--skip-release-notes', '--disable-workspace-trust'],
   });

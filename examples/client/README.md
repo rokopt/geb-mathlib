@@ -56,31 +56,46 @@ by `git add geb`, then a check of the client (§ Continuous integration).
 
 ## Pinning a release
 
-A release of the Geb repository, made by its workflow
-`.github/workflows/release.yml` at a tag, holds an archive
-`geb-VERSION-PLATFORM.tar.gz` for each platform it is built on, beside
-the archive's SHA-256 sum, and the two editor extensions. Write the
-lines of the sums of the platforms the client is built on into
-`geb-release.sha256`, in place of the submodule:
+A release holds the host tools and library in
+`geb-TAG-PLATFORM.tar.gz` for Linux x86-64, Linux Arm64 and macOS
+on Apple silicon. To create a release-based client, copy this template
+into the new repository. If converting a submodule-based client,
+remove the submodule with `git rm geb` first. Set `tag` to the chosen
+release tag and pin the published archive checksums in the client.
 
 ```sh
-git rm geb
+tag=TAG
+assets=$(mktemp -d)
+gh release download "$tag" --repo rokopt/geb-mathlib --pattern '*.tar.gz.sha256' --dir "$assets"
+cat "$assets"/*.tar.gz.sha256 > geb-release.sha256
 printf '/geb/\n' >> .gitignore
-cat geb-VERSION-*.tar.gz.sha256 > geb-release.sha256
-bash fetch-geb.sh
+git add geb-release.sha256 .gitignore
 ```
 
-`fetch-geb.sh` downloads the archive of the machine's platform, checks it
-against the pinned sum and extracts it at `geb/`, where the editor's
-settings and `check.sh` read it as they read a checkout. It refuses a
-`geb/` that is not a release. Install the editor extensions from the
-release's `.vsix` files with `code-insiders --install-extension`.
+Commit the pin with the client. On each machine, `fetch-geb.sh` downloads
+that platform's archive, checks its digest and extracts it at `geb/`.
 Development records need a checkout, and an edit of the library is an
 edit of the checkout, so a client that does either keeps the submodule.
 
 ## From a fresh clone
 
-With Lean's `elan` and Node.js 22 or later installed:
+For a release pin, clone the client and run these commands from its
+root. The first command installs the host executables and library.
+`check.sh` runs the same manifest, examples and proofs as the client's CI.
+The two VSIX files come from the tag recorded in the installed archive.
+
+```sh
+bash fetch-geb.sh
+bash check.sh
+tag=$(python3 -c 'import json; print(json.load(open("geb/geb-release.json"))["version"])')
+assets=$(mktemp -d)
+gh release download "$tag" --repo rokopt/geb-mathlib --pattern '*.vsix' --dir "$assets"
+code-insiders --install-extension "$assets/geb-language.vsix" --force
+code-insiders --install-extension "$assets/geb-paredit.vsix" --force
+code-insiders .
+```
+
+For a submodule pin, use Lean's `elan` and Node.js 22 or later.
 
 ```sh
 git clone --recurse-submodules URL client
@@ -107,9 +122,10 @@ code-insiders --install-extension 'geb/editors/vscode/paredit-0.2.1+geb.1.vsix' 
 
 Open the client's directory as the workspace folder. Its settings name
 `geb` as the toolchain directory and select the program `Client`, so
-that editor commands use the submodule's host tools and read the client's
-files where they are. The first use checks the tools through Lake. Later
-commands reuse them until their build inputs or executables change.
+that editor commands use the pinned host tools and read the client's
+files where they are. With a release the editor runs the packaged
+executables directly. With a submodule the first use checks the tools
+through Lake and later commands reuse them until their inputs change.
 
 - Go to Definition on `reverse` in `Client.geb` opens its definition in
   `geb/library/Lists.geb`, and Hover shows its documentation.
@@ -151,6 +167,7 @@ repository's checkout in place of the submodule.
 
 ## References
 
+- [Writing a Geb program](https://rokopt.github.io/geb-mathlib/Writing-a-Geb-program/)
 - [The Geb extension for VS Code](../../editors/vscode/README.md)
 - [Writing a first Geb development](../../manual/GebManual/Authoring.lean)
 - [Git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules)

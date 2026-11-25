@@ -1,0 +1,13 @@
+(module Report (export sample count) (import Outline)
+  (deftype OutlineT (Outline T))
+  (def sample (datum OutlineT (1 (0 (7)) (1 (0 (8))))))
+
+  ; Count the items of an encoded outline. An invalid encoding gives zero.
+  (note
+    (example (Report.count (rep Report.sample)) 2)
+    (example (Report.count (rep (Outline.singleton T 9))) 1)
+    (example (Report.count (quote (0))) 0)
+    (example (Outline.valueOr T 3 (Outline.item T 7)) 7)
+    (example (Outline.valueOr T 3 Report.sample) 3))
+  (defn count ((raw T)) T
+    (decode OutlineT raw (lam ((o OutlineT)) (size T o)) 0)))

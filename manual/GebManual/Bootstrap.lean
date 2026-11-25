@@ -385,15 +385,14 @@ together.
     ({ref "files-editions"}[Files, editions and the host boundary]). The
     forms of programs, modules and their imports, datatypes, definitions,
     case analysis and patterns, the representation and the decoding,
-    notes and entries, are stated in this chapter's sections, among the
-    decisions that fix them; a chapter of the manual is to state them for
-    a developer, as {ref "first-authoring"}[Writing a first Geb
-    development] states the forms of proof documents. The acceptance: a
-    client made from the template, with no Lake, fetches the published
-    release, installs its Geb and patched Paredit extensions in VS Code
-    Insiders, follows an import into the library, and checks and runs the
-    same program as its CI workflow. Each form the chapter states is an
-    example that the manual's build checks.
+    notes and entries, are illustrated in {ref "program-language"}[Writing a Geb program],
+    whose manifest, sources and examples are checked by the manual's build.
+    {ref "first-authoring"}[Writing a first Geb development] covers proof documents.
+    For release acceptance, a fresh clone of a client made from the template fetches the
+    published release, installs its Geb and patched Paredit extensions in VS Code Insiders,
+    follows an import into the library and checks and runs the same program as its CI
+    workflow. Both paths use the packaged executables without Lake.
+    The release workflow runs this check with `scripts/tests/client-acceptance.sh` at the tag.
 11. Complete. Report in the editor as a source is edited. Under
     `geb.checkOnSave` the extension checks each saved source. The
     obligations view reads open buffers and shows a datatype hole at its
@@ -445,8 +444,8 @@ from acceptance that needs an upgraded client.
   * When to start
   * Artifacts to check
 *
-  * 10, a release and a description of the language
-  * Now, the generic forms of step 4 among the forms it describes
+  * 10, the first published release
+  * Now, the language guide and its checked examples are in place
   * Release archives, editor packages and the manual
 *
   * 6, acceptance of the client upgrade
