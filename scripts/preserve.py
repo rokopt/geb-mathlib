@@ -81,6 +81,10 @@ def sources(manifest):
     return names
 
 
+def dependencies(manifest):
+    return [relative(name) for name in command("geb-kernel", "dependencies", manifest).splitlines()]
+
+
 def imports(manifest, proofs):
     # The host resolves the documents a proof document imports, each below the document's
     # directory, and lists the development's documents with the proof document last.
@@ -96,6 +100,8 @@ def imports(manifest, proofs):
 def snapshot(manifest, proofs, target):
     saved = target / "project" / manifest.name
     copy(manifest, saved)
+    for dep in dependencies(manifest):
+        copy(manifest.parent / dep, saved.parent / dep)
     names = sources(saved)
     for name in names:
         copy(manifest.parent / name, target / "project" / relative(name))
@@ -112,6 +118,8 @@ def snapshot(manifest, proofs, target):
 
 def documents(manifest, proofs, names, extra, target):
     pairs = [(manifest, Path("manifest.csexp"))]
+    pairs += [(manifest.parent / dep, Path("dependencies") / (dep.as_posix() + ".csexp"))
+              for dep in dependencies(manifest)]
     pairs += [(manifest.parent / name, Path("sources") / (name + ".csexp")) for name in names]
     if proofs is not None:
         pairs.append((proofs, Path("proofs.csexp")))
@@ -232,7 +240,7 @@ def tooling(target, has_proofs):
         manifests.append("bootstrap/authoring.manifest")
     for manifest in manifests:
         path = ROOT / manifest
-        inputs = [path, *(path.parent / name for name in sources(path))]
+        inputs = [path, *(path.parent / name for name in [*dependencies(path), *sources(path)])]
         for source in inputs:
             dest = target / "tooling" / source.relative_to(ROOT)
             if not dest.exists():

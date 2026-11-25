@@ -2,9 +2,8 @@
 
 This directory is the template of a client of the shared Geb library,
 laid out as the root of a repository of its own. Its program,
-`client.manifest`, lists the library's sources, `library/seq.geb` and
-`library/Bytes.geb` of a Geb checkout at `geb/`, in the order of the
-library's manifest, before its own source `Client.geb`, which imports
+`client.manifest`, names `geb/library/library.manifest` as its library
+layer. The library supplies its sources in order before `Client.geb`, which imports
 the library's module `Bytes` and the instance `(Seq T)` of its
 parameterized module `Seq`. `Client.proofs.geb` imports the library's
 proof document, so that the library's theorems are proved again against

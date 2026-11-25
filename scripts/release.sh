@@ -38,8 +38,17 @@ for tool in "${tools[@]}"; do
   cp .lake/build/bin/"$tool" "$root/bin/$tool"
   strip "$root/bin/$tool"
 done
-# The library's sources, the bootstrap's linked source among them, as files.
-cp -L library/*.geb library/*.manifest "$root/library/"
+# Retain the library's program and proof documents, following its source links.
+(
+  cd library
+  shopt -s nullglob
+  printf '%s\n' *.geb *.manifest
+  "$root/bin/geb-kernel" dependencies library.manifest
+  "$root/bin/geb-kernel" sources library.manifest
+) | sort -u | while IFS= read -r src; do
+  mkdir -p "$(dirname "$root/library/$src")"
+  cp -L "library/$src" "$root/library/$src"
+done
 cp lean-toolchain LICENSE "$root/"
 
 python3 - "$root" "$version" "$platform" "$revision" "${tools[@]}" <<'EOF'

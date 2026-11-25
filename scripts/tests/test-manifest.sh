@@ -84,6 +84,55 @@ case "$output" in
   *) fail_case layers "a layer the program lacks is joined: '$output'" ;;
 esac
 
+# A client names two libraries, one of which has layers and a nested dependency.
+mkdir -p p/left/base p/right
+program() { printf '(program p (edition 0) %s %s (entries %s))\n' "$doc" "$1" "${2-}"; }
+program '(sources Base.geb)' > p/left/base/base.manifest
+printf '(module Base (export x) (def x 7))\n' > p/left/base/Base.geb
+program '(layers (base (manifest base/base.manifest)) (own Left.geb))' > p/left/lib.manifest
+printf '(module Left (export x) (def x Base.x))\n' > p/left/Left.geb
+program '(sources Right.geb)' > p/right/lib.manifest
+printf '(module Right (export x) (def x 8))\n' > p/right/Right.geb
+program '(layers (L (manifest left/lib.manifest)) (R (manifest right/lib.manifest)) (app app.geb))' \
+  main > p/client.manifest
+printf '(def main (pair Left.x Right.x))\n' > p/app.geb
+checked=$((checked + 1))
+"$compiler" image --manifest p/client.manifest before.img || fail_case dependencies "compile failed"
+printf 'L p/left/base/Base.geb p/left/Left.geb\nR p/right/Right.geb\napp p/app.geb\n' > expected.layers
+"$kernel" layers p/client.manifest > got.layers && cmp -s expected.layers got.layers ||
+  fail_case dependencies "the client layers do not preserve the libraries' source order"
+printf '%s\n' left/lib.manifest left/base/base.manifest right/lib.manifest > expected.deps
+"$kernel" dependencies p/client.manifest > got.deps && cmp -s expected.deps got.deps ||
+  fail_case dependencies "the dependency closure has the wrong paths"
+
+# Only the library changes. Both the cached and ordinary compiler must see the added source.
+"$compiler" image --cache cache --manifest p/client.manifest warm.img ||
+  fail_case dependencies "the layered build failed"
+program '(sources Right.geb Extra.geb)' > p/right/lib.manifest
+printf '(module Extra (export x) (def x Right.x))\n' > p/right/Extra.geb
+"$compiler" image --cache cache --manifest p/client.manifest after.img ||
+  fail_case dependencies "the updated library failed"
+"$kernel" build p/left/base/Base.geb p/left/Left.geb p/right/Right.geb p/right/Extra.geb \
+  p/app.geb explicit.img || fail_case dependencies "the sources failed"
+cmp -s before.img after.img && fail_case dependencies "the added source did not reach the image"
+cmp -s explicit.img after.img || fail_case dependencies "the image differs from the explicit sources"
+
+# Disjoint exports still declare the same module. Linking a prefix before the collision succeeds.
+printf '(module Base (export y) (def y 9))\n' > p/right/Extra.geb
+"$kernel" join p/client.manifest prefix.geb L || fail_case dependencies "the first layer failed"
+for driver in build compile cached check-file; do
+  printf 'kept' > kept.out
+  case "$driver" in
+    build) output=$("$kernel" build --manifest p/client.manifest kept.out 2>&1) ;;
+    compile) output=$("$compiler" image --manifest p/client.manifest kept.out 2>&1) ;;
+    cached) output=$("$compiler" image --cache cache --manifest p/client.manifest kept.out 2>&1) ;;
+    check-file) output=$("$compiler" check p/app.geb 2>&1) ;;
+  esac
+  [ $? -eq 1 ] && [[ "$output" == *'module Base is declared by left/base/base.manifest and right/lib.manifest'* ]] ||
+    fail_case "collision/$driver" "unexpected result: $output"
+  [ "$(cat kept.out)" = kept ] || fail_case "collision/$driver" "the output was changed"
+done
+
 # A source's notes are erased before it is compiled: the program with notes
 # builds and compiles to the program's image without them.
 checked=$((checked + 1))
@@ -206,6 +255,16 @@ assert_rejected entries "(program p (edition 0) $doc (sources a.geb) (entries f 
   'the entry f is listed twice'
 assert_rejected layer "(program p (edition 0) $doc (layers (A)) (entries))" \
   'a layer is a name followed'
+assert_rejected dep-parent "$(program '(layers (A (manifest ../lib.manifest)))')" \
+  'the dependency ../lib.manifest is not a relative path'
+assert_rejected dep-cycle "$(program '(layers (A (manifest dep-cycle.manifest)))')" \
+  'cyclic manifest dependency'
+assert_rejected dep-repeat "$(program '(layers (A (manifest left/lib.manifest)) (B left/Left.geb))')" \
+  'the source left/Left.geb is listed twice'
+printf '(program other (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0) (tool x)) (sources a.geb) (entries))\n' \
+  > p/other.manifest
+assert_rejected profile-mismatch "$(program '(layers (A (manifest other.manifest)))')" \
+  'the document profile of dependency other.manifest differs'
 # a manifest of the profile whose fields follow the head document
 profiled() { printf '(program p (edition 0) (document %s) (sources a.geb) (entries))' "$1"; }
 assert_rejected syntax "$(profiled '(syntax authoring 1) (schema 0) (prose verso 0)')" \

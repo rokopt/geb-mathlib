@@ -23,7 +23,8 @@ bundle's image, and {lit}`build --manifest MANIFEST IMAGE` does so for the progr
 {lit}`join MANIFEST OUTPUT LAYER` the text of its layers up to the one named, that one included,
 and {lit}`layers MANIFEST` prints a line for each of its layers, the layer's name followed by the
 paths of its sources;
-{lit}`sources MANIFEST` prints the sources' relative paths, one per line in manifest order, and
+{lit}`sources MANIFEST` prints the sources' relative paths, one per line in manifest order,
+{lit}`dependencies MANIFEST` the relative paths of the dependency manifests, and
 {lit}`entries MANIFEST` its entry points' names;
 {lit}`run IMAGE NAME INPUT OUTPUT` reads an image, applies its definition of that name to
 the input file's tree, and writes the output tree's bytes;
@@ -169,7 +170,7 @@ def run (args : List String) : IO UInt32 := do
     checkAnnotations path
     return 0
   | ["build", "--manifest", path, img] =>
-    let m ← Manifest.read path
+    let m ← Manifest.readProgram path
     let text := chars (← joinSources (Manifest.sourcePaths path m))
     buildImage path text m.checkEntries img
     return 0
@@ -179,12 +180,13 @@ def run (args : List String) : IO UInt32 := do
     buildImage s!"{srcs}" text (fun _ ↦ .ok ()) files.getLast!
     return 0
   | ["join", path, output] =>
-    let m ← Manifest.read path
+    let m ← Manifest.readProgram path
     IO.FS.writeBinFile output (← joinSources (Manifest.sourcePaths path m))
     return 0
   | ["join", path, output, layer] =>
     let m ← Manifest.read path
     let srcs ← IO.ofExcept ((Manifest.layerPaths path m layer).mapError (s!"{path}: {·}"))
+    Manifest.checkModules path m srcs.contains
     IO.FS.writeBinFile output (← joinSources srcs)
     return 0
   | ["layers", path] =>
@@ -196,6 +198,10 @@ def run (args : List String) : IO UInt32 := do
     let m ← Manifest.read path
     for source in m.sources do IO.println source
     return 0
+  | ["dependencies", path] =>
+    let m ← Manifest.read path
+    for (dep, _) in m.dependencies do IO.println dep
+    return 0
   | ["entries", path] =>
     let m ← Manifest.read path
     for e in m.entries do IO.println e
@@ -206,7 +212,7 @@ def run (args : List String) : IO UInt32 := do
     runBundle img t name input output
     return 0
   | ["holes", "--manifest", path] =>
-    let m ← Manifest.read path
+    let m ← Manifest.readProgram path
     printHoles path (chars (← joinSources (Manifest.sourcePaths path m)))
   | "holes" :: srcs@(_ :: _) =>
     printHoles s!"{srcs}" (chars (← joinSources (srcs.map System.FilePath.mk)))
@@ -214,7 +220,8 @@ def run (args : List String) : IO UInt32 := do
     throw <| IO.userError <|
       "usage: geb-kernel build SOURCE... IMAGE | geb-kernel build --manifest MANIFEST IMAGE | " ++
         "geb-kernel join MANIFEST OUTPUT [LAYER] | geb-kernel layers MANIFEST | " ++
-        "geb-kernel sources MANIFEST | geb-kernel entries MANIFEST | " ++
+        "geb-kernel sources MANIFEST | geb-kernel dependencies MANIFEST | " ++
+        "geb-kernel entries MANIFEST | " ++
         "geb-kernel run IMAGE NAME INPUT OUTPUT | " ++
         "geb-kernel interact IMAGE NAME [ARGUMENT...] | " ++
         "geb-kernel migrate-image INPUT OUTPUT | " ++

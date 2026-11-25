@@ -453,7 +453,7 @@ def layerPaths (path : System.FilePath) (m : Manifest) : List (List System.FileP
 
 /-- The input of a manifest's program, whose entry points the program defines. -/
 def Input.ofManifest (path : String) : IO Input := do
-  let m ← Manifest.read path
+  let m ← Manifest.readProgram path
   return { ← Input.ofLayers (layerPaths path m) with checkNames := m.checkEntries }
 
 /-- A backend's output on the checked bundle of the program of a named input, as
@@ -557,6 +557,7 @@ def sourcesUpTo (source : System.FilePath) : IO (List (List System.FilePath)) :=
             | .ok r => r
             | .error _ => p
         if let some k := real.findIdx? (·.toString == target.toString) then
+          Manifest.checkModules path m (paths.take (k + 1)).contains
           return takeAcross (layerPaths path m) (k + 1)
   return [[source]]
 

@@ -715,9 +715,9 @@ def parseSource (file : String) (bytes : ByteArray) (recover : Bool) : IO Source
 def sourcePaths (manifest : System.FilePath) (snapshots : List (String × String)) :
     IO (List System.FilePath) := do
   let manifest ← IO.FS.realPath manifest
-  let m ← match snapshots.lookup manifest.toString with
-    | some text => IO.ofExcept (Manifest.parse (Command.chars text.toUTF8))
-    | none => Manifest.read manifest
+  let readBytes (p : System.FilePath) := do sourceBytes (← IO.FS.realPath p).toString snapshots
+  let m ← Manifest.read manifest readBytes
+  Manifest.checkModules manifest m (readBytes := readBytes)
   return Manifest.sourcePaths manifest m
 
 /-- The source documents of a manifest, in its recorded order. -/

@@ -43,7 +43,7 @@ public def main (args : List String) : IO UInt32 := do
   let files ← match rest with
     | ["--manifest", path] =>
       let m ← Geb.Kernel.Manifest.read path
-      pure (path :: (Geb.Kernel.Manifest.sourcePaths path m).map toString)
+      pure ((Geb.Kernel.Manifest.documentPaths path m).map toString)
     | fs => pure fs
   if files.isEmpty then
     IO.eprintln "usage: geb-fmt [--check] [--chains] FILE... | \
