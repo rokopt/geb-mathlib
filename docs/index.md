@@ -4249,7 +4249,8 @@ import-direction rules above are enforced by
   and the image. `GebTests/Prototypes/Stage1.lean` checks the stage-1 compiler's
   agreement with the stage-0 compiler. The executable `geb-defs`
   (`GebDefsMain.lean`) writes an image's definitions as S-expressions of
-  labels, from which `scripts/eal/eal.py`, and without a solver the search
+  labels, or with `--identities` their content identifiers, from which
+  `scripts/eal/eal.py`, and without a solver the search
   written in Geb, `bootstrap/affine-search.geb`, decide each definition's
   elementary-affine typability, alone and with a decoration per use of a
   definition. The
