@@ -109,10 +109,10 @@ waiting or deferred).
 * Extension. A program is extended by definitions whose identity
   survives edits, and the datatype language is complete enough to write
   the rest of Geb in, with diagnostics that name what fails. In
-  progress. Closed bundles, content identity, datatype checking and
-  modules with imports and exports support writing library code. A
-  downstream application exercises the remaining authoring requirements,
-  and polymorphic definitions precede the library's modules.
+  progress. Closed bundles, content identity, datatype checking,
+  modules with imports and exports, and definitions with type parameters
+  of their own support writing library code. A downstream application
+  exercises the remaining authoring requirements.
 
 ## A Geb library and its downstream application
 %%%
@@ -195,23 +195,31 @@ together.
    (`GebHost/DatatypeTyping.lean`), and reaches the editor as the
    diagnostics of the check of a saved file. The obligations view reads
    kernel forms alone ({ref "editing"}[Editing]).
-4. Add polymorphic definitions, before the library's modules are written
-   (the decision on polymorphic definitions). A definition, and a
-   datatype's declaration, takes type parameters of its own, supplied
-   where it is used. A function is then used at several types in one
-   scope with no import for each, a datatype's instances at equal
+4. Complete. Add polymorphic definitions, before the library's modules
+   are written (the decision on polymorphic definitions). A definition, a
+   function and a datatype's declaration take type parameters of their
+   own, written after the name, `(defn (f A) …)`, and supplied where the
+   name is used, `(f T x)`. A function is then used at several types in
+   one scope with no import for each, a datatype's instances at equal
    arguments are one type across modules, and a composition at two types
-   is one definition. The acceptance is a library module of lists and
-   optional values generic in their element type, used at several types
-   in one module of the client. One module returns an optional value that
-   another consumes at the same element type. A definition inspecting
-   the representation of an opaque parameter is rejected even if unused
-   ({ref "polymorphic-definitions"}[Polymorphic definitions]). The form
-   whose uses write their type arguments changes `bootstrap/modules.geb`,
-   a source of the compilers and of no program a development is about:
-   it regenerates the compiler's image and the Lean the compiler emits,
-   and, the bundles of the existing sources being unchanged, no mirror
-   and no certificate. By step 7 the checks it runs are the compilers'.
+   is one definition
+   ({ref "polymorphic-definitions"}[Polymorphic definitions]). The
+   program of `examples/polymorphic/` is the acceptance: its library
+   layer declares optional values, lists and the composition of
+   functions generic in their types; one module of its application layer
+   uses the lists at the trees and at a datatype of its own, and the
+   composition at two lists of types; and another returns an optional
+   value that the first consumes at the same element type, neither
+   exporting an instance (`scripts/tests/test-polymorphic.sh`). A
+   definition inspecting the representation of an opaque parameter is
+   rejected even if unused, at the term that inspects it. The uses write
+   their type arguments, so module elaboration instantiates: the change
+   is to `bootstrap/modules.geb`, a source of the compilers and of no
+   program a development is about, and to the seed's reading,
+   `Geb/Prototypes/Kernel/Modules.lean`. It regenerates the compiler's
+   image and the Lean the compiler emits, and, the bundles of the
+   existing sources being unchanged, no mirror, no image of a
+   development's program and no certificate.
 5. In progress. Run the client and give it filesystem requests on the Lean
    host. The requests are complete: a program is a step of type `T → T`
    from its start, with the protocol's version and its arguments, or from a
@@ -431,7 +439,7 @@ together.
 tag := "downstream-order"
 %%%
 
-Steps 1, 2, 3 and 7 are complete, as are the record and migration
+Steps 1, 2, 3, 4 and 7 are complete, as are the record and migration
 fixtures of step 6. The table distinguishes work that can start now
 from acceptance that needs the library or an upgraded client.
 
@@ -446,7 +454,7 @@ from acceptance that needs the library or an upgraded client.
   * The client manifest
 *
   * 10, a release and a description of the language
-  * Now for the existing forms. Document the generic forms after 4
+  * Now, the generic forms of step 4 among the forms it describes
   * Release archives, editor packages and the manual
 *
   * 11, the editor's reports and navigation
@@ -457,12 +465,8 @@ from acceptance that needs the library or an upgraded client.
   * Now, using step 2. Fix argument forwarding in step 5 alongside it
   * The host tools and editor package
 *
-  * 4, polymorphic definitions
-  * Now, the build dependencies being separated by 7
-  * The compiler's image and the Lean the compiler emits
-*
   * 8, the library's modules
-  * Prepare client examples now. Write the public modules after 4
+  * Now, in the forms of step 4
   * Library sources and manual pages
 *
   * 5, file requests through the library
@@ -478,9 +482,8 @@ from acceptance that needs the library or an upgraded client.
   * The compiler's image, the mirrors and the certificates
 :::
 
-Step 7 separates the developments from the stage tests, so step 4
-can proceed. Load each compiler once per
-stage-test comparison before or alongside step 4.
+Load each compiler once per stage-test comparison before the next change
+to a compiler's source.
 The stage-0 example comparison took 3.0 seconds with repeated loading
 and 0.5 seconds with one load ({ref "improvements"}[Improvements]).
 Use the existing client to measure step 13 before the library acquires
@@ -499,8 +502,8 @@ with and without the check at storage, retaining independent certificate
 replay ({ref "searches-remaining"}[The searches' remaining time]).
 The Geb transcription of the proof-hole checker proceeds independently
 of the editor's display of datatype holes. Integrate changes to each
-committed artifact one at a time. Step 4 and a structured rejection from
-the compiler both regenerate its image. The proof-hole checker and step 12
+committed artifact one at a time. A structured rejection from the
+compiler regenerates its image, as step 4 did. The proof-hole checker and step 12
 regenerate metalogic mirrors. Changes to the proof runner for datatype
 statements or tactics needed by a proof script regenerate its emitted Lean
 (`scripts/authoring.sh regen`).
@@ -791,10 +794,10 @@ Extension:
   A bounded typed enumerator accompanies a module with examples or
   specifications to search against. Geb-native refinement search follows
   the bootstrap.
-* Ready. {ref "polymorphic-definitions"}[Polymorphic definitions]:
-  definitions and datatypes' declarations with type parameters of their
-  own, checked opaquely and instantiated at elaboration, before the
-  library's modules are written.
+* Complete. {ref "polymorphic-definitions"}[Polymorphic definitions]:
+  definitions, functions and datatypes' declarations with type
+  parameters of their own, checked at opaque arguments where they are
+  declared and instantiated by module elaboration where they are used.
 
 ## After the bootstrap
 %%%
@@ -2229,9 +2232,9 @@ section below opens with a table of the states of its parts.
   * Complete for readable and strict documents, module imports and exports,
     kernel diagnostics and holes, proof goals and replay, and the editor
     services described in {ref "editing"}[Editing], and for the located
-    diagnostics and the holes of the datatype language. The datatype
-    language's completion clears the way for explicit assembly and for
-    polymorphic definitions, which precede the library's modules. The
+    diagnostics and the holes of the datatype language, and for
+    polymorphic definitions. The datatype language's completion clears
+    the way for explicit assembly. The
     downstream client supplies the consumer for filesystem requests and
     value migration ({ref "downstream-authoring"}[A Geb library and its
     downstream application]).
@@ -3564,9 +3567,12 @@ for each operation. The stage-1 compiler checks it after the
 declarations before it, a sort being distinct from every other type and
 without representation, and every compiler then drops it, so a template
 whose code inspects the trees of its sort is rejected though no import
-instantiates it. Complete: the typing, the three forms, the recognizers,
-the opaque check of templates, and the stage-1 compiler's own sources
-retyped, its typing, expansion and Lean backend declaring their forms,
+instantiates it. A declaration with type parameters of its own is
+checked in such a form where it is declared
+({ref "polymorphic-definitions"}[Polymorphic definitions]). Complete: the
+typing, the three forms, the recognizers, the opaque check of templates,
+and the stage-1 compiler's own sources retyped, its typing, expansion and
+Lean backend declaring their forms,
 types, documents and terms by `data` with the representations they had,
 and its lists and optional values instances of the templates `Seq` and
 `Option` of `bootstrap/seq.geb`; a template's instances are distinct
@@ -4315,7 +4321,9 @@ tag := "authoring-compatibility"
 *
   * Polymorphic definitions
     ({ref "polymorphic-definitions"}[Polymorphic definitions])
-  * Ready, and before the library's modules are written
+  * Complete: type parameters of a definition's, a function's and a
+    datatype's own, supplied at each use, instantiated by module
+    elaboration and checked at opaque arguments where they are declared
 *
   * Early in writing: holes in the datatype language, located diagnostics
     and the typed enumerator
@@ -4343,8 +4351,7 @@ tag := "authoring-compatibility"
   * Acceptance
   * The documented examples compile, convert and replay. The downstream
     milestone still requires project assembly, datatype feedback, a program
-    that requests files, and migration of its saved value. The library's
-    modules also require polymorphic definitions
+    that requests files, and migration of its saved value
     ({ref "downstream-authoring"}[A Geb library and its downstream application]).
 :::
 
@@ -5392,6 +5399,8 @@ internal universes.
 tag := "polymorphic-definitions"
 %%%
 
+State: complete, in the form whose uses write their type arguments.
+
 Polymorphic definitions precede the library's modules (the decision on
 polymorphic definitions). A module's parameters are supplied at an
 import, so a function used at several types is imported once for each,
@@ -5427,36 +5436,130 @@ requirements:
   its own.
 
 Two forms meet these, which differ in where the type arguments come
-from. Where each use writes them, the elaboration of modules can
-instantiate a definition as it instantiates a template at an import,
-before the typing. The change is then to `bootstrap/modules.geb` and
-`Geb/Prototypes/Kernel/Modules.lean` together, and the aim is that
-`bootstrap/stage1/typing.geb` and `bootstrap/stage1/datatype.geb`,
-sources of the program whose typing's soundness is proved, read the
-forms they read now. Where the typing infers them, the typing
-instantiates, which changes those sources and what the soundness states.
-The first version writes the arguments, as the kernel's forms do.
-Inference widens the sources admitted, a source with its arguments
-written remaining one, so it is available later
-({ref "compatibility-contract"}[The compatibility contract]), and follows
-if the library's writing shows the need. Whether the generic form of a
-template suffices as it is for a datatype's declaration with parameters
-is settled in the design.
+from. Where each use writes them, the elaboration of modules
+instantiates a definition as it instantiates a template at an import,
+before the typing, and `bootstrap/stage1/typing.geb` and
+`bootstrap/stage1/datatype.geb`, sources of the program whose typing's
+soundness is proved, read the forms they read before. Where the typing
+infers them, the typing instantiates, which changes those sources and
+what the soundness states. The version constructed writes the arguments,
+as the kernel's forms do. Inference widens the sources admitted, a
+source with its arguments written remaining one, so it is available
+later ({ref "compatibility-contract"}[The compatibility contract]), and
+follows if the library's writing shows the need.
+
+A definition, a function and a datatype write their type parameters
+after their name, and a use writes a type for each after the name:
+
+```
+(data (Option A) (none) (some A))
+(defn (orElse A) ((d A) (m (Option A))) A
+  (case m ((some A x) x) ((none A) d)))
+(def (empty A) (nil A))
+
+(orElse T 0 (some T 7))
+```
+
+In a term the types that follow the name are its type arguments, and the
+terms after them the arguments of the instance: `(orElse T 0 m)` applies
+the instance to two terms, and `(empty T)` is the instance itself, the
+form in which a definition is passed as an argument. In a type every
+element after the name is a type argument, `(Option T)`. In a pattern a
+constructor's type arguments precede its variables, `(some A x)`. A name
+declared with type parameters is followed by a type for each of them
+wherever it is written: alone, or followed by fewer, or in a type by
+more, it is rejected. A type abbreviation takes none in this version: an
+instance is named from its arguments with their abbreviations expanded,
+as follows, and the abbreviation an instance of such a declaration would
+be is not declared until after the names in the form that uses it are
+written.
+
+Module elaboration instantiates, in the stage-0 compiler
+(`bootstrap/modules.geb`) and in the seed's reading
+({name}`Geb.Kernel.elabDecl`, {name}`Geb.Kernel.instanceOf`), which agree
+on the tests of `GebTests/Prototypes/Kernel/Modules.lean`. A use denotes
+an instance: the declaration with each parameter bound by a type
+abbreviation of its argument, as a template's sort parameter is bound at
+an import, elaborated in the scope of the declaration and written into
+the flat program before the declaration that first uses it. An
+instance's name is the S-expression of its use, `(Optional.orElse T)`,
+in the names of the flat program and with the type abbreviations of its
+arguments expanded ({name}`Geb.Kernel.instName`): an atom that is a
+token of {citet RFC9804}[] is spelled as it is and any other verbatim,
+by its length, so that distinct uses have distinct names whatever
+characters their atoms hold. A parameter's abbreviation is named after
+the instance, `(Optional.orElse T).A`, and a datatype's constructors by
+their own uses, `(Optional.some T)`. Uses at equal arguments therefore
+denote one instance, in whatever modules they are written and whether an
+argument is written as a type or as an abbreviation of it: a function of
+one module returns `(Option T)` and a function of another takes it, with
+no export of an instance. A datatype's use of itself at its parameters,
+in its own declaration, denotes the instance being declared; a datatype
+whose declaration applies it to other types has no finite set of
+instances, and is rejected. The renaming of a declaration's body has no
+state, so it writes a use as a node no reader writes, and the uses are
+named, and the instances not yet written elaborated, where the renamed
+form is emitted ({name}`Geb.Kernel.emitForm`); an instance is one level
+of the tower that bounds the nesting of modules, whose height counts the
+declarations with type parameters as well.
+
+Where it is declared, a declaration with type parameters is elaborated
+once at opaque arguments, a sort `(%sort S)` for each parameter: into a
+form `(%generic …)`, as a template is, or, where a template declares it,
+among the forms of the template's own instance at opaque arguments, in
+which the template's parameters are opaque as well. The stage-1 compiler
+checks it there and every compiler then drops it, so a declaration
+inspecting the trees of its parameter is rejected though nothing uses
+it. A declaration in a module with parameters takes the module's and
+then its own: it is declared in each instance of the module, in the
+scope of that instance's parameters.
+
+An instance of a datatype is a datatype of the datatype language, whose
+fields hold trees, the values of datatypes and those of sorts
+({ref "datatype-completion"}[The datatype language's completion]). A
+datatype with a field of a parameter's type is therefore instantiated at
+the trees and at datatypes, and its instance at a type of lists, of
+pairs or of functions is rejected where it is used, as a template's is
+at its import. The check at opaque arguments admits the declaration, a
+sort being represented as the trees are, and says nothing of the types
+an instance may take; a function or a definition, which declares no
+field, is instantiated at every type.
+
+A failure of the check at opaque arguments is reported at the subterm of
+the declaration that does not check, its types as the declaration writes
+them: for `(defn (peek A) ((x A)) T (label x))` the diagnostic selects
+`x` and names `T` and `A`. An instance that does not check at types a
+source writes, a use at a term where a type stands or a datatype's at a
+type its fields do not hold, is reported at the declaration that writes
+the use, with the use
+(`GebHost/Compiler.lean`, `GebHost/DatatypeTyping.lean`,
+`scripts/tests/test-geb-compile.sh`). In the editor an occurrence of a
+name declared with type parameters resolves to its declaration, in a
+term, a type and a pattern, and an occurrence of a type parameter to its
+binding (`GebHost/Navigation.lean`, `scripts/tests/test-navigation.sh`).
 
 An instance is a definition its program compiles, as a template's is at
 each import, so instances add to a program's compile time
 ({ref "improvements"}[Improvements]). Since uses at equal arguments
 denote one instance, a program compiles an instance for each distinct
-list of arguments, not for each use.
+list of arguments, not for each use. A program that declares no name
+with type parameters has each of its forms emitted as it is, with no
+pass over it for its uses.
 
 The acceptance is that of {ref "authoring-sequence"}[The sequence and
-its acceptance]. The library's modules are written in these forms from
-the first. The sources under `bootstrap/` are converted to them
-afterwards, in a change of their own (the decision on conversion). That
-change renames and reorders the instances of the programs that the
-mirrors, the agreement proofs and the developments are about, sources of
-the program whose typing's soundness is proved among them, so it is
-followed by the regeneration of the mirrors and by
+its acceptance], met by the program of `examples/polymorphic/`
+({ref "downstream-authoring"}[A Geb library and its downstream
+application], step 4), and by the stage-1 compiler's agreement with the
+stage-0 compiler on such programs and its rejection of those that
+inspect a parameter (`GebTests/Prototypes/Stage1.lean`); the stage-0
+compiler and the committed image reproduce themselves
+(`scripts/bootstrap.sh check`). The library's modules are written in
+these forms from the first. The sources under `bootstrap/` are converted
+to them afterwards, in a change of their own (the decision on
+conversion). That change renames and reorders the instances of the
+programs that the mirrors, the agreement proofs and the developments are
+about, sources of the program whose typing's soundness is proved among
+them, so it is followed by the regeneration of the mirrors and by
 `scripts/certificates.sh regen`.
 
 ### Documentation
@@ -9194,15 +9297,29 @@ the change that removes it.
   the bootstrap's programs nor the modules checking their certificates,
   which read their programs from committed images
   ({ref "downstream-authoring"}[A Geb library and its downstream
-  application], step 7).
-* Monomorphic compositions. The datatype language has no polymorphic
-  definitions, and a template's instances are distinct types, so a
-  composition of computations at two types of values is a definition of
-  its own: the combinator prover holds one for each pair of types it
-  composes
-  ({ref "datatype-completion"}[The datatype language's completion]).
-  Polymorphic definitions remove the copies, and precede the library's
-  modules ({ref "polymorphic-definitions"}[Polymorphic definitions]).
+  application], step 7). The seed's reading of modules is among those
+  modules' imports: the command that declares a program's loading
+  (`GebTests/Prototypes/ProgramCommand.lean`) reads the program's
+  entries from its manifest, and the reading of manifests
+  (`Geb/Prototypes/Kernel/Manifest.lean`) imports
+  `Geb/Prototypes/Kernel/Modules.lean` for its test of a keyword. A
+  change to that module, as a form added to the elaboration of modules
+  is with the change to `bootstrap/modules.geb`, therefore rebuilds the
+  modules checking the certificates, in 32 minutes at four processes in
+  one run, though it changes no program they are about. The generator of
+  the certificates does not import it, so its searches do not run. The
+  test of a keyword declared apart from the elaboration removes the
+  dependency.
+* Monomorphic compositions. A template's instances are distinct types,
+  so in the sources written before polymorphic definitions a composition
+  of computations at two types of values is a definition of its own: the
+  combinator prover holds one for each pair of types it composes
+  ({ref "datatype-completion"}[The datatype language's completion]). A
+  definition with type parameters of its own is one definition at every
+  pair ({ref "polymorphic-definitions"}[Polymorphic definitions]), and
+  the conversion of the sources under `bootstrap/` to that form removes
+  the copies ({ref "downstream-authoring"}[A Geb library and its
+  downstream application], step 12).
 * A bundle keeps definition names. The separate kernel annotation record
   relates binders and comments in the durable source to core vertices.
   Extend that correspondence through module and datatype elaboration
@@ -9256,10 +9373,11 @@ in the editor now uses the proof cache and navigation index. Loading the compile
 stage-test comparison shortens the feedback cycle for changes to the
 compiler itself. The
 constant-depth reader removes a stack limit as the sources grow
-({ref "improvements"}[Improvements]). Polymorphic definitions are the
-next change to the compilers' sources, which regenerates and checks the
-committed artifacts at the compiler's cost, and precede the library's
-modules ({ref "polymorphic-definitions"}[Polymorphic definitions]).
+({ref "improvements"}[Improvements]). Polymorphic definitions are
+constructed, by a change to the compilers' sources that regenerated the
+committed image and the Lean the compiler emits, and the library's
+modules are written in them
+({ref "polymorphic-definitions"}[Polymorphic definitions]).
 
 The proofs about the compiler's components are complete: the type
 checker's preservation of types by weakening and by substitution and the

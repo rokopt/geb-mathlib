@@ -16165,6 +16165,22 @@ def «Modules.nameCat» :=
         (_root_.Geb.Kernel.Const.children x0)
         (x1 :: (_root_.Geb.Kernel.Const.children x2)))
 
+def «Modules.polyAt» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    if (_root_.Geb.Kernel.Const.arity x0).label ≠ 0 then
+      _root_.GebBoot.«Trie.find» x1 x0
+    else
+      _root_.GebBoot.«Prelude.none»
+
+def «Modules.polyUse» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 3)
+      (x0 ::
+        ((_root_.Geb.Kernel.Const.child x1 (_root_.Geb.Kernel.leaf 1)) :: x2))
+
 def «Modules.hasDot» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.foldr
@@ -16212,31 +16228,31 @@ def «Modules.boundBy» :=
       (_root_.GebBoot.«Reader.binders» x0)
 
 def «Modules.patternVars» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.foldr
       (α := _root_.Geb.Kernel.Tree)
       (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
         if (_root_.GebBoot.«Prelude.and»
-          (_root_.GebBoot.«Reader.isAtom» x1)
+          (_root_.GebBoot.«Reader.isAtom» x2)
           (if (_root_.GebBoot.«Prelude.or»
             (_root_.GebBoot.«Reader.named»
-              x1
+              x2
               (_root_.Geb.Kernel.mk 0 [_root_.Geb.Kernel.leaf 38]))
             (_root_.GebBoot.«Reader.named»
-              x1
+              x2
               (_root_.Geb.Kernel.mk 0 [_root_.Geb.Kernel.leaf 95]))).label ≠ 0 then
             _root_.Geb.Kernel.leaf 0
           else
             _root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          ((_root_.GebBoot.«Reader.nameOf» x1) :: x2)
+          ((_root_.GebBoot.«Reader.nameOf» x2) :: x3)
         else
-          x2)
+          x3)
       ([] : _root_.List _root_.Geb.Kernel.Tree)
       (_root_.GebBoot.«Prelude.drop»
-        (_root_.Geb.Kernel.leaf 1)
-        (_root_.Geb.Kernel.Const.children x0))
+        (_root_.Geb.Kernel.Const.add (_root_.Geb.Kernel.leaf 1) x0)
+        (_root_.Geb.Kernel.Const.children x1))
 
 def «Modules.localAtom» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
@@ -16249,43 +16265,54 @@ def «Modules.localAtom» :=
     else
       x0
 
-def «Modules.renPattern» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.children x1)
+def «Modules.isLocalAtom» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    _root_.GebBoot.«Prelude.and»
+      (_root_.GebBoot.«Prelude.isSome»
+        (_root_.GebBoot.«Reader.indexOf»
+          (_root_.GebBoot.«Reader.nameOf» x0)
+          x1))
+      (if (_root_.GebBoot.«Prelude.isSome»
+        (_root_.GebBoot.«Reader.numeral»
+          (_root_.Geb.Kernel.Const.children x0))).label ≠ 0 then
+        _root_.Geb.Kernel.leaf 0
+      else
+        _root_.Geb.Kernel.leaf 1)
+
+def «Modules.polyOf» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    if (if (_root_.Geb.Kernel.Const.arity x1).label ≠ 0 then
+      _root_.GebBoot.«Reader.isAtom» x2
+    else
+      _root_.Geb.Kernel.leaf 0).label ≠ 0 then
+      _root_.GebBoot.«Trie.find»
+        (_root_.GebBoot.«Modules.flatName»
+          x0
+          (_root_.GebBoot.«Reader.nameOf» x2))
+        x1
+    else
+      _root_.GebBoot.«Prelude.none»
+
+def «Modules.renAtom» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.flatName»
+      x0
+      (_root_.GebBoot.«Reader.nameOf» x2);
+    let x4 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.polyAt»
       x1
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebBoot.«Modules.mkList»
-          ((if (_root_.GebBoot.«Reader.isAtom» x2).label ≠ 0 then
-            _root_.GebBoot.«Modules.atomOf»
-              (_root_.GebBoot.«Modules.flatName»
-                x0
-                (_root_.GebBoot.«Reader.nameOf» x2))
-          else
-            _root_.Geb.Kernel.Const.node
-              (_root_.Geb.Kernel.leaf 1)
-              ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
-            (_root_.Geb.Kernel.Const.foldr
-              (α := _root_.Geb.Kernel.Tree)
-              (β := _root_.List _root_.Geb.Kernel.Tree)
-              (fun (x4 : _root_.Geb.Kernel.Tree)
-                 (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                ((if (_root_.GebBoot.«Prelude.or»
-                  (_root_.GebBoot.«Reader.named»
-                    x4
-                    (_root_.Geb.Kernel.mk 0 [_root_.Geb.Kernel.leaf 38]))
-                  (_root_.GebBoot.«Reader.named»
-                    x4
-                    (_root_.Geb.Kernel.mk 0 [_root_.Geb.Kernel.leaf 95]))).label ≠ 0 then
-                  x4
-                else
-                  _root_.GebBoot.«Modules.localAtom» x4) ::
-                  x5))
-              ([] : _root_.List _root_.Geb.Kernel.Tree)
-              x3)))
+      x3;
+    if (_root_.GebBoot.«Prelude.isSome» x4).label ≠ 0 then
+      _root_.GebBoot.«Modules.polyUse»
+        x3
+        (_root_.GebBoot.«Prelude.get» x4)
+        ([] : _root_.List _root_.Geb.Kernel.Tree)
+    else
+      _root_.GebBoot.«Modules.atomOf» x3
 
 def «Modules.rkDrop» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -16357,6 +16384,95 @@ def «Modules.rkAll» :=
         ((x3 x1 x2) :: x4))
       ([] : _root_.List _root_.Geb.Kernel.Tree)
       x0
+
+def «Modules.rkTypes» :=
+  fun (x0 : _root_.List
+      (_root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree → _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x3 : _root_.Geb.Kernel.Tree → _root_.List _root_.Geb.Kernel.Tree)
+         (x4 : _root_.Geb.Kernel.Tree) =>
+        if (_root_.Geb.Kernel.Const.lt x4 x1).label ≠ 0 then
+          ((x2
+            (_root_.Geb.Kernel.leaf 1)
+            ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
+            (x3 (_root_.Geb.Kernel.Const.add x4 (_root_.Geb.Kernel.leaf 1))))
+        else
+          ([] : _root_.List _root_.Geb.Kernel.Tree))
+      (fun (_ : _root_.Geb.Kernel.Tree) =>
+        ([] : _root_.List _root_.Geb.Kernel.Tree))
+      x0
+      (_root_.Geb.Kernel.leaf 0)
+
+def «Modules.renPattern» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List
+      (_root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.children x2)
+      x2
+      (fun (x4 : _root_.Geb.Kernel.Tree)
+         (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+        let x6 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.polyOf»
+          x0
+          x1
+          x4;
+        let x7 : _root_.Geb.Kernel.Tree := (if (_root_.GebBoot.«Prelude.isSome»
+          x6).label ≠ 0 then
+          _root_.Geb.Kernel.Const.child
+            (_root_.GebBoot.«Prelude.get» x6)
+            (_root_.Geb.Kernel.leaf 0)
+        else
+          _root_.Geb.Kernel.leaf 0);
+        _root_.GebBoot.«Modules.mkList»
+          ((if (_root_.GebBoot.«Prelude.isSome» x6).label ≠ 0 then
+            _root_.GebBoot.«Modules.polyUse»
+              (_root_.GebBoot.«Modules.flatName»
+                x0
+                (_root_.GebBoot.«Reader.nameOf» x4))
+              (_root_.GebBoot.«Prelude.get» x6)
+              (_root_.GebBoot.«Modules.rkTypes»
+                (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 1) x3)
+                x7)
+          else
+            if (_root_.GebBoot.«Reader.isAtom» x4).label ≠ 0 then
+              _root_.GebBoot.«Modules.atomOf»
+                (_root_.GebBoot.«Modules.flatName»
+                  x0
+                  (_root_.GebBoot.«Reader.nameOf» x4))
+            else
+              _root_.Geb.Kernel.Const.node
+                (_root_.Geb.Kernel.leaf 1)
+                ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
+            (_root_.Geb.Kernel.Const.foldr
+              (α := _root_.Geb.Kernel.Tree)
+              (β := _root_.List _root_.Geb.Kernel.Tree)
+              (fun (x8 : _root_.Geb.Kernel.Tree)
+                 (x9 : _root_.List _root_.Geb.Kernel.Tree) =>
+                ((if (_root_.GebBoot.«Prelude.or»
+                  (_root_.GebBoot.«Reader.named»
+                    x8
+                    (_root_.Geb.Kernel.mk 0 [_root_.Geb.Kernel.leaf 38]))
+                  (_root_.GebBoot.«Reader.named»
+                    x8
+                    (_root_.Geb.Kernel.mk 0 [_root_.Geb.Kernel.leaf 95]))).label ≠ 0 then
+                  x8
+                else
+                  _root_.GebBoot.«Modules.localAtom» x8) ::
+                  x9))
+              ([] : _root_.List _root_.Geb.Kernel.Tree)
+              (_root_.GebBoot.«Prelude.drop» x7 x5))))
 
 def «Modules.emptyTerm» :=
   _root_.GebBoot.«Modules.mkList»
@@ -16547,423 +16663,651 @@ def «Modules.renChainRole» :=
           _root_.GebBoot.«Modules.emptyTerm»
 
 def «Modules.renTermList» :=
-  fun (_ : _root_.Geb.Kernel.Tree)
+  fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.List
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List
       (_root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-    (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x4 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x1;
-    let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.arity x1;
-    let x6 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.at»
-      x4
+    (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x2;
+    let x6 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.arity x2;
+    let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.at»
+      x5
       (_root_.Geb.Kernel.leaf 0);
     if (_root_.Geb.Kernel.Const.eq
-      x5
+      x6
       (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
-      x1
+      x2
     else
       if (_root_.GebBoot.«Reader.named»
-        x6
+        x7
         _root_.GebBoot.«Modules.kwLetStar»).label ≠ 0 then
         if (_root_.GebBoot.«Prelude.and»
-          (_root_.Geb.Kernel.Const.eq x5 (_root_.Geb.Kernel.leaf 3))
+          (_root_.Geb.Kernel.Const.eq x6 (_root_.Geb.Kernel.leaf 3))
           (_root_.GebBoot.«Reader.isList»
             (_root_.GebBoot.«Prelude.at»
-              x4
+              x5
               (_root_.Geb.Kernel.leaf 1)))).label ≠ 0 then
           _root_.GebBoot.«Modules.letChain»
             (_root_.Geb.Kernel.Const.children
               (_root_.GebBoot.«Modules.rkAt»
-                x2
+                x3
                 (_root_.Geb.Kernel.leaf 1)
                 (_root_.Geb.Kernel.leaf 6)
-                x3))
+                x4))
             (_root_.GebBoot.«Modules.rkAt»
-              x2
+              x3
               (_root_.Geb.Kernel.leaf 2)
               (_root_.Geb.Kernel.leaf 0)
               (_root_.GebBoot.«Prelude.append»
                 (_root_.GebBoot.«Modules.boundBy»
-                  (_root_.GebBoot.«Prelude.at» x4 (_root_.Geb.Kernel.leaf 1)))
-                x3))
+                  (_root_.GebBoot.«Prelude.at» x5 (_root_.Geb.Kernel.leaf 1)))
+                x4))
         else
           _root_.GebBoot.«Modules.emptyTerm»
       else
         if (_root_.GebBoot.«Reader.named»
-          x6
+          x7
           _root_.GebBoot.«Modules.kwCond»).label ≠ 0 then
           _root_.GebBoot.«Modules.condChain»
             (_root_.GebBoot.«Modules.rkAll»
-              (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 1) x2)
+              (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 1) x3)
               (_root_.Geb.Kernel.leaf 7)
-              x3)
+              x4)
         else
           if (_root_.GebBoot.«Prelude.or»
-            (_root_.GebBoot.«Reader.named» x6 _root_.GebBoot.«Reader.kwQuote»)
+            (_root_.GebBoot.«Reader.named» x7 _root_.GebBoot.«Reader.kwQuote»)
             (_root_.GebBoot.«Reader.named»
-              x6
+              x7
               _root_.GebBoot.«Reader.kwHole»)).label ≠ 0 then
-            x1
+            x2
           else
             if (_root_.GebBoot.«Reader.named»
-              x6
+              x7
               _root_.GebBoot.«Datatype.kwDatum»).label ≠ 0 then
               if (_root_.Geb.Kernel.Const.eq
-                x5
+                x6
                 (_root_.Geb.Kernel.leaf 3)).label ≠ 0 then
                 _root_.GebBoot.«Modules.mkList»
-                  (x6 ::
+                  (x7 ::
                     ((_root_.GebBoot.«Modules.rkAt»
-                      x2
+                      x3
                       (_root_.Geb.Kernel.leaf 1)
                       (_root_.Geb.Kernel.leaf 1)
                       ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
                       (_root_.GebBoot.«Prelude.single»
-                        (_root_.GebBoot.«Prelude.at» x4 (_root_.Geb.Kernel.leaf 2)))))
+                        (_root_.GebBoot.«Prelude.at» x5 (_root_.Geb.Kernel.leaf 2)))))
               else
-                x1
+                x2
             else
               if (_root_.GebBoot.«Reader.named»
-                x6
+                x7
                 _root_.GebBoot.«Datatype.kwDecode»).label ≠ 0 then
                 if (_root_.Geb.Kernel.Const.lt
                   (_root_.Geb.Kernel.leaf 1)
-                  x5).label ≠ 0 then
+                  x6).label ≠ 0 then
                   _root_.GebBoot.«Modules.mkList»
-                    (x6 ::
+                    (x7 ::
                       ((_root_.GebBoot.«Modules.rkAt»
-                        x2
+                        x3
                         (_root_.Geb.Kernel.leaf 1)
                         (_root_.Geb.Kernel.leaf 1)
                         ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
                         (_root_.GebBoot.«Modules.rkAll»
-                          (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 2) x2)
+                          (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 2) x3)
                           (_root_.Geb.Kernel.leaf 0)
-                          x3)))
+                          x4)))
                 else
-                  x1
+                  x2
               else
                 if (_root_.GebBoot.«Reader.named»
-                  x6
+                  x7
                   _root_.GebBoot.«Reader.kwLam»).label ≠ 0 then
                   if (_root_.Geb.Kernel.Const.eq
-                    x5
+                    x6
                     (_root_.Geb.Kernel.leaf 3)).label ≠ 0 then
                     _root_.GebBoot.«Modules.mkList»
-                      (x6 ::
+                      (x7 ::
                         ((_root_.GebBoot.«Modules.rkAt»
-                          x2
+                          x3
                           (_root_.Geb.Kernel.leaf 1)
                           (_root_.Geb.Kernel.leaf 3)
                           ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
                           (_root_.GebBoot.«Prelude.single»
                             (_root_.GebBoot.«Modules.rkAt»
-                              x2
+                              x3
                               (_root_.Geb.Kernel.leaf 2)
                               (_root_.Geb.Kernel.leaf 0)
                               (_root_.GebBoot.«Prelude.append»
                                 (_root_.GebBoot.«Modules.boundBy»
-                                  (_root_.GebBoot.«Prelude.at» x4 (_root_.Geb.Kernel.leaf 1)))
-                                x3)))))
+                                  (_root_.GebBoot.«Prelude.at» x5 (_root_.Geb.Kernel.leaf 1)))
+                                x4)))))
                   else
-                    x1
+                    x2
                 else
                   if (_root_.GebBoot.«Reader.named»
-                    x6
+                    x7
                     _root_.GebBoot.«Reader.kwLet»).label ≠ 0 then
                     if (_root_.Geb.Kernel.Const.eq
-                      x5
+                      x6
                       (_root_.Geb.Kernel.leaf 5)).label ≠ 0 then
-                      let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.at»
-                        x4
+                      let x8 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.at»
+                        x5
                         (_root_.Geb.Kernel.leaf 1);
                       _root_.GebBoot.«Modules.mkList»
-                        (x6 ::
-                          ((_root_.GebBoot.«Modules.localAtom» x7) ::
+                        (x7 ::
+                          ((_root_.GebBoot.«Modules.localAtom» x8) ::
                             ((_root_.GebBoot.«Modules.rkAt»
-                              x2
+                              x3
                               (_root_.Geb.Kernel.leaf 2)
                               (_root_.Geb.Kernel.leaf 1)
                               ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
                               ((_root_.GebBoot.«Modules.rkAt»
-                                x2
+                                x3
                                 (_root_.Geb.Kernel.leaf 3)
                                 (_root_.Geb.Kernel.leaf 0)
-                                x3) ::
+                                x4) ::
                                 (_root_.GebBoot.«Prelude.single»
                                   (_root_.GebBoot.«Modules.rkAt»
-                                    x2
+                                    x3
                                     (_root_.Geb.Kernel.leaf 4)
                                     (_root_.Geb.Kernel.leaf 0)
-                                    (if (_root_.GebBoot.«Reader.isAtom» x7).label ≠ 0 then
-                                      ((_root_.GebBoot.«Reader.nameOf» x7) :: x3)
+                                    (if (_root_.GebBoot.«Reader.isAtom» x8).label ≠ 0 then
+                                      ((_root_.GebBoot.«Reader.nameOf» x8) :: x4)
                                     else
-                                      x3)))))))
+                                      x4)))))))
                     else
-                      x1
+                      x2
                   else
                     if (_root_.GebBoot.«Reader.named»
-                      x6
+                      x7
                       _root_.GebBoot.«Reader.kwNil»).label ≠ 0 then
                       _root_.GebBoot.«Modules.mkList»
-                        (x6 ::
+                        (x7 ::
                           (_root_.GebBoot.«Modules.rkAll»
-                            (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 1) x2)
+                            (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 1) x3)
                             (_root_.Geb.Kernel.leaf 1)
                             ([] : _root_.List _root_.Geb.Kernel.Tree)))
                     else
                       if (_root_.GebBoot.«Prelude.or»
-                        (_root_.GebBoot.«Reader.named» x6 _root_.GebBoot.«Reader.kwFold»)
+                        (_root_.GebBoot.«Reader.named» x7 _root_.GebBoot.«Reader.kwFold»)
                         (_root_.GebBoot.«Prelude.or»
-                          (_root_.GebBoot.«Reader.named» x6 _root_.GebBoot.«Reader.kwPara»)
+                          (_root_.GebBoot.«Reader.named» x7 _root_.GebBoot.«Reader.kwPara»)
                           (_root_.GebBoot.«Reader.named»
-                            x6
+                            x7
                             _root_.GebBoot.«Reader.kwIter»))).label ≠ 0 then
                         if (_root_.Geb.Kernel.Const.lt
                           (_root_.Geb.Kernel.leaf 1)
-                          x5).label ≠ 0 then
+                          x6).label ≠ 0 then
                           _root_.GebBoot.«Modules.mkList»
-                            (x6 ::
+                            (x7 ::
                               ((_root_.GebBoot.«Modules.rkAt»
-                                x2
+                                x3
                                 (_root_.Geb.Kernel.leaf 1)
                                 (_root_.Geb.Kernel.leaf 1)
                                 ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
                                 (_root_.GebBoot.«Modules.rkAll»
-                                  (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 2) x2)
+                                  (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 2) x3)
                                   (_root_.Geb.Kernel.leaf 0)
-                                  x3)))
+                                  x4)))
                         else
-                          x1
+                          x2
                       else
                         if (_root_.GebBoot.«Prelude.or»
-                          (_root_.GebBoot.«Reader.named» x6 _root_.GebBoot.«Reader.kwFoldr»)
+                          (_root_.GebBoot.«Reader.named» x7 _root_.GebBoot.«Reader.kwFoldr»)
                           (_root_.GebBoot.«Reader.named»
-                            x6
+                            x7
                             _root_.GebBoot.«Reader.kwLcase»)).label ≠ 0 then
                           if (_root_.Geb.Kernel.Const.lt
                             (_root_.Geb.Kernel.leaf 2)
-                            x5).label ≠ 0 then
+                            x6).label ≠ 0 then
                             _root_.GebBoot.«Modules.mkList»
-                              (x6 ::
+                              (x7 ::
                                 ((_root_.GebBoot.«Modules.rkAt»
-                                  x2
+                                  x3
                                   (_root_.Geb.Kernel.leaf 1)
                                   (_root_.Geb.Kernel.leaf 1)
                                   ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
                                   ((_root_.GebBoot.«Modules.rkAt»
-                                    x2
+                                    x3
                                     (_root_.Geb.Kernel.leaf 2)
                                     (_root_.Geb.Kernel.leaf 1)
                                     ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
                                     (_root_.GebBoot.«Modules.rkAll»
                                       (_root_.GebBoot.«Modules.rkDrop»
                                         (_root_.Geb.Kernel.leaf 3)
-                                        x2)
+                                        x3)
                                       (_root_.Geb.Kernel.leaf 0)
-                                      x3))))
+                                      x4))))
                           else
-                            x1
+                            x2
                         else
                           if (_root_.GebBoot.«Reader.named»
-                            x6
+                            x7
                             _root_.GebBoot.«Datatype.kwCase»).label ≠ 0 then
                             if (_root_.Geb.Kernel.Const.lt
                               (_root_.Geb.Kernel.leaf 1)
-                              x5).label ≠ 0 then
+                              x6).label ≠ 0 then
                               _root_.GebBoot.«Modules.mkList»
-                                (x6 ::
+                                (x7 ::
                                   ((_root_.GebBoot.«Modules.rkAt»
-                                    x2
+                                    x3
                                     (_root_.Geb.Kernel.leaf 1)
                                     (_root_.Geb.Kernel.leaf 0)
-                                    x3) ::
+                                    x4) ::
                                     (_root_.GebBoot.«Modules.rkAll»
                                       (_root_.GebBoot.«Modules.rkDrop»
                                         (_root_.Geb.Kernel.leaf 2)
-                                        x2)
+                                        x3)
                                       (_root_.Geb.Kernel.leaf 2)
-                                      x3)))
+                                      x4)))
                             else
-                              x1
+                              x2
                           else
                             if (_root_.GebBoot.«Reader.named»
-                              x6
+                              x7
                               _root_.GebBoot.«Datatype.kwCata»).label ≠ 0 then
                               if (_root_.Geb.Kernel.Const.lt
                                 (_root_.Geb.Kernel.leaf 3)
-                                x5).label ≠ 0 then
+                                x6).label ≠ 0 then
                                 _root_.GebBoot.«Modules.mkList»
-                                  (x6 ::
+                                  (x7 ::
                                     ((_root_.GebBoot.«Modules.rkAt»
-                                      x2
+                                      x3
                                       (_root_.Geb.Kernel.leaf 1)
                                       (_root_.Geb.Kernel.leaf 1)
                                       ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
                                       ((_root_.GebBoot.«Modules.rkAt»
-                                        x2
+                                        x3
                                         (_root_.Geb.Kernel.leaf 2)
                                         (_root_.Geb.Kernel.leaf 1)
                                         ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
                                         ((_root_.GebBoot.«Modules.rkAt»
-                                          x2
+                                          x3
                                           (_root_.Geb.Kernel.leaf 3)
                                           (_root_.Geb.Kernel.leaf 0)
-                                          x3) ::
+                                          x4) ::
                                           (_root_.GebBoot.«Modules.rkAll»
                                             (_root_.GebBoot.«Modules.rkDrop»
                                               (_root_.Geb.Kernel.leaf 4)
-                                              x2)
+                                              x3)
                                             (_root_.Geb.Kernel.leaf 2)
-                                            x3)))))
+                                            x4)))))
                               else
-                                x1
+                                x2
                             else
-                              _root_.GebBoot.«Modules.mkList»
-                                (_root_.GebBoot.«Modules.rkAll» x2 (_root_.Geb.Kernel.leaf 0) x3)
+                              let x8 : _root_.Geb.Kernel.Tree := (if (if (_root_.Geb.Kernel.Const.arity
+                                x1).label ≠ 0 then
+                                _root_.GebBoot.«Reader.isAtom» x7
+                              else
+                                _root_.Geb.Kernel.leaf 0).label ≠ 0 then
+                                if (_root_.GebBoot.«Modules.isLocalAtom» x7 x4).label ≠ 0 then
+                                  _root_.GebBoot.«Prelude.none»
+                                else
+                                  _root_.GebBoot.«Modules.polyOf» x0 x1 x7
+                              else
+                                _root_.GebBoot.«Prelude.none»);
+                              if (_root_.GebBoot.«Prelude.isSome» x8).label ≠ 0 then
+                                let x9 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
+                                  (_root_.GebBoot.«Prelude.get» x8)
+                                  (_root_.Geb.Kernel.leaf 0);
+                                let x10 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.polyUse»
+                                  (_root_.GebBoot.«Modules.flatName»
+                                    x0
+                                    (_root_.GebBoot.«Reader.nameOf» x7))
+                                  (_root_.GebBoot.«Prelude.get» x8)
+                                  (_root_.GebBoot.«Modules.rkTypes»
+                                    (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 1) x3)
+                                    x9);
+                                if (_root_.Geb.Kernel.Const.lt
+                                  (_root_.Geb.Kernel.Const.add x9 (_root_.Geb.Kernel.leaf 1))
+                                  x6).label ≠ 0 then
+                                  _root_.GebBoot.«Modules.mkList»
+                                    (x10 ::
+                                      (_root_.GebBoot.«Modules.rkAll»
+                                        (_root_.GebBoot.«Modules.rkDrop»
+                                          (_root_.Geb.Kernel.Const.add
+                                            x9
+                                            (_root_.Geb.Kernel.leaf 1))
+                                          x3)
+                                        (_root_.Geb.Kernel.leaf 0)
+                                        x4))
+                                else
+                                  x10
+                              else
+                                _root_.GebBoot.«Modules.mkList»
+                                  (_root_.GebBoot.«Modules.rkAll» x3 (_root_.Geb.Kernel.leaf 0) x4)
 
 def «Modules.renStep» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.List
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List
       (_root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x5 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x1;
-    let x6 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.arity x1;
-    if (_root_.Geb.Kernel.Const.lt
-      (_root_.Geb.Kernel.leaf 4)
-      x3).label ≠ 0 then
-      _root_.GebBoot.«Modules.renChainRole» x1 x2 x3 x4
-    else
-      if (_root_.Geb.Kernel.Const.eq
-        x3
-        (_root_.Geb.Kernel.leaf 4)).label ≠ 0 then
-        x1
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x6 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x2;
+    let x7 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.arity x2;
+    if (_root_.Geb.Kernel.Const.eq
+      x4
+      (_root_.Geb.Kernel.leaf 8)).label ≠ 0 then
+      if (_root_.GebBoot.«Reader.isAtom» x2).label ≠ 0 then
+        x2
       else
-        if (_root_.GebBoot.«Reader.isAtom» x1).label ≠ 0 then
-          if (_root_.Geb.Kernel.Const.eq
-            x3
-            (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-            _root_.GebBoot.«Modules.atomOf»
-              (_root_.GebBoot.«Modules.flatName»
-                x0
-                (_root_.GebBoot.«Reader.nameOf» x1))
+        _root_.GebBoot.«Modules.renPattern» x0 x1 x2 x3
+    else
+      if (_root_.Geb.Kernel.Const.lt
+        (_root_.Geb.Kernel.leaf 4)
+        x4).label ≠ 0 then
+        _root_.GebBoot.«Modules.renChainRole» x2 x3 x4 x5
+      else
+        if (_root_.Geb.Kernel.Const.eq
+          x4
+          (_root_.Geb.Kernel.leaf 4)).label ≠ 0 then
+          x2
+        else
+          if (_root_.GebBoot.«Reader.isAtom» x2).label ≠ 0 then
+            if (_root_.Geb.Kernel.Const.eq
+              x4
+              (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+              _root_.GebBoot.«Modules.renAtom» x0 x1 x2
+            else
+              if (_root_.Geb.Kernel.Const.eq
+                x4
+                (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
+                if (_root_.GebBoot.«Modules.isLocalAtom» x2 x5).label ≠ 0 then
+                  _root_.GebBoot.«Modules.localAtom» x2
+                else
+                  _root_.GebBoot.«Modules.renAtom» x0 x1 x2
+              else
+                x2
           else
             if (_root_.Geb.Kernel.Const.eq
-              x3
-              (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
-              if (_root_.GebBoot.«Prelude.and»
-                (_root_.GebBoot.«Prelude.isSome»
-                  (_root_.GebBoot.«Reader.indexOf»
-                    (_root_.GebBoot.«Reader.nameOf» x1)
-                    x4))
-                (if (_root_.GebBoot.«Prelude.isSome»
-                  (_root_.GebBoot.«Reader.numeral»
-                    (_root_.Geb.Kernel.Const.children x1))).label ≠ 0 then
-                  _root_.Geb.Kernel.leaf 0
-                else
-                  _root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                _root_.GebBoot.«Modules.localAtom» x1
+              x4
+              (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+              let x8 : _root_.Geb.Kernel.Tree := (if (_root_.Geb.Kernel.Const.eq
+                x7
+                (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
+                _root_.GebBoot.«Prelude.none»
               else
-                _root_.GebBoot.«Modules.atomOf»
+                _root_.GebBoot.«Modules.polyOf»
+                  x0
+                  x1
+                  (_root_.GebBoot.«Prelude.at» x6 (_root_.Geb.Kernel.leaf 0)));
+              if (_root_.GebBoot.«Prelude.isSome» x8).label ≠ 0 then
+                _root_.GebBoot.«Modules.polyUse»
                   (_root_.GebBoot.«Modules.flatName»
                     x0
-                    (_root_.GebBoot.«Reader.nameOf» x1))
-            else
-              x1
-        else
-          if (_root_.Geb.Kernel.Const.eq
-            x3
-            (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-            _root_.GebBoot.«Modules.mkList»
-              (_root_.GebBoot.«Modules.rkAll»
-                x2
-                (_root_.Geb.Kernel.leaf 1)
-                ([] : _root_.List _root_.Geb.Kernel.Tree))
-          else
-            if (_root_.Geb.Kernel.Const.eq
-              x3
-              (_root_.Geb.Kernel.leaf 3)).label ≠ 0 then
-              if (_root_.Geb.Kernel.Const.eq
-                x6
-                (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
-                x1
+                    (_root_.GebBoot.«Reader.nameOf»
+                      (_root_.GebBoot.«Prelude.at» x6 (_root_.Geb.Kernel.leaf 0))))
+                  (_root_.GebBoot.«Prelude.get» x8)
+                  (_root_.GebBoot.«Modules.rkAll»
+                    (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 1) x3)
+                    (_root_.Geb.Kernel.leaf 1)
+                    ([] : _root_.List _root_.Geb.Kernel.Tree))
               else
-                if (_root_.GebBoot.«Reader.isAtom»
-                  (_root_.GebBoot.«Prelude.at»
-                    x5
-                    (_root_.Geb.Kernel.leaf 0))).label ≠ 0 then
-                  _root_.GebBoot.«Modules.mkList»
-                    ((_root_.GebBoot.«Modules.localAtom»
-                      (_root_.GebBoot.«Prelude.at» x5 (_root_.Geb.Kernel.leaf 0))) ::
-                      (_root_.GebBoot.«Modules.rkAll»
-                        (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 1) x2)
-                        (_root_.Geb.Kernel.leaf 1)
-                        ([] : _root_.List _root_.Geb.Kernel.Tree)))
-                else
-                  _root_.GebBoot.«Modules.mkList»
-                    (_root_.GebBoot.«Modules.rkAll»
-                      x2
-                      (_root_.Geb.Kernel.leaf 3)
-                      ([] : _root_.List _root_.Geb.Kernel.Tree))
+                _root_.GebBoot.«Modules.mkList»
+                  (_root_.GebBoot.«Modules.rkAll»
+                    x3
+                    (_root_.Geb.Kernel.leaf 1)
+                    ([] : _root_.List _root_.Geb.Kernel.Tree))
             else
               if (_root_.Geb.Kernel.Const.eq
-                x3
-                (_root_.Geb.Kernel.leaf 2)).label ≠ 0 then
+                x4
+                (_root_.Geb.Kernel.leaf 3)).label ≠ 0 then
                 if (_root_.Geb.Kernel.Const.eq
-                  x6
-                  (_root_.Geb.Kernel.leaf 2)).label ≠ 0 then
-                  let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.at»
-                    x5
-                    (_root_.Geb.Kernel.leaf 0);
-                  if (_root_.GebBoot.«Reader.isAtom» x7).label ≠ 0 then
+                  x7
+                  (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
+                  x2
+                else
+                  if (_root_.GebBoot.«Reader.isAtom»
+                    (_root_.GebBoot.«Prelude.at»
+                      x6
+                      (_root_.Geb.Kernel.leaf 0))).label ≠ 0 then
                     _root_.GebBoot.«Modules.mkList»
-                      (x7 ::
-                        (_root_.GebBoot.«Prelude.single»
-                          (_root_.GebBoot.«Modules.rkAt»
-                            x2
-                            (_root_.Geb.Kernel.leaf 1)
-                            (_root_.Geb.Kernel.leaf 0)
-                            x4)))
+                      ((_root_.GebBoot.«Modules.localAtom»
+                        (_root_.GebBoot.«Prelude.at» x6 (_root_.Geb.Kernel.leaf 0))) ::
+                        (_root_.GebBoot.«Modules.rkAll»
+                          (_root_.GebBoot.«Modules.rkDrop» (_root_.Geb.Kernel.leaf 1) x3)
+                          (_root_.Geb.Kernel.leaf 1)
+                          ([] : _root_.List _root_.Geb.Kernel.Tree)))
                   else
                     _root_.GebBoot.«Modules.mkList»
-                      ((_root_.GebBoot.«Modules.renPattern» x0 x7) ::
-                        (_root_.GebBoot.«Prelude.single»
-                          (_root_.GebBoot.«Modules.rkAt»
-                            x2
-                            (_root_.Geb.Kernel.leaf 1)
-                            (_root_.Geb.Kernel.leaf 0)
-                            (_root_.GebBoot.«Prelude.append»
-                              (_root_.GebBoot.«Modules.patternVars» x7)
-                              x4))))
-                else
-                  x1
+                      (_root_.GebBoot.«Modules.rkAll»
+                        x3
+                        (_root_.Geb.Kernel.leaf 3)
+                        ([] : _root_.List _root_.Geb.Kernel.Tree))
               else
-                _root_.GebBoot.«Modules.renTermList» x0 x1 x2 x4
+                if (_root_.Geb.Kernel.Const.eq
+                  x4
+                  (_root_.Geb.Kernel.leaf 2)).label ≠ 0 then
+                  if (_root_.Geb.Kernel.Const.eq
+                    x7
+                    (_root_.Geb.Kernel.leaf 2)).label ≠ 0 then
+                    let x8 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.at»
+                      x6
+                      (_root_.Geb.Kernel.leaf 0);
+                    if (_root_.GebBoot.«Reader.isAtom» x8).label ≠ 0 then
+                      _root_.GebBoot.«Modules.mkList»
+                        (x8 ::
+                          (_root_.GebBoot.«Prelude.single»
+                            (_root_.GebBoot.«Modules.rkAt»
+                              x3
+                              (_root_.Geb.Kernel.leaf 1)
+                              (_root_.Geb.Kernel.leaf 0)
+                              x5)))
+                    else
+                      let x9 : _root_.Geb.Kernel.Tree := (if (_root_.GebBoot.«Reader.nonEmpty»
+                        (_root_.Geb.Kernel.Const.children x8)).label ≠ 0 then
+                        _root_.GebBoot.«Modules.polyOf»
+                          x0
+                          x1
+                          (_root_.Geb.Kernel.Const.child x8 (_root_.Geb.Kernel.leaf 0))
+                      else
+                        _root_.GebBoot.«Prelude.none»);
+                      _root_.GebBoot.«Modules.mkList»
+                        ((_root_.GebBoot.«Modules.rkAt»
+                          x3
+                          (_root_.Geb.Kernel.leaf 0)
+                          (_root_.Geb.Kernel.leaf 8)
+                          ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
+                          (_root_.GebBoot.«Prelude.single»
+                            (_root_.GebBoot.«Modules.rkAt»
+                              x3
+                              (_root_.Geb.Kernel.leaf 1)
+                              (_root_.Geb.Kernel.leaf 0)
+                              (_root_.GebBoot.«Prelude.append»
+                                (_root_.GebBoot.«Modules.patternVars»
+                                  (if (_root_.GebBoot.«Prelude.isSome» x9).label ≠ 0 then
+                                    _root_.Geb.Kernel.Const.child
+                                      (_root_.GebBoot.«Prelude.get» x9)
+                                      (_root_.Geb.Kernel.leaf 0)
+                                  else
+                                    _root_.Geb.Kernel.leaf 0)
+                                  x8)
+                                x5))))
+                  else
+                    x2
+                else
+                  _root_.GebBoot.«Modules.renTermList» x0 x1 x2 x3 x5
 
 def «Modules.rename» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.para
       (α := _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (fun (x4 : _root_.Geb.Kernel.Tree)
-         (x5 : _root_.List
+      (fun (x5 : _root_.Geb.Kernel.Tree)
+         (x6 : _root_.List
            (_root_.Geb.Kernel.Tree →
              _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-         (x6 : _root_.Geb.Kernel.Tree)
-         (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebBoot.«Modules.renStep» x0 x4 x5 x6 x7)
-      x1
+         (x7 : _root_.Geb.Kernel.Tree)
+         (x8 : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebBoot.«Modules.renStep» x0 x1 x5 x6 x7 x8)
       x2
       x3
+      x4
+
+def «Modules.isTokenName» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      x0
+      (_root_.Geb.Kernel.leaf 0)
+      (fun (x1 : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebBoot.«Prelude.and»
+          (_root_.GebBoot.«Reader.isTokenStart» x1)
+          (_root_.Geb.Kernel.Const.foldr
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.Geb.Kernel.Tree)
+            (fun (x3 : _root_.Geb.Kernel.Tree) (x4 : _root_.Geb.Kernel.Tree) =>
+              _root_.GebBoot.«Prelude.and»
+                (_root_.GebBoot.«Reader.isTokenChar» x3)
+                x4)
+            (_root_.Geb.Kernel.leaf 1)
+            x2))
+
+def «Modules.spellOf» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.para
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+        if (_root_.GebBoot.«Reader.isAtom» x1).label ≠ 0 then
+          let x3 : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x1;
+          if (_root_.GebBoot.«Modules.isTokenName» x3).label ≠ 0 then
+            x3
+          else
+            _root_.GebBoot.«Prelude.append»
+              (_root_.GebBoot.«Typing.decimalChars»
+                (_root_.GebBoot.«Prelude.length» x3))
+              ((_root_.Geb.Kernel.leaf 58) :: x3)
+        else
+          if (_root_.GebBoot.«Reader.isList» x1).label ≠ 0 then
+            ((_root_.Geb.Kernel.leaf 40) ::
+              (_root_.GebBoot.«Prelude.append»
+                (_root_.Geb.Kernel.Const.foldr
+                  (α := _root_.List _root_.Geb.Kernel.Tree)
+                  (β := _root_.List _root_.Geb.Kernel.Tree)
+                  (fun (x3 : _root_.List _root_.Geb.Kernel.Tree)
+                     (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+                    _root_.GebBoot.«Prelude.append»
+                      x3
+                      (if (_root_.GebBoot.«Reader.nonEmpty» x4).label ≠ 0 then
+                        ((_root_.Geb.Kernel.leaf 32) :: x4)
+                      else
+                        x4))
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)
+                  x2)
+                (_root_.GebBoot.«Prelude.single» (_root_.Geb.Kernel.leaf 41))))
+          else
+            ([] : _root_.List _root_.Geb.Kernel.Tree))
+      x0
+
+def «Modules.instName» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 0)
+      (_root_.GebBoot.«Modules.spellOf»
+        (_root_.GebBoot.«Modules.mkList»
+          ((_root_.GebBoot.«Modules.atomOf» x0) :: x1)))
+
+def «Modules.expandAbbrs» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.para
+      (α := _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        if (_root_.GebBoot.«Reader.isAtom» x2).label ≠ 0 then
+          let x4 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Trie.find»
+            (_root_.GebBoot.«Reader.nameOf» x2)
+            x0;
+          if (_root_.GebBoot.«Prelude.isSome» x4).label ≠ 0 then
+            _root_.GebBoot.«Prelude.get» x4
+          else
+            x2
+        else
+          if (_root_.GebBoot.«Reader.isList» x2).label ≠ 0 then
+            _root_.GebBoot.«Modules.mkList» x3
+          else
+            x2)
+      x1
+
+def «Modules.nameUses» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.para
+      (α := _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        let x4 : _root_.List
+          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+          (α := _root_.Geb.Kernel.Tree)
+          (β := _root_.List _root_.Geb.Kernel.Tree)
+          (fun (x4 : _root_.Geb.Kernel.Tree)
+             (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+            ((_root_.Geb.Kernel.Const.child x4 (_root_.Geb.Kernel.leaf 0)) :: x5))
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+          x3;
+        let x5 : _root_.List
+          _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.concat»
+          (_root_.Geb.Kernel.Const.foldr
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+            (fun (x5 : _root_.Geb.Kernel.Tree)
+               (x6 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+              ((_root_.Geb.Kernel.Const.children
+                (_root_.Geb.Kernel.Const.child x5 (_root_.Geb.Kernel.leaf 1))) ::
+                x6))
+            ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+            x3);
+        if (_root_.GebBoot.«Prelude.and»
+          (_root_.Geb.Kernel.Const.eq
+            (_root_.Geb.Kernel.Const.label x2)
+            (_root_.Geb.Kernel.leaf 3))
+          (_root_.Geb.Kernel.Const.lt
+            (_root_.Geb.Kernel.leaf 1)
+            (_root_.Geb.Kernel.Const.arity x2))).label ≠ 0 then
+          let x6 : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            (fun (x6 : _root_.Geb.Kernel.Tree)
+               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
+              ((_root_.GebBoot.«Modules.expandAbbrs» x0 x6) :: x7))
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (_root_.GebBoot.«Prelude.drop» (_root_.Geb.Kernel.leaf 2) x4);
+          _root_.GebBoot.«Reader.node2»
+            (_root_.Geb.Kernel.leaf 0)
+            (_root_.GebBoot.«Modules.atomOf»
+              (_root_.GebBoot.«Modules.instName»
+                (_root_.GebBoot.«Prelude.at» x4 (_root_.Geb.Kernel.leaf 0))
+                x6))
+            (_root_.Geb.Kernel.Const.node
+              (_root_.Geb.Kernel.leaf 0)
+              (_root_.GebBoot.«Prelude.append»
+                x5
+                (_root_.GebBoot.«Prelude.single»
+                  (_root_.Geb.Kernel.Const.node
+                    (_root_.Geb.Kernel.leaf 3)
+                    ((_root_.GebBoot.«Prelude.at» x4 (_root_.Geb.Kernel.leaf 1)) ::
+                      x6)))))
+        else
+          _root_.GebBoot.«Reader.node2»
+            (_root_.Geb.Kernel.leaf 0)
+            (_root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.Const.label x2) x4)
+            (_root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x5))
+      x1
 
 def «Modules.mkSt» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -16971,18 +17315,51 @@ def «Modules.mkSt» :=
     (x2 : _root_.Geb.Kernel.Tree)
     (x3 : _root_.List _root_.Geb.Kernel.Tree)
     (x4 : _root_.List _root_.Geb.Kernel.Tree)
-    (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-    (_root_.Geb.Kernel.leaf 1, (x0, (x1, (x2, (x3, (x4, x5))))))
+    (x5 : _root_.List _root_.Geb.Kernel.Tree)
+    (x6 : _root_.Geb.Kernel.Tree) =>
+    (_root_.Geb.Kernel.leaf 1, (x0, (x1, (x2, (x3, (x4, (x5, x6)))))))
+
+def «Modules.pxMk» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 0)
+      (x0 :: (x1 :: (x2 :: (_root_.GebBoot.«Prelude.single» x3))))
+
+def «Modules.pxPolys» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.child x0 (_root_.Geb.Kernel.leaf 0)
+
+def «Modules.pxInsts» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.child x0 (_root_.Geb.Kernel.leaf 1)
+
+def «Modules.pxAbbrs» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.child x0 (_root_.Geb.Kernel.leaf 2)
+
+def «Modules.pxGeneric» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.child x0 (_root_.Geb.Kernel.leaf 3)
+
+def «Modules.stStart» :=
+  _root_.GebBoot.«Modules.mkSt»
+    _root_.GebBoot.«Trie.empty»
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+    _root_.GebBoot.«Trie.empty»
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+    (_root_.GebBoot.«Modules.pxMk»
+      _root_.GebBoot.«Trie.empty»
+      _root_.GebBoot.«Trie.empty»
+      _root_.GebBoot.«Trie.empty»
+      (_root_.Geb.Kernel.leaf 0))
 
 def «Modules.stFail» :=
-  (_root_.Geb.Kernel.leaf 0,
-    (_root_.GebBoot.«Modules.mkSt»
-      _root_.GebBoot.«Trie.empty»
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebBoot.«Trie.empty»
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      ([] : _root_.List _root_.Geb.Kernel.Tree)).2)
+  (_root_.Geb.Kernel.leaf 0, (_root_.GebBoot.«Modules.stStart»).2)
 
 def «Modules.stVis» :=
   fun (x0 : _root_.Geb.Kernel.Tree ×
@@ -16991,7 +17368,7 @@ def «Modules.stVis» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree)))))) =>
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
     ((x0).2).1
 
 def «Modules.stOut» :=
@@ -17001,7 +17378,7 @@ def «Modules.stOut» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree)))))) =>
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
     (((x0).2).2).1
 
 def «Modules.stReg» :=
@@ -17011,7 +17388,7 @@ def «Modules.stReg» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree)))))) =>
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
     ((((x0).2).2).2).1
 
 def «Modules.stEx» :=
@@ -17021,7 +17398,7 @@ def «Modules.stEx» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree)))))) =>
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
     (((((x0).2).2).2).2).1
 
 def «Modules.stMem» :=
@@ -17031,7 +17408,7 @@ def «Modules.stMem» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree)))))) =>
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
     ((((((x0).2).2).2).2).2).1
 
 def «Modules.stMods» :=
@@ -17041,8 +17418,28 @@ def «Modules.stMods» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree)))))) =>
-    ((((((x0).2).2).2).2).2).2
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
+    (((((((x0).2).2).2).2).2).2).1
+
+def «Modules.stPx» :=
+  fun (x0 : _root_.Geb.Kernel.Tree ×
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.List _root_.Geb.Kernel.Tree ×
+          (_root_.Geb.Kernel.Tree ×
+            (_root_.List _root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
+    (((((((x0).2).2).2).2).2).2).2
+
+def «Modules.stPolys» :=
+  fun (x0 : _root_.Geb.Kernel.Tree ×
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.List _root_.Geb.Kernel.Tree ×
+          (_root_.Geb.Kernel.Tree ×
+            (_root_.List _root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
+    _root_.GebBoot.«Modules.pxPolys» (_root_.GebBoot.«Modules.stPx» x0)
 
 def «Modules.withVis» :=
   fun (x0 : _root_.Geb.Kernel.Tree ×
@@ -17051,7 +17448,7 @@ def «Modules.withVis» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree))))))
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x1 : _root_.Geb.Kernel.Tree) =>
     if ((x0).1).label ≠ 0 then
       _root_.GebBoot.«Modules.mkSt»
@@ -17061,20 +17458,40 @@ def «Modules.withVis» :=
         (_root_.GebBoot.«Modules.stEx» x0)
         (_root_.GebBoot.«Modules.stMem» x0)
         (_root_.GebBoot.«Modules.stMods» x0)
+        (_root_.GebBoot.«Modules.stPx» x0)
     else
       x0
 
-def «Modules.emitTo» :=
+def «Modules.withOut» :=
   fun (x0 : _root_.Geb.Kernel.Tree ×
       (_root_.Geb.Kernel.Tree ×
         (_root_.List _root_.Geb.Kernel.Tree ×
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree))))))
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    _root_.GebBoot.«Modules.mkSt»
+      (_root_.GebBoot.«Modules.stVis» x0)
+      x1
+      (_root_.GebBoot.«Modules.stReg» x0)
+      (_root_.GebBoot.«Modules.stEx» x0)
+      (_root_.GebBoot.«Modules.stMem» x0)
+      (_root_.GebBoot.«Modules.stMods» x0)
+      (_root_.GebBoot.«Modules.stPx» x0)
+
+def «Modules.emitRaw» :=
+  fun (x0 : _root_.Geb.Kernel.Tree ×
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.List _root_.Geb.Kernel.Tree ×
+          (_root_.Geb.Kernel.Tree ×
+            (_root_.List _root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
     if ((x0).1).label ≠ 0 then
+      let x3 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.stPx» x0;
       _root_.GebBoot.«Modules.mkSt»
         (_root_.GebBoot.«Modules.stVis» x0)
         (x1 :: (_root_.GebBoot.«Modules.stOut» x0))
@@ -17084,8 +17501,161 @@ def «Modules.emitTo» :=
           x2
           (_root_.GebBoot.«Modules.stMem» x0))
         (_root_.GebBoot.«Modules.stMods» x0)
+        (if (if (_root_.GebBoot.«Reader.isList» x1).label ≠ 0 then
+          if (_root_.Geb.Kernel.Const.eq
+            (_root_.Geb.Kernel.Const.arity x1)
+            (_root_.Geb.Kernel.leaf 3)).label ≠ 0 then
+            if (_root_.GebBoot.«Reader.named»
+              (_root_.Geb.Kernel.Const.child x1 (_root_.Geb.Kernel.leaf 0))
+              _root_.GebBoot.«Reader.kwDeftype»).label ≠ 0 then
+              _root_.GebBoot.«Reader.isAtom»
+                (_root_.Geb.Kernel.Const.child x1 (_root_.Geb.Kernel.leaf 1))
+            else
+              _root_.Geb.Kernel.leaf 0
+          else
+            _root_.Geb.Kernel.leaf 0
+        else
+          _root_.Geb.Kernel.leaf 0).label ≠ 0 then
+          _root_.GebBoot.«Modules.pxMk»
+            (_root_.GebBoot.«Modules.pxPolys» x3)
+            (_root_.GebBoot.«Modules.pxInsts» x3)
+            (_root_.GebBoot.«Trie.putNew»
+              (_root_.GebBoot.«Reader.nameOf»
+                (_root_.Geb.Kernel.Const.child x1 (_root_.Geb.Kernel.leaf 1)))
+              (_root_.GebBoot.«Modules.expandAbbrs»
+                (_root_.GebBoot.«Modules.pxAbbrs» x3)
+                (_root_.Geb.Kernel.Const.child x1 (_root_.Geb.Kernel.leaf 2)))
+              (_root_.GebBoot.«Modules.pxAbbrs» x3))
+            (_root_.GebBoot.«Modules.pxGeneric» x3)
+        else
+          x3)
     else
       x0
+
+def «Modules.emitForm» :=
+  fun (x0 : _root_.Geb.Kernel.Tree →
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.Geb.Kernel.Tree ×
+          (_root_.List _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    (_root_.List _root_.Geb.Kernel.Tree ×
+                      (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+    (x1 : _root_.Geb.Kernel.Tree ×
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.List _root_.Geb.Kernel.Tree ×
+          (_root_.Geb.Kernel.Tree ×
+            (_root_.List _root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+    if (if ((x1).1).label ≠ 0 then
+      _root_.Geb.Kernel.Const.arity (_root_.GebBoot.«Modules.stPolys» x1)
+    else
+      _root_.Geb.Kernel.leaf 0).label ≠ 0 then
+      let x4 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.nameUses»
+        (_root_.GebBoot.«Modules.pxAbbrs» (_root_.GebBoot.«Modules.stPx» x1))
+        x2;
+      _root_.GebBoot.«Modules.emitRaw»
+        (_root_.Geb.Kernel.Const.foldr
+          (α := _root_.Geb.Kernel.Tree)
+          (β := (_root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    (_root_.List _root_.Geb.Kernel.Tree ×
+                      (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
+            _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.Geb.Kernel.Tree ×
+                    (_root_.List _root_.Geb.Kernel.Tree ×
+                      (_root_.List _root_.Geb.Kernel.Tree ×
+                        (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+          (fun (x5 : _root_.Geb.Kernel.Tree)
+             (x6 : (_root_.Geb.Kernel.Tree ×
+               (_root_.Geb.Kernel.Tree ×
+                 (_root_.List _root_.Geb.Kernel.Tree ×
+                   (_root_.Geb.Kernel.Tree ×
+                     (_root_.List _root_.Geb.Kernel.Tree ×
+                       (_root_.List _root_.Geb.Kernel.Tree ×
+                         (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
+               _root_.Geb.Kernel.Tree ×
+                 (_root_.Geb.Kernel.Tree ×
+                   (_root_.List _root_.Geb.Kernel.Tree ×
+                     (_root_.Geb.Kernel.Tree ×
+                       (_root_.List _root_.Geb.Kernel.Tree ×
+                         (_root_.List _root_.Geb.Kernel.Tree ×
+                           (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+             (x7 : _root_.Geb.Kernel.Tree ×
+               (_root_.Geb.Kernel.Tree ×
+                 (_root_.List _root_.Geb.Kernel.Tree ×
+                   (_root_.Geb.Kernel.Tree ×
+                     (_root_.List _root_.Geb.Kernel.Tree ×
+                       (_root_.List _root_.Geb.Kernel.Tree ×
+                         (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
+            x6
+              (if ((x7).1).label ≠ 0 then
+                let x8 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
+                  x5
+                  (_root_.Geb.Kernel.leaf 0);
+                let x9 : _root_.List
+                  _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.drop»
+                  (_root_.Geb.Kernel.leaf 1)
+                  (_root_.Geb.Kernel.Const.children x5);
+                let x10 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.polyAt»
+                  (_root_.GebBoot.«Modules.stPolys» x7)
+                  x8;
+                if (if (_root_.GebBoot.«Prelude.isSome» x10).label ≠ 0 then
+                  _root_.Geb.Kernel.Const.eq
+                    (_root_.Geb.Kernel.Const.child
+                      (_root_.GebBoot.«Prelude.get» x10)
+                      (_root_.Geb.Kernel.leaf 0))
+                    (_root_.GebBoot.«Prelude.length» x9)
+                else
+                  _root_.Geb.Kernel.leaf 0).label ≠ 0 then
+                  if (_root_.GebBoot.«Prelude.isSome»
+                    (_root_.GebBoot.«Trie.find»
+                      (_root_.GebBoot.«Modules.instName» x8 x9)
+                      (_root_.GebBoot.«Modules.pxInsts»
+                        (_root_.GebBoot.«Modules.stPx» x7)))).label ≠ 0 then
+                    x7
+                  else
+                    x0
+                      (_root_.Geb.Kernel.Const.node
+                        (_root_.Geb.Kernel.leaf 0)
+                        ([] : _root_.List _root_.Geb.Kernel.Tree))
+                      x7
+                      x5
+                else
+                  _root_.GebBoot.«Modules.stFail»
+              else
+                x7))
+          (fun (x5 : _root_.Geb.Kernel.Tree ×
+               (_root_.Geb.Kernel.Tree ×
+                 (_root_.List _root_.Geb.Kernel.Tree ×
+                   (_root_.Geb.Kernel.Tree ×
+                     (_root_.List _root_.Geb.Kernel.Tree ×
+                       (_root_.List _root_.Geb.Kernel.Tree ×
+                         (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
+            x5)
+          (_root_.Geb.Kernel.Const.children
+            (_root_.Geb.Kernel.Const.child x4 (_root_.Geb.Kernel.leaf 1)))
+          x1)
+        (_root_.Geb.Kernel.Const.child x4 (_root_.Geb.Kernel.leaf 0))
+        x3
+    else
+      _root_.GebBoot.«Modules.emitRaw» x1 x2 x3
 
 def «Modules.memberDecl» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
@@ -17127,7 +17697,7 @@ def «Modules.declare» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree))))))
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree) =>
     if ((x0).1).label ≠ 0 then
@@ -17162,7 +17732,7 @@ def «Modules.declareAll» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree))))))
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.foldr
       (α := _root_.Geb.Kernel.Tree)
@@ -17172,14 +17742,14 @@ def «Modules.declareAll» :=
             (_root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
                 (_root_.List _root_.Geb.Kernel.Tree ×
-                  _root_.List _root_.Geb.Kernel.Tree)))))) →
+                  (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
         _root_.Geb.Kernel.Tree ×
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.Geb.Kernel.Tree ×
                 (_root_.List _root_.Geb.Kernel.Tree ×
                   (_root_.List _root_.Geb.Kernel.Tree ×
-                    _root_.List _root_.Geb.Kernel.Tree))))))
+                    (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
       (fun (x2 : _root_.Geb.Kernel.Tree)
          (x3 : (_root_.Geb.Kernel.Tree ×
            (_root_.Geb.Kernel.Tree ×
@@ -17187,21 +17757,21 @@ def «Modules.declareAll» :=
                (_root_.Geb.Kernel.Tree ×
                  (_root_.List _root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
-                     _root_.List _root_.Geb.Kernel.Tree)))))) →
+                     (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
            _root_.Geb.Kernel.Tree ×
              (_root_.Geb.Kernel.Tree ×
                (_root_.List _root_.Geb.Kernel.Tree ×
                  (_root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
                      (_root_.List _root_.Geb.Kernel.Tree ×
-                       _root_.List _root_.Geb.Kernel.Tree))))))
+                       (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
          (x4 : _root_.Geb.Kernel.Tree ×
            (_root_.Geb.Kernel.Tree ×
              (_root_.List _root_.Geb.Kernel.Tree ×
                (_root_.Geb.Kernel.Tree ×
                  (_root_.List _root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
-                     _root_.List _root_.Geb.Kernel.Tree)))))) =>
+                     (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
         x3
           (_root_.GebBoot.«Modules.declare»
             x4
@@ -17213,7 +17783,7 @@ def «Modules.declareAll» :=
                (_root_.Geb.Kernel.Tree ×
                  (_root_.List _root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
-                     _root_.List _root_.Geb.Kernel.Tree)))))) =>
+                     (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
         x2)
       x1
       x0
@@ -17225,7 +17795,7 @@ def «Modules.exportsOf» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree)))))) =>
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
     _root_.GebBoot.«Reader.allSome»
       (_root_.Geb.Kernel.Const.foldr
         (α := _root_.Geb.Kernel.Tree)
@@ -17372,7 +17942,555 @@ def «Modules.zipWith2» :=
       x1).2
 
 def «Modules.bindParam» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
+  fun (x0 : _root_.Geb.Kernel.Tree →
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.Geb.Kernel.Tree ×
+          (_root_.List _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    (_root_.List _root_.Geb.Kernel.Tree ×
+                      (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree ×
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.List _root_.Geb.Kernel.Tree ×
+          (_root_.Geb.Kernel.Tree ×
+            (_root_.List _root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree) =>
+    if (if ((x3).1).label ≠ 0 then
+      _root_.Geb.Kernel.Const.eq
+        (_root_.Geb.Kernel.Const.arity x4)
+        (_root_.Geb.Kernel.leaf 2)
+    else
+      _root_.Geb.Kernel.leaf 0).label ≠ 0 then
+      let x6 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
+        x4
+        (_root_.Geb.Kernel.leaf 1);
+      let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.stPolys»
+        x3;
+      if (_root_.GebBoot.«Reader.isAtom» x6).label ≠ 0 then
+        let x8 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.qualify»
+          x1
+          (_root_.GebBoot.«Reader.nameOf» x6);
+        _root_.GebBoot.«Modules.emitForm»
+          x0
+          (_root_.GebBoot.«Modules.declare»
+            x3
+            (_root_.GebBoot.«Reader.nameOf» x6)
+            x8)
+          (_root_.GebBoot.«Modules.mkList»
+            (_root_.GebBoot.«Modules.aDeftypeM» ::
+              ((_root_.GebBoot.«Modules.atomOf» x8) ::
+                (_root_.GebBoot.«Prelude.single»
+                  (_root_.GebBoot.«Modules.rename»
+                    x2
+                    x7
+                    x5
+                    (_root_.Geb.Kernel.leaf 1)
+                    ([] : _root_.List _root_.Geb.Kernel.Tree))))))
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+      else
+        if (if (_root_.Geb.Kernel.Const.eq
+          (_root_.Geb.Kernel.Const.arity x6)
+          (_root_.Geb.Kernel.leaf 3)).label ≠ 0 then
+          _root_.GebBoot.«Reader.isAtom»
+            (_root_.Geb.Kernel.Const.child x6 (_root_.Geb.Kernel.leaf 0))
+        else
+          _root_.Geb.Kernel.leaf 0).label ≠ 0 then
+          let x8 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Reader.nameOf»
+            (_root_.Geb.Kernel.Const.child x6 (_root_.Geb.Kernel.leaf 0));
+          let x9 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.qualify»
+            x1
+            x8;
+          let x10 : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+            (_root_.Geb.Kernel.Const.child x6 (_root_.Geb.Kernel.leaf 1));
+          let x11 : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.paramVars» x10;
+          let x12 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.rename»
+            x2
+            x7
+            x5
+            (_root_.Geb.Kernel.leaf 0)
+            ([] : _root_.List _root_.Geb.Kernel.Tree);
+          let x13 : _root_.Geb.Kernel.Tree := (if (_root_.GebBoot.«Reader.nonEmpty»
+            x11).label ≠ 0 then
+            _root_.GebBoot.«Modules.mkList» (x12 :: x11)
+          else
+            x12);
+          let x14 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.mkList»
+            (_root_.GebBoot.«Modules.aLetM» ::
+              (_root_.GebBoot.«Modules.aResultM» ::
+                ((_root_.GebBoot.«Modules.rename»
+                  (_root_.GebBoot.«Modules.stVis» x3)
+                  x7
+                  (_root_.Geb.Kernel.Const.child x6 (_root_.Geb.Kernel.leaf 2))
+                  (_root_.Geb.Kernel.leaf 1)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
+                  (x13 ::
+                    (_root_.GebBoot.«Prelude.single»
+                      _root_.GebBoot.«Modules.aResultM»)))));
+          let x15 : _root_.Geb.Kernel.Tree := (if (_root_.GebBoot.«Reader.nonEmpty»
+            x11).label ≠ 0 then
+            _root_.GebBoot.«Modules.mkList»
+              (_root_.GebBoot.«Modules.aLamM» ::
+                ((_root_.GebBoot.«Modules.mkList»
+                  (_root_.GebBoot.«Modules.zipWith2»
+                    (fun (x15 : _root_.Geb.Kernel.Tree) (x16 : _root_.Geb.Kernel.Tree) =>
+                      _root_.GebBoot.«Modules.mkList»
+                        (x16 ::
+                          (_root_.GebBoot.«Prelude.single»
+                            (_root_.GebBoot.«Modules.rename»
+                              (_root_.GebBoot.«Modules.stVis» x3)
+                              x7
+                              x15
+                              (_root_.Geb.Kernel.leaf 1)
+                              ([] : _root_.List _root_.Geb.Kernel.Tree)))))
+                    x10
+                    x11)) ::
+                  (_root_.GebBoot.«Prelude.single» x14)))
+          else
+            x14);
+          _root_.GebBoot.«Modules.emitForm»
+            x0
+            (_root_.GebBoot.«Modules.declare» x3 x8 x9)
+            (_root_.GebBoot.«Modules.mkList»
+              (_root_.GebBoot.«Modules.aDefM» ::
+                ((_root_.GebBoot.«Modules.atomOf» x9) ::
+                  (_root_.GebBoot.«Prelude.single» x15))))
+            (_root_.GebBoot.«Prelude.single»
+              (_root_.GebBoot.«Modules.memberDecl» x9))
+        else
+          _root_.GebBoot.«Modules.stFail»
+    else
+      _root_.GebBoot.«Modules.stFail»
+
+def «Modules.ctorsOk» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.GebBoot.«Prelude.and»
+          (if (_root_.GebBoot.«Reader.isList» x1).label ≠ 0 then
+            if (_root_.GebBoot.«Reader.nonEmpty»
+              (_root_.Geb.Kernel.Const.children x1)).label ≠ 0 then
+              _root_.GebBoot.«Reader.isAtom»
+                (_root_.Geb.Kernel.Const.child x1 (_root_.Geb.Kernel.leaf 0))
+            else
+              _root_.Geb.Kernel.leaf 0
+          else
+            _root_.Geb.Kernel.leaf 0)
+          x2)
+      (_root_.Geb.Kernel.leaf 1)
+      x0
+
+def «Modules.emitDecl» :=
+  fun (x0 : _root_.Geb.Kernel.Tree →
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.Geb.Kernel.Tree ×
+          (_root_.List _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    (_root_.List _root_.Geb.Kernel.Tree ×
+                      (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+    (x1 : _root_.Geb.Kernel.Tree ×
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.List _root_.Geb.Kernel.Tree ×
+          (_root_.Geb.Kernel.Tree ×
+            (_root_.List _root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.stPolys»
+      x1;
+    let x8 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.length» x6;
+    let x9 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.Geb.Kernel.Tree := (fun (x9 : _root_.List _root_.Geb.Kernel.Tree) =>
+      _root_.GebBoot.«Modules.mkList»
+        (x3 :: ((_root_.GebBoot.«Modules.atomOf» x4) :: x9)));
+    if (_root_.GebBoot.«Reader.named»
+      x3
+      _root_.GebBoot.«Reader.kwDef»).label ≠ 0 then
+      if (_root_.Geb.Kernel.Const.eq
+        x8
+        (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+        _root_.GebBoot.«Modules.emitForm»
+          x0
+          x1
+          (x9
+            (_root_.GebBoot.«Prelude.single»
+              (_root_.GebBoot.«Modules.rename»
+                x2
+                x7
+                (_root_.GebBoot.«Prelude.at» x6 (_root_.Geb.Kernel.leaf 0))
+                (_root_.Geb.Kernel.leaf 0)
+                ([] : _root_.List _root_.Geb.Kernel.Tree))))
+          (_root_.GebBoot.«Prelude.single»
+            (_root_.GebBoot.«Modules.memberDecl» x4))
+      else
+        _root_.GebBoot.«Modules.stFail»
+    else
+      if (_root_.GebBoot.«Prelude.or»
+        (_root_.GebBoot.«Reader.named» x3 _root_.GebBoot.«Reader.kwDeftype»)
+        (_root_.GebBoot.«Reader.named»
+          x3
+          _root_.GebBoot.«Reader.kwDefnum»)).label ≠ 0 then
+        if (_root_.Geb.Kernel.Const.eq
+          x8
+          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+          _root_.GebBoot.«Modules.emitForm»
+            x0
+            x1
+            (x9
+              (_root_.GebBoot.«Prelude.single»
+                (_root_.GebBoot.«Modules.rename»
+                  x2
+                  x7
+                  (_root_.GebBoot.«Prelude.at» x6 (_root_.Geb.Kernel.leaf 0))
+                  (_root_.Geb.Kernel.leaf 1)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree))))
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+        else
+          _root_.GebBoot.«Modules.stFail»
+      else
+        if (_root_.GebBoot.«Reader.named»
+          x3
+          _root_.GebBoot.«Datatype.kwDefn»).label ≠ 0 then
+          if (_root_.Geb.Kernel.Const.eq
+            x8
+            (_root_.Geb.Kernel.leaf 3)).label ≠ 0 then
+            _root_.GebBoot.«Modules.emitForm»
+              x0
+              x1
+              (x9
+                ((_root_.GebBoot.«Modules.rename»
+                  x2
+                  x7
+                  (_root_.GebBoot.«Prelude.at» x6 (_root_.Geb.Kernel.leaf 0))
+                  (_root_.Geb.Kernel.leaf 3)
+                  ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
+                  ((_root_.GebBoot.«Modules.rename»
+                    x2
+                    x7
+                    (_root_.GebBoot.«Prelude.at» x6 (_root_.Geb.Kernel.leaf 1))
+                    (_root_.Geb.Kernel.leaf 1)
+                    ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
+                    (_root_.GebBoot.«Prelude.single»
+                      (_root_.GebBoot.«Modules.rename»
+                        x2
+                        x7
+                        (_root_.GebBoot.«Prelude.at» x6 (_root_.Geb.Kernel.leaf 2))
+                        (_root_.Geb.Kernel.leaf 0)
+                        (_root_.GebBoot.«Modules.boundBy»
+                          (_root_.GebBoot.«Prelude.at» x6 (_root_.Geb.Kernel.leaf 0))))))))
+              (_root_.GebBoot.«Prelude.single»
+                (_root_.GebBoot.«Modules.memberDecl» x4))
+          else
+            _root_.GebBoot.«Modules.stFail»
+        else
+          if (_root_.GebBoot.«Reader.named»
+            x3
+            _root_.GebBoot.«Datatype.kwData»).label ≠ 0 then
+            if (_root_.GebBoot.«Modules.ctorsOk» x6).label ≠ 0 then
+              _root_.GebBoot.«Modules.emitForm»
+                x0
+                x1
+                (x9
+                  (_root_.Geb.Kernel.Const.foldr
+                    (α := _root_.Geb.Kernel.Tree)
+                    (β := _root_.List _root_.Geb.Kernel.Tree)
+                    (fun (x10 : _root_.Geb.Kernel.Tree)
+                       (x11 : _root_.List _root_.Geb.Kernel.Tree) =>
+                      ((_root_.GebBoot.«Modules.mkList»
+                        ((_root_.GebBoot.«Modules.atomOf»
+                          (x5
+                            (_root_.GebBoot.«Reader.nameOf»
+                              (_root_.Geb.Kernel.Const.child x10 (_root_.Geb.Kernel.leaf 0))))) ::
+                          (_root_.Geb.Kernel.Const.foldr
+                            (α := _root_.Geb.Kernel.Tree)
+                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                            (fun (x12 : _root_.Geb.Kernel.Tree)
+                               (x13 : _root_.List _root_.Geb.Kernel.Tree) =>
+                              ((_root_.GebBoot.«Modules.rename»
+                                x2
+                                x7
+                                x12
+                                (_root_.Geb.Kernel.leaf 1)
+                                ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
+                                x13))
+                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                            (_root_.GebBoot.«Prelude.drop»
+                              (_root_.Geb.Kernel.leaf 1)
+                              (_root_.Geb.Kernel.Const.children x10))))) ::
+                        x11))
+                    ([] : _root_.List _root_.Geb.Kernel.Tree)
+                    x6))
+                (_root_.GebBoot.«Prelude.reverse»
+                  (_root_.Geb.Kernel.Const.foldr
+                    (α := _root_.Geb.Kernel.Tree)
+                    (β := _root_.List _root_.Geb.Kernel.Tree)
+                    (fun (x10 : _root_.Geb.Kernel.Tree)
+                       (x11 : _root_.List _root_.Geb.Kernel.Tree) =>
+                      ((_root_.GebBoot.«Modules.memberDecl»
+                        (x5
+                          (_root_.GebBoot.«Reader.nameOf»
+                            (_root_.Geb.Kernel.Const.child x10 (_root_.Geb.Kernel.leaf 0))))) ::
+                        x11))
+                    ([] : _root_.List _root_.Geb.Kernel.Tree)
+                    x6))
+            else
+              _root_.GebBoot.«Modules.stFail»
+          else
+            _root_.GebBoot.«Modules.stFail»
+
+def «Modules.instanceOf» :=
+  fun (x0 : _root_.Geb.Kernel.Tree →
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.Geb.Kernel.Tree ×
+          (_root_.List _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    (_root_.List _root_.Geb.Kernel.Tree ×
+                      (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+    (x1 : _root_.Geb.Kernel.Tree ×
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.List _root_.Geb.Kernel.Tree ×
+          (_root_.Geb.Kernel.Tree ×
+            (_root_.List _root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
+      x2
+      (_root_.Geb.Kernel.leaf 0);
+    let x4 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.drop»
+      (_root_.Geb.Kernel.leaf 1)
+      (_root_.Geb.Kernel.Const.children x2);
+    let x5 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.polyAt»
+      (_root_.GebBoot.«Modules.stPolys» x1)
+      x3;
+    if (if (_root_.GebBoot.«Prelude.isSome» x5).label ≠ 0 then
+      _root_.Geb.Kernel.Const.eq
+        (_root_.Geb.Kernel.Const.label (_root_.GebBoot.«Prelude.get» x5))
+        (_root_.Geb.Kernel.leaf 1)
+    else
+      _root_.Geb.Kernel.leaf 0).label ≠ 0 then
+      let x6 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.get» x5;
+      let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.instName»
+        x3
+        x4;
+      let x8 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.stPx» x1;
+      let x9 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
+        x6
+        (_root_.Geb.Kernel.leaf 6);
+      let x10 : _root_.Geb.Kernel.Tree ×
+        (_root_.Geb.Kernel.Tree ×
+          (_root_.List _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    _root_.Geb.Kernel.Tree)))))) := _root_.Geb.Kernel.Const.foldr
+        (α := _root_.Geb.Kernel.Tree)
+        (β := _root_.Geb.Kernel.Tree →
+          (_root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    (_root_.List _root_.Geb.Kernel.Tree ×
+                      (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
+            _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.Geb.Kernel.Tree ×
+                    (_root_.List _root_.Geb.Kernel.Tree ×
+                      (_root_.List _root_.Geb.Kernel.Tree ×
+                        (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+        (fun (x10 : _root_.Geb.Kernel.Tree)
+           (x11 : _root_.Geb.Kernel.Tree →
+             (_root_.Geb.Kernel.Tree ×
+               (_root_.Geb.Kernel.Tree ×
+                 (_root_.List _root_.Geb.Kernel.Tree ×
+                   (_root_.Geb.Kernel.Tree ×
+                     (_root_.List _root_.Geb.Kernel.Tree ×
+                       (_root_.List _root_.Geb.Kernel.Tree ×
+                         (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
+               _root_.Geb.Kernel.Tree ×
+                 (_root_.Geb.Kernel.Tree ×
+                   (_root_.List _root_.Geb.Kernel.Tree ×
+                     (_root_.Geb.Kernel.Tree ×
+                       (_root_.List _root_.Geb.Kernel.Tree ×
+                         (_root_.List _root_.Geb.Kernel.Tree ×
+                           (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+           (x12 : _root_.Geb.Kernel.Tree)
+           (x13 : _root_.Geb.Kernel.Tree ×
+             (_root_.Geb.Kernel.Tree ×
+               (_root_.List _root_.Geb.Kernel.Tree ×
+                 (_root_.Geb.Kernel.Tree ×
+                   (_root_.List _root_.Geb.Kernel.Tree ×
+                     (_root_.List _root_.Geb.Kernel.Tree ×
+                       (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
+          x11
+            (_root_.Geb.Kernel.Const.add x12 (_root_.Geb.Kernel.leaf 1))
+            (let x14 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.qualify»
+               x7
+               x10;
+             _root_.GebBoot.«Modules.emitRaw»
+               (_root_.GebBoot.«Modules.declare» x13 x10 x14)
+               (_root_.GebBoot.«Modules.mkList»
+                 (_root_.GebBoot.«Modules.aDeftypeM» ::
+                   ((_root_.GebBoot.«Modules.atomOf» x14) ::
+                     (_root_.GebBoot.«Prelude.single»
+                       (_root_.GebBoot.«Prelude.at» x4 x12)))))
+               ([] : _root_.List _root_.Geb.Kernel.Tree)))
+        (fun (_ : _root_.Geb.Kernel.Tree)
+           (x11 : _root_.Geb.Kernel.Tree ×
+             (_root_.Geb.Kernel.Tree ×
+               (_root_.List _root_.Geb.Kernel.Tree ×
+                 (_root_.Geb.Kernel.Tree ×
+                   (_root_.List _root_.Geb.Kernel.Tree ×
+                     (_root_.List _root_.Geb.Kernel.Tree ×
+                       (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
+          x11)
+        (_root_.Geb.Kernel.Const.children
+          (_root_.Geb.Kernel.Const.child x6 (_root_.Geb.Kernel.leaf 2)))
+        (_root_.Geb.Kernel.leaf 0)
+        (_root_.GebBoot.«Modules.mkSt»
+          (_root_.Geb.Kernel.Const.child x6 (_root_.Geb.Kernel.leaf 5))
+          (_root_.GebBoot.«Modules.stOut» x1)
+          (_root_.GebBoot.«Modules.stReg» x1)
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+          (_root_.GebBoot.«Modules.stMods» x1)
+          (_root_.GebBoot.«Modules.pxMk»
+            (_root_.GebBoot.«Modules.pxPolys» x8)
+            (_root_.GebBoot.«Trie.put»
+              x7
+              (_root_.Geb.Kernel.leaf 0)
+              (_root_.GebBoot.«Modules.pxInsts» x8))
+            (_root_.GebBoot.«Modules.pxAbbrs» x8)
+            (_root_.GebBoot.«Modules.pxGeneric» x8)));
+      let x11 : _root_.Geb.Kernel.Tree ×
+        (_root_.Geb.Kernel.Tree ×
+          (_root_.List _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    _root_.Geb.Kernel.Tree)))))) := _root_.GebBoot.«Modules.emitDecl»
+        x0
+        x10
+        (_root_.GebBoot.«Modules.stVis» x10)
+        (_root_.Geb.Kernel.Const.child x6 (_root_.Geb.Kernel.leaf 3))
+        x7
+        (fun (x11 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebBoot.«Modules.instName»
+            (_root_.GebBoot.«Modules.qualify» x9 x11)
+            x4)
+        (_root_.Geb.Kernel.Const.children
+          (_root_.Geb.Kernel.Const.child x6 (_root_.Geb.Kernel.leaf 4)));
+      if ((x11).1).label ≠ 0 then
+        _root_.GebBoot.«Modules.mkSt»
+          (_root_.GebBoot.«Modules.stVis» x1)
+          (_root_.GebBoot.«Modules.stOut» x11)
+          (_root_.GebBoot.«Modules.stReg» x11)
+          (_root_.GebBoot.«Modules.stEx» x1)
+          (_root_.GebBoot.«Modules.stMem» x1)
+          (_root_.GebBoot.«Modules.stMods» x11)
+          (_root_.GebBoot.«Modules.stPx» x11)
+      else
+        _root_.GebBoot.«Modules.stFail»
+    else
+      _root_.GebBoot.«Modules.stFail»
+
+def «Modules.sortArgs» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    (_root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
+        (_root_.Geb.Kernel.Const.sub (x2).1 (_root_.Geb.Kernel.leaf 1),
+          ((_root_.Geb.Kernel.Const.node
+            (_root_.Geb.Kernel.leaf 1)
+            ((_root_.Geb.Kernel.leaf 37) ::
+              ((_root_.Geb.Kernel.leaf 116) ::
+                (_root_.GebBoot.«Typing.decimalChars»
+                  (_root_.Geb.Kernel.Const.sub (x2).1 (_root_.Geb.Kernel.leaf 1)))))) ::
+            (x2).2)))
+      (_root_.GebBoot.«Prelude.length» x0,
+        ([] : _root_.List _root_.Geb.Kernel.Tree))
+      x0).2
+
+def «Modules.aGeneric» :=
+  _root_.Geb.Kernel.mk 1 [_root_.Geb.Kernel.leaf 37,
+    _root_.Geb.Kernel.leaf 103,
+    _root_.Geb.Kernel.leaf 101,
+    _root_.Geb.Kernel.leaf 110,
+    _root_.Geb.Kernel.leaf 101,
+    _root_.Geb.Kernel.leaf 114,
+    _root_.Geb.Kernel.leaf 105,
+    _root_.Geb.Kernel.leaf 99]
+
+def «Modules.aSort» :=
+  _root_.Geb.Kernel.mk 1 [_root_.Geb.Kernel.leaf 37,
+    _root_.Geb.Kernel.leaf 115,
+    _root_.Geb.Kernel.leaf 111,
+    _root_.Geb.Kernel.leaf 114,
+    _root_.Geb.Kernel.leaf 116]
+
+def «Modules.elabDecl» :=
+  fun (x0 : _root_.Geb.Kernel.Tree →
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.Geb.Kernel.Tree ×
+          (_root_.List _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    (_root_.List _root_.Geb.Kernel.Tree ×
+                      (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree ×
       (_root_.Geb.Kernel.Tree ×
@@ -17380,338 +18498,267 @@ def «Modules.bindParam» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree))))))
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree) =>
-    if (if ((x2).1).label ≠ 0 then
-      _root_.Geb.Kernel.Const.eq
-        (_root_.Geb.Kernel.Const.arity x3)
-        (_root_.Geb.Kernel.leaf 2)
-    else
-      _root_.Geb.Kernel.leaf 0).label ≠ 0 then
-      let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
-        x3
-        (_root_.Geb.Kernel.leaf 1);
-      if (_root_.GebBoot.«Reader.isAtom» x5).label ≠ 0 then
-        let x6 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.qualify»
-          x0
-          (_root_.GebBoot.«Reader.nameOf» x5);
-        _root_.GebBoot.«Modules.emitTo»
-          (_root_.GebBoot.«Modules.declare»
-            x2
-            (_root_.GebBoot.«Reader.nameOf» x5)
-            x6)
-          (_root_.GebBoot.«Modules.mkList»
-            (_root_.GebBoot.«Modules.aDeftypeM» ::
-              ((_root_.GebBoot.«Modules.atomOf» x6) ::
-                (_root_.GebBoot.«Prelude.single»
-                  (_root_.GebBoot.«Modules.rename»
-                    x1
-                    x4
-                    (_root_.Geb.Kernel.leaf 1)
-                    ([] : _root_.List _root_.Geb.Kernel.Tree))))))
-          ([] : _root_.List _root_.Geb.Kernel.Tree)
-      else
-        if (if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.arity x5)
-          (_root_.Geb.Kernel.leaf 3)).label ≠ 0 then
-          _root_.GebBoot.«Reader.isAtom»
-            (_root_.Geb.Kernel.Const.child x5 (_root_.Geb.Kernel.leaf 0))
-        else
-          _root_.Geb.Kernel.leaf 0).label ≠ 0 then
-          let x6 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Reader.nameOf»
-            (_root_.Geb.Kernel.Const.child x5 (_root_.Geb.Kernel.leaf 0));
-          let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.qualify»
-            x0
-            x6;
-          let x8 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-            (_root_.Geb.Kernel.Const.child x5 (_root_.Geb.Kernel.leaf 1));
-          let x9 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.paramVars» x8;
-          let x10 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.rename»
-            x1
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            ([] : _root_.List _root_.Geb.Kernel.Tree);
-          let x11 : _root_.Geb.Kernel.Tree := (if (_root_.GebBoot.«Reader.nonEmpty»
-            x9).label ≠ 0 then
-            _root_.GebBoot.«Modules.mkList» (x10 :: x9)
-          else
-            x10);
-          let x12 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.mkList»
-            (_root_.GebBoot.«Modules.aLetM» ::
-              (_root_.GebBoot.«Modules.aResultM» ::
-                ((_root_.GebBoot.«Modules.rename»
-                  (_root_.GebBoot.«Modules.stVis» x2)
-                  (_root_.Geb.Kernel.Const.child x5 (_root_.Geb.Kernel.leaf 2))
-                  (_root_.Geb.Kernel.leaf 1)
-                  ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
-                  (x11 ::
-                    (_root_.GebBoot.«Prelude.single»
-                      _root_.GebBoot.«Modules.aResultM»)))));
-          let x13 : _root_.Geb.Kernel.Tree := (if (_root_.GebBoot.«Reader.nonEmpty»
-            x9).label ≠ 0 then
-            _root_.GebBoot.«Modules.mkList»
-              (_root_.GebBoot.«Modules.aLamM» ::
-                ((_root_.GebBoot.«Modules.mkList»
-                  (_root_.GebBoot.«Modules.zipWith2»
-                    (fun (x13 : _root_.Geb.Kernel.Tree) (x14 : _root_.Geb.Kernel.Tree) =>
-                      _root_.GebBoot.«Modules.mkList»
-                        (x14 ::
-                          (_root_.GebBoot.«Prelude.single»
-                            (_root_.GebBoot.«Modules.rename»
-                              (_root_.GebBoot.«Modules.stVis» x2)
-                              x13
-                              (_root_.Geb.Kernel.leaf 1)
-                              ([] : _root_.List _root_.Geb.Kernel.Tree)))))
-                    x8
-                    x9)) ::
-                  (_root_.GebBoot.«Prelude.single» x12)))
-          else
-            x12);
-          _root_.GebBoot.«Modules.emitTo»
-            (_root_.GebBoot.«Modules.declare» x2 x6 x7)
-            (_root_.GebBoot.«Modules.mkList»
-              (_root_.GebBoot.«Modules.aDefM» ::
-                ((_root_.GebBoot.«Modules.atomOf» x7) ::
-                  (_root_.GebBoot.«Prelude.single» x13))))
-            (_root_.GebBoot.«Prelude.single»
-              (_root_.GebBoot.«Modules.memberDecl» x7))
-        else
-          _root_.GebBoot.«Modules.stFail»
-    else
-      _root_.GebBoot.«Modules.stFail»
-
-def «Modules.elabDecl» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree ×
-      (_root_.Geb.Kernel.Tree ×
-        (_root_.List _root_.Geb.Kernel.Tree ×
-          (_root_.Geb.Kernel.Tree ×
-            (_root_.List _root_.Geb.Kernel.Tree ×
-              (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree))))))
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x2;
-    let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.arity x2;
-    let x5 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.at»
-      x3
-      (_root_.Geb.Kernel.leaf 0);
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+    (x3 : _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
+    let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.arity x3;
     let x6 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.at»
-      x3
+      x4
+      (_root_.Geb.Kernel.leaf 0);
+    let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.at»
+      x4
       (_root_.Geb.Kernel.leaf 1);
-    if (if (_root_.Geb.Kernel.Const.lt
-      (_root_.Geb.Kernel.leaf 1)
-      x4).label ≠ 0 then
-      _root_.GebBoot.«Reader.isAtom» x6
+    let x8 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.drop»
+      (_root_.Geb.Kernel.leaf 2)
+      x4;
+    let x9 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Reader.named»
+      x6
+      _root_.GebBoot.«Datatype.kwData»;
+    let x10 : _root_.Geb.Kernel.Tree := (if (_root_.GebBoot.«Reader.isList»
+      x7).label ≠ 0 then
+      _root_.GebBoot.«Reader.nonEmpty» (_root_.Geb.Kernel.Const.children x7)
+    else
+      _root_.Geb.Kernel.leaf 0);
+    let x11 : _root_.Geb.Kernel.Tree := (if (x10).label ≠ 0 then
+      _root_.Geb.Kernel.Const.child x7 (_root_.Geb.Kernel.leaf 0)
+    else
+      x7);
+    let x12 : _root_.List
+      _root_.Geb.Kernel.Tree := (if (x10).label ≠ 0 then
+      _root_.GebBoot.«Prelude.drop»
+        (_root_.Geb.Kernel.leaf 1)
+        (_root_.Geb.Kernel.Const.children x7)
+    else
+      ([] : _root_.List _root_.Geb.Kernel.Tree));
+    let x13 : _root_.Geb.Kernel.Tree := (if (_root_.GebBoot.«Prelude.or»
+      (_root_.GebBoot.«Reader.named» x6 _root_.GebBoot.«Reader.kwDef»)
+      (_root_.GebBoot.«Prelude.or»
+        (_root_.GebBoot.«Reader.named» x6 _root_.GebBoot.«Reader.kwDeftype»)
+        (_root_.GebBoot.«Reader.named»
+          x6
+          _root_.GebBoot.«Reader.kwDefnum»))).label ≠ 0 then
+      _root_.Geb.Kernel.Const.eq x5 (_root_.Geb.Kernel.leaf 3)
+    else
+      if (_root_.GebBoot.«Reader.named»
+        x6
+        _root_.GebBoot.«Datatype.kwDefn»).label ≠ 0 then
+        _root_.Geb.Kernel.Const.eq x5 (_root_.Geb.Kernel.leaf 5)
+      else
+        if (x9).label ≠ 0 then
+          _root_.GebBoot.«Modules.ctorsOk» x8
+        else
+          _root_.Geb.Kernel.leaf 0);
+    let x14 : _root_.Geb.Kernel.Tree := (if (x10).label ≠ 0 then
+      _root_.GebBoot.«Prelude.and»
+        (_root_.GebBoot.«Prelude.or»
+          (_root_.GebBoot.«Reader.named» x6 _root_.GebBoot.«Reader.kwDef»)
+          (_root_.GebBoot.«Prelude.or»
+            (_root_.GebBoot.«Reader.named» x6 _root_.GebBoot.«Datatype.kwDefn»)
+            x9))
+        (_root_.GebBoot.«Prelude.and»
+          (_root_.GebBoot.«Reader.nonEmpty» x12)
+          (_root_.Geb.Kernel.Const.foldr
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.Geb.Kernel.Tree)
+            (fun (x14 : _root_.Geb.Kernel.Tree) (x15 : _root_.Geb.Kernel.Tree) =>
+              _root_.GebBoot.«Prelude.and» (_root_.GebBoot.«Reader.isAtom» x14) x15)
+            (_root_.Geb.Kernel.leaf 1)
+            x12))
+    else
+      _root_.Geb.Kernel.leaf 1);
+    if (if ((x2).1).label ≠ 0 then
+      if (_root_.Geb.Kernel.Const.lt
+        (_root_.Geb.Kernel.leaf 1)
+        x5).label ≠ 0 then
+        if (_root_.GebBoot.«Reader.isAtom» x11).label ≠ 0 then
+          _root_.GebBoot.«Prelude.and» x13 x14
+        else
+          _root_.Geb.Kernel.leaf 0
+      else
+        _root_.Geb.Kernel.leaf 0
     else
       _root_.Geb.Kernel.leaf 0).label ≠ 0 then
-      let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Reader.nameOf» x6;
-      let x8 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.qualify»
-        x0
-        x7;
-      let x9 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.stVis» x1;
-      let x10 : _root_.List _root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree := (fun (x10 : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebBoot.«Modules.mkList»
-          (x5 :: ((_root_.GebBoot.«Modules.atomOf» x8) :: x10)));
-      if (_root_.GebBoot.«Reader.named»
-        x5
-        _root_.GebBoot.«Reader.kwDef»).label ≠ 0 then
-        if (_root_.Geb.Kernel.Const.eq
-          x4
-          (_root_.Geb.Kernel.leaf 3)).label ≠ 0 then
-          _root_.GebBoot.«Modules.emitTo»
-            (_root_.GebBoot.«Modules.declare» x1 x7 x8)
-            (x10
-              (_root_.GebBoot.«Prelude.single»
-                (_root_.GebBoot.«Modules.rename»
-                  x9
-                  (_root_.GebBoot.«Prelude.at» x3 (_root_.Geb.Kernel.leaf 2))
-                  (_root_.Geb.Kernel.leaf 0)
-                  ([] : _root_.List _root_.Geb.Kernel.Tree))))
-            (_root_.GebBoot.«Prelude.single»
-              (_root_.GebBoot.«Modules.memberDecl» x8))
-        else
-          _root_.GebBoot.«Modules.stFail»
+      let x15 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Reader.nameOf»
+        x11;
+      let x16 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.qualify»
+        x1
+        x15;
+      let x17 : _root_.Geb.Kernel.Tree ×
+        (_root_.Geb.Kernel.Tree ×
+          (_root_.List _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    _root_.Geb.Kernel.Tree)))))) := _root_.GebBoot.«Modules.declare»
+        x2
+        x15
+        x16;
+      let x18 : _root_.List
+        _root_.Geb.Kernel.Tree := (if (x9).label ≠ 0 then
+        x8
       else
-        if (_root_.GebBoot.«Prelude.or»
-          (_root_.GebBoot.«Reader.named» x5 _root_.GebBoot.«Reader.kwDeftype»)
-          (_root_.GebBoot.«Reader.named»
-            x5
-            _root_.GebBoot.«Reader.kwDefnum»)).label ≠ 0 then
-          if (_root_.Geb.Kernel.Const.eq
-            x4
-            (_root_.Geb.Kernel.leaf 3)).label ≠ 0 then
-            _root_.GebBoot.«Modules.emitTo»
-              (_root_.GebBoot.«Modules.declare» x1 x7 x8)
-              (x10
-                (_root_.GebBoot.«Prelude.single»
-                  (_root_.GebBoot.«Modules.rename»
-                    x9
-                    (_root_.GebBoot.«Prelude.at» x3 (_root_.Geb.Kernel.leaf 2))
-                    (_root_.Geb.Kernel.leaf 1)
-                    ([] : _root_.List _root_.Geb.Kernel.Tree))))
-              ([] : _root_.List _root_.Geb.Kernel.Tree)
+        ([] : _root_.List _root_.Geb.Kernel.Tree));
+      let x19 : _root_.Geb.Kernel.Tree ×
+        (_root_.Geb.Kernel.Tree ×
+          (_root_.List _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    _root_.Geb.Kernel.Tree)))))) := _root_.GebBoot.«Modules.declareAll»
+        x17
+        (_root_.Geb.Kernel.Const.foldr
+          (α := _root_.Geb.Kernel.Tree)
+          (β := _root_.List _root_.Geb.Kernel.Tree)
+          (fun (x19 : _root_.Geb.Kernel.Tree)
+             (x20 : _root_.List _root_.Geb.Kernel.Tree) =>
+            ((_root_.GebBoot.«Reader.node2»
+              (_root_.Geb.Kernel.leaf 0)
+              (_root_.GebBoot.«Reader.nameOf»
+                (_root_.Geb.Kernel.Const.child x19 (_root_.Geb.Kernel.leaf 0)))
+              (_root_.GebBoot.«Modules.qualify»
+                x1
+                (_root_.GebBoot.«Reader.nameOf»
+                  (_root_.Geb.Kernel.Const.child x19 (_root_.Geb.Kernel.leaf 0))))) ::
+              x20))
+          ([] : _root_.List _root_.Geb.Kernel.Tree)
+          x18);
+      let x20 : _root_.Geb.Kernel.Tree := (if (x9).label ≠ 0 then
+        _root_.GebBoot.«Modules.stVis» x17
+      else
+        _root_.GebBoot.«Modules.stVis» x2);
+      if (if ((x19).1).label ≠ 0 then
+        _root_.Geb.Kernel.leaf 0
+      else
+        _root_.Geb.Kernel.leaf 1).label ≠ 0 then
+        _root_.GebBoot.«Modules.stFail»
+      else
+        if (x10).label ≠ 0 then
+          let x21 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.stPx» x19;
+          let x22 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.length»
+            x12;
+          let x23 : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.sortArgs» x12;
+          let x24 : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            (fun (x24 : _root_.Geb.Kernel.Tree)
+               (x25 : _root_.List _root_.Geb.Kernel.Tree) =>
+              ((_root_.GebBoot.«Modules.mkList»
+                (_root_.GebBoot.«Modules.aSort» ::
+                  (_root_.GebBoot.«Prelude.single» x24))) ::
+                x25))
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            x23;
+          let x25 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Trie.put»
+            x16
+            (_root_.Geb.Kernel.Const.node
+              (_root_.Geb.Kernel.leaf 1)
+              (x22 ::
+                (x16 ::
+                  ((_root_.Geb.Kernel.Const.node
+                    (_root_.Geb.Kernel.leaf 0)
+                    (_root_.GebBoot.«Modules.atomNames» x12)) ::
+                    (x6 ::
+                      ((_root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x8) ::
+                        (x20 :: (_root_.GebBoot.«Prelude.single» x1))))))))
+            (_root_.Geb.Kernel.Const.foldr
+              (α := _root_.Geb.Kernel.Tree)
+              (β := _root_.Geb.Kernel.Tree)
+              (fun (x25 : _root_.Geb.Kernel.Tree) (x26 : _root_.Geb.Kernel.Tree) =>
+                _root_.GebBoot.«Trie.put»
+                  (_root_.GebBoot.«Modules.qualify»
+                    x1
+                    (_root_.GebBoot.«Reader.nameOf»
+                      (_root_.Geb.Kernel.Const.child x25 (_root_.Geb.Kernel.leaf 0))))
+                  (_root_.GebBoot.«Reader.node2» (_root_.Geb.Kernel.leaf 0) x22 x16)
+                  x26)
+              (_root_.GebBoot.«Modules.pxPolys» x21)
+              x18);
+          let x26 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.node
+            (_root_.Geb.Kernel.leaf 3)
+            (x16 :: x23);
+          let x27 : _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    (_root_.List _root_.Geb.Kernel.Tree ×
+                      (_root_.List _root_.Geb.Kernel.Tree ×
+                        _root_.Geb.Kernel.Tree)))))) := _root_.GebBoot.«Modules.mkSt»
+            (_root_.GebBoot.«Modules.stVis» x19)
+            (_root_.GebBoot.«Modules.stOut» x19)
+            (_root_.GebBoot.«Modules.stReg» x19)
+            (_root_.GebBoot.«Modules.stEx» x19)
+            (_root_.GebBoot.«Modules.stMem» x19)
+            (_root_.GebBoot.«Modules.stMods» x19)
+            (_root_.GebBoot.«Modules.pxMk»
+              x25
+              (_root_.GebBoot.«Modules.pxInsts» x21)
+              (_root_.GebBoot.«Modules.pxAbbrs» x21)
+              (_root_.GebBoot.«Modules.pxGeneric» x21));
+          if (_root_.GebBoot.«Modules.pxGeneric» x21).label ≠ 0 then
+            x0
+              (_root_.Geb.Kernel.Const.node
+                (_root_.Geb.Kernel.leaf 0)
+                ([] : _root_.List _root_.Geb.Kernel.Tree))
+              (_root_.GebBoot.«Modules.withOut»
+                x27
+                (_root_.GebBoot.«Prelude.append»
+                  (_root_.GebBoot.«Prelude.reverse» x24)
+                  (_root_.GebBoot.«Modules.stOut» x27)))
+              x26
           else
-            _root_.GebBoot.«Modules.stFail»
-        else
-          if (_root_.GebBoot.«Reader.named»
-            x5
-            _root_.GebBoot.«Datatype.kwDefn»).label ≠ 0 then
-            if (_root_.Geb.Kernel.Const.eq
-              x4
-              (_root_.Geb.Kernel.leaf 5)).label ≠ 0 then
-              _root_.GebBoot.«Modules.emitTo»
-                (_root_.GebBoot.«Modules.declare» x1 x7 x8)
-                (x10
-                  ((_root_.GebBoot.«Modules.rename»
-                    x9
-                    (_root_.GebBoot.«Prelude.at» x3 (_root_.Geb.Kernel.leaf 2))
-                    (_root_.Geb.Kernel.leaf 3)
-                    ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
-                    ((_root_.GebBoot.«Modules.rename»
-                      x9
-                      (_root_.GebBoot.«Prelude.at» x3 (_root_.Geb.Kernel.leaf 3))
-                      (_root_.Geb.Kernel.leaf 1)
-                      ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
-                      (_root_.GebBoot.«Prelude.single»
-                        (_root_.GebBoot.«Modules.rename»
-                          x9
-                          (_root_.GebBoot.«Prelude.at» x3 (_root_.Geb.Kernel.leaf 4))
-                          (_root_.Geb.Kernel.leaf 0)
-                          (_root_.GebBoot.«Modules.boundBy»
-                            (_root_.GebBoot.«Prelude.at» x3 (_root_.Geb.Kernel.leaf 2))))))))
-                (_root_.GebBoot.«Prelude.single»
-                  (_root_.GebBoot.«Modules.memberDecl» x8))
-            else
-              _root_.GebBoot.«Modules.stFail»
-          else
-            if (_root_.GebBoot.«Reader.named»
-              x5
-              _root_.GebBoot.«Datatype.kwData»).label ≠ 0 then
-              let x11 : _root_.List
-                _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.drop»
-                (_root_.Geb.Kernel.leaf 2)
-                x3;
-              if (_root_.Geb.Kernel.Const.foldr
-                (α := _root_.Geb.Kernel.Tree)
-                (β := _root_.Geb.Kernel.Tree)
-                (fun (x12 : _root_.Geb.Kernel.Tree) (x13 : _root_.Geb.Kernel.Tree) =>
-                  _root_.GebBoot.«Prelude.and»
-                    (if (_root_.GebBoot.«Reader.isList» x12).label ≠ 0 then
-                      if (_root_.GebBoot.«Reader.nonEmpty»
-                        (_root_.Geb.Kernel.Const.children x12)).label ≠ 0 then
-                        _root_.GebBoot.«Reader.isAtom»
-                          (_root_.Geb.Kernel.Const.child x12 (_root_.Geb.Kernel.leaf 0))
-                      else
-                        _root_.Geb.Kernel.leaf 0
-                    else
-                      _root_.Geb.Kernel.leaf 0)
-                    x13)
-                (_root_.Geb.Kernel.leaf 1)
-                x11).label ≠ 0 then
-                let x12 : _root_.Geb.Kernel.Tree ×
+            let x28 : _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
                   (_root_.Geb.Kernel.Tree ×
                     (_root_.List _root_.Geb.Kernel.Tree ×
-                      (_root_.Geb.Kernel.Tree ×
+                      (_root_.List _root_.Geb.Kernel.Tree ×
                         (_root_.List _root_.Geb.Kernel.Tree ×
-                          (_root_.List _root_.Geb.Kernel.Tree ×
-                            _root_.List
-                              _root_.Geb.Kernel.Tree))))) := _root_.GebBoot.«Modules.declare»
-                  x1
-                  x7
-                  x8;
-                let x13 : _root_.Geb.Kernel.Tree ×
-                  (_root_.Geb.Kernel.Tree ×
-                    (_root_.List _root_.Geb.Kernel.Tree ×
-                      (_root_.Geb.Kernel.Tree ×
-                        (_root_.List _root_.Geb.Kernel.Tree ×
-                          (_root_.List _root_.Geb.Kernel.Tree ×
-                            _root_.List
-                              _root_.Geb.Kernel.Tree))))) := _root_.GebBoot.«Modules.declareAll»
-                  x12
-                  (_root_.Geb.Kernel.Const.foldr
-                    (α := _root_.Geb.Kernel.Tree)
-                    (β := _root_.List _root_.Geb.Kernel.Tree)
-                    (fun (x13 : _root_.Geb.Kernel.Tree)
-                       (x14 : _root_.List _root_.Geb.Kernel.Tree) =>
-                      ((_root_.GebBoot.«Reader.node2»
-                        (_root_.Geb.Kernel.leaf 0)
-                        (_root_.GebBoot.«Reader.nameOf»
-                          (_root_.Geb.Kernel.Const.child x13 (_root_.Geb.Kernel.leaf 0)))
-                        (_root_.GebBoot.«Modules.qualify»
-                          x0
-                          (_root_.GebBoot.«Reader.nameOf»
-                            (_root_.Geb.Kernel.Const.child x13 (_root_.Geb.Kernel.leaf 0))))) ::
-                        x14))
-                    ([] : _root_.List _root_.Geb.Kernel.Tree)
-                    x11);
-                if ((x13).1).label ≠ 0 then
-                  _root_.GebBoot.«Modules.mkSt»
-                    (_root_.GebBoot.«Modules.stVis» x13)
-                    ((x10
-                      (_root_.Geb.Kernel.Const.foldr
-                        (α := _root_.Geb.Kernel.Tree)
-                        (β := _root_.List _root_.Geb.Kernel.Tree)
-                        (fun (x14 : _root_.Geb.Kernel.Tree)
-                           (x15 : _root_.List _root_.Geb.Kernel.Tree) =>
-                          ((_root_.GebBoot.«Modules.mkList»
-                            ((_root_.GebBoot.«Modules.atomOf»
-                              (_root_.GebBoot.«Modules.qualify»
-                                x0
-                                (_root_.GebBoot.«Reader.nameOf»
-                                  (_root_.Geb.Kernel.Const.child
-                                    x14
-                                    (_root_.Geb.Kernel.leaf 0))))) ::
-                              (_root_.Geb.Kernel.Const.foldr
-                                (α := _root_.Geb.Kernel.Tree)
-                                (β := _root_.List _root_.Geb.Kernel.Tree)
-                                (fun (x16 : _root_.Geb.Kernel.Tree)
-                                   (x17 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                  ((_root_.GebBoot.«Modules.rename»
-                                    (_root_.GebBoot.«Modules.stVis» x12)
-                                    x16
-                                    (_root_.Geb.Kernel.leaf 1)
-                                    ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
-                                    x17))
-                                ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                (_root_.GebBoot.«Prelude.drop»
-                                  (_root_.Geb.Kernel.leaf 1)
-                                  (_root_.Geb.Kernel.Const.children x14))))) ::
-                            x15))
-                        ([] : _root_.List _root_.Geb.Kernel.Tree)
-                        x11)) ::
-                      (_root_.GebBoot.«Modules.stOut» x1))
-                    (_root_.GebBoot.«Modules.stReg» x13)
-                    (_root_.GebBoot.«Modules.stEx» x13)
+                          _root_.Geb.Kernel.Tree)))))) := x0
+              (_root_.Geb.Kernel.Const.node
+                (_root_.Geb.Kernel.leaf 0)
+                ([] : _root_.List _root_.Geb.Kernel.Tree))
+              (_root_.GebBoot.«Modules.mkSt»
+                (_root_.GebBoot.«Modules.stVis» x27)
+                ([] : _root_.List _root_.Geb.Kernel.Tree)
+                (_root_.GebBoot.«Modules.stReg» x27)
+                (_root_.GebBoot.«Modules.stEx» x27)
+                (_root_.GebBoot.«Modules.stMem» x27)
+                (_root_.GebBoot.«Modules.stMods» x27)
+                (_root_.GebBoot.«Modules.pxMk»
+                  x25
+                  (_root_.GebBoot.«Modules.pxInsts» x21)
+                  (_root_.GebBoot.«Modules.pxAbbrs» x21)
+                  (_root_.Geb.Kernel.leaf 1)))
+              x26;
+            if ((x28).1).label ≠ 0 then
+              _root_.GebBoot.«Modules.withOut»
+                x27
+                ((_root_.GebBoot.«Modules.mkList»
+                  (_root_.GebBoot.«Modules.aGeneric» ::
                     (_root_.GebBoot.«Prelude.append»
+                      x24
                       (_root_.GebBoot.«Prelude.reverse»
-                        (_root_.Geb.Kernel.Const.foldr
-                          (α := _root_.Geb.Kernel.Tree)
-                          (β := _root_.List _root_.Geb.Kernel.Tree)
-                          (fun (x14 : _root_.Geb.Kernel.Tree)
-                             (x15 : _root_.List _root_.Geb.Kernel.Tree) =>
-                            ((_root_.GebBoot.«Modules.memberDecl»
-                              (_root_.GebBoot.«Modules.qualify»
-                                x0
-                                (_root_.GebBoot.«Reader.nameOf»
-                                  (_root_.Geb.Kernel.Const.child
-                                    x14
-                                    (_root_.Geb.Kernel.leaf 0))))) ::
-                              x15))
-                          ([] : _root_.List _root_.Geb.Kernel.Tree)
-                          x11))
-                      (_root_.GebBoot.«Modules.stMem» x1))
-                    (_root_.GebBoot.«Modules.stMods» x13)
-                else
-                  _root_.GebBoot.«Modules.stFail»
-              else
-                _root_.GebBoot.«Modules.stFail»
+                        (_root_.GebBoot.«Modules.stOut» x28))))) ::
+                  (_root_.GebBoot.«Modules.stOut» x27))
             else
               _root_.GebBoot.«Modules.stFail»
+        else
+          _root_.GebBoot.«Modules.emitDecl»
+            x0
+            x19
+            x20
+            x6
+            x16
+            (fun (x21 : _root_.Geb.Kernel.Tree) =>
+              _root_.GebBoot.«Modules.qualify» x1 x21)
+            x8
     else
       _root_.GebBoot.«Modules.stFail»
 
@@ -17829,7 +18876,7 @@ def «Modules.elabForms» :=
             (_root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
                 (_root_.List _root_.Geb.Kernel.Tree ×
-                  _root_.List _root_.Geb.Kernel.Tree)))))) →
+                  (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
         _root_.Geb.Kernel.Tree →
           _root_.Geb.Kernel.Tree ×
             (_root_.Geb.Kernel.Tree ×
@@ -17837,7 +18884,7 @@ def «Modules.elabForms» :=
                 (_root_.Geb.Kernel.Tree ×
                   (_root_.List _root_.Geb.Kernel.Tree ×
                     (_root_.List _root_.Geb.Kernel.Tree ×
-                      _root_.List _root_.Geb.Kernel.Tree))))))
+                      (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree ×
       (_root_.Geb.Kernel.Tree ×
@@ -17845,7 +18892,7 @@ def «Modules.elabForms» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree))))))
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.foldr
       (α := _root_.Geb.Kernel.Tree)
@@ -17855,14 +18902,14 @@ def «Modules.elabForms» :=
             (_root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
                 (_root_.List _root_.Geb.Kernel.Tree ×
-                  _root_.List _root_.Geb.Kernel.Tree)))))) →
+                  (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
         _root_.Geb.Kernel.Tree ×
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.Geb.Kernel.Tree ×
                 (_root_.List _root_.Geb.Kernel.Tree ×
                   (_root_.List _root_.Geb.Kernel.Tree ×
-                    _root_.List _root_.Geb.Kernel.Tree))))))
+                    (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
       (fun (x4 : _root_.Geb.Kernel.Tree)
          (x5 : (_root_.Geb.Kernel.Tree ×
            (_root_.Geb.Kernel.Tree ×
@@ -17870,21 +18917,21 @@ def «Modules.elabForms» :=
                (_root_.Geb.Kernel.Tree ×
                  (_root_.List _root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
-                     _root_.List _root_.Geb.Kernel.Tree)))))) →
+                     (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
            _root_.Geb.Kernel.Tree ×
              (_root_.Geb.Kernel.Tree ×
                (_root_.List _root_.Geb.Kernel.Tree ×
                  (_root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
                      (_root_.List _root_.Geb.Kernel.Tree ×
-                       _root_.List _root_.Geb.Kernel.Tree))))))
+                       (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
          (x6 : _root_.Geb.Kernel.Tree ×
            (_root_.Geb.Kernel.Tree ×
              (_root_.List _root_.Geb.Kernel.Tree ×
                (_root_.Geb.Kernel.Tree ×
                  (_root_.List _root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
-                     _root_.List _root_.Geb.Kernel.Tree)))))) =>
+                     (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
         x5 (x0 x1 x6 x4))
       (fun (x4 : _root_.Geb.Kernel.Tree ×
            (_root_.Geb.Kernel.Tree ×
@@ -17892,7 +18939,7 @@ def «Modules.elabForms» :=
                (_root_.Geb.Kernel.Tree ×
                  (_root_.List _root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
-                     _root_.List _root_.Geb.Kernel.Tree)))))) =>
+                     (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
         x4)
       x3
       x2
@@ -17905,7 +18952,7 @@ def «Modules.instantiate» :=
             (_root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
                 (_root_.List _root_.Geb.Kernel.Tree ×
-                  _root_.List _root_.Geb.Kernel.Tree)))))) →
+                  (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
         _root_.Geb.Kernel.Tree →
           _root_.Geb.Kernel.Tree ×
             (_root_.Geb.Kernel.Tree ×
@@ -17913,14 +18960,14 @@ def «Modules.instantiate» :=
                 (_root_.Geb.Kernel.Tree ×
                   (_root_.List _root_.Geb.Kernel.Tree ×
                     (_root_.List _root_.Geb.Kernel.Tree ×
-                      _root_.List _root_.Geb.Kernel.Tree))))))
+                      (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x1 : _root_.Geb.Kernel.Tree ×
       (_root_.Geb.Kernel.Tree ×
         (_root_.List _root_.Geb.Kernel.Tree ×
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree))))))
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x2 : _root_.Geb.Kernel.Tree)
     (x3 : _root_.Geb.Kernel.Tree)
     (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
@@ -17936,14 +18983,14 @@ def «Modules.instantiate» :=
                 (_root_.Geb.Kernel.Tree ×
                   (_root_.List _root_.Geb.Kernel.Tree ×
                     (_root_.List _root_.Geb.Kernel.Tree ×
-                      _root_.List _root_.Geb.Kernel.Tree)))))) →
+                      (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
             _root_.Geb.Kernel.Tree ×
               (_root_.Geb.Kernel.Tree ×
                 (_root_.List _root_.Geb.Kernel.Tree ×
                   (_root_.Geb.Kernel.Tree ×
                     (_root_.List _root_.Geb.Kernel.Tree ×
                       (_root_.List _root_.Geb.Kernel.Tree ×
-                        _root_.List _root_.Geb.Kernel.Tree))))))
+                        (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
         (fun (x5 : _root_.Geb.Kernel.Tree)
            (x6 : _root_.Geb.Kernel.Tree →
              (_root_.Geb.Kernel.Tree ×
@@ -17952,14 +18999,14 @@ def «Modules.instantiate» :=
                    (_root_.Geb.Kernel.Tree ×
                      (_root_.List _root_.Geb.Kernel.Tree ×
                        (_root_.List _root_.Geb.Kernel.Tree ×
-                         _root_.List _root_.Geb.Kernel.Tree)))))) →
+                         (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
                _root_.Geb.Kernel.Tree ×
                  (_root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
                      (_root_.Geb.Kernel.Tree ×
                        (_root_.List _root_.Geb.Kernel.Tree ×
                          (_root_.List _root_.Geb.Kernel.Tree ×
-                           _root_.List _root_.Geb.Kernel.Tree))))))
+                           (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
            (x7 : _root_.Geb.Kernel.Tree)
            (x8 : _root_.Geb.Kernel.Tree ×
              (_root_.Geb.Kernel.Tree ×
@@ -17967,10 +19014,11 @@ def «Modules.instantiate» :=
                  (_root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
                      (_root_.List _root_.Geb.Kernel.Tree ×
-                       _root_.List _root_.Geb.Kernel.Tree)))))) =>
+                       (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
           x6
             (_root_.Geb.Kernel.Const.add x7 (_root_.Geb.Kernel.leaf 1))
             (_root_.GebBoot.«Modules.bindParam»
+              x0
               x3
               (_root_.GebBoot.«Modules.stVis» x1)
               x8
@@ -17983,7 +19031,7 @@ def «Modules.instantiate» :=
                  (_root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
                      (_root_.List _root_.Geb.Kernel.Tree ×
-                       _root_.List _root_.Geb.Kernel.Tree)))))) =>
+                       (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
           x6)
         (_root_.Geb.Kernel.Const.children
           (_root_.Geb.Kernel.Const.child x2 (_root_.Geb.Kernel.leaf 0)))
@@ -17995,26 +19043,10 @@ def «Modules.instantiate» :=
           (_root_.Geb.Kernel.Const.children
             (_root_.Geb.Kernel.Const.child x2 (_root_.Geb.Kernel.leaf 1)))
           ([] : _root_.List _root_.Geb.Kernel.Tree)
-          (_root_.GebBoot.«Modules.stMods» x1)))
+          (_root_.GebBoot.«Modules.stMods» x1)
+          (_root_.GebBoot.«Modules.stPx» x1)))
       (_root_.Geb.Kernel.Const.children
         (_root_.Geb.Kernel.Const.child x2 (_root_.Geb.Kernel.leaf 2)))
-
-def «Modules.aGeneric» :=
-  _root_.Geb.Kernel.mk 1 [_root_.Geb.Kernel.leaf 37,
-    _root_.Geb.Kernel.leaf 103,
-    _root_.Geb.Kernel.leaf 101,
-    _root_.Geb.Kernel.leaf 110,
-    _root_.Geb.Kernel.leaf 101,
-    _root_.Geb.Kernel.leaf 114,
-    _root_.Geb.Kernel.leaf 105,
-    _root_.Geb.Kernel.leaf 99]
-
-def «Modules.aSort» :=
-  _root_.Geb.Kernel.mk 1 [_root_.Geb.Kernel.leaf 37,
-    _root_.Geb.Kernel.leaf 115,
-    _root_.Geb.Kernel.leaf 111,
-    _root_.Geb.Kernel.leaf 114,
-    _root_.Geb.Kernel.leaf 116]
 
 def «Modules.aPostulate» :=
   _root_.Geb.Kernel.mk 1 [_root_.Geb.Kernel.leaf 37,
@@ -18072,7 +19104,7 @@ def «Modules.genericOf» :=
             (_root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
                 (_root_.List _root_.Geb.Kernel.Tree ×
-                  _root_.List _root_.Geb.Kernel.Tree)))))) →
+                  (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
         _root_.Geb.Kernel.Tree →
           _root_.Geb.Kernel.Tree ×
             (_root_.Geb.Kernel.Tree ×
@@ -18080,14 +19112,14 @@ def «Modules.genericOf» :=
                 (_root_.Geb.Kernel.Tree ×
                   (_root_.List _root_.Geb.Kernel.Tree ×
                     (_root_.List _root_.Geb.Kernel.Tree ×
-                      _root_.List _root_.Geb.Kernel.Tree))))))
+                      (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x1 : _root_.Geb.Kernel.Tree ×
       (_root_.Geb.Kernel.Tree ×
         (_root_.List _root_.Geb.Kernel.Tree ×
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree))))))
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x2 : _root_.Geb.Kernel.Tree)
     (x3 : _root_.Geb.Kernel.Tree) =>
     let x4 : _root_.List
@@ -18095,88 +19127,159 @@ def «Modules.genericOf» :=
       (_root_.Geb.Kernel.Const.child x2 (_root_.Geb.Kernel.leaf 0));
     let x5 : _root_.List
       _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.genericArgs» x4;
-    let x6 : _root_.List
+    let x6 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.stPolys»
+      x1;
+    let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.stPx» x1;
+    let x8 : _root_.List
       _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
       (α := _root_.Geb.Kernel.Tree)
       (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x6 : _root_.Geb.Kernel.Tree)
-         (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
+      (fun (x8 : _root_.Geb.Kernel.Tree)
+         (x9 : _root_.List _root_.Geb.Kernel.Tree) =>
         if (_root_.GebBoot.«Reader.isAtom»
           (_root_.Geb.Kernel.Const.child
-            (_root_.Geb.Kernel.Const.child x6 (_root_.Geb.Kernel.leaf 0))
+            (_root_.Geb.Kernel.Const.child x8 (_root_.Geb.Kernel.leaf 0))
             (_root_.Geb.Kernel.leaf 1))).label ≠ 0 then
           ((_root_.GebBoot.«Reader.node2»
             (_root_.Geb.Kernel.leaf 0)
             (_root_.GebBoot.«Reader.nameOf»
               (_root_.Geb.Kernel.Const.child
-                (_root_.Geb.Kernel.Const.child x6 (_root_.Geb.Kernel.leaf 0))
+                (_root_.Geb.Kernel.Const.child x8 (_root_.Geb.Kernel.leaf 0))
                 (_root_.Geb.Kernel.leaf 1)))
             (_root_.GebBoot.«Reader.nameOf»
-              (_root_.Geb.Kernel.Const.child x6 (_root_.Geb.Kernel.leaf 1)))) ::
-            x7)
+              (_root_.Geb.Kernel.Const.child x8 (_root_.Geb.Kernel.leaf 1)))) ::
+            x9)
         else
-          x7)
+          x9)
       ([] : _root_.List _root_.Geb.Kernel.Tree)
       (_root_.GebBoot.«Modules.zipWith2»
-        (fun (x6 : _root_.Geb.Kernel.Tree) (x7 : _root_.Geb.Kernel.Tree) =>
-          _root_.GebBoot.«Reader.node2» (_root_.Geb.Kernel.leaf 0) x6 x7)
+        (fun (x8 : _root_.Geb.Kernel.Tree) (x9 : _root_.Geb.Kernel.Tree) =>
+          _root_.GebBoot.«Reader.node2» (_root_.Geb.Kernel.leaf 0) x8 x9)
         x4
         x5);
-    let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Trie.putAll»
-      x6
+    let x9 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Trie.putAll»
+      x8
       (_root_.Geb.Kernel.Const.child x2 (_root_.Geb.Kernel.leaf 3));
-    let x8 : _root_.List
+    let x10 : _root_.List
       _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.zipWith2»
-      (fun (x8 : _root_.Geb.Kernel.Tree) (x9 : _root_.Geb.Kernel.Tree) =>
-        let x10 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
-          x8
+      (fun (x10 : _root_.Geb.Kernel.Tree) (x11 : _root_.Geb.Kernel.Tree) =>
+        let x12 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
+          x10
           (_root_.Geb.Kernel.leaf 1);
-        if (_root_.GebBoot.«Reader.isAtom» x10).label ≠ 0 then
+        if (_root_.GebBoot.«Reader.isAtom» x12).label ≠ 0 then
           _root_.GebBoot.«Modules.mkList»
             (_root_.GebBoot.«Modules.aSort» ::
-              (_root_.GebBoot.«Prelude.single» x9))
+              (_root_.GebBoot.«Prelude.single» x11))
         else
           _root_.GebBoot.«Modules.mkList»
             (_root_.GebBoot.«Modules.aPostulate» ::
-              (x9 ::
+              (x11 ::
                 (_root_.GebBoot.«Prelude.single»
                   (_root_.Geb.Kernel.Const.foldr
                     (α := _root_.Geb.Kernel.Tree)
                     (β := _root_.Geb.Kernel.Tree)
-                    (fun (x11 : _root_.Geb.Kernel.Tree) (x12 : _root_.Geb.Kernel.Tree) =>
+                    (fun (x13 : _root_.Geb.Kernel.Tree) (x14 : _root_.Geb.Kernel.Tree) =>
                       _root_.GebBoot.«Modules.mkList»
                         (_root_.GebBoot.«Modules.aArrowM» ::
                           ((_root_.GebBoot.«Modules.rename»
-                            x7
-                            x11
+                            x9
+                            x6
+                            x13
                             (_root_.Geb.Kernel.leaf 1)
                             ([] : _root_.List _root_.Geb.Kernel.Tree)) ::
-                            (_root_.GebBoot.«Prelude.single» x12))))
+                            (_root_.GebBoot.«Prelude.single» x14))))
                     (_root_.GebBoot.«Modules.rename»
-                      x7
-                      (_root_.Geb.Kernel.Const.child x10 (_root_.Geb.Kernel.leaf 2))
+                      x9
+                      x6
+                      (_root_.Geb.Kernel.Const.child x12 (_root_.Geb.Kernel.leaf 2))
                       (_root_.Geb.Kernel.leaf 1)
                       ([] : _root_.List _root_.Geb.Kernel.Tree))
                     (_root_.Geb.Kernel.Const.children
-                      (_root_.Geb.Kernel.Const.child x10 (_root_.Geb.Kernel.leaf 1))))))))
+                      (_root_.Geb.Kernel.Const.child x12 (_root_.Geb.Kernel.leaf 1))))))))
       x4
       x5;
-    let x9 : _root_.Geb.Kernel.Tree ×
+    let x11 : _root_.Geb.Kernel.Tree ×
       (_root_.Geb.Kernel.Tree ×
         (_root_.List _root_.Geb.Kernel.Tree ×
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List
-                  _root_.Geb.Kernel.Tree))))) := _root_.GebBoot.«Modules.instantiate»
-      x0
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  _root_.Geb.Kernel.Tree)))))) := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := (_root_.Geb.Kernel.Tree ×
+        (_root_.Geb.Kernel.Tree ×
+          (_root_.List _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
+        _root_.Geb.Kernel.Tree ×
+          (_root_.Geb.Kernel.Tree ×
+            (_root_.List _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  (_root_.List _root_.Geb.Kernel.Tree ×
+                    (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+      (fun (x11 : _root_.Geb.Kernel.Tree)
+         (x12 : (_root_.Geb.Kernel.Tree ×
+           (_root_.Geb.Kernel.Tree ×
+             (_root_.List _root_.Geb.Kernel.Tree ×
+               (_root_.Geb.Kernel.Tree ×
+                 (_root_.List _root_.Geb.Kernel.Tree ×
+                   (_root_.List _root_.Geb.Kernel.Tree ×
+                     (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
+           _root_.Geb.Kernel.Tree ×
+             (_root_.Geb.Kernel.Tree ×
+               (_root_.List _root_.Geb.Kernel.Tree ×
+                 (_root_.Geb.Kernel.Tree ×
+                   (_root_.List _root_.Geb.Kernel.Tree ×
+                     (_root_.List _root_.Geb.Kernel.Tree ×
+                       (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
+         (x13 : _root_.Geb.Kernel.Tree ×
+           (_root_.Geb.Kernel.Tree ×
+             (_root_.List _root_.Geb.Kernel.Tree ×
+               (_root_.Geb.Kernel.Tree ×
+                 (_root_.List _root_.Geb.Kernel.Tree ×
+                   (_root_.List _root_.Geb.Kernel.Tree ×
+                     (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
+        x12
+          (_root_.GebBoot.«Modules.emitForm»
+            x0
+            x13
+            x11
+            ([] : _root_.List _root_.Geb.Kernel.Tree)))
+      (fun (x11 : _root_.Geb.Kernel.Tree ×
+           (_root_.Geb.Kernel.Tree ×
+             (_root_.List _root_.Geb.Kernel.Tree ×
+               (_root_.Geb.Kernel.Tree ×
+                 (_root_.List _root_.Geb.Kernel.Tree ×
+                   (_root_.List _root_.Geb.Kernel.Tree ×
+                     (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) =>
+        x11)
+      x10
       (_root_.GebBoot.«Modules.mkSt»
         (_root_.GebBoot.«Modules.stVis» x1)
         ([] : _root_.List _root_.Geb.Kernel.Tree)
         (_root_.GebBoot.«Modules.stReg» x1)
         (_root_.GebBoot.«Modules.stEx» x1)
         (_root_.GebBoot.«Modules.stMem» x1)
-        (_root_.GebBoot.«Modules.stMods» x1))
+        (_root_.GebBoot.«Modules.stMods» x1)
+        (_root_.GebBoot.«Modules.pxMk»
+          (_root_.GebBoot.«Modules.pxPolys» x7)
+          (_root_.GebBoot.«Modules.pxInsts» x7)
+          (_root_.GebBoot.«Modules.pxAbbrs» x7)
+          (_root_.Geb.Kernel.leaf 1)));
+    let x12 : _root_.Geb.Kernel.Tree ×
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.List _root_.Geb.Kernel.Tree ×
+          (_root_.Geb.Kernel.Tree ×
+            (_root_.List _root_.Geb.Kernel.Tree ×
+              (_root_.List _root_.Geb.Kernel.Tree ×
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  _root_.Geb.Kernel.Tree)))))) := _root_.GebBoot.«Modules.instantiate»
+      x0
+      x11
       x2
       (_root_.GebBoot.«Modules.nameCat»
         x3
@@ -18189,14 +19292,12 @@ def «Modules.genericOf» :=
           _root_.Geb.Kernel.leaf 105,
           _root_.Geb.Kernel.leaf 99]))
       x5;
-    if ((x9).1).label ≠ 0 then
+    if ((x12).1).label ≠ 0 then
       _root_.GebBoot.«Prelude.some»
         (_root_.GebBoot.«Modules.mkList»
           (_root_.GebBoot.«Modules.aGeneric» ::
-            (_root_.GebBoot.«Prelude.append»
-              x8
-              (_root_.GebBoot.«Prelude.reverse»
-                (_root_.GebBoot.«Modules.stOut» x9)))))
+            (_root_.GebBoot.«Prelude.reverse»
+              (_root_.GebBoot.«Modules.stOut» x12))))
     else
       _root_.GebBoot.«Prelude.none»
 
@@ -18208,7 +19309,7 @@ def «Modules.elabStep» :=
             (_root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
                 (_root_.List _root_.Geb.Kernel.Tree ×
-                  _root_.List _root_.Geb.Kernel.Tree)))))) →
+                  (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
         _root_.Geb.Kernel.Tree →
           _root_.Geb.Kernel.Tree ×
             (_root_.Geb.Kernel.Tree ×
@@ -18216,7 +19317,7 @@ def «Modules.elabStep» :=
                 (_root_.Geb.Kernel.Tree ×
                   (_root_.List _root_.Geb.Kernel.Tree ×
                     (_root_.List _root_.Geb.Kernel.Tree ×
-                      _root_.List _root_.Geb.Kernel.Tree))))))
+                      (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree ×
       (_root_.Geb.Kernel.Tree ×
@@ -18224,254 +19325,267 @@ def «Modules.elabStep» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List _root_.Geb.Kernel.Tree))))))
+                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
     (x3 : _root_.Geb.Kernel.Tree) =>
     if (if ((x2).1).label ≠ 0 then
-      if (_root_.GebBoot.«Reader.isList» x3).label ≠ 0 then
-        _root_.GebBoot.«Reader.nonEmpty» (_root_.Geb.Kernel.Const.children x3)
-      else
-        _root_.Geb.Kernel.leaf 0
+      _root_.Geb.Kernel.Const.eq
+        (_root_.Geb.Kernel.Const.label x3)
+        (_root_.Geb.Kernel.leaf 3)
     else
       _root_.Geb.Kernel.leaf 0).label ≠ 0 then
-      let x4 : _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-      let x5 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.at»
-        x4
-        (_root_.Geb.Kernel.leaf 0);
-      if (_root_.GebBoot.«Reader.named»
-        x5
-        _root_.GebBoot.«Modules.kwExport»).label ≠ 0 then
-        _root_.GebBoot.«Modules.mkSt»
-          (_root_.GebBoot.«Modules.stVis» x2)
-          (_root_.GebBoot.«Modules.stOut» x2)
-          (_root_.GebBoot.«Modules.stReg» x2)
-          (_root_.GebBoot.«Prelude.append»
-            (_root_.GebBoot.«Modules.stEx» x2)
-            (_root_.GebBoot.«Modules.atomNames»
-              (_root_.GebBoot.«Prelude.drop» (_root_.Geb.Kernel.leaf 1) x4)))
-          (_root_.GebBoot.«Modules.stMem» x2)
-          (_root_.GebBoot.«Modules.stMods» x2)
+      _root_.GebBoot.«Modules.instanceOf» x0 x2 x3
+    else
+      if (if ((x2).1).label ≠ 0 then
+        if (_root_.GebBoot.«Reader.isList» x3).label ≠ 0 then
+          _root_.GebBoot.«Reader.nonEmpty» (_root_.Geb.Kernel.Const.children x3)
+        else
+          _root_.Geb.Kernel.leaf 0
       else
+        _root_.Geb.Kernel.leaf 0).label ≠ 0 then
+        let x4 : _root_.List
+          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
+        let x5 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.at»
+          x4
+          (_root_.Geb.Kernel.leaf 0);
         if (_root_.GebBoot.«Reader.named»
           x5
-          _root_.GebBoot.«Modules.kwImport»).label ≠ 0 then
-          let x6 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.importSpec»
-            x3;
-          if (_root_.GebBoot.«Prelude.isSome» x6).label ≠ 0 then
-            let x7 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
-              (_root_.GebBoot.«Prelude.get» x6)
-              (_root_.Geb.Kernel.leaf 0);
-            let x8 : _root_.List
-              _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-              (_root_.Geb.Kernel.Const.child
+          _root_.GebBoot.«Modules.kwExport»).label ≠ 0 then
+          _root_.GebBoot.«Modules.mkSt»
+            (_root_.GebBoot.«Modules.stVis» x2)
+            (_root_.GebBoot.«Modules.stOut» x2)
+            (_root_.GebBoot.«Modules.stReg» x2)
+            (_root_.GebBoot.«Prelude.append»
+              (_root_.GebBoot.«Modules.stEx» x2)
+              (_root_.GebBoot.«Modules.atomNames»
+                (_root_.GebBoot.«Prelude.drop» (_root_.Geb.Kernel.leaf 1) x4)))
+            (_root_.GebBoot.«Modules.stMem» x2)
+            (_root_.GebBoot.«Modules.stMods» x2)
+            (_root_.GebBoot.«Modules.stPx» x2)
+        else
+          if (_root_.GebBoot.«Reader.named»
+            x5
+            _root_.GebBoot.«Modules.kwImport»).label ≠ 0 then
+            let x6 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.importSpec»
+              x3;
+            if (_root_.GebBoot.«Prelude.isSome» x6).label ≠ 0 then
+              let x7 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
                 (_root_.GebBoot.«Prelude.get» x6)
-                (_root_.Geb.Kernel.leaf 1));
-            let x9 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
-              (_root_.GebBoot.«Prelude.get» x6)
-              (_root_.Geb.Kernel.leaf 2);
-            let x10 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Trie.find»
-              x7
-              (_root_.GebBoot.«Modules.stReg» x2);
-            if (_root_.GebBoot.«Prelude.isSome» x10).label ≠ 0 then
-              let x11 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.get» x10;
-              if (_root_.Geb.Kernel.Const.eq
-                (_root_.Geb.Kernel.Const.label x11)
-                (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
-                if (_root_.GebBoot.«Reader.nonEmpty» x8).label ≠ 0 then
-                  _root_.GebBoot.«Modules.stFail»
-                else
-                  _root_.GebBoot.«Modules.declareAll»
-                    x2
-                    (_root_.GebBoot.«Modules.importAs»
-                      x9
-                      (_root_.Geb.Kernel.Const.children
-                        (_root_.Geb.Kernel.Const.child x11 (_root_.Geb.Kernel.leaf 0))))
-              else
-                let x12 : _root_.List
-                  _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                  (_root_.Geb.Kernel.Const.child x11 (_root_.Geb.Kernel.leaf 0));
+                (_root_.Geb.Kernel.leaf 0);
+              let x8 : _root_.List
+                _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                (_root_.Geb.Kernel.Const.child
+                  (_root_.GebBoot.«Prelude.get» x6)
+                  (_root_.Geb.Kernel.leaf 1));
+              let x9 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
+                (_root_.GebBoot.«Prelude.get» x6)
+                (_root_.Geb.Kernel.leaf 2);
+              let x10 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Trie.find»
+                x7
+                (_root_.GebBoot.«Modules.stReg» x2);
+              if (_root_.GebBoot.«Prelude.isSome» x10).label ≠ 0 then
+                let x11 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.get» x10;
                 if (_root_.Geb.Kernel.Const.eq
-                  (_root_.GebBoot.«Prelude.length» x12)
-                  (_root_.GebBoot.«Prelude.length» x8)).label ≠ 0 then
-                  let x13 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.nameCat»
-                    x1
-                    (_root_.Geb.Kernel.leaf 47)
-                    (if (_root_.GebBoot.«Prelude.isSome» x9).label ≠ 0 then
-                      _root_.GebBoot.«Prelude.get» x9
+                  (_root_.Geb.Kernel.Const.label x11)
+                  (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
+                  if (_root_.GebBoot.«Reader.nonEmpty» x8).label ≠ 0 then
+                    _root_.GebBoot.«Modules.stFail»
+                  else
+                    _root_.GebBoot.«Modules.declareAll»
+                      x2
+                      (_root_.GebBoot.«Modules.importAs»
+                        x9
+                        (_root_.Geb.Kernel.Const.children
+                          (_root_.Geb.Kernel.Const.child x11 (_root_.Geb.Kernel.leaf 0))))
+                else
+                  let x12 : _root_.List
+                    _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                    (_root_.Geb.Kernel.Const.child x11 (_root_.Geb.Kernel.leaf 0));
+                  if (_root_.Geb.Kernel.Const.eq
+                    (_root_.GebBoot.«Prelude.length» x12)
+                    (_root_.GebBoot.«Prelude.length» x8)).label ≠ 0 then
+                    let x13 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.nameCat»
+                      x1
+                      (_root_.Geb.Kernel.leaf 47)
+                      (if (_root_.GebBoot.«Prelude.isSome» x9).label ≠ 0 then
+                        _root_.GebBoot.«Prelude.get» x9
+                      else
+                        x7);
+                    let x14 : _root_.Geb.Kernel.Tree ×
+                      (_root_.Geb.Kernel.Tree ×
+                        (_root_.List _root_.Geb.Kernel.Tree ×
+                          (_root_.Geb.Kernel.Tree ×
+                            (_root_.List _root_.Geb.Kernel.Tree ×
+                              (_root_.List _root_.Geb.Kernel.Tree ×
+                                (_root_.List _root_.Geb.Kernel.Tree ×
+                                  _root_.Geb.Kernel.Tree)))))) := _root_.GebBoot.«Modules.instantiate»
+                      x0
+                      x2
+                      x11
+                      x13
+                      x8;
+                    let x15 : _root_.Geb.Kernel.Tree := (if ((x14).1).label ≠ 0 then
+                      _root_.GebBoot.«Modules.exportsOf» x14
                     else
-                      x7);
-                  let x14 : _root_.Geb.Kernel.Tree ×
+                      _root_.GebBoot.«Prelude.none»);
+                    if (_root_.GebBoot.«Prelude.isSome» x15).label ≠ 0 then
+                      _root_.GebBoot.«Modules.declareAll»
+                        (_root_.GebBoot.«Modules.mkSt»
+                          (_root_.GebBoot.«Modules.stVis» x2)
+                          (_root_.GebBoot.«Modules.stOut» x14)
+                          (_root_.GebBoot.«Modules.stReg» x14)
+                          (_root_.GebBoot.«Modules.stEx» x2)
+                          ((_root_.GebBoot.«Modules.memberSub» x13) ::
+                            (_root_.GebBoot.«Modules.stMem» x2))
+                          ((_root_.GebBoot.«Modules.modNode»
+                            x13
+                            (_root_.GebBoot.«Modules.stMem» x14)
+                            (_root_.Geb.Kernel.Const.children
+                              (_root_.GebBoot.«Prelude.get» x15))) ::
+                            (_root_.GebBoot.«Modules.stMods» x14))
+                          (_root_.GebBoot.«Modules.stPx» x14))
+                        (_root_.GebBoot.«Modules.importAs»
+                          x9
+                          (_root_.Geb.Kernel.Const.children (_root_.GebBoot.«Prelude.get» x15)))
+                    else
+                      _root_.GebBoot.«Modules.stFail»
+                  else
+                    _root_.GebBoot.«Modules.stFail»
+              else
+                _root_.GebBoot.«Modules.stFail»
+            else
+              _root_.GebBoot.«Modules.stFail»
+          else
+            if (_root_.GebBoot.«Reader.named»
+              x5
+              _root_.GebBoot.«Modules.kwModule»).label ≠ 0 then
+              if (if (_root_.Geb.Kernel.Const.lt
+                (_root_.Geb.Kernel.leaf 1)
+                (_root_.GebBoot.«Prelude.length» x4)).label ≠ 0 then
+                _root_.GebBoot.«Reader.isAtom»
+                  (_root_.GebBoot.«Prelude.at» x4 (_root_.Geb.Kernel.leaf 1))
+              else
+                _root_.Geb.Kernel.leaf 0).label ≠ 0 then
+                let x6 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Reader.nameOf»
+                  (_root_.GebBoot.«Prelude.at» x4 (_root_.Geb.Kernel.leaf 1));
+                let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.qualify»
+                  x1
+                  x6;
+                let x8 : _root_.List
+                  _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.drop»
+                  (_root_.Geb.Kernel.leaf 2)
+                  x4;
+                let x9 : _root_.List
+                  _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.withHead»
+                  _root_.GebBoot.«Modules.kwParameter»
+                  x8;
+                if (_root_.GebBoot.«Reader.nonEmpty» x9).label ≠ 0 then
+                  let x10 : _root_.List
+                    _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.withoutHead»
+                    _root_.GebBoot.«Modules.kwParameter»
+                    x8;
+                  let x11 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.node
+                    (_root_.Geb.Kernel.leaf 1)
+                    ((_root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x9) ::
+                      ((_root_.Geb.Kernel.Const.node
+                        (_root_.Geb.Kernel.leaf 0)
+                        (_root_.GebBoot.«Modules.concat»
+                          (_root_.Geb.Kernel.Const.foldr
+                            (α := _root_.Geb.Kernel.Tree)
+                            (β := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+                            (fun (x11 : _root_.Geb.Kernel.Tree)
+                               (x12 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
+                              ((_root_.GebBoot.«Modules.atomNames»
+                                (_root_.GebBoot.«Prelude.drop»
+                                  (_root_.Geb.Kernel.leaf 1)
+                                  (_root_.Geb.Kernel.Const.children x11))) ::
+                                x12))
+                            ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+                            (_root_.GebBoot.«Modules.withHead»
+                              _root_.GebBoot.«Modules.kwExport»
+                              x10)))) ::
+                        ((_root_.Geb.Kernel.Const.node
+                          (_root_.Geb.Kernel.leaf 0)
+                          (_root_.GebBoot.«Modules.withoutHead»
+                            _root_.GebBoot.«Modules.kwExport»
+                            x10)) ::
+                          (_root_.GebBoot.«Prelude.single»
+                            (_root_.GebBoot.«Modules.stVis» x2)))));
+                  let x12 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.genericOf»
+                    x0
+                    x2
+                    x11
+                    x7;
+                  if (_root_.GebBoot.«Prelude.isSome» x12).label ≠ 0 then
+                    _root_.GebBoot.«Modules.mkSt»
+                      (_root_.GebBoot.«Modules.stVis» x2)
+                      ((_root_.GebBoot.«Prelude.get» x12) ::
+                        (_root_.GebBoot.«Modules.stOut» x2))
+                      (_root_.GebBoot.«Trie.putNew»
+                        x7
+                        x11
+                        (_root_.GebBoot.«Modules.stReg» x2))
+                      (_root_.GebBoot.«Modules.stEx» x2)
+                      (_root_.GebBoot.«Modules.stMem» x2)
+                      (_root_.GebBoot.«Modules.stMods» x2)
+                      (_root_.GebBoot.«Modules.stPx» x2)
+                  else
+                    _root_.GebBoot.«Modules.stFail»
+                else
+                  let x10 : _root_.Geb.Kernel.Tree ×
                     (_root_.Geb.Kernel.Tree ×
                       (_root_.List _root_.Geb.Kernel.Tree ×
                         (_root_.Geb.Kernel.Tree ×
                           (_root_.List _root_.Geb.Kernel.Tree ×
                             (_root_.List _root_.Geb.Kernel.Tree ×
-                              _root_.List
-                                _root_.Geb.Kernel.Tree))))) := _root_.GebBoot.«Modules.instantiate»
+                              (_root_.List _root_.Geb.Kernel.Tree ×
+                                _root_.Geb.Kernel.Tree)))))) := _root_.GebBoot.«Modules.elabForms»
                     x0
-                    x2
-                    x11
-                    x13
+                    x7
+                    (_root_.GebBoot.«Modules.mkSt»
+                      (_root_.GebBoot.«Modules.stVis» x2)
+                      (_root_.GebBoot.«Modules.stOut» x2)
+                      (_root_.GebBoot.«Modules.stReg» x2)
+                      ([] : _root_.List _root_.Geb.Kernel.Tree)
+                      ([] : _root_.List _root_.Geb.Kernel.Tree)
+                      (_root_.GebBoot.«Modules.stMods» x2)
+                      (_root_.GebBoot.«Modules.stPx» x2))
                     x8;
-                  let x15 : _root_.Geb.Kernel.Tree := (if ((x14).1).label ≠ 0 then
-                    _root_.GebBoot.«Modules.exportsOf» x14
+                  let x11 : _root_.Geb.Kernel.Tree := (if ((x10).1).label ≠ 0 then
+                    _root_.GebBoot.«Modules.exportsOf» x10
                   else
                     _root_.GebBoot.«Prelude.none»);
-                  if (_root_.GebBoot.«Prelude.isSome» x15).label ≠ 0 then
+                  if (_root_.GebBoot.«Prelude.isSome» x11).label ≠ 0 then
                     _root_.GebBoot.«Modules.declareAll»
                       (_root_.GebBoot.«Modules.mkSt»
                         (_root_.GebBoot.«Modules.stVis» x2)
-                        (_root_.GebBoot.«Modules.stOut» x14)
-                        (_root_.GebBoot.«Modules.stReg» x14)
+                        (_root_.GebBoot.«Modules.stOut» x10)
+                        (_root_.GebBoot.«Trie.putNew»
+                          x7
+                          (_root_.Geb.Kernel.Const.node
+                            (_root_.Geb.Kernel.leaf 0)
+                            (_root_.GebBoot.«Prelude.single» (_root_.GebBoot.«Prelude.get» x11)))
+                          (_root_.GebBoot.«Modules.stReg» x10))
                         (_root_.GebBoot.«Modules.stEx» x2)
-                        ((_root_.GebBoot.«Modules.memberSub» x13) ::
+                        ((_root_.GebBoot.«Modules.memberSub» x7) ::
                           (_root_.GebBoot.«Modules.stMem» x2))
                         ((_root_.GebBoot.«Modules.modNode»
-                          x13
-                          (_root_.GebBoot.«Modules.stMem» x14)
+                          x7
+                          (_root_.GebBoot.«Modules.stMem» x10)
                           (_root_.Geb.Kernel.Const.children
-                            (_root_.GebBoot.«Prelude.get» x15))) ::
-                          (_root_.GebBoot.«Modules.stMods» x14)))
+                            (_root_.GebBoot.«Prelude.get» x11))) ::
+                          (_root_.GebBoot.«Modules.stMods» x10))
+                        (_root_.GebBoot.«Modules.stPx» x10))
                       (_root_.GebBoot.«Modules.importAs»
-                        x9
-                        (_root_.Geb.Kernel.Const.children (_root_.GebBoot.«Prelude.get» x15)))
+                        (_root_.GebBoot.«Prelude.some» x6)
+                        (_root_.Geb.Kernel.Const.children (_root_.GebBoot.«Prelude.get» x11)))
                   else
                     _root_.GebBoot.«Modules.stFail»
-                else
-                  _root_.GebBoot.«Modules.stFail»
-            else
-              _root_.GebBoot.«Modules.stFail»
-          else
-            _root_.GebBoot.«Modules.stFail»
-        else
-          if (_root_.GebBoot.«Reader.named»
-            x5
-            _root_.GebBoot.«Modules.kwModule»).label ≠ 0 then
-            if (if (_root_.Geb.Kernel.Const.lt
-              (_root_.Geb.Kernel.leaf 1)
-              (_root_.GebBoot.«Prelude.length» x4)).label ≠ 0 then
-              _root_.GebBoot.«Reader.isAtom»
-                (_root_.GebBoot.«Prelude.at» x4 (_root_.Geb.Kernel.leaf 1))
-            else
-              _root_.Geb.Kernel.leaf 0).label ≠ 0 then
-              let x6 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Reader.nameOf»
-                (_root_.GebBoot.«Prelude.at» x4 (_root_.Geb.Kernel.leaf 1));
-              let x7 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.qualify»
-                x1
-                x6;
-              let x8 : _root_.List
-                _root_.Geb.Kernel.Tree := _root_.GebBoot.«Prelude.drop»
-                (_root_.Geb.Kernel.leaf 2)
-                x4;
-              let x9 : _root_.List
-                _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.withHead»
-                _root_.GebBoot.«Modules.kwParameter»
-                x8;
-              if (_root_.GebBoot.«Reader.nonEmpty» x9).label ≠ 0 then
-                let x10 : _root_.List
-                  _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.withoutHead»
-                  _root_.GebBoot.«Modules.kwParameter»
-                  x8;
-                let x11 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.node
-                  (_root_.Geb.Kernel.leaf 1)
-                  ((_root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x9) ::
-                    ((_root_.Geb.Kernel.Const.node
-                      (_root_.Geb.Kernel.leaf 0)
-                      (_root_.GebBoot.«Modules.concat»
-                        (_root_.Geb.Kernel.Const.foldr
-                          (α := _root_.Geb.Kernel.Tree)
-                          (β := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-                          (fun (x11 : _root_.Geb.Kernel.Tree)
-                             (x12 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
-                            ((_root_.GebBoot.«Modules.atomNames»
-                              (_root_.GebBoot.«Prelude.drop»
-                                (_root_.Geb.Kernel.leaf 1)
-                                (_root_.Geb.Kernel.Const.children x11))) ::
-                              x12))
-                          ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-                          (_root_.GebBoot.«Modules.withHead»
-                            _root_.GebBoot.«Modules.kwExport»
-                            x10)))) ::
-                      ((_root_.Geb.Kernel.Const.node
-                        (_root_.Geb.Kernel.leaf 0)
-                        (_root_.GebBoot.«Modules.withoutHead»
-                          _root_.GebBoot.«Modules.kwExport»
-                          x10)) ::
-                        (_root_.GebBoot.«Prelude.single»
-                          (_root_.GebBoot.«Modules.stVis» x2)))));
-                let x12 : _root_.Geb.Kernel.Tree := _root_.GebBoot.«Modules.genericOf»
-                  x0
-                  x2
-                  x11
-                  x7;
-                if (_root_.GebBoot.«Prelude.isSome» x12).label ≠ 0 then
-                  _root_.GebBoot.«Modules.mkSt»
-                    (_root_.GebBoot.«Modules.stVis» x2)
-                    ((_root_.GebBoot.«Prelude.get» x12) ::
-                      (_root_.GebBoot.«Modules.stOut» x2))
-                    (_root_.GebBoot.«Trie.putNew»
-                      x7
-                      x11
-                      (_root_.GebBoot.«Modules.stReg» x2))
-                    (_root_.GebBoot.«Modules.stEx» x2)
-                    (_root_.GebBoot.«Modules.stMem» x2)
-                    (_root_.GebBoot.«Modules.stMods» x2)
-                else
-                  _root_.GebBoot.«Modules.stFail»
               else
-                let x10 : _root_.Geb.Kernel.Tree ×
-                  (_root_.Geb.Kernel.Tree ×
-                    (_root_.List _root_.Geb.Kernel.Tree ×
-                      (_root_.Geb.Kernel.Tree ×
-                        (_root_.List _root_.Geb.Kernel.Tree ×
-                          (_root_.List _root_.Geb.Kernel.Tree ×
-                            _root_.List
-                              _root_.Geb.Kernel.Tree))))) := _root_.GebBoot.«Modules.elabForms»
-                  x0
-                  x7
-                  (_root_.GebBoot.«Modules.mkSt»
-                    (_root_.GebBoot.«Modules.stVis» x2)
-                    (_root_.GebBoot.«Modules.stOut» x2)
-                    (_root_.GebBoot.«Modules.stReg» x2)
-                    ([] : _root_.List _root_.Geb.Kernel.Tree)
-                    ([] : _root_.List _root_.Geb.Kernel.Tree)
-                    (_root_.GebBoot.«Modules.stMods» x2))
-                  x8;
-                let x11 : _root_.Geb.Kernel.Tree := (if ((x10).1).label ≠ 0 then
-                  _root_.GebBoot.«Modules.exportsOf» x10
-                else
-                  _root_.GebBoot.«Prelude.none»);
-                if (_root_.GebBoot.«Prelude.isSome» x11).label ≠ 0 then
-                  _root_.GebBoot.«Modules.declareAll»
-                    (_root_.GebBoot.«Modules.mkSt»
-                      (_root_.GebBoot.«Modules.stVis» x2)
-                      (_root_.GebBoot.«Modules.stOut» x10)
-                      (_root_.GebBoot.«Trie.putNew»
-                        x7
-                        (_root_.Geb.Kernel.Const.node
-                          (_root_.Geb.Kernel.leaf 0)
-                          (_root_.GebBoot.«Prelude.single» (_root_.GebBoot.«Prelude.get» x11)))
-                        (_root_.GebBoot.«Modules.stReg» x10))
-                      (_root_.GebBoot.«Modules.stEx» x2)
-                      ((_root_.GebBoot.«Modules.memberSub» x7) ::
-                        (_root_.GebBoot.«Modules.stMem» x2))
-                      ((_root_.GebBoot.«Modules.modNode»
-                        x7
-                        (_root_.GebBoot.«Modules.stMem» x10)
-                        (_root_.Geb.Kernel.Const.children
-                          (_root_.GebBoot.«Prelude.get» x11))) ::
-                        (_root_.GebBoot.«Modules.stMods» x10)))
-                    (_root_.GebBoot.«Modules.importAs»
-                      (_root_.GebBoot.«Prelude.some» x6)
-                      (_root_.Geb.Kernel.Const.children (_root_.GebBoot.«Prelude.get» x11)))
-                else
-                  _root_.GebBoot.«Modules.stFail»
+                _root_.GebBoot.«Modules.stFail»
             else
-              _root_.GebBoot.«Modules.stFail»
-          else
-            _root_.GebBoot.«Modules.elabDecl» x1 x2 x3
-    else
-      _root_.GebBoot.«Modules.stFail»
+              _root_.GebBoot.«Modules.elabDecl» x0 x1 x2 x3
+      else
+        _root_.GebBoot.«Modules.stFail»
 
 def «Modules.elabAt» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
@@ -18483,7 +19597,7 @@ def «Modules.elabAt» :=
               (_root_.Geb.Kernel.Tree ×
                 (_root_.List _root_.Geb.Kernel.Tree ×
                   (_root_.List _root_.Geb.Kernel.Tree ×
-                    _root_.List _root_.Geb.Kernel.Tree)))))) →
+                    (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
           _root_.Geb.Kernel.Tree →
             _root_.Geb.Kernel.Tree ×
               (_root_.Geb.Kernel.Tree ×
@@ -18491,7 +19605,7 @@ def «Modules.elabAt» :=
                   (_root_.Geb.Kernel.Tree ×
                     (_root_.List _root_.Geb.Kernel.Tree ×
                       (_root_.List _root_.Geb.Kernel.Tree ×
-                        _root_.List _root_.Geb.Kernel.Tree))))))
+                        (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
       (fun (x1 : _root_.Geb.Kernel.Tree →
            (_root_.Geb.Kernel.Tree ×
              (_root_.Geb.Kernel.Tree ×
@@ -18499,7 +19613,7 @@ def «Modules.elabAt» :=
                  (_root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
                      (_root_.List _root_.Geb.Kernel.Tree ×
-                       _root_.List _root_.Geb.Kernel.Tree)))))) →
+                       (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))))) →
              _root_.Geb.Kernel.Tree →
                _root_.Geb.Kernel.Tree ×
                  (_root_.Geb.Kernel.Tree ×
@@ -18507,7 +19621,7 @@ def «Modules.elabAt» :=
                      (_root_.Geb.Kernel.Tree ×
                        (_root_.List _root_.Geb.Kernel.Tree ×
                          (_root_.List _root_.Geb.Kernel.Tree ×
-                           _root_.List _root_.Geb.Kernel.Tree))))))
+                           (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
          (x2 : _root_.Geb.Kernel.Tree)
          (x3 : _root_.Geb.Kernel.Tree ×
            (_root_.Geb.Kernel.Tree ×
@@ -18515,7 +19629,7 @@ def «Modules.elabAt» :=
                (_root_.Geb.Kernel.Tree ×
                  (_root_.List _root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
-                     _root_.List _root_.Geb.Kernel.Tree))))))
+                     (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
          (x4 : _root_.Geb.Kernel.Tree) =>
         _root_.GebBoot.«Modules.elabStep» x1 x2 x3 x4)
       (fun (_ : _root_.Geb.Kernel.Tree)
@@ -18525,10 +19639,38 @@ def «Modules.elabAt» :=
                (_root_.Geb.Kernel.Tree ×
                  (_root_.List _root_.Geb.Kernel.Tree ×
                    (_root_.List _root_.Geb.Kernel.Tree ×
-                     _root_.List _root_.Geb.Kernel.Tree))))))
+                     (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))))))
          (_ : _root_.Geb.Kernel.Tree) =>
         _root_.GebBoot.«Modules.stFail»)
       x0
+
+def «Modules.isPolyDecl» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    if (if (_root_.GebBoot.«Reader.isList» x0).label ≠ 0 then
+      _root_.Geb.Kernel.Const.lt
+        (_root_.Geb.Kernel.leaf 1)
+        (_root_.Geb.Kernel.Const.arity x0)
+    else
+      _root_.Geb.Kernel.leaf 0).label ≠ 0 then
+      if (_root_.GebBoot.«Reader.isList»
+        (_root_.Geb.Kernel.Const.child
+          x0
+          (_root_.Geb.Kernel.leaf 1))).label ≠ 0 then
+        _root_.GebBoot.«Prelude.or»
+          (_root_.GebBoot.«Reader.named»
+            (_root_.Geb.Kernel.Const.child x0 (_root_.Geb.Kernel.leaf 0))
+            _root_.GebBoot.«Reader.kwDef»)
+          (_root_.GebBoot.«Prelude.or»
+            (_root_.GebBoot.«Reader.named»
+              (_root_.Geb.Kernel.Const.child x0 (_root_.Geb.Kernel.leaf 0))
+              _root_.GebBoot.«Datatype.kwDefn»)
+            (_root_.GebBoot.«Reader.named»
+              (_root_.Geb.Kernel.Const.child x0 (_root_.Geb.Kernel.leaf 0))
+              _root_.GebBoot.«Datatype.kwData»))
+      else
+        _root_.Geb.Kernel.leaf 0
+    else
+      _root_.Geb.Kernel.leaf 0
 
 def «Modules.moduleCount» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
@@ -18546,12 +19688,17 @@ def «Modules.moduleCount» :=
                 (α := _root_.Geb.Kernel.Tree)
                 (β := _root_.Geb.Kernel.Tree)
                 _root_.Geb.Kernel.Const.add
-                (if (_root_.GebBoot.«Reader.named»
-                  x3
-                  _root_.GebBoot.«Modules.kwModule»).label ≠ 0 then
-                  _root_.Geb.Kernel.leaf 1
-                else
-                  _root_.Geb.Kernel.leaf 0)
+                (_root_.Geb.Kernel.Const.add
+                  (if (_root_.GebBoot.«Reader.named»
+                    x3
+                    _root_.GebBoot.«Modules.kwModule»).label ≠ 0 then
+                    _root_.Geb.Kernel.leaf 1
+                  else
+                    _root_.Geb.Kernel.leaf 0)
+                  (if (_root_.GebBoot.«Modules.isPolyDecl» x3).label ≠ 0 then
+                    _root_.Geb.Kernel.leaf 1
+                  else
+                    _root_.Geb.Kernel.leaf 0))
                 x4)
             x1))
       (_root_.Geb.Kernel.leaf 0)
@@ -18565,8 +19712,8 @@ def «Modules.expandModulesTree» :=
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree ×
-                _root_.List
-                  _root_.Geb.Kernel.Tree))))) := _root_.GebBoot.«Modules.elabForms»
+                (_root_.List _root_.Geb.Kernel.Tree ×
+                  _root_.Geb.Kernel.Tree)))))) := _root_.GebBoot.«Modules.elabForms»
       (_root_.GebBoot.«Modules.elabAt»
         (_root_.Geb.Kernel.Const.add
           (_root_.GebBoot.«Modules.moduleCount» x0)
@@ -18574,13 +19721,7 @@ def «Modules.expandModulesTree» :=
       (_root_.Geb.Kernel.Const.node
         (_root_.Geb.Kernel.leaf 0)
         ([] : _root_.List _root_.Geb.Kernel.Tree))
-      (_root_.GebBoot.«Modules.mkSt»
-        _root_.GebBoot.«Trie.empty»
-        ([] : _root_.List _root_.Geb.Kernel.Tree)
-        _root_.GebBoot.«Trie.empty»
-        ([] : _root_.List _root_.Geb.Kernel.Tree)
-        ([] : _root_.List _root_.Geb.Kernel.Tree)
-        ([] : _root_.List _root_.Geb.Kernel.Tree))
+      _root_.GebBoot.«Modules.stStart»
       x0;
     if ((x1).1).label ≠ 0 then
       if (_root_.GebBoot.«Reader.nonEmpty»

@@ -4095,7 +4095,14 @@ import-direction rules above are enforced by
   and export lists, and modules with parameters instantiated at their
   imports, every name of a body renamed to what it denotes
   (`Geb.Kernel.rename`), recording the program's tree of modules
-  (`Geb.Kernel.elabTree`). The same pass expands sequential typed bindings
+  (`Geb.Kernel.elabTree`). A definition, a function and a datatype take
+  type parameters of their own, `(defn (f A …) …)`, supplied at each use,
+  which denotes an instance: the declaration with each parameter a type
+  abbreviation of its argument, written before the declaration that
+  first uses it and named by the S-expression of its use
+  (`Geb.Kernel.instName`), and elaborated once at opaque arguments where
+  it is declared (`Geb.Kernel.elabDecl`). The same pass expands
+  sequential typed bindings
   (`let*`) and guarded clauses ending in `else` (`cond`) to nested `let`
   and `if` forms, preserving each binding's scope and leaving quoted data
   unchanged (`Geb.Kernel.letChain`, `Geb.Kernel.condChain`).
@@ -4184,7 +4191,10 @@ import-direction rules above are enforced by
   `bootstrap/modules.geb` elaborates modules in the stage-0 compiler, before
   the expansion of the datatype language, and
   `GebTests/Prototypes/Kernel/Modules.lean` compares it with
-  `Geb.Kernel.expandModules`. `bootstrap/printer.geb` prints a bundle in the
+  `Geb.Kernel.expandModules`, on declarations with type parameters among
+  the others; `examples/polymorphic/` is a program of two layers that
+  declares and uses them, which `scripts/tests/test-polymorphic.sh`
+  compiles and runs. `bootstrap/printer.geb` prints a bundle in the
   readable syntax, which `GebTests/Prototypes/Kernel/Printer.lean` compares
   with `Geb.Kernel.printProgram`.
   `bootstrap/stage1/datatype.geb` rewrites the expansion in the datatype

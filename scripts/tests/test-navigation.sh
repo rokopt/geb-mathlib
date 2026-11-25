@@ -33,6 +33,10 @@ with tempfile.TemporaryDirectory(prefix='geb-navigation-') as tmp:
   (defn ident ((x X)) X x))
 (data Nat (zero) (succ Nat))
 (deftype Tree T)
+(module P (export Option none some orElse)
+  ; The optional values of a type.
+  (data (Option E) (none) (some E))
+  (defn (orElse E) ((d E) (m (Option E))) E (case m ((some E v) v) ((none E) d))))
 ''')
     source = '''(module B (import A as X) (export forward)
   (defn forward ((x T)) T (X.identity x)))
@@ -45,15 +49,17 @@ with tempfile.TemporaryDirectory(prefix='geb-navigation-') as tmp:
 (def named (lam ((x T)) (B.forward x)))
 (def branch (case value ((succ identity) identity) ((zero) zero)))
 (def quoted-marker (quote ("%navigation" identity)))
+(module D (import P) (export pick)
+  (defn pick ((x T)) (Option Tree) (some Tree (orElse Tree x (none Tree)))))
 '''
     use.write_text(source)
     manifest.write_text('(program nav (edition 0) '
         '(document (syntax authoring 0) (schema 0) (prose verso 0)) '
         '(sources Library.geb Use.geb) (entries named))')
-    def query(fragment=None, text=source, snapshots=(), ok=True):
+    def query(fragment=None, text=source, snapshots=(), ok=True, file=use):
         offset = text.index(fragment) if fragment else 0
         prefix = text[:offset]
-        request = dict(file=str(use), line=prefix.count('\n') + 1 if fragment else 0,
+        request = dict(file=str(file), line=prefix.count('\n') + 1 if fragment else 0,
             column=len(prefix.rsplit('\n', 1)[-1].encode()) + 1 if fragment else 0,
             documents=list(snapshots))
         result = subprocess.run([runner, 'navigation', manifest], input=' \n' + json.dumps(request),
@@ -81,6 +87,27 @@ with tempfile.TemporaryDirectory(prefix='geb-navigation-') as tmp:
     assert query('identity) identity')['target']['kind'] == 'variable'
     assert query('identity) ((zero')['target']['kind'] == 'variable'
     assert query('%navigation" identity')['target'] is None
+    # A declaration with type parameters: its uses in a term, a type and a pattern, the types
+    # that follow them, and its parameters, in scope in the declaration alone.
+    assert query('orElse Tree x')['target']['name'] == 'P.orElse'
+    assert query('some Tree (orElse')['target']['name'] == 'P.some'
+    assert query('Option Tree) (some')['target']['name'] == 'P.Option'
+    assert query('Tree x (none')['target']['name'] == 'Tree'
+    assert query('Tree)))))')['target']['name'] == 'Tree'
+    generic = lib.read_text()
+    in_lib = lambda fragment: query(fragment, generic, file=lib)['target']
+    assert in_lib('Option E) (none)')['name'] == 'P.Option'
+    assert in_lib('Option E) (none)')['documentation'] == 'The optional values of a type.'
+    assert in_lib('E) (none)')['kind'] == 'type parameter'
+    assert in_lib('E))\n  (defn (orElse')['name'] == 'P.Option.E'
+    assert in_lib('orElse E)')['name'] == 'P.orElse'
+    assert in_lib('E) (m (Option')['name'] == 'P.orElse.E'
+    assert in_lib('Option E))) E')['name'] == 'P.Option'
+    assert in_lib('some E v) v')['name'] == 'P.some'
+    assert in_lib('E v) v')['name'] == 'P.orElse.E'
+    assert in_lib('v) v')['kind'] == 'variable'
+    assert in_lib('v) ((none')['kind'] == 'variable'
+    assert in_lib('E) d)')['name'] == 'P.orElse.E'
     # UTF-8 byte columns, quoted names, CRLF, and snapshots never save a buffer.
     changed = source + '(def "λ😀" (lam ((x T)) (B.forward x)))\n(def last "λ😀")\n'
     changed = changed.replace('\n', '\r\n')
@@ -104,5 +131,6 @@ with tempfile.TemporaryDirectory(prefix='geb-navigation-') as tmp:
     lib.write_text(lib.read_text() + '(module Hidden (def secret 0))\n')
     changed = source + '(def attempt Hidden.secret)\n'
     assert query('Hidden.secret', changed, [dict(path=str(use), text=changed)])['target'] is None
-print('test-navigation: scopes, aliases, templates, comments, snapshots and byte positions passed')
+print('test-navigation: scopes, aliases, templates, type parameters, comments, snapshots and '
+    'byte positions passed')
 PY

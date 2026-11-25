@@ -223,16 +223,22 @@ def forms (items : List Located) : List Located := items.filter (!headIs kwNote 
 
 /-! ## Declarations -/
 
+/-- The atom that names a declaration, given the element after its keyword: the element, or the
+atom that begins it where the declaration takes type parameters, {lit}`(kw (x A …) …)`. -/
+def declNameAtom (n : Located) : Option Located :=
+  if n.label.2.isSome then (if n.children.isEmpty then some n else none)
+  else n.children.head?.filter fun h ↦ h.label.2.isSome && h.children.isEmpty
+
 /-- The declarations of a node, from its children's, each by its path from the node and with the
 span of its name: a declaration's own, and a module's with those of its body under its name. -/
 def declStep (l : Span × Option (List Char)) (rs : List (Located × List (Path × Span))) :
     List (Path × Span) :=
   match l.2, rs with
   | none, (k, _) :: (n, _) :: body =>
-    match k.label.2, n.label.2 with
-    | some kw, some name =>
-      if k.children.isEmpty && n.children.isEmpty && declHeads.contains kw then
-        ([name], n.label.1) ::
+    match k.label.2, (declNameAtom n).bind fun a ↦ a.label.2.map fun name ↦ (name, a.label.1) with
+    | some kw, some (name, span) =>
+      if k.children.isEmpty && declHeads.contains kw then
+        ([name], span) ::
           if kw == kwModule then body.flatMap fun r ↦ r.2.map fun d ↦ (name :: d.1, d.2) else []
       else []
     | _, _ => []
