@@ -1,0 +1,13 @@
+(module Outline (export Outline item group singleton valueOr size)
+  (data (Outline A) (item A) (group & (Outline A)))
+
+  (def (singleton A)
+    (lam ((x A)) (group A (cons (item A x) (nil (Outline A))))))
+
+  (defn (valueOr A) ((fallback A) (o (Outline A))) A
+    (case o ((item A x) x) (else fallback)))
+
+  (defn (size A) ((o (Outline A))) T
+    (cata (Outline A) T o
+      ((item A _) 1)
+      ((group A & ns) (foldr T T (lam ((n T) (acc T)) (add n acc)) 0 ns)))))

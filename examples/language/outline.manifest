@@ -1,0 +1,3 @@
+(program outline (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
+  (sources Outline.geb Report.geb)
+  (entries Report.count))

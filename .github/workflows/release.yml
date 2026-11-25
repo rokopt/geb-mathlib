@@ -20,7 +20,7 @@ jobs:
       matrix:
         # The oldest supported Ubuntu, so that the executables need the
         # oldest glibc; its Arm runner; and macOS on Apple silicon.
-        runner: [ubuntu-22.04, ubuntu-22.04-arm, macos-14]
+        runner: [ubuntu-22.04, ubuntu-22.04-arm, macos-15]
     runs-on: ${{ matrix.runner }}
     # A build with no cache to restore compiles the host's emitted Lean in
     # full; 360 minutes is the limit GitHub-hosted runners allow.
@@ -55,15 +55,18 @@ jobs:
           npm ci --prefix editors/vscode
           npm run package --prefix editors/vscode
           npm run build:paredit --prefix editors/vscode
+          mkdir dist
+          cp editors/vscode/geb-language.vsix dist/
+          cp editors/vscode/paredit-*.vsix dist/geb-paredit.vsix
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: editors
-          path: editors/vscode/*.vsix
+          path: dist/*.vsix
           retention-days: 7
 
   publish:
     name: Publish the release
-    if: github.ref_type == 'tag'
+    if: github.event_name == 'push'
     needs: [hosts, editors]
     runs-on: ubuntu-latest
     permissions:
@@ -79,3 +82,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
           REPOSITORY: ${{ github.repository }}
+
+  client:
+    name: Fresh client of the published release
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: '24'
+      - run: npm ci --prefix editors/vscode
+      - run: xvfb-run -a bash scripts/tests/client-acceptance.sh "$RUNNER_TEMP/client-test" --release "$TAG"
+        env:
+          TAG: ${{ github.ref_name }}
+          GEB_RELEASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/download

@@ -384,7 +384,7 @@ text = true
 [[lean_lib]]
 name = "GebManual"
 srcDir = "manual"
-needs = ["@/referencesBib", "@/authoringExample", "@/library"]
+needs = ["@/referencesBib", "@/authoringExample", "@/languageExample", "@/library"]
 moreLeanArgs = [
   "-Dweak.verso.code.warnLineLength=100",
   "-Dweak.linter.hashCommand=false",
@@ -465,6 +465,12 @@ name = "GebHost"
 name = "authoringExample"
 path = "examples/authoring"
 filter = {extension = ["geb", "manifest", "cert"]}
+
+# The language guide prints these files and checks their program during elaboration.
+[[input_dir]]
+name = "languageExample"
+path = "examples/language"
+filter = {extension = ["geb", "manifest"]}
 
 # The manual includes the shared library's modules and proves its theorems from these files
 # at elaboration.
