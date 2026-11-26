@@ -65,7 +65,9 @@ are its documentation, and a reference in them to a declaration of the
 library links to that declaration. As the chapter builds, the library
 compiles, the examples in its notes are evaluated and compared with their
 expected values, the references of its comments are resolved, and the
-theorems of its proof document are proved by the prover written in Geb.
+theorems of its proof documents are proved by the prover written in Geb.
+The last of those documents states its theorems over the library's
+datatypes ({ref "typed-statements"}[Statements over the datatype language]).
 
 A declaration with type parameters writes them after its name, and a use
 supplies a type for each before its arguments
@@ -98,6 +100,14 @@ supplies a type for each before its arguments
 ## Theorems
 
 {gebProofs "library/library.manifest" "Bytes.proofs.geb"}
+
+## Lemmas of trees
+
+{gebProofs "library/library.manifest" "Trees.proofs.geb"}
+
+## Theorems over the datatypes
+
+{gebProofs "library/library.manifest" "Datatypes.proofs.geb"}
 
 # Writing a Geb program
 %%%

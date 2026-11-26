@@ -91,7 +91,7 @@ program after it by `transport`
 # The proof-source profile
 
 A proof document is `(proofs V THEOREM…)`, its version `V` being `0`, `1`,
-`2`, `3`, `4`, `5` or `6`, with one or more theorems of distinct names, each
+`2`, `3`, `4`, `5`, `6` or `7`, with one or more theorems of distinct names, each
 `(theorem NAME STATEMENT (by SCRIPT))`. Version `1` reads:
 
 ```
@@ -153,13 +153,16 @@ of pairs alone, so a document of either version keeps its meaning. It
 cites no theorem, so its certificate saves no companion and has the format
 `geb-proof/v1`, whose certificates therefore still replay; version `1`
 writes `geb-proof/v2`, version `2` `geb-proof/v3`, version `3`
-`geb-proof/v4`, version `4` `geb-proof/v5`, version `5` `geb-proof/v6` and
-version `6` `geb-proof/v7`. An unknown or unbound name, a name declared twice,
+`geb-proof/v4`, version `4` `geb-proof/v5`, version `5` `geb-proof/v6`,
+version `6` `geb-proof/v7` and version `7` `geb-proof/v8`. An unknown or unbound
+name, a name declared twice,
 a malformed form, an unsupported version, a false equation or an
 unsuccessful search is rejected. Failure of a bounded search does not establish that the
 statement is false.
 
-Statements are not yet written over the datatypes of the datatype language.
+The types and terms of these statements are the kernel's, in which a value
+of a datatype is a tree. Version `7` states theorems over the datatype
+language ({ref "typed-statements"}[Statements over the datatype language]).
 The statement reader and the script interpreter are in
 `bootstrap/authoring.geb`; they add no rule to the metalogic.
 
@@ -993,6 +996,134 @@ form with the vocabulary kept folded. Where they search for the data that a
 hypothesis's reduction waits on, splitting bits to a depth, the document
 decides each test of the checker's case by the case analysis of its value
 and inverts the type it tests by a lemma.
+
+# Statements over the datatype language
+%%%
+tag := "typed-statements"
+%%%
+
+Version `7` reads what version `6` reads, and adds statements whose types and
+terms are those of the datatype language:
+
+```
+DOCUMENT ::= (proofs 7 HEADER… FORM…)
+STATEMENT ::= … | (typed TYPED)
+TYPED ::= (forall (BINDER…) EQUATIONS) | EQUATIONS
+BINDER ::= (x DTYPE) | (x DTYPE h)
+EQUATIONS ::= (implies (h DEQUATION) … DEQUATION) | DEQUATION
+DEQUATION ::= (equal DTERM DTERM)
+```
+
+A type `DTYPE` and a term `DTERM` are a type and a term of the datatype
+language, as a source after the program's sources writes them outside every
+module: the program's declarations under their qualified names, a
+declaration with type parameters followed by a type for each, and the
+forms of a datatype, its constructors, case analysis and structural
+recursion, its representation `(rep e)`, its decoding `(decode D e f c)` and
+its data `(datum D d)`. The compiler types them, so the two sides of an
+equation have one type of the datatype language, a datatype and the trees
+being distinct types in a statement as they are in a program, and a
+statement it rejects is reported at the theorem's name.
+
+A statement `(typed Q)` is the statement over the kernel of its erasure.
+The typing gives each term a kernel term, in which a value of a datatype is
+its tree, and the statement's variables have the kernel types of their
+types' erasures, its hypotheses and its conclusion being the equations of
+the erased terms. A datatype is the trees its recognizer accepts, and a
+variable of a datatype's type ranges over every tree unless its binder
+states otherwise: a binder `(x D h)`, `D` a datatype, adds the hypothesis
+`h`, before the statement's own, that `x` is a member of `D`,
+
+```
+(equal (decode D (rep x) (lam ((x D)) 1) 0) 1)
+```
+
+the decoding of the tree of `x` at `D` being the first of its branches
+exactly where the recognizer of `D` accepts the tree. A statement proved
+without that hypothesis holds of the erased program at every tree, which is
+more than its types say; a statement that holds of the members alone, as
+that a value is rebuilt from its case analysis, takes the hypothesis.
+Membership in a type that is no datatype, a type of lists of a datatype
+among them, is written as a hypothesis of the statement, the equation of a
+test with its value at the members.
+
+The terms of a theorem's statement are compiled, not read by the proof
+runner. They are one definition after the program's sources, named by the
+theorem's name after `__geb_statement_`: the abstraction over the
+statement's binders of its equations paired, the hypotheses' before the
+conclusion's, each the conditional `(if 1 L R)` between its sides, which the
+typing accepts where the two have one type and whose erasure keeps both.
+The runner gives these definitions for the theorems of a development
+(`Authoring.typed`), the host compiles them after the program, and the
+runner reads each statement from the kernel type and the translation of its
+definition (`Authoring.readTyped`). The program a development with such
+statements is proved against is therefore the manifest's followed by those
+definitions, and its certificate, and its cache, are of that program. The
+compiler writes with the definitions what they alone refer to: the instance
+of a declaration with type parameters at the types a statement uses it at,
+and the recognizer of a datatype a statement decodes. A theorem of a
+library about such a declaration is so proved in a client's program whether
+or not the client uses the declaration at those types.
+
+The script of such a theorem is read as that of a statement over the
+kernel, and its goals are statements over the internal language. A term the
+script writes is a term of the internal language, in which a definition the
+compiler names by its use is the quoted atom of that name, the constructor
+of the optional values of trees being `"(Optional.some T)"`. The goal of a
+hole is the statement of the erasure, which a document reads back in a
+program that has the definitions it names. A document of version `7`
+imports documents of versions `1` to `7`.
+
+The documents of `library/` state the library's theorems over its
+datatypes. `Trees.proofs.geb` holds lemmas of every program by which a proof
+takes a tree apart: a tree is the node of its unfolding, with the two
+lemmas on the folds of lists that prove it, a tree is the node of a label
+and children, a list is empty or a construction, and a bit is one of the
+two. `Datatypes.proofs.geb` imports it and states, of the optional values,
+that the value of one that holds a value is that value and the value of the
+one that holds none is the default, at a declaration with type parameters
+that the library uses at the trees nowhere; and, of the byte strings, that a
+byte string is the byte string of its bytes:
+
+```
+(theorem bytes-of-bytes
+  (typed
+    (forall ((b Bytes.Bytes member))
+      (equal (case b ((Bytes.bytes & cs) (Bytes.bytes cs))) b)))
+  (by …))
+```
+
+The statement holds of the members of `Bytes.Bytes`, the trees of label 0,
+and of no other tree, whose label the right side keeps. Its script takes
+the tree apart by the lemmas, as the scripts of version `6` decide a test by
+the case analysis of its value
+({ref "reduction-scripts"}[Reductions and cited theorems in formula proofs]):
+the tree is the node of a label and children, and the label is empty or a
+bit before a bitstring. At the empty label both sides reduce to the node of
+label 0 over the children. At any other the hypothesis `member` reduces to
+the equation of the leaves 0 and 1, from which `congruence` cuts in the
+equation of falsity with truth, the values at their labels of a conditional
+between truth and falsity, and `absurd` proves the goal.
+
+```
+lake exe geb-author prove library/Datatypes.proofs.geb /tmp/datatypes.cert
+lake exe geb-author replay library/Datatypes.proofs.geb /tmp/datatypes.cert
+```
+
+A recognizer compares the arity of a node with the number of a
+constructor's fields, a test of the length of the list of the children that
+reduction decides at a list of a known length alone. The case analysis of a
+member of a datatype whose constructors have fixed numbers of fields, as
+that an optional value is none or holds a value, therefore takes lemmas on
+that arithmetic, which no tactic composes yet.
+
+`scripts/tests/test-proof-typed.sh` proves and replays the library's
+documents, alone and against a program that names the library as a layer,
+and exercises hypotheses, statements without variables, declarations at
+types the program uses them at nowhere, the statements the compiler and the
+reader reject, goals, the cache, the durable spellings, a record of the
+development (`scripts/preserve.py`), the transport of a certificate to a
+changed program and navigation.
 
 # The cache of a development
 %%%

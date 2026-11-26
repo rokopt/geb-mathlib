@@ -140,8 +140,9 @@ order of the work that proceeds alongside the client.
 
 1. Complete. Assemble and share the first library. The library is
    `library/`: its manifest lists the sources of its modules (step 8),
-   whose notes hold checked examples, and its proof document
-   `Bytes.proofs.geb` holds a theorem. The client
+   whose notes hold checked examples, and its proof documents hold its
+   theorems, `Bytes.proofs.geb` one about a function of lists of trees and
+   `Datatypes.proofs.geb` those stated over its datatypes. The client
    template `examples/client/` is the root of a repository whose Git
    submodule `geb/` pins the Geb and library revisions, the library being
    a directory of the Geb repository, and places the library's sources
@@ -362,11 +363,14 @@ order of the work that proceeds alongside the client.
    artifact there. Step 12 applies these forms to the compiler sources,
    including `bootstrap/seq.geb`. A declaration's note
    holds examples, which a compile of the library or of a client checks.
-   The library's theorem is stated of a function of lists of trees,
-   `Bytes.firstLine`: statements are not yet written over datatypes
-   ({ref "the-next-phase"}[The next phase]), and a generic declaration is
-   compiled at the instances a program uses, which a library's theorem
-   cannot assume of a client. The acceptance is that of step 4, at the
+   The library's first theorem is stated of a function of lists of trees,
+   `Bytes.firstLine`. Its theorems over its datatypes are stated in the
+   datatype language ({ref "typed-statements"}[Statements over the datatype
+   language]): a generic declaration is compiled at the instances a
+   program uses, which a library's theorem cannot assume of a client, so
+   the terms of such a statement are compiled after the program a
+   development is proved against, at the types they use the declaration
+   at. The acceptance is that of step 4, at the
    library's modules: the program of `examples/polymorphic/` takes the
    library as its library layer (`scripts/tests/test-polymorphic.sh`).
    The program of `examples/requests/` imports the protocol types
@@ -453,8 +457,13 @@ and 0.5 seconds with one load ({ref "improvements"}[Improvements]).
 Exercise host-tool changes in the client with the editor's reports.
 
 The proof work in {ref "the-next-phase"}[The next phase] proceeds alongside
-the client. Expose datatype-level statements before writing library
-theorems about those types. Port one soundness deduction from its Lean
+the client. Proof documents state theorems over the datatype language
+({ref "typed-statements"}[Statements over the datatype language]), and the
+library states its first over its datatypes. A library theorem about the
+members of a datatype whose constructors have fixed numbers of fields
+waits on the case analysis of a member, which takes lemmas on the
+arithmetic of a node's arity or a tactic composing them. Port one
+soundness deduction from its Lean
 driver and replay its certificate from Geb source. Before the bulk port,
 measure rule selection, matching and traversal, and compare searches
 with and without the check at storage, retaining independent certificate
@@ -749,7 +758,9 @@ Extension:
   theorems over kernel types and the internal language, import earlier
   theorems, report goals at holes and failed steps, and replay saved
   certificates. Version 6 expresses the proof of the evaluator's fundamental
-  lemma. The authoring tools cache proved theorems and retain a development's
+  lemma, and version 7 states theorems over the datatype language, whose
+  terms the compiler types and erases. The authoring tools cache proved
+  theorems and retain a development's
   documents, elaborated definitions and certificate. The first literate
   inclusion renders its documentation. The next work follows
   {ref "downstream-authoring"}[A Geb library and its downstream application].
@@ -4218,7 +4229,13 @@ tag := "authoring-compatibility"
     compare a goal with one and cite a theorem as a hypothesis, in which
     the evaluator's fundamental lemma is stated and proved
     ({ref "reduction-scripts"}[Reductions and cited theorems in formula
-    proofs]). Exposing the datatype language's types in statements is ready.
+    proofs]); and version 7 adds statements over the datatype language,
+    its types and terms compiled after the program's sources and each
+    statement read as that of its erasure, a binder naming the hypothesis
+    that its variable is a member of its datatype, in which the library
+    states theorems over its datatypes
+    ({ref "typed-statements"}[Statements over the datatype language]). The
+    case analysis of a member of a datatype by a tactic is ready.
     The soundness deductions remain to be ported from Lean to Geb scripts.
 *
   * `let*` and `cond`, expanded in the elaboration of modules, and the
@@ -6678,7 +6695,17 @@ evaluator, which their sources do not name, are definitions of the
 development, each writing its fold out, and the tests that the Lean
 deducers decide by a search are decided by the case analysis of their
 values ({ref "reduction-scripts"}[Reductions and cited theorems in formula
-proofs]). The port of the datatype language's soundness remains. The syntax of
+proofs]). Version 7 adds statements over the datatype language. The terms of
+such a statement are a definition that the compiler types and erases after
+the program's sources, with the instances of the declarations with type
+parameters and the recognizers it refers to, and the statement is read from
+that definition's erasure as a statement over the kernel, a binder naming
+the hypothesis that its variable is a member of its datatype; the program
+a development with such statements is proved against is the manifest's
+followed by those definitions, which its certificate names. The library's
+theorems over its datatypes are stated so
+({ref "typed-statements"}[Statements over the datatype language]). The port
+of the datatype language's soundness remains. The syntax of
 statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
 acceptance]). It adds no rule to the metalogic: a script is a program for
@@ -9417,8 +9444,12 @@ integrated in sequence.
   the logarithm. The steps in their order, and what remains of them,
   are stated in {ref "conversion-continuation"}[Completing the checker
   with a step of conversion].
-* Expose datatype statements in Geb proof documents and port the
-  datatype-soundness deductions from their Lean drivers. The soundness
+* Port the datatype-soundness deductions from their Lean drivers. Proof
+  documents state theorems over the datatype language
+  ({ref "typed-statements"}[Statements over the datatype language]); the
+  case analysis of a member of a datatype, which a proof about the
+  members of a datatype with constructors of fixed numbers of fields
+  takes, is not yet a tactic. The soundness
   of typing is already proved with the prover written in Geb
   ({ref "datatype-completion"}[The datatype language's completion]).
   Before the bulk of the port, measure rule selection, matching and

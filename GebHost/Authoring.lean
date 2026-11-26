@@ -43,6 +43,13 @@ place by the positions of the script's children, after expanding the document's 
 the runner does. Nothing of this is checked: a development with an obligation has no
 certificate, and the place and the goal are for the author.
 
+A statement over the datatype language, {lit}`(typed …)` from version 7, has types and terms that
+the compiler reads and the runner does not. The runner gives the definitions that hold the terms
+of a development's such statements ({lit}`Authoring.typed`); the host compiles them after the
+program's sources, and the development is read, proved and replayed against the program so
+extended, which its certificate names. A statement the compiler rejects is a diagnostic at its
+theorem's name.
+
 A term names a definition of the program by its position, so a certificate and a cache are each
 of one compiled program. The runner reads either of another program with the definitions it
 names at their places in the present one, by the names the two programs give their definitions,
@@ -56,6 +63,8 @@ the present program where that one replays.
 * {lit}`GebHost.Authoring.checkExamples` checks the tree-valued examples in a program's notes.
 * {lit}`GebHost.Authoring.development` reads a proof document after the documents it imports.
 * {lit}`GebHost.Authoring.manifestOf` finds the manifest of the program a proof document names.
+* {lit}`GebHost.Authoring.typedProgram` compiles, after a program, the definitions of a
+  development's statements over the datatype language.
 * {lit}`GebHost.Authoring.failuresOf`, {lit}`GebHost.Authoring.diagnosticsOf` read the failures
   the runner reports and locate their obligations.
 * {lit}`GebHost.Authoring.execute` proves or replays a development.
@@ -183,11 +192,12 @@ def checkExamples (manifest : System.FilePath) (m : Manifest) (text : ByteArray)
 
 /-- A manifest's compiled program and the text from which its examples are checked; with a
 directory of kept states, the program is compiled a layer at a time
-({name}`GebHost.Layers.compile`). Each requested example extends the same final state with
-its two expressions. If the layers require whole-program compilation, the example uses it too. -/
+({name}`GebHost.Layers.compile`), and the state after its layers is given with it. Each requested
+example extends the same final state with its two expressions. If the layers require
+whole-program compilation, the example uses it too. -/
 def readProgram (path : System.FilePath) (cache : Option System.FilePath := none)
     (examples := false) :
-    IO (Manifest × ByteArray × Tree) := do
+    IO (Manifest × ByteArray × Tree × Option Layers.State) := do
   let m ← Manifest.readProgram path
   let paths := Manifest.sourcePaths path m
   let mut layers := #[]
@@ -210,7 +220,7 @@ def readProgram (path : System.FilePath) (cache : Option System.FilePath := none
   let some ds := unbundle b | throw <| IO.userError "malformed bundle"
   IO.ofExcept (m.checkEntries (ds.map fun d ↦ String.ofList d.1))
   if examples then checkExamples path m text state (some notes.toList)
-  return (m, text, b)
+  return (m, text, b, state)
 
 /-! ## Developments -/
 
@@ -241,7 +251,8 @@ def headerAtoms (head : List Char) (d : Doc) : Except String (List String) :=
       | _ => none
     let version := root.children[1]?.bind (·.label.2)
     if atoms.isEmpty || version == some ['2'] || version == some ['3'] ||
-        version == some ['4'] || version == some ['5'] || version == some ['6'] then .ok atoms
+        version == some ['4'] || version == some ['5'] || version == some ['6'] ||
+        version == some ['7'] then .ok atoms
     else .error s!"a document of a version before 2 has no form ({String.ofList head} …)"
   | none => .ok []
 
@@ -309,7 +320,7 @@ companion, version 2 the theorems of the documents imported before its own, vers
 connectives' rules before every theorem, and version 4 the rules of every connective and, after
 them, the declarations of the definitions the development declares. Version 5 preserves formula
 conclusions in their declarations and gives them companions equating them with truth, and
-version 6 saves what version 5 does. -/
+versions 6 and 7 save what version 5 does. -/
 def formatOf (version : Tree) : Tree :=
   nameTree (match version.label with
     | 0 => "geb-proof/v1"
@@ -318,7 +329,8 @@ def formatOf (version : Tree) : Tree :=
     | 3 => "geb-proof/v4"
     | 4 => "geb-proof/v5"
     | 5 => "geb-proof/v6"
-    | _ => "geb-proof/v7").toList
+    | 6 => "geb-proof/v7"
+    | _ => "geb-proof/v8").toList
 
 /-! ## Failures and obligations -/
 
@@ -572,8 +584,67 @@ def manifestOf (proofs : System.FilePath) : IO System.FilePath := do
 
 /-! ## Proving and replaying -/
 
+/-! ## Statements over the datatype language -/
+
+/-- The prefix of the name of the definition that holds the terms of a theorem's statement over
+the datatype language, before the theorem's name ({lit}`Authoring.typedPrefix` of
+{lit}`bootstrap/authoring.geb`). -/
+def typedPrefix : String := "__geb_statement_"
+
+/-- The name of the declaration a subject of a rejection concerns, where it concerns one. -/
+def subjectName : Compiler.Subject → Option String
+  | .declaration n _ | .term n _ | .expanded n _ | .hole n _ => some n
+  | _ => none
+
+/-- The diagnostic of the compiler's rejection of the definitions of a development's statements
+over the datatype language: where the rejection concerns the definition of a theorem's statement,
+at the theorem's name in the last document as written that states it, and otherwise at the proof
+document without a position. -/
+def typedRejection (proofs : String) (written : List Compiler.Source) (r : Compiler.Rejection) :
+    Compiler.Diagnostic :=
+  -- Prefixes are compared as lists of characters: the comparisons of strings depend on choice.
+  let after (pre text : String) : Option String :=
+    if pre.toList.isPrefixOf text.toList then
+      some (String.ofList (text.toList.drop pre.toList.length))
+    else none
+  match (subjectName r.subject).bind (after typedPrefix) with
+  | some name =>
+    -- The compiler's message names the definition; the diagnostic names the theorem.
+    let detail := (after s!"{typedPrefix}{name} does not check" r.message).getD s!": {r.message}"
+    let message :=
+      s!"the statement of the theorem {name} does not check in the datatype language{detail}"
+    match written.reverse.findSome? fun s ↦ (theoremForm s.text name).map (s.path, ·) with
+    | some (path, t) => ⟨path, some (Compiler.nameSpan t), message⟩
+    | none => ⟨proofs, none, message⟩
+  | none =>
+    ⟨proofs, none, s!"the statements over the datatype language do not compile: {r.message}"⟩
+
+/-- The program a development is read against: a manifest's program, and after it the
+definitions that hold the terms of the development's statements over the datatype language
+({lit}`Authoring.typed`), which the compiler types and erases with the program, writing the
+instances of the declarations with type parameters and the recognizers they refer to. The
+definitions extend the state after the program's layers where one is kept, as an example's
+expressions do, and are otherwise compiled with the program's text. A development with no such
+statement is read against the manifest's program as it is. -/
+def typedProgram (proofs : String) (written : List Compiler.Source) (text : ByteArray)
+    (state : Option Layers.State) (b input : Tree) : IO Tree := do
+  let forms := (GebMirror.Metalogic.«Authoring.typed» input).children
+  if forms.isEmpty then return b
+  let suffix := bytesOf (forms.flatMap fun f ↦ canonOf (sexpOfTree f) ++ ['\n'])
+  if let some b' := state.bind (Layers.advance · suffix) |>.bind Layers.State.bundle then
+    return b'
+  let file := ofBytes (text ++ suffix)
+  let out := GebBoot.«Compile.bundleOf» file
+  if out.label == 0 then
+    throw <| IO.userError (typedRejection proofs written (Compiler.rejectionOf file)).render
+  let b' := GebBoot.«Prelude.get» out
+  unless (unbundle b').isSome do throw <| IO.userError "compiler returned a malformed bundle"
+  return b'
+
 /-- A development read against its program: the profile, the compiled program, the development's
-sources as the runner reads them, its documents as written, and its certificate's format. -/
+sources as the runner reads them, its documents as written, and its certificate's format. The
+compiled program is the manifest's followed by the definitions of the development's statements
+over the datatype language ({name}`typedProgram`). -/
 structure Session where
   /-- The profile of the program's manifest. -/
   profile : Profile
@@ -590,10 +661,11 @@ structure Session where
 that does not read is the diagnostic of what rejects it. -/
 def Session.read (manifest proofs : String) (cache : Option System.FilePath := none) :
     IO Session := do
-  let (m, _, b) ← readProgram manifest cache (examples := true)
+  let (m, text, b, state) ← readProgram manifest cache (examples := true)
   let docs ← development proofs m.profile
   let written ← writtenSources (docs.map (·.1))
   let input := sourcesTree docs
+  let b ← typedProgram proofs written text state b input
   let version ← IO.ofExcept
     (present proofs written (GebMirror.Metalogic.«Authoring.version» b input))
   return ⟨m.profile, b, input, written, formatOf version⟩

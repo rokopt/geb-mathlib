@@ -1,0 +1,83 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Lemmas about trees, lists and bits that hold in every program, by which a proof about a member
+; of a datatype takes the member's tree apart: the fold of a list of trees by construction is the
+; list, the trees rebuilt from the unfoldings of a list of trees are the rebuilt unfoldings, and
+; a tree is the node of its unfolding, which is Lambek's lemma; a list is empty or a
+; construction, a tree is a node, and a bit is one of the two. The unfolding of a tree is the
+; fold that the translation's definition of the label and the children of a tree unfolds to,
+; written here as that fold. A document about a program's datatypes imports this one.
+
+(proofs 6 (program library)
+  ; The fold of a list of trees by construction is the list.
+  (theorem map-id
+    (internal () (forall ((ts (List T))) (equal (list-rec (nil T) (t r) (cons T t r) ts) ts)))
+    (by (fold-induction ts (t r) (cons T t r) 64)))
+  ; The trees rebuilt from the unfoldings of a list of trees are the rebuilt unfoldings.
+  (theorem map-fusion
+    (internal ()
+      (forall ((ts (List T)))
+        (equal
+          (list-rec (nil T) (p r) (cons T (node Bits p) r)
+            (list-rec (nil (Prod Bits (List T))) (t r)
+              (cons (Prod Bits (List T))
+                (rose-rec (Prod Bits (List T)) (n)
+                  (pair (fst n) (list-rec (nil T) (c s) (cons T (node Bits c) s) (snd n)))
+                  t)
+                r)
+              ts))
+          (list-rec (nil T) (t r)
+            (cons T
+              (node Bits
+                (rose-rec (Prod Bits (List T)) (n)
+                  (pair (fst n) (list-rec (nil T) (c s) (cons T (node Bits c) s) (snd n)))
+                  t))
+              r)
+            ts))))
+    (by
+      (fold-induction ts (t r)
+        (cons T
+          (node Bits
+            (rose-rec (Prod Bits (List T)) (n)
+              (pair (fst n) (list-rec (nil T) (c s) (cons T (node Bits c) s) (snd n)))
+              t))
+          r)
+        64)))
+  ; A tree is the node of its unfolding.
+  (theorem lambek
+    (internal ()
+      (forall ((t T))
+        (equal
+          (node Bits
+            (rose-rec (Prod Bits (List T)) (n)
+              (pair (fst n) (list-rec (nil T) (c s) (cons T (node Bits c) s) (snd n)))
+              t))
+          t)))
+    (by (tree-fold-induction t (l rs) (node Bits (pair l rs)) 64 map-id map-fusion)))
+  ; A list is empty or a construction.
+  (theorem list-cases
+    (internal (X)
+      (forall ((xs (List X)))
+        (or (equal xs (nil X))
+          (exists X
+            (lam ((y X)) (exists (List X) (lam ((ys (List X))) (equal xs (cons X y ys)))))))))
+    (by
+      (induction xs (h t ih) (or-left (reduce weak))
+        (or-right (exists-intro h (exists-intro t (reduce weak)))))))
+  ; A tree is the node of a label and children.
+  (theorem tree-node
+    (internal ()
+      (forall ((t T))
+        (exists Bits
+          (lam ((l Bits))
+            (exists (List T) (lam ((cs (List T))) (equal t (node Bits (pair l cs)))))))))
+    (by (tree-induction t (l cs ih) (exists-intro l (exists-intro cs (reduce weak))))))
+  ; A bit is one of the two.
+  (theorem bit-cases
+    (internal ()
+      (forall ((b Bit)) (or (equal b (inl Unit Unit unit)) (equal b (inr Unit Unit unit)))))
+    (by
+      (sum-cases b (u) (reduced head (or-left (reduce weak)))
+        (reduced head (or-right (reduce weak)))))))

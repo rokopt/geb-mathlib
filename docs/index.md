@@ -3929,6 +3929,13 @@ import-direction rules above are enforced by
   normal form (`matches`) or any goal from a hypothesis whose normal form
   is falsity (`absurd`), and cites an earlier theorem as a hypothesis
   (`obtain`); `scripts/tests/test-proof-formulas.sh` exercises them.
+  Version 7 adds statements over the datatype language, `(typed …)`: the
+  terms of a theorem's statement are a definition that the compiler types
+  and erases after the program's sources, and the statement is read from
+  that definition's erasure, a binder naming the hypothesis that its
+  variable is a member of its datatype. The documents of `library/` state
+  the library's theorems over its datatypes, and
+  `scripts/tests/test-proof-typed.sh` exercises the form.
   The executable
   `geb-author` compiles manifest programs, checks tree-valued examples,
   proves theorems about a program's definitions, in a context of variables

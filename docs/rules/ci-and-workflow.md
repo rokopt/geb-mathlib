@@ -414,7 +414,9 @@ profile on the example of `examples/authoring/`, and
 cache from which `geb-author prove` and `geb-author check` resume a
 development (`--cache DIRECTORY`), under an unchanged and a changed
 program, and the transport of a certificate to a changed program
-(`geb-author transport`). `scripts/proofs.sh` proves
+(`geb-author transport`), and `scripts/tests/test-proof-typed.sh` the
+statements over the datatype language, on the documents of `library/`.
+`scripts/proofs.sh` proves
 and replays every development, each document that no other imports with
 those it imports, side by side; `slow-checks.yml` runs it daily and on
 demand. A change to `bootstrap/authoring.geb`, to a tactic it composes, or

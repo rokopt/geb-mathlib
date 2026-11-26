@@ -161,7 +161,14 @@ Version 5 of the proof profile adds internal formula statements and
 logical scripts; `Logic.proofs.geb` exercises their checked certificates
 and durable encodings. Version 6 adds the scripts that reduce a hypothesis
 and cite a theorem as a hypothesis, and the fundamental lemma of the
-evaluator is stated and proved in it under `bootstrap/proofs/`. Porting
+evaluator is stated and proved in it under `bootstrap/proofs/`. Version 7
+adds statements over the datatype language, whose terms the compiler types
+and erases after the program's sources; `library/Datatypes.proofs.geb`
+states the library's theorems over its datatypes. The case analysis of a
+member of a datatype is not yet a tactic: a recognizer compares a node's
+arity with a constructor's number of fields, so a proof about the members
+of a datatype whose constructors have fixed numbers of fields takes lemmas
+on that arithmetic. Porting
 the deductions of the datatype language's soundness remains outstanding.
 The Bootstrap chapter's authoring table states what of the proof syntax,
 holes and editor acceptance remains.

@@ -16,11 +16,19 @@ trap 'rm -rf "$scratch"' EXIT
 "$author" compile library/library.manifest "$scratch/library.img"
 "$author" prove library/Bytes.proofs.geb "$scratch/library.cert"
 "$author" replay library/Bytes.proofs.geb "$scratch/library.cert"
+"$author" prove library/Datatypes.proofs.geb "$scratch/datatypes.cert"
+"$author" replay library/Datatypes.proofs.geb "$scratch/datatypes.cert"
 
 client="$scratch/client λ"
 cp -R examples/client "$client"
 ln -s "$PWD" "$client/geb"
 bash "$client/check.sh"
+
+# The library's theorems over its datatypes, proved against the client's program.
+"$author" prove "$client/client.manifest" "$client/geb/library/Datatypes.proofs.geb" \
+  "$scratch/client-datatypes.cert"
+"$author" replay "$client/client.manifest" "$client/geb/library/Datatypes.proofs.geb" \
+  "$scratch/client-datatypes.cert"
 
 # The application reverses a file's bytes after them.
 printf 'abc' > "$scratch/input"

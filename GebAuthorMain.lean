@@ -47,15 +47,15 @@ public def main (args : List String) : IO UInt32 := do
     | ["navigation-server", manifest] => GebHost.Navigation.serve manifest
     | ["navigation", manifest] => GebHost.Navigation.run manifest
     | ["compile", manifest, output] =>
-      let (_, _, b) ← GebHost.Authoring.readProgram manifest caches (examples := true)
+      let (_, _, b, _) ← GebHost.Authoring.readProgram manifest caches (examples := true)
       IO.FS.writeBinFile output (writeImage b)
       return 0
     | ["run", manifest, name, input, output] =>
-      let (_, _, b) ← GebHost.Authoring.readProgram manifest caches
+      let (_, _, b, _) ← GebHost.Authoring.readProgram manifest caches
       Command.runBundle manifest b name input output
       return 0
     | "interact" :: manifest :: name :: arguments =>
-      let (_, _, b) ← GebHost.Authoring.readProgram manifest caches
+      let (_, _, b, _) ← GebHost.Authoring.readProgram manifest caches
       GebHost.Requests.interactBundle manifest b name arguments
     | ["documents", manifest, proofs] =>
       let m ← Manifest.read manifest

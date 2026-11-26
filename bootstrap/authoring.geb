@@ -33,7 +33,12 @@
 ; that has a hypothesis's normal form ({geb}`Formula.matchHypothesis`) or any goal from a
 ; hypothesis whose normal form is falsity ({geb}`Formula.refuteHypothesis`), cut in the
 ; conclusion of an earlier theorem ({geb}`Formula.obtainTheorem`) and read a goal as a formula;
-; and its (holds h (g) SCRIPT) takes a hypothesis that equates a formula with truth.
+; and its (holds h (g) SCRIPT) takes a hypothesis that equates a formula with truth. Version 7
+; adds statements over the datatype language, (typed Q), whose types and terms the compiler
+; reads: the host compiles, after the program's sources, the definitions that hold their terms
+; ({geb}`Authoring.typed`), and a statement is read from its definition's erasure
+; ({geb}`Authoring.readTyped`), so that the bundle a development with such statements is given
+; is that of the program so extended.
 ; Statements and scripts are read before any proof is searched; a proof is a certificate of the
 ; checker with a step of conversion, a reduction whose derivation is past the prover's bound
 ; named by the step that computes it, and every certificate is checked by {geb}`Conversion.certStep`, the step of the check of developments
@@ -47,7 +52,8 @@
 ; program in which the definitions stand at other positions is read with the definitions it
 ; names at their places in the present program, and checked as any derivation is.
 
-(module Authoring (export prove resume replay version transport) (import Prelude) (import Base)
+(module Authoring (export prove resume replay version transport typed) (import Prelude)
+  (import Base)
   (import Theory)
   (import Language)
   (import PartialHorn)
@@ -516,16 +522,118 @@
                 (mkThm n (objs ctx) (terms (children (get hfs))) (get f))))
             (Option.nothing Statement)))
         (Option.nothing Statement))))
-  (defn readStatement ((v T) (G Globals) (gt Ts) (defs Ts) (taken Ts) (e T))
+  ; Statements over the datatype language, in version 7: (typed Q), Q of the form of a statement
+  ; over the kernel, (forall (BINDER ...) P) or P, with the types and the terms of the datatype
+  ; language, written as a source after the program's writes them, its declarations under their
+  ; qualified names. The compiler reads them: the terms of a theorem's statement are a definition
+  ; compiled after the program's ({geb}`Authoring.typedForm`), named by the theorem's name after
+  ; {geb}`Authoring.typedPrefix`, and the statement is that definition's erasure read as a
+  ; statement over the kernel, its variables at the kernel types of the definition's parameters.
+  ; A binder is (x A), or (x A h), which adds the hypothesis h, before the statement's own, that x
+  ; is a member of the datatype A. The parts of a statement so written are the node of its
+  ; binders, the node of its hypotheses and its conclusion, where it has the form.
+  (def typedPrefix (children (quote (0 __geb_statement_))))
+  (defn typedName ((n T)) T (node 0 (append typedPrefix (children n))))
+  (defn typedBinder ((v T) (b T)) T
+    (and (Source.isList b)
+      (and (bindable v (child b 0))
+        (or (eq (length (children b)) 2)
+          (and (eq (length (children b)) 3) (bindable v (child b 2)))))))
+  (defn typedHyp ((v T) (h T)) T
+    (and (Source.isList h)
+      (and (eq (length (children h)) 2)
+        (and (bindable v (child h 0)) (form (child h 1) (quote (0 equal)) 3)))))
+  (defn typedParts ((v T) (q T)) T
+    (let*
+      ((quant T (form q (quote (0 forall)) 3)) (bs Ts (if quant (children (child q 1)) (nil T)))
+       (body T (if quant (child q 2) q))
+       (k T (length (children body)))
+       (hyp T (and (headed body (quote (0 implies))) (lt 2 k)))
+       (hs Ts (if hyp (take (sub k 2) (drop 1 (children body))) (nil T)))
+       (concl T (if hyp (at (children body) (sub k 1)) body)))
+      (if
+        (and (or (not quant) (and (Source.isList (child q 1)) (not (isEmpty bs))))
+          (and (allT (typedBinder v) bs)
+            (and (allT (typedHyp v) hs) (form concl (quote (0 equal)) 3))))
+        (some (node 0 (l3 (node 0 bs) (node 0 hs) concl)))
+        none)))
+  ; The binders that name the hypothesis of their variable's membership.
+  (defn typedMembers ((bs Ts)) Ts
+    (foldr T Ts (lam ((b T) (acc Ts)) (if (eq (length (children b)) 3) (cons b acc) acc)) (nil T)
+      bs))
+  ; A number of nodes taken apart, each in what remains of the one before: the node of what
+  ; remains after the last followed by the parts taken, the last first, where each node taken
+  ; apart is one a test accepts.
+  (defn peel ((ok (Arrow T T)) (part (Arrow T T)) (rest (Arrow T T)) (n T) (t T)) T
+    (foldr T T
+      (lam ((i T) (acc T))
+        (bindO acc
+          (lam ((st T))
+            (let u T (child st 0)
+              (if (ok u) (some (node 0 (cons (rest u) (cons (part u) (tail (children st))))))
+                none)))))
+      (some (node 0 (single t)))
+      (range n)))
+  ; The equation a compiled conditional holds: that of its branches, of one type in a context.
+  ; The library's conditional is applied to its arguments, the last first
+  ; ({geb}`Translation.call`).
+  (defn typedEqn ((G Globals) (ctx Ts) (e T)) T
+    (if (and (mIs 11 3 e) (eq (mD e 0) D.cond))
+      (let* ((l T (mArg e 1)) (r T (mArg e 0)) (a T (typeIn G 0 ctx l)))
+        (if (and (isSome a) (equal a (typeIn G 0 ctx r))) (some (mEq l r)) none))
+      none))
+  ; The statement read from the definition that holds its terms: the definition's kernel type
+  ; gives the kernel types of the variables, its translation's abstractions their types, and the
+  ; pairing under them the equations, the hypotheses' before the conclusion's.
+  (defn readTyped ((v T) (G Globals) (gt Ts) (defs Ts) (taken Ts) (name T) (q T))
     (Option.Maybe Statement)
-    (if (and (lt 1 v) (form e (quote (0 internal)) 3))
-      (let ovars Ts (mapT Source.nameOf (children (child e 1)))
-        (if
-          (and (Source.isList (child e 1))
-            (and (allT (bindable v) (children (child e 1))) (distinctFrom taken ovars)))
-          (readQuantified v G gt defs (append taken ovars) ovars 1 (child e 2))
-          (Option.nothing Statement)))
-      (readQuantified v G gt defs taken (nil T) 0 e)))
+    (let* ((parts T (typedParts v q)) (i T (Source.indexOf (typedName name) defs)))
+      (if (and (isSome parts) (isSome i))
+        (let*
+          ((bs Ts (children (child (get parts) 0))) (hs Ts (children (child (get parts) 1)))
+           (n T (length bs))
+           (vars Ts (reverse (mapT binderName bs)))
+           (hnames Ts
+             (append (mapT (lam ((b T)) (Source.nameOf (child b 2))) (typedMembers bs))
+               (mapT binderName hs)))
+           (kts T
+             (peel (lam ((u T)) (and (eq (label u) Label.tyArrow) (eq (arity u) 2)))
+               (lam ((u T)) (child u 0))
+               (lam ((u T)) (child u 1))
+               n
+               (at gt (get i))))
+           (lams T
+             (peel (mIs 5 1) (lam ((u T)) (mD u 0)) (lam ((u T)) (mArg u 0)) n
+               (child (child (child (child (rep G) 1) (add (Seq.length LDefn lib) (get i))) 0) 3)))
+           (eqs T
+             (bindO lams
+               (lam ((st T))
+                 (peel (mIs 2 2) (lam ((u T)) (mArg u 0)) (lam ((u T)) (mArg u 1)) (length hnames)
+                   (child st 0)))))
+           (ctx Ts (tail (children (get lams))))
+           (fs T
+             (bindO eqs (lam ((st T)) (allSomeT (mapT (typedEqn G ctx) (reverse (children st))))))))
+          (if (and (isSome kts) (and (isSome fs) (distinctFrom taken (append vars hnames))))
+            (Option.just Statement
+              (statement (node 0 (nil T)) (node 0 vars)
+                (node 0 (mapT some (tail (children (get kts)))))
+                (node 0 hnames)
+                (mkThm 0 (objs ctx) (terms (take (length hnames) (children (get fs))))
+                  (at (children (get fs)) (length hnames)))))
+            (Option.nothing Statement)))
+        (Option.nothing Statement))))
+  (defn readStatement ((v T) (G Globals) (gt Ts) (defs Ts) (taken Ts) (name T) (e T))
+    (Option.Maybe Statement)
+    (cond
+      ((and (lt 6 v) (form e (quote (0 typed)) 2)) (readTyped v G gt defs taken name (child e 1)))
+      ((and (lt 1 v) (form e (quote (0 internal)) 3))
+       (let ovars Ts (mapT Source.nameOf (children (child e 1)))
+         (if
+           (and (Source.isList (child e 1))
+             (and (allT (bindable v) (children (child e 1))) (distinctFrom taken ovars)))
+           (readQuantified v G gt defs (append taken ovars) ovars 1 (child e 2))
+           (Option.nothing Statement))))
+      (else (readQuantified v G gt defs taken (nil T) 0 e))))
 
   ; Scripts. A script is read in the names of its goal's variables, with the kernel type of each
   ; that has one, and of its hypotheses, which the tactics that introduce variables or hypotheses
@@ -2109,7 +2217,7 @@
         (and (Source.isAtom (child e 1))
           (and (not (isEmpty (children (child e 1))))
             (and (form (child e 3) (quote (0 by)) 2) (or (lt 0 v) (version0 defs e))))))
-      (case (readStatement v G gt defs (append defs names) (child e 2))
+      (case (readStatement v G gt defs (append defs names) (Source.nameOf (child e 1)) (child e 2))
         ((Option.nothing Statement) (requestBad 2))
         ((Option.just Statement st)
          (case st
@@ -2177,7 +2285,7 @@
         (and (isSome parsed)
           (and (eq (length (children (get parsed))) 1)
             (and (Source.isList root)
-              (and (word (child root 0) (quote (0 proofs))) (and (isSome v) (lt (get v) 7))))))
+              (and (word (child root 0) (quote (0 proofs))) (and (isSome v) (lt (get v) 8))))))
         (let fs Ts
           (expandForms (get v)
             (foldr T Ts
@@ -2217,6 +2325,78 @@
                             items)))))))))))))
       (if (isEmpty sources) (Option.nothing Forms) (Option.just Forms (formList 0 (nil TPair))))
       sources))
+
+  ; The definition that holds the terms of a statement over the datatype language, as a source
+  ; form: (def NAME TERM), TERM the abstraction over the statement's binders, where it has any,
+  ; of the pairing of its equations, the last alone and each of the others paired before those
+  ; after it. An equation is the conditional between its sides, (if 1 L R), which the typing
+  ; accepts where the two have one type and whose erasure keeps both. The membership a binder
+  ; (x A h) states is the equation with 1 of the decoding of x's representation at A to 1, which
+  ; is 0 at a tree that is no member of A.
+  (def numeralOne (node 1 (single 49)))
+  (defn typedEquation ((l T) (r T)) T (listOf (l4 (atomOf Source.kwIf) numeralOne l r)))
+  (defn typedMembership ((b T)) T
+    (let* ((x T (child b 0)) (a T (child b 1)))
+      (typedEquation
+        (listOf
+          (l5 (atomOf (quote (0 decode))) a (listOf (l2 (atomOf (quote (0 rep))) x))
+            (listOf (l3 (atomOf Source.kwLam) (listOf (single (listOf (l2 x a)))) numeralOne))
+            (node 1 (single 48))))
+        numeralOne)))
+  (defn typedForm ((v T) (e T)) T
+    (mapO
+      (lam ((p T))
+        (let*
+          ((bs Ts (children (child p 0))) (concl T (child p 2))
+           (es Ts
+             (append (mapT typedMembership (typedMembers bs))
+               (append
+                 (mapT (lam ((h T)) (typedEquation (child (child h 1) 1) (child (child h 1) 2)))
+                   (children (child p 1)))
+                 (single (typedEquation (child concl 1) (child concl 2))))))
+           (k T (length es))
+           (body T
+             (foldr T T (lam ((x T) (acc T)) (listOf (l3 (atomOf Source.kwPair) x acc)))
+               (at es (sub k 1))
+               (take (sub k 1) es))))
+          (listOf
+            (l3 (atomOf Source.kwDef) (atomOf (typedName (theoremName e)))
+              (if (isEmpty bs) body
+                (listOf
+                  (l3 (atomOf Source.kwLam)
+                    (listOf (mapT (lam ((b T)) (listOf (l2 (child b 0) (child b 1)))) bs))
+                    body)))))))
+      (if (form (child e 2) (quote (0 typed)) 2) (typedParts v (child (child e 2) 1)) none)))
+  ; The definitions of a development's statements over the datatype language, which the host
+  ; compiles after the program's sources, the development being read against the program so
+  ; extended: the node of the forms ({geb}`Authoring.typedForm`) of the theorems so stated in
+  ; documents of version 7, in their order, the first of each name, and of no form where a
+  ; document does not read.
+  (defn typed ((sources T)) T
+    (case (readDocuments (children sources)) ((Option.nothing Forms) (node 0 (nil T)))
+      ((Option.just Forms fs)
+       (case fs
+         ((formList w & items)
+          (node 0
+            (reverse
+              (snd
+                ((foldr TPair (Arrow (Prod Ts Ts) (Prod Ts Ts))
+                   (lam ((p TPair) (k (Arrow (Prod Ts Ts) (Prod Ts Ts))) (s (Prod Ts Ts)))
+                     (let*
+                       ((f T (p2 p)) (name T (theoremName f))
+                        (d T
+                          (if
+                            (and (lt 6 (p1 p))
+                              (and (headed f (quote (0 theorem)))
+                                (and (lt 2 (length (children f)))
+                                  (and (Source.isAtom (child f 1))
+                                    (and (not (isEmpty (children (child f 1))))
+                                      (not (has name (fst s))))))))
+                            (typedForm (p1 p) f)
+                            none)))
+                       (k (if (isSome d) (pair (cons name (fst s)) (cons (get d) (snd s))) s))))
+                   (lam ((s (Prod Ts Ts))) s)
+                   items) (pair (nil T) (nil T)))))))))))
 
   ; Requests are read before proving, with distinct names and the version of the development's
   ; last document, which fixes the globals its statements are read in and the layout of its
