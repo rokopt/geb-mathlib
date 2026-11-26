@@ -127,10 +127,14 @@ its modules, and writes a file's bytes followed by their reversal or copies
 the file that an index names.
 `examples/roundtrip/` assembles a library and client in separate layers
 with a checked example, a theorem written in Geb and a record whose
-certificate replays after relocation. The next milestone combines
-these capabilities in a client maintained in its own repository. The
-steps toward it follow, each with its state, numbered as they were
-added. All are complete, and
+certificate replays after relocation. The downstream application is maintained in
+[geb-client-example](https://github.com/rokopt/geb-client-example/tree/42833e9990391a42fc1174d70aab95bd583c062c).
+At that revision its submodule pins Geb at `7579d34e`. Its manifest lists the library
+sources individually. Its check compiles the byte-mirroring example, proves the imported
+library theorem and the client's `mirror-pair` theorem, and replays their certificate.
+The next client upgrade adopts the library manifest and the template's file-copying and
+saved-setting examples, including migration and theorem transport. The numbered steps
+below are complete in the Geb repository, and
 {ref "downstream-order"}[The order of the remaining work] gives the
 order of the work that proceeds alongside the client.
 
