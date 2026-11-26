@@ -1322,77 +1322,80 @@ def «Datatype.expandDecode» :=
     else
       _root_.GebMirror.Metalogic.«Prelude.none»
 
+def «Datatype.expandExprStep» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.node
+      x0
+      (_root_.GebMirror.Metalogic.«Reader.rrTrees» x1);
+    (x2,
+      fun (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        if (_root_.GebMirror.Metalogic.«Reader.isList» x2).label ≠ 0 then
+          let x4 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.at»
+            (_root_.Geb.Kernel.Const.children x2)
+            (_root_.Geb.Kernel.leaf 0);
+          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.arity x2;
+          if (_root_.GebMirror.Metalogic.«Prelude.and»
+            (_root_.GebMirror.Metalogic.«Reader.named» x4 _root_.GebMirror.Metalogic.«Datatype.kwCase»)
+            (_root_.Geb.Kernel.Const.lt
+              (_root_.Geb.Kernel.leaf 2)
+              x5)).label ≠ 0 then
+            _root_.GebMirror.Metalogic.«Datatype.expandCase» x3 x2 x1
+          else
+            if (_root_.GebMirror.Metalogic.«Prelude.and»
+              (_root_.GebMirror.Metalogic.«Reader.named» x4 _root_.GebMirror.Metalogic.«Datatype.kwCata»)
+              (_root_.Geb.Kernel.Const.lt
+                (_root_.Geb.Kernel.leaf 4)
+                x5)).label ≠ 0 then
+              _root_.GebMirror.Metalogic.«Datatype.expandCata» x3 x2 x1
+            else
+              if (_root_.GebMirror.Metalogic.«Prelude.and»
+                (_root_.GebMirror.Metalogic.«Reader.named» x4 _root_.GebMirror.Metalogic.«Datatype.kwRep»)
+                (_root_.Geb.Kernel.Const.eq
+                  x5
+                  (_root_.Geb.Kernel.leaf 2))).label ≠ 0 then
+                _root_.GebMirror.Metalogic.«Reader.rrAt» x1 (_root_.Geb.Kernel.leaf 1) x3
+              else
+                if (_root_.GebMirror.Metalogic.«Prelude.and»
+                  (_root_.GebMirror.Metalogic.«Reader.named» x4 _root_.GebMirror.Metalogic.«Datatype.kwDecode»)
+                  (_root_.Geb.Kernel.Const.eq
+                    x5
+                    (_root_.Geb.Kernel.leaf 5))).label ≠ 0 then
+                  _root_.GebMirror.Metalogic.«Datatype.expandDecode» x3 x2 x1
+                else
+                  if (_root_.GebMirror.Metalogic.«Prelude.and»
+                    (_root_.GebMirror.Metalogic.«Reader.named» x4 _root_.GebMirror.Metalogic.«Datatype.kwDatum»)
+                    (_root_.Geb.Kernel.Const.eq
+                      x5
+                      (_root_.Geb.Kernel.leaf 3))).label ≠ 0 then
+                    _root_.GebMirror.Metalogic.«Prelude.some»
+                      (_root_.GebMirror.Metalogic.«Datatype.sx2»
+                        _root_.GebMirror.Metalogic.«Datatype.aQuote»
+                        (_root_.GebMirror.Metalogic.«Prelude.at»
+                          (_root_.Geb.Kernel.Const.children x2)
+                          (_root_.Geb.Kernel.leaf 2)))
+                  else
+                    let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Reader.allSome»
+                      (_root_.GebMirror.Metalogic.«Reader.rrApply» x1 x3);
+                    if (_root_.GebMirror.Metalogic.«Prelude.isSome» x6).label ≠ 0 then
+                      _root_.GebMirror.Metalogic.«Prelude.some»
+                        (_root_.Geb.Kernel.Const.node
+                          (_root_.Geb.Kernel.leaf 2)
+                          (_root_.Geb.Kernel.Const.children (_root_.GebMirror.Metalogic.«Prelude.get» x6)))
+                    else
+                      _root_.GebMirror.Metalogic.«Prelude.none»
+        else
+          _root_.GebMirror.Metalogic.«Prelude.some» x2)
+
 def «Datatype.expandExpr» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree) =>
     (_root_.Geb.Kernel.Const.fold
       (α := _root_.Geb.Kernel.Tree ×
         (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List
-           (_root_.Geb.Kernel.Tree ×
-             (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-        let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.node
-          x2
-          (_root_.GebMirror.Metalogic.«Reader.rrTrees» x3);
-        (x4,
-          fun (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-            if (_root_.GebMirror.Metalogic.«Reader.isList» x4).label ≠ 0 then
-              let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.at»
-                (_root_.Geb.Kernel.Const.children x4)
-                (_root_.Geb.Kernel.leaf 0);
-              let x7 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.arity x4;
-              if (_root_.GebMirror.Metalogic.«Prelude.and»
-                (_root_.GebMirror.Metalogic.«Reader.named» x6 _root_.GebMirror.Metalogic.«Datatype.kwCase»)
-                (_root_.Geb.Kernel.Const.lt
-                  (_root_.Geb.Kernel.leaf 2)
-                  x7)).label ≠ 0 then
-                _root_.GebMirror.Metalogic.«Datatype.expandCase» x5 x4 x3
-              else
-                if (_root_.GebMirror.Metalogic.«Prelude.and»
-                  (_root_.GebMirror.Metalogic.«Reader.named» x6 _root_.GebMirror.Metalogic.«Datatype.kwCata»)
-                  (_root_.Geb.Kernel.Const.lt
-                    (_root_.Geb.Kernel.leaf 4)
-                    x7)).label ≠ 0 then
-                  _root_.GebMirror.Metalogic.«Datatype.expandCata» x5 x4 x3
-                else
-                  if (_root_.GebMirror.Metalogic.«Prelude.and»
-                    (_root_.GebMirror.Metalogic.«Reader.named» x6 _root_.GebMirror.Metalogic.«Datatype.kwRep»)
-                    (_root_.Geb.Kernel.Const.eq
-                      x7
-                      (_root_.Geb.Kernel.leaf 2))).label ≠ 0 then
-                    _root_.GebMirror.Metalogic.«Reader.rrAt» x3 (_root_.Geb.Kernel.leaf 1) x5
-                  else
-                    if (_root_.GebMirror.Metalogic.«Prelude.and»
-                      (_root_.GebMirror.Metalogic.«Reader.named» x6 _root_.GebMirror.Metalogic.«Datatype.kwDecode»)
-                      (_root_.Geb.Kernel.Const.eq
-                        x7
-                        (_root_.Geb.Kernel.leaf 5))).label ≠ 0 then
-                      _root_.GebMirror.Metalogic.«Datatype.expandDecode» x5 x4 x3
-                    else
-                      if (_root_.GebMirror.Metalogic.«Prelude.and»
-                        (_root_.GebMirror.Metalogic.«Reader.named» x6 _root_.GebMirror.Metalogic.«Datatype.kwDatum»)
-                        (_root_.Geb.Kernel.Const.eq
-                          x7
-                          (_root_.Geb.Kernel.leaf 3))).label ≠ 0 then
-                        _root_.GebMirror.Metalogic.«Prelude.some»
-                          (_root_.GebMirror.Metalogic.«Datatype.sx2»
-                            _root_.GebMirror.Metalogic.«Datatype.aQuote»
-                            (_root_.GebMirror.Metalogic.«Prelude.at»
-                              (_root_.Geb.Kernel.Const.children x4)
-                              (_root_.Geb.Kernel.leaf 2)))
-                      else
-                        let x8 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Reader.allSome»
-                          (_root_.GebMirror.Metalogic.«Reader.rrApply» x3 x5);
-                        if (_root_.GebMirror.Metalogic.«Prelude.isSome» x8).label ≠ 0 then
-                          _root_.GebMirror.Metalogic.«Prelude.some»
-                            (_root_.Geb.Kernel.Const.node
-                              (_root_.Geb.Kernel.leaf 2)
-                              (_root_.Geb.Kernel.Const.children (_root_.GebMirror.Metalogic.«Prelude.get» x8)))
-                        else
-                          _root_.GebMirror.Metalogic.«Prelude.none»
-            else
-              _root_.GebMirror.Metalogic.«Prelude.some» x4))
+      _root_.GebMirror.Metalogic.«Datatype.expandExprStep»
       x1).2
       x0
 

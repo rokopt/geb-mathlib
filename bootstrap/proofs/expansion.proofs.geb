@@ -30,31 +30,6 @@
   ; The step of the rose tree's fold into the predicate's results at a node n.
   (abbreviation kp-fold-step
     (lam ((f KPStep)) (f (node Bits (pair (fst n) (nil T))) (lib mapApp KPStep KP (snd n) f))))
-  ; The expansion's step, as bootstrap/datatype.geb writes it, where no definition names it.
-  (abbreviation expand-step
-    (lam ((l T) (rs (List RR)))
-      (let raw T (node l (Reader.rrTrees rs))
-        (pair raw
-          (lam ((env (List T)))
-            (if (Reader.isList raw)
-              (let h T (Prelude.at (children raw) 0)
-                (let k T (arity raw)
-                  (if (Prelude.and (Reader.named h Datatype.kwCase) (lt 2 k))
-                    (Datatype.expandCase env raw rs)
-                    (if (Prelude.and (Reader.named h Datatype.kwCata) (lt 4 k))
-                      (Datatype.expandCata env raw rs)
-                      (if (Prelude.and (Reader.named h Datatype.kwRep) (eq k 2))
-                        (Reader.rrAt rs 1 env)
-                        (if (Prelude.and (Reader.named h Datatype.kwDecode) (eq k 5))
-                          (Datatype.expandDecode env raw rs)
-                          (if (Prelude.and (Reader.named h Datatype.kwDatum) (eq k 3))
-                            (Prelude.some
-                              (Datatype.sx2 Datatype.aQuote (Prelude.at (children raw) 2)))
-                            (let xs T (Reader.allSome (Reader.rrApply rs env))
-                              (if (Prelude.isSome xs)
-                                (Prelude.some (node 2 (children (Prelude.get xs))))
-                                Prelude.none)))))))))
-              (Prelude.some raw)))))))
   ; The expansion's folds at the children cs.
   (abbreviation rr-children
     (list-rec (nil RRFold) (c r) (cons RRFold (rose-rec RRFold (n) rr-fold-step c) r) cs))
@@ -136,16 +111,17 @@
   (theorem expand-firsts
     (internal ()
       (forall ((cs (List T)))
-        (equal (Reader.rrTrees (lib mapApp RRStep RR rr-children (kernel expand-step)))
+        (equal (Reader.rrTrees (lib mapApp RRStep RR rr-children (kernel Datatype.expandExprStep)))
           (list-rec (nil T) (c r)
-            (cons T (fst ((rose-rec RRFold (n) rr-fold-step c) (kernel expand-step))) r)
+            (cons T (fst ((rose-rec RRFold (n) rr-fold-step c) (kernel Datatype.expandExprStep))) r)
             cs))))
     (by (induction cs (y ys ih) (reduce weak) (reduce-hypotheses weak (ih) (reduce weak ih)))))
   ; The first component of the expansion's fold at a tree is the tree, by the uniqueness of the
   ; tree's fold.
   (theorem expand-first
     (internal ()
-      (forall ((t T)) (equal (fst ((rose-rec RRFold (n) rr-fold-step t) (kernel expand-step))) t)))
+      (forall ((t T))
+        (equal (fst ((rose-rec RRFold (n) rr-fold-step t) (kernel Datatype.expandExprStep))) t)))
     (by
       (tree-fold-uniqueness t (l cs rs) (node Bits (pair l rs))
         (reduce weak expand-firsts map-id))))
@@ -153,7 +129,8 @@
   (theorem expand-trees
     (internal ()
       (forall ((cs (List T)))
-        (equal (Reader.rrTrees (lib mapApp RRStep RR rr-children (kernel expand-step))) cs)))
+        (equal (Reader.rrTrees (lib mapApp RRStep RR rr-children (kernel Datatype.expandExprStep)))
+          cs)))
     (by (reduce full expand-firsts expand-first map-id)))
   ; The trees of the results of the fold of the predicate of kernel expressions at the children of a
   ; node are the first components of the children's folds.
@@ -271,7 +248,8 @@
   (theorem apply-children
     (internal ()
       (forall ((s (List T)) (cs (List T)))
-        (equal (Reader.rrApply (lib mapApp RRStep RR rr-children (kernel expand-step)) s)
+        (equal
+          (Reader.rrApply (lib mapApp RRStep RR rr-children (kernel Datatype.expandExprStep)) s)
           (KernelForms.expAll cs s))))
     (by (induction cs (y ys ih) (reduce weak) (reduce-hypotheses weak (ih) (reduce weak ih)))))
   ; Under the mask of the predicate of kernel expressions, the expansion of an expression in any

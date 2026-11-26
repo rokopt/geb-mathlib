@@ -62,7 +62,7 @@ open GebTests.Prototypes.CheckMirror (child_node children_node)
 /-- A state of the typing's run rejects no definition, or rejects one by its name: its second
 component is the absent name, or is labelled as a present one. -/
 def Rej (s : Env × Tree) : Prop :=
-  s.2 = «$547970696e672f4f4e616d652e6e6f7468696e67» ∨
+  s.2 = gebMirror% "(Option.nothing Typing.Name)" ∨
     (Const.eq (Const.label s.2) (leaf 1)).label ≠ 0
 
 /-- A conditional between two states that each reject no definition or one by its name is such
@@ -125,8 +125,8 @@ abbrev IsJust (t : Tree) : Prop := (Const.eq (Const.label t) (leaf 1)).label ≠
 /-- The typing of a program's forms rejects none where its rejection is not labelled as a
 name: the rejection is then the absent name. -/
 theorem checkForms_nothing {fs : List Tree} (h : ¬IsJust («Typing.checkForms» fs)) :
-    («Typing.checkAll» («Typing.env0», «$547970696e672f4f4e616d652e6e6f7468696e67») fs).2 =
-      «$547970696e672f4f4e616d652e6e6f7468696e67» :=
+    («Typing.checkAll» («Typing.env0», gebMirror% "(Option.nothing Typing.Name)") fs).2 =
+      gebMirror% "(Option.nothing Typing.Name)" :=
   (rej_checkAll fs _ (Or.inl rfl)).resolve_right h
 
 /-- The elements of the list of forms are the forms. -/
@@ -140,17 +140,17 @@ rejection is not labelled as a name, and the result is the list of the erased fo
 theorem expandChecked_just {es : List Tree} (h : IsJust («Datatype.expandChecked» es)) :
     («Datatype.expandTyped» es).1.label ≠ 0 ∧
       ¬IsJust («Typing.checkForms» («Datatype.markersFirst» («Datatype.expandTyped» es).2)) ∧
-      «Datatype.expandChecked» es = «$44617461747970652f4f54782e6a757374»
+      «Datatype.expandChecked» es = gebMirror% "(Option.just Typing.Tx)"
         («Typing.tList» («Datatype.kernelForms» («Datatype.expandTyped» es).2)) := by
   by_cases h₁ : («Datatype.expandTyped» es).1.label ≠ 0
   · by_cases h₂ :
         IsJust («Typing.checkForms» («Datatype.markersFirst» («Datatype.expandTyped» es).2))
-    · have e : «Datatype.expandChecked» es = «$44617461747970652f4f54782e6e6f7468696e67» :=
+    · have e : «Datatype.expandChecked» es = gebMirror% "(Option.nothing Typing.Tx)" :=
         (ite_eq_left h₁).trans (ite_eq_left h₂)
       rw [e] at h
       exact absurd rfl h
     · exact ⟨h₁, h₂, (ite_eq_left h₁).trans (ite_eq_right h₂)⟩
-  · have e : «Datatype.expandChecked» es = «$44617461747970652f4f54782e6e6f7468696e67» :=
+  · have e : «Datatype.expandChecked» es = gebMirror% "(Option.nothing Typing.Tx)" :=
       ite_eq_right h₁
     rw [e] at h
     exact absurd rfl h
@@ -186,9 +186,9 @@ def expanded (es : List Tree) : List Tree :=
 none, and the result's kernel forms are the erased forms. -/
 theorem expandProgram_just {es : List Tree} (h : IsJust («Datatype.expandProgram» es)) :
     («Datatype.expandTyped» es).1.label ≠ 0 ∧
-      («Typing.checkAll» («Typing.env0», «$547970696e672f4f4e616d652e6e6f7468696e67»)
+      («Typing.checkAll» («Typing.env0», gebMirror% "(Option.nothing Typing.Name)")
         («Datatype.markersFirst» («Datatype.expandTyped» es).2)).2 =
-          «$547970696e672f4f4e616d652e6e6f7468696e67» ∧
+          gebMirror% "(Option.nothing Typing.Name)" ∧
       expanded es = «Datatype.kernelForms» («Datatype.expandTyped» es).2 := by
   obtain ⟨hc, e⟩ := expandProgram_checked h
   obtain ⟨h₁, h₂, ec⟩ := expandChecked_just hc

@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Kernel.Loading
+public import Geb.Prototypes.Kernel.MirrorName
 public import Geb.Prototypes.GoedelT.Equations
 public import Mathlib.Tactic.NormNum
 public import Lean.Exception
@@ -124,17 +125,6 @@ meta def programName (id : Name) : CommandElabM Name := do
 /-- The name of a program's declaration: the program's name, then the declaration's kind followed
 by an index. -/
 meta def indexed (n : Name) (s : String) (k : ℕ) : Name := n ++ .mkSimple s!"{s}{k}"
-
-/-- A definition's mirror name, with the byte characters stored in its image encoded as by
-{lit}`LeanBackend.leanName`: ASCII names stay readable, except Lean's special names; every other
-name becomes a dollar followed by two hexadecimal digits per byte. -/
-meta def mirrorName (ns : Name) (cs : List Char) : Name :=
-  let s := String.ofList cs
-  let safe (c : Char) := c.isDigit || ('A' ≤ c && c ≤ 'Z') || ('a' ≤ c && c ≤ 'z') ||
-    c == '_' || c == '.' || c == '-'
-  let digit (n : ℕ) := Char.ofNat (if n < 10 then 48 + n else 87 + n)
-  ns ++ .mkSimple (if !cs.isEmpty && s != "_" && s != "_root_" && cs.all safe then s
-    else String.ofList ('$' :: cs.flatMap fun c ↦ [digit (c.toNat / 16), digit (c.toNat % 16)]))
 
 /-- The application of a constant to the arguments its binders name, in their order, and the
 statement the application proves. -/

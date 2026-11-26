@@ -12,18 +12,8 @@
 (module Serialize (export image) (import Prelude)
   ; unread trees and output accumulated in reverse order
   (deftype Work (Prod Ts Ts))
-  ; reverse a list by iterating over its length, keeping the unread suffix and the result
-  (def reverseList
-    (lam ((xs Ts))
-      (snd
-        (iter Work
-          (lam ((s Work))
-            (lcase T Work (fst s) s (lam ((x T) (rest Ts)) (pair rest (cons x (snd s))))))
-          (pair xs (nil T))
-          (length xs)))))
-
   ; the low n digits, least significant first, with no continuation for each digit
-  (def lowDigits (lam ((base T) (m T) (n T)) (reverseList (digitsMsb base m n))))
+  (def lowDigits (lam ((base T) (m T) (n T)) (reverseIter (digitsMsb base m n))))
 
   ; the Elias delta code of n: the size of the size in unary zeros and a one, then the size and
   ; n + 1 below their leading ones, most significant first
@@ -45,14 +35,14 @@
   ; reversed header before the bits already written; reverse the complete stream once
   (def treeBits
     (lam ((t T))
-      (reverseList
+      (reverseIter
         (snd
           (iter Work
             (lam ((s Work))
               (lcase T Work (fst s) s
                 (lam ((nd T) (rest Ts))
                   (pair (append (children nd) rest)
-                    (append (reverseList (nodeBits (arity nd) (label nd))) (snd s))))))
+                    (append (reverseIter (nodeBits (arity nd) (label nd))) (snd s))))))
             (pair (single t) (nil T))
             (nodeCount t))))))
 

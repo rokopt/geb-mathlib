@@ -44,6 +44,7 @@
     expandAliases
     expandCase
     expandCata
+    expandExprStep
     expandExpr
     dataDecl
     XP
@@ -402,28 +403,25 @@
           (some (sLet aE aT (get e) (sIf (sx2 (memberName d) aE) (sx2 (get f) aE) (get c))))
           none))))
 
+  (def expandExprStep
+    (lam ((l T) (rs RRs))
+      (let raw T (node l (rrTrees rs))
+        (pair raw
+          (lam ((env Ts))
+            (if (isList raw)
+              (let* ((h T (at (children raw) 0)) (k T (arity raw)))
+                (cond ((and (named h kwCase) (lt 2 k)) (expandCase env raw rs))
+                  ((and (named h kwCata) (lt 4 k)) (expandCata env raw rs))
+                  ((and (named h kwRep) (eq k 2)) (rrAt rs 1 env))
+                  ((and (named h kwDecode) (eq k 5)) (expandDecode env raw rs))
+                  ((and (named h kwDatum) (eq k 3)) (some (sx2 aQuote (at (children raw) 2))))
+                  (else
+                    (let xs T (allSome (rrApply rs env))
+                      (if (isSome xs) (some (node 2 (children (get xs)))) none)))))
+              (some raw)))))))
+
   ; an expression expanded, given the declarations before it
-  (def expandExpr
-    (lam ((env Ts) (e T))
-      ((snd
-         (fold RR
-           (lam ((l T) (rs RRs))
-             (let raw T (node l (rrTrees rs))
-               (pair raw
-                 (lam ((env Ts))
-                   (if (isList raw)
-                     (let* ((h T (at (children raw) 0)) (k T (arity raw)))
-                       (cond ((and (named h kwCase) (lt 2 k)) (expandCase env raw rs))
-                         ((and (named h kwCata) (lt 4 k)) (expandCata env raw rs))
-                         ((and (named h kwRep) (eq k 2)) (rrAt rs 1 env))
-                         ((and (named h kwDecode) (eq k 5)) (expandDecode env raw rs))
-                         ((and (named h kwDatum) (eq k 3))
-                          (some (sx2 aQuote (at (children raw) 2))))
-                         (else
-                           (let xs T (allSome (rrApply rs env))
-                             (if (isSome xs) (some (node 2 (children (get xs)))) none)))))
-                     (some raw))))))
-           e)) env)))
+  (def expandExpr (lam ((env Ts) (e T)) ((snd (fold RR expandExprStep e)) env)))
 
   ; a datatype declaration: its environment entries and kernel forms, the datatype's
   ; abbreviation for trees and one definition for each constructor

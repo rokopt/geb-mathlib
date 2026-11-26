@@ -412,6 +412,10 @@ def condConv (P : Prog) (S : Defs) : Step :=
 the named context. -/
 def srTy : Tree := prod treeTy (exp (list treeTy) treeTy)
 
+/-- The name of a sequence operation instantiated at a typing fold result. -/
+def srSeq (op : String) : String :=
+  "(Seq." ++ op ++ " (Prod Typing.Tx (Arrow (List Typing.Abbr) 24:(Option.Maybe Typing.Ty))))"
+
 /-- The program of the chain of a case analysis's clauses: the walk's, the constructors' tests,
 the kernel's typing, the clause's fields' typing, a clause's type and the agreement of types kept
 folded. -/
@@ -464,7 +468,7 @@ def labelAtom (P : Prog) (md : Term) : Term :=
 /-- The label a case analysis's typing reads off a clause's metadata: the numeral of its label's
 atom, else 0. -/
 def labelOf (P : Prog) (md : Term) : Term :=
-  let j := pc P "Typing.numTx" [pc P "Typing/Txs.atOr" [pc P "Typing.tx0" [],
+  let j := pc P "Typing.numTx" [pc P "(Seq.atOr Typing.Tx)" [pc P "Typing.tx0" [],
     pc P "Typing.elemsTx" [md], leafT bnilT]]
   condT treeTy (call D.lab [] [pc P "Prelude.isSome" [j]]) (pc P "Prelude.get" [j])
     (leafT bnilT)
@@ -941,7 +945,7 @@ def clauseAtWith (c : ChainSpec) (S : Defs) (T : Defs3) : Step :=
     let tyFalse (msg : String) : Deducer := linkK K s!"clauseAt: {msg}" fun Γ Φ ψ ↦
       dRwHyp (evalRw K.G K.E (K.rulesEx Φ hTyS ++ unfoldTy) .full) hTyS (fun Γ Φ ψ ↦
         (dFalse L dHyp Γ Φ ψ).orElse fun _ ↦ ctorClash Γ Φ ψ) Γ Φ ψ
-    let j (Γ : List Tree) : Term := pc P "Typing.numTx" [pc P "Typing/Txs.atOr"
+    let j (Γ : List Tree) : Term := pc P "Typing.numTx" [pc P "(Seq.atOr Typing.Tx)"
       [pc P "Typing.tx0" [], pc P "Typing.elemsTx" [md Γ], leafT bnilT]]
     let getJ (Γ : List Tree) : Term := pc P "Prelude.get" [j Γ]
     let lb (u : Term) : Term := call D.lab [] [u]
@@ -1274,7 +1278,7 @@ def eraseMetaWith (name listLemma : String) (ok : Prog → Term → Term)
     let isList (t : Term) : Term := truth o (pc P "Datatype.isListTx" [t])
     let nthE (t : Term) (i : ℕ) : Term :=
       pc P "Datatype.nthTx" [pc P "Datatype.elems" [t], leafT (numeral i)]
-    let num := truth o (pc P "Prelude.isSome" [pc P "Typing.numTx" [pc P "Typing/Txs.atOr"
+    let num := truth o (pc P "Prelude.isSome" [pc P "Typing.numTx" [pc P "(Seq.atOr Typing.Tx)"
       [pc P "Typing.tx0" [], pc P "Typing.elemsTx" [v 0], leafT bnilT]]])
     let goal := Internal.Logic.conj o (Term.eq (labelAtom P (er (v 0))) (labelAtom P (v 0)))
       (Internal.Logic.conj o (Term.eq (metaAt P (er (v 0)) 1) (metaAt P (v 0) 1))
@@ -1358,7 +1362,7 @@ def eraseMeta (P : Prog) (S : Defs) (T : Defs3) : Step :=
   eraseMetaWith "eraseMeta" "eraseAtoms" binderOk (fun _ _ ↦ []) (fun h ↦ [h]) P S T
 
 /-- The typing's absent type. -/
-def nothingT (P : Prog) : Term := pc P "Typing/OTy.nothing" []
+def nothingT (P : Prog) : Term := pc P "(Option.nothing Typing.Ty)" []
 
 /-- The walk of a clause's fields ({name}`walkParts`) with a body's typing absent at every named
 context is absent, at all field types and named contexts: by induction on the fixed fields'
@@ -1473,9 +1477,9 @@ def chainφ (c : ChainSpec) (K : Kit) (S : Defs) (T : Defs3) : Option Term := do
   let conj := Internal.Logic.conj o
   let isSomeT (t : Term) : Term := truth o (pc P "Prelude.isSome" [t])
   let get (t : Term) : Term := pc P "Prelude.get" [t]
-  let lenT (xs : Term) : Term := pc P "Typing/Txs.length" [xs]
-  let lenS (xs : Term) : Term := pc P "Typing/SRs.length" [xs]
-  let lenB (xs : Term) : Term := pc P "Datatype/Txs.length" [xs]
+  let lenT (xs : Term) : Term := pc P "(Seq.length Typing.Tx)" [xs]
+  let lenS (xs : Term) : Term := pc P (srSeq "length") [xs]
+  let lenB (xs : Term) : Term := pc P "(Seq.length Typing.Tx)" [xs]
   let headSR (xs : Term) : Term := call D.headD [srTy]
     [Term.pair (leafT bnilT) (Term.lam (list treeTy) (leafT bnilT)), xs]
   let tailSR (xs : Term) : Term := call D.tail [srTy] [xs]
@@ -1658,7 +1662,7 @@ def chainWith (c : ChainSpec) (S : Defs) (T : Defs3) : Step :=
     -- label's numeral and the constructor decided, then the walk at the absent body absent
     -- ({name}`caseFieldsNothing`)
     let nothingTy (msg : String) (iEq : ℕ) (md : List Tree → Term) : Deducer :=
-      let j (Γ : List Tree) : Term := pc P "Typing.numTx" [pc P "Typing/Txs.atOr"
+      let j (Γ : List Tree) : Term := pc P "Typing.numTx" [pc P "(Seq.atOr Typing.Tx)"
         [pc P "Typing.tx0" [], pc P "Typing.elemsTx" [md Γ], leafT bnilT]]
       let ss (Γ : List Tree) : Term := filterL (pc P "Prelude.get" [j Γ]) (atPos 7 Γ)
       let sC (Γ : List Tree) : Term := pc P "Prelude.at" [ss Γ, leafT bnilT]
@@ -1713,7 +1717,7 @@ def chainWith (c : ChainSpec) (S : Defs) (T : Defs3) : Step :=
       let iTy ← ps[4]?
       let iS1 ← ps[8]?
       let iS2 ← ps[9]?
-      let j (Γ : List Tree) : Term := pc P "Typing.numTx" [pc P "Typing/Txs.atOr"
+      let j (Γ : List Tree) : Term := pc P "Typing.numTx" [pc P "(Seq.atOr Typing.Tx)"
         [pc P "Typing.tx0" [], pc P "Typing.elemsTx" [m Γ], leafT bnilT]]
       let ss (Γ : List Tree) : Term := filterL (pc P "Prelude.get" [j Γ]) (atPos 7 Γ)
       let sC (Γ : List Tree) : Term := pc P "Prelude.at" [ss Γ, leafT bnilT]
@@ -1948,7 +1952,7 @@ def markerIdx (P : Prog) (k xs : Term) : Term :=
 
 /-- At the index of a key among a list of markers' names, where it has one, the list's map by a
 function is the function at the marker of that index, as the typing reads it
-({lit}`Typing/Txs.atOr`):
+({lit}`(Seq.atOr Typing.Tx)`):
 by induction on the markers; at a construction, the key the head's name or not. Equal, the index
 is the first, the map's head the function at the head; unequal, the index is the rest's
 successor, at which both lists' lookups are the rest's, and the induction hypothesis. In the
@@ -1967,7 +1971,7 @@ def atIndexMap (P : Prog) (S : Defs) : Step :=
     let φ := Internal.Logic.all o F (Term.lam F (Internal.Logic.all o treeTy (Term.lam treeTy
       (Internal.Logic.imp o (truth o (pc P "Prelude.isSome" [idx]))
         (Term.eq (pc P "Prelude.at" [mapFnT (v 1) (v 2), pc P "Prelude.get" [idx]])
-          (Term.app (v 1) (pc P "Typing/Txs.atOr" [pc P "Typing.tx0" [], v 2,
+          (Term.app (v 1) (pc P "(Seq.atOr Typing.Tx)" [pc P "Typing.tx0" [], v 2,
             pc P "Prelude.get" [idx]])))))))
     let lastFalse : Deducer := fun Γ Φ ψ ↦ K.hypFalse (Φ.length - 1) Γ Φ ψ
     let d₀ ← dAllI L (dAllI L (dImpI L (linkK K "atIndexMap: empty" lastFalse))) [] []

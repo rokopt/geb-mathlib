@@ -9,7 +9,9 @@
 ; function types and lists.
 
 (module Check
-  (export tyArrow tyList isTy isProd isArrow isListTy foldTy iterTy foldrTy lcaseTy primTypes typeIn
+  (export tyArrow tyList isTy isProd isArrow isListTy foldTy iterTy foldrTy lcaseTy primTypes
+    typeInStep
+    typeIn
     checkProgram
     checkNode)
   (import Prelude)
@@ -122,15 +124,13 @@
              none))
           (else none)))))
 
+  (def typeInStep
+    (lam ((G Ts) (l T) (rs RRs))
+      (let raw T (node l (rrTrees rs)) (pair raw (lam ((ctx Ts)) (checkNode G raw rs ctx))))))
+
   ; the type of a term in a context, innermost first, given the types of the definitions before
   ; it
-  (def typeIn
-    (lam ((G Ts) (ctx Ts) (t T))
-      ((snd
-         (fold RR
-           (lam ((l T) (rs RRs))
-             (let raw T (node l (rrTrees rs)) (pair raw (lam ((ctx Ts)) (checkNode G raw rs ctx)))))
-           t)) ctx)))
+  (def typeIn (lam ((G Ts) (ctx Ts) (t T)) ((snd (fold RR (typeInStep G) t)) ctx)))
 
   ; the type of a closed term, given the types of the definitions before it
   (def typeOf (lam ((G Ts) (t T)) (typeIn G (nil T) t)))

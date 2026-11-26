@@ -1145,7 +1145,7 @@ def lookupAgreeB (P : Prog) (S : Defs) (T : Defs3) : Step :=
 /-- The typing's type of the primitive of index k: the element of its list of the primitives'
 types, in normal form. -/
 def primTyT (P : Prog) (k : ℕ) : Term :=
-  let t := pc P "Typing/Tys.atOr" [pc P "Typing.tyT" [], pc P "Typing.primTys" [],
+  let t := pc P "(Seq.atOr Typing.Ty)" [pc P "Typing.tyT" [], pc P "Typing.primTys" [],
     leafT (numeral k)]
   (nfE P.G #[] (vBase P) [] t).getD t
 

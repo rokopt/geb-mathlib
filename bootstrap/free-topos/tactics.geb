@@ -37,13 +37,13 @@
   (import Derivation)
   (import Translation)
   (import Prover)
-  (import (Seq LDefn) as LDefnL)
+
   ; the bindings of optional theorems, assignments, conditionals' parts, masked rewritings and
   ; trees, as the base binds optional trees
-  (defn bindTh ((m OThm.Maybe) (f (Arrow Thm T))) T
-    (case m ((OThm.just a) (f a)) ((OThm.nothing) none)))
-  (defn bindAT ((m OAssign.Maybe) (f (Arrow Assign T))) T
-    (case m ((OAssign.just a) (f a)) ((OAssign.nothing) none)))
+  (defn bindTh ((m (Option.Maybe Thm)) (f (Arrow Thm T))) T
+    (case m ((Option.just Thm a) (f a)) ((Option.nothing Thm) none)))
+  (defn bindAT ((m (Option.Maybe Assign)) (f (Arrow Assign T))) T
+    (case m ((Option.just Assign a) (f a)) ((Option.nothing Assign) none)))
   (def pr0 (pr 0 0))
   (def nfr0 (nfr 0 (mark 0 0)))
   ; the connectives, the definitions from an index: truth, and the implication of one formula by
@@ -186,14 +186,14 @@
   (data Rules (rules & NormRule))
   (data Frames (frames & TPair))
   (data WH (wh Terms Rules Frames))
-  (import (Option WH) as OWH)
-  (deftype AW (Arrow Ts (Arrow NRs OWH.Maybe)))
-  (defn bindPW ((m OTPair.Maybe) (f (Arrow TPair OWH.Maybe))) OWH.Maybe
-    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OWH.nothing)))
-  (defn bindNW ((m ONFR.Maybe) (f (Arrow NFR OWH.Maybe))) OWH.Maybe
-    (case m ((ONFR.just p) (f p)) ((ONFR.nothing) OWH.nothing)))
+
+  (deftype AW (Arrow Ts (Arrow NRs (Option.Maybe WH))))
+  (defn bindPW ((m (Option.Maybe TPair)) (f (Arrow TPair (Option.Maybe WH)))) (Option.Maybe WH)
+    (case m ((Option.just TPair p) (f p)) ((Option.nothing TPair) (Option.nothing WH))))
+  (defn bindNW ((m (Option.Maybe NFR)) (f (Arrow NFR (Option.Maybe WH)))) (Option.Maybe WH)
+    (case m ((Option.just NFR p) (f p)) ((Option.nothing NFR) (Option.nothing WH))))
   (defn weakHyps ((G Globals) (E (List Entry)) (n T) (rs NRs) (is Ts) (m T) (g Ts) (hs Ts))
-    OWH.Maybe
+    (Option.Maybe WH)
     ((foldr T AW
        (lam ((i T) (acc AW) (h1 Ts) (extra NRs))
          (bindPW (bindTP (nth h1 i) eqParts)
@@ -206,10 +206,10 @@
                        (case
                          (acc (append h1 (single psi))
                            (appendNR extra (cons (hypRule (length h1)) (nil NormRule))))
-                         ((OWH.just w)
+                         ((Option.just WH w)
                           (case w
                             ((wh h2 x2 fs)
-                             (OWH.just
+                             (Option.just WH
                                (wh h2 x2
                                  (frames
                                    (cons
@@ -220,13 +220,14 @@
                                              (l2 (mDeriv (nfMarked ra)) (mDeriv (nfMarked rb))))
                                            (dNode 21 (single i) (nil T)))))
                                      (case fs ((frames & xs) xs)))))))))
-                         ((OWH.nothing) OWH.nothing))))))))))
-       (lam ((h1 Ts) (extra NRs)) (OWH.just (wh (terms h1) (rules extra) (frames (nil TPair)))))
+                         ((Option.nothing WH) (Option.nothing WH)))))))))))
+       (lam ((h1 Ts) (extra NRs))
+         (Option.just WH (wh (terms h1) (rules extra) (frames (nil TPair)))))
        is) hs (nil NormRule)))
   (defn withWeakHyps ((G Globals) (E (List Entry)) (n T) (rs NRs) (is Ts) (k KR) (m T)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (case (weakHyps G E n rs is m g hs)
-        ((OWH.just w)
+        ((Option.just WH w)
          (case w
            ((wh h2 x2 fs)
             (mapO
@@ -235,7 +236,7 @@
                   rest
                   (case fs ((frames & xs) xs))))
               (k (case x2 ((rules & ys) ys)) g (termsOf h2) t u)))))
-        ((OWH.nothing) none))))
+        ((Option.nothing WH) none))))
   (defn byListIndHypWeak ((G Globals) (E (List Entry)) (n T) (rs NRs)) Pv
     (byListIndWith G n 0 1 (byWeak G E n rs)
       (lam ((g Ts) (hs Ts) (t T) (u T))
@@ -456,15 +457,15 @@
          (lam ((h1 Ts) (extra NRs)) (k extra g h1 t u))
          is) hs (nil NormRule))))
   (defn hypIndex ((r NormRule)) T (case r ((nrHyp i) (some i)) (else none)))
-  (defn succPredRw ((j T) (l T) (s T)) OTPair.Maybe
+  (defn succPredRw ((j T) (l T) (s T)) (Option.Maybe TPair)
     (if (mIs 6 2 s)
       (let sg Ts (l2 (var 1) (var 0))
-        (OTPair.just
+        (Option.just TPair
           (pr (app (mArg s 0) (instTerm (nil T) sg l))
             (dNode 2 (nil T)
               (l2 (dNode 0 (nil T) (nil T))
                 (dNode 16 (l4 j (node 0 (nil T)) (node 0 sg) 1) (nil T)))))))
-      OTPair.nothing))
+      (Option.nothing TPair)))
   (defn bySuccPred ((E (List Entry)) (j T) (p Pv)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (bindTh (thmAt E j)
@@ -536,13 +537,14 @@
   (defn instArgs
     ((m T) (G Globals) (E (List Entry)) (n T) (rs NRs) (g Ts) (hs Ts) (t1 T) (u1 T) (h T))
     Tss
-    (let r1 OTPair.Maybe (bindTP (nth hs h) eqParts)
-      (if (OTPair.isJust r1)
-        (let F T (p1 (OTPair.fromMaybe pr0 r1))
+    (let r1 (Option.Maybe TPair) (bindTP (nth hs h) eqParts)
+      (if (Option.isJust TPair r1)
+        (let F T (p1 (Option.fromMaybe TPair pr0 r1))
           (if (mIs 5 1 F)
-            (let rb ONFR.Maybe (eval G E n rs 4096 m (cons (mD F 0) g) (mapT weaken1 hs) (mArg F 0))
-              (if (ONFR.isJust rb)
-                (let bw T (nfTerm (ONFR.fromMaybe nfr0 rb))
+            (let rb (Option.Maybe NFR)
+              (eval G E n rs 4096 m (cons (mD F 0) g) (mapT weaken1 hs) (mArg F 0))
+              (if (Option.isJust NFR rb)
+                (let bw T (nfTerm (Option.fromMaybe NFR nfr0 rb))
                   (eraseDupsTss (appendTss (matchesOf bw 1 t1) (matchesOf bw 1 u1))))
                 (nil Ts)))
             (nil Ts)))
@@ -606,19 +608,19 @@
                              (bindO (nth g i)
                                (lam ((c T))
                                  (cond ((isSome (listPart c)) (byListSplit G n i rec rec g hs t u))
-                                   ((OTPair.isJust (coprodParts c))
+                                   ((Option.isJust TPair (coprodParts c))
                                     (bySplit2 3 4 i rec rec g hs t u))
                                    (else none)))))))))))))
            (byInsts m G E n rs nh)
            d) g0 h0 t0 u0))))
   (data Cond (condOf T T T T))
-  (import (Option Cond) as OCond)
-  (defn bindCT ((m OCond.Maybe) (f (Arrow Cond T))) T
-    (case m ((OCond.just q) (f q)) ((OCond.nothing) none)))
-  (defn condParts ((w T)) OCond.Maybe
+
+  (defn bindCT ((m (Option.Maybe Cond)) (f (Arrow Cond T))) T
+    (case m ((Option.just Cond q) (f q)) ((Option.nothing Cond) none)))
+  (defn condParts ((w T)) (Option.Maybe Cond)
     (if (and (mIs 11 3 w) (and (eq (mD w 0) D.cond) (eq (length (children (mD w 1))) 1)))
-      (OCond.just (condOf (at (children (mD w 1)) 0) (mArg w 2) (mArg w 1) (mArg w 0)))
-      OCond.nothing))
+      (Option.just Cond (condOf (at (children (mD w 1)) 0) (mArg w 2) (mArg w 1) (mArg w 0)))
+      (Option.nothing Cond)))
   (defn condVar ((skip RW) (u T)) T
     (bindCT (condParts u) (lam ((q Cond)) (varUnless skip (at (children (rep q)) 1)))))
   (defn stuckVarC ((skip RW) (t T)) T
@@ -639,9 +641,10 @@
   (def ldefn0 (ldefn 0 (objs (nil T)) 0 0))
   (def unnodeTy (prod bitsTy (list treeTy)))
   (def unnodeStep
-    (let r OLDefn.Maybe (OLDefn.nthOf lib D.unnode)
-      (if (OLDefn.isJust r)
-        (lcase T T (mArgs (ldBody (OLDefn.fromMaybe ldefn0 r))) mStar (lam ((x T) (rest Ts)) x))
+    (let r (Option.Maybe LDefn) (Option.nthOf LDefn lib D.unnode)
+      (if (Option.isJust LDefn r)
+        (lcase T T (mArgs (ldBody (Option.fromMaybe LDefn ldefn0 r))) mStar
+          (lam ((x T) (rest Ts)) x))
         mStar)))
   (defn unnodeU ((t T)) T (mRoseRec unnodeTy unnodeStep t))
   ; the variables a child of a node binds, at its position, whatever the node's arity
@@ -654,7 +657,7 @@
   (defn kidsAt ((l T) (rs UFs)) UL
     (foldr UF UL (lam ((r UF) (c UL) (d T) (i T)) (cons (r (add d (anyBound l i))) (c d (add i 1))))
       (lam ((d T) (i T)) (nil T))
-      (UFs.tail rs)))
+      (Lists.tail UF rs)))
   (defn occStep ((lk T) (i T) (nd T) (rs UFs)) UF
     (let* ((l T (label nd)) (h UL (kidsAt l rs)))
       (lam ((d T))
@@ -718,7 +721,7 @@
     (bindO (nth g i)
       (lam ((c T))
         (cond ((isSome (listPart c)) (byListSplit G n i p q g hs t u))
-          ((OTPair.isJust (coprodParts c)) (bySplit2 3 4 i p q g hs t u))
+          ((Option.isJust TPair (coprodParts c)) (bySplit2 3 4 i p q g hs t u))
           ((equal c treeTy) (byTreeSplit lk i p g hs t u))
           (else none)))))
   (defn byAutoT ((G Globals) (E (List Entry)) (n T) (lk T) (rs NRs) (d T) (m T)) Pv
@@ -796,22 +799,24 @@
     (maskRwD a b ab (dNode 16 (l4 j (node 0 th) (node 0 sg) 0) (nil T)) c d x x1 z y))
   ; a rewriting under a conditional's mask: the subterm, its rewritten form and the derivation
   (data Mask (maskStep T T T))
-  (import (Option Mask) as OMask)
+
   (def cond0 (condOf 0 0 0 0))
   (def mask0 (maskStep 0 0 0))
-  (defn bindPM ((m OTPair.Maybe) (f (Arrow TPair OMask.Maybe))) OMask.Maybe
-    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OMask.nothing)))
-  (defn bindCM ((m OCond.Maybe) (f (Arrow Cond OMask.Maybe))) OMask.Maybe
-    (case m ((OCond.just q) (f q)) ((OCond.nothing) OMask.nothing)))
-  (defn bindTM ((m T) (f (Arrow T OMask.Maybe))) OMask.Maybe
-    (if (isSome m) (f (get m)) OMask.nothing))
-  (defn findMask ((f (Arrow T OMask.Maybe)) (xs Ts)) OMask.Maybe
-    (foldr T OMask.Maybe
-      (lam ((x T) (acc OMask.Maybe)) (let r OMask.Maybe (f x) (if (OMask.isJust r) r acc)))
-      OMask.nothing
+  (defn bindPM ((m (Option.Maybe TPair)) (f (Arrow TPair (Option.Maybe Mask)))) (Option.Maybe Mask)
+    (case m ((Option.just TPair p) (f p)) ((Option.nothing TPair) (Option.nothing Mask))))
+  (defn bindCM ((m (Option.Maybe Cond)) (f (Arrow Cond (Option.Maybe Mask)))) (Option.Maybe Mask)
+    (case m ((Option.just Cond q) (f q)) ((Option.nothing Cond) (Option.nothing Mask))))
+  (defn bindTM ((m T) (f (Arrow T (Option.Maybe Mask)))) (Option.Maybe Mask)
+    (if (isSome m) (f (get m)) (Option.nothing Mask)))
+  (defn findMask ((f (Arrow T (Option.Maybe Mask))) (xs Ts)) (Option.Maybe Mask)
+    (foldr T (Option.Maybe Mask)
+      (lam ((x T) (acc (Option.Maybe Mask)))
+        (let r (Option.Maybe Mask) (f x) (if (Option.isJust Mask r) r acc)))
+      (Option.nothing Mask)
       xs))
-  (defn orMask ((a OMask.Maybe) (b OMask.Maybe)) OMask.Maybe (if (OMask.isJust a) a b))
-  (defn maskAt ((ab T) (cs T) (hs Ts) (a T) (c T) (y T) (d T) (S T) (i T)) OMask.Maybe
+  (defn orMask ((a (Option.Maybe Mask)) (b (Option.Maybe Mask))) (Option.Maybe Mask)
+    (if (Option.isJust Mask a) a b))
+  (defn maskAt ((ab T) (cs T) (hs Ts) (a T) (c T) (y T) (d T) (S T) (i T)) (Option.Maybe Mask)
     (bindPM (bindTP (nth hs i) eqParts)
       (lam ((LR TPair))
         (let* ((L T (p1 LR)) (R T (p2 LR)))
@@ -820,34 +825,35 @@
               (let*
                 ((b T (at (children (rep qL)) 0)) (x T (at (children (rep qL)) 2))
                  (z T (at (children (rep qL)) 3)))
-                (if (not (equal (at (children (rep qL)) 1) c)) OMask.nothing
+                (if (not (equal (at (children (rep qL)) 1) c)) (Option.nothing Mask)
                   (bindPM
-                    (let qR OCond.Maybe (condParts R)
+                    (let qR (Option.Maybe Cond) (condParts R)
                       (cond
-                        ((OCond.isJust qR)
-                         (let q2 T (rep (OCond.fromMaybe cond0 qR))
+                        ((Option.isJust Cond qR)
+                         (let q2 T (rep (Option.fromMaybe Cond cond0 qR))
                            (if (and (equal (at (children q2) 1) c) (equal (at (children q2) 3) z))
-                             (OTPair.just (pr (at (children q2) 2) (dNode 17 (l2 i 0) (nil T))))
-                             OTPair.nothing)))
+                             (Option.just TPair
+                               (pr (at (children q2) 2) (dNode 17 (l2 i 0) (nil T))))
+                             (Option.nothing TPair))))
                         ((equal R z)
-                         (OTPair.just
+                         (Option.just TPair
                            (pr R
                              (dNode 1 (nil T)
                                (l2 (dNode 17 (l2 i 0) (nil T))
                                  (dNode 16 (l4 cs (node 0 (single b)) (node 0 (l2 c R)) 1)
                                    (nil T)))))))
-                        (else OTPair.nothing)))
+                        (else (Option.nothing TPair))))
                     (lam ((xd TPair))
                       (let x1 T (p1 xd)
-                        (if (equal x x1) OMask.nothing
+                        (if (equal x x1) (Option.nothing Mask)
                           (let F T (abstractTerm b x y)
                             (bindTM (lcase T T (mArgs F) none (lam ((h T) (rest Ts)) (some h)))
                               (lam ((body T))
-                                (if (eq (uses body 0) 0) OMask.nothing
-                                  (OMask.just
+                                (if (eq (uses body 0) 0) (Option.nothing Mask)
+                                  (Option.just Mask
                                     (maskStep S (condT a c (subst body (instVar x1)) d)
                                       (maskRwD a b ab (p2 xd) c d x x1 z y)))))))))))))))))))
-  (defn maskSub ((ab T) (cs T) (hs Ts) (w T)) OMask.Maybe
+  (defn maskSub ((ab T) (cs T) (hs Ts) (w T)) (Option.Maybe Mask)
     (findMask
       (lam ((S T))
         (bindCM (condParts S)
@@ -865,15 +871,15 @@
        (lam ((rec MS) (extra NRs) (p KR))
          (byNF G E 0 (appendNR extra rs) 1
            (lam ((g Ts) (hs Ts) (t T) (u T))
-             (let r OMask.Maybe (orMask (maskSub ab cs hs t) (maskSub ab cs hs u))
-               (if (OMask.isJust r)
+             (let r (Option.Maybe Mask) (orMask (maskSub ab cs hs t) (maskSub ab cs hs u))
+               (if (Option.isJust Mask r)
                  (let*
-                   ((S T (at (children (rep (OMask.fromMaybe mask0 r))) 0))
-                    (S1 T (at (children (rep (OMask.fromMaybe mask0 r))) 1)))
+                   ((S T (at (children (rep (Option.fromMaybe Mask mask0 r))) 0))
+                    (S1 T (at (children (rep (Option.fromMaybe Mask mask0 r))) 1)))
                    (mapO
                      (lam ((q T))
                        (dNode 22 (single (mEq S S1))
-                         (l2 (at (children (rep (OMask.fromMaybe mask0 r))) 2) q)))
+                         (l2 (at (children (rep (Option.fromMaybe Mask mask0 r))) 2) q)))
                      (rec (cons (hypRule (length hs)) extra) p g (append hs (single (mEq S S1))) t
                        u)))
                  (p extra g hs t u))))))

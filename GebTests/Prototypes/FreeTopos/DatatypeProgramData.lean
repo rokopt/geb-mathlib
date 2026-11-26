@@ -107,9 +107,10 @@ rejection, and the reader has the abbreviation of the name as the trees' type be
 abbreviations. -/
 def Passes.declared (P : Prog) (s : Passes) (d ws : Term) : Passes :=
   { s with
-    env := pc P "Typing.withNoms" [s.env, pc P "Typing/Names.append"
-      [pc P "Typing.envNoms" [s.env], pc P "Typing/Names.single" [pc P "Typing.atomName" [d]]]]
-    rej := pc P "Typing/OName.nothing" []
+    env := pc P "Typing.withNoms" [s.env, pc P "(Seq.append Typing.Name)"
+      [pc P "Typing.envNoms" [s.env],
+        pc P "(Seq.single Typing.Name)" [pc P "Typing.atomName" [d]]]]
+    rej := pc P "(Option.nothing Typing.Name)" []
     tys := consT treeTy (abbrevT P (pc P "Reader.nameOf" [d])
       (pc P "Prelude.get" [pc P "Reader.readType" [s.tys, pc P "Datatype.aT" []]])) s.tys
     ws := some ws }
@@ -871,7 +872,7 @@ def dataDeclAt (P : Prog) (S : Defs) : Step :=
     let (cs, dA, h) := (v 0, v 1, v 2)
     let e := nodeT (Term.pair (numeral 2) (consT treeTy h (consT treeTy dA cs)))
     let d := pc P "Datatype.atomName" [dA]
-    let nc := pc P "Datatype/Txs.length" [cs]
+    let nc := pc P "(Seq.length Typing.Tx)" [cs]
     let r := ctorsFold P d nc cs
     let a : Internal.Thm := ⟨0, Γ, [], Term.eq (pc P "Datatype.dataDecl" [e])
       (Term.pair (pc P "Prelude.and" [Term.fst (Term.snd r), pc P "Datatype.isAtomTx" [dA]])
@@ -916,7 +917,7 @@ def findAliasAppend (P : Prog) (S : Defs) : Step :=
     let o := P.o
     let Ls := list treeTy
     let fa (n dv : Term) : Term := pc P "Datatype.findAlias" [n, dv]
-    let app (xs ys : Term) : Term := pc P "Datatype/Decls.append" [xs, ys]
+    let app (xs ys : Term) : Term := pc P "(Seq.append Datatype.Decl)" [xs, ys]
     -- under the quantifiers: the name v0, the others v1, the declarations v2
     let φ := Internal.Logic.all o Ls (Term.lam Ls (Internal.Logic.all o treeTy (Term.lam treeTy
       (Internal.Logic.imp o (Term.eq (fa (v 0) (v 1)) (fa (v 0) (nilT treeTy)))
@@ -1108,7 +1109,7 @@ def ctorEntry (P : Prog) (S : Defs) : Step :=
     let ltT ← primT Kernel.Prim.lt
     let subT ← primT Kernel.Prim.sub
     let c := nodeT (Term.pair (numeral 2) (consT treeTy nm fs))
-    let nr := pc P "Datatype/Txs.length" [fs]
+    let nr := pc P "(Seq.length Typing.Tx)" [fs]
     let more := apps ltT [leafT (numeral 1), nr]
     let amp := pc P "Datatype.namedTx"
       [pc P "Datatype.nthTx" [fs, apps subT [nr, leafT (numeral 2)]], pc P "Datatype.kwAmp" []]
@@ -1340,7 +1341,7 @@ def ctorDeclVar (P : Prog) (S : Defs) : Step :=
     let ltT ← primT Kernel.Prim.lt
     let subT ← primT Kernel.Prim.sub
     let c := nodeT (Term.pair (numeral 2) (consT treeTy nm rest))
-    let nr := pc P "Datatype/Txs.length" [rest]
+    let nr := pc P "(Seq.length Typing.Tx)" [rest]
     let more := apps ltT [leafT (numeral 1), nr]
     let amp := pc P "Datatype.namedTx"
       [pc P "Datatype.nthTx" [rest, apps subT [nr, leafT (numeral 2)]], pc P "Datatype.kwAmp" []]
@@ -1377,7 +1378,7 @@ def ctorEntryVar (P : Prog) (S : Defs) : Step :=
     let ltT ← primT Kernel.Prim.lt
     let subT ← primT Kernel.Prim.sub
     let c := nodeT (Term.pair (numeral 2) (consT treeTy nm rest))
-    let nr := pc P "Datatype/Txs.length" [rest]
+    let nr := pc P "(Seq.length Typing.Tx)" [rest]
     let more := apps ltT [leafT (numeral 1), nr]
     let amp := pc P "Datatype.namedTx"
       [pc P "Datatype.nthTx" [rest, apps subT [nr, leafT (numeral 2)]], pc P "Datatype.kwAmp" []]
@@ -1397,7 +1398,7 @@ the datatype's atom, the constructor's position and its fields' types: the abstr
 the fields' binders around the coercion to the datatype of the node of the position over the
 fields' values. -/
 def ctorDefT (P : Prog) (csd j fs : Term) : Term :=
-  let nr := pc P "Datatype/Txs.length" [fs]
+  let nr := pc P "(Seq.length Typing.Tx)" [fs]
   let z := pc P "Datatype.sx2" [pc P "Datatype.aNil" [], pc P "Datatype.aT" []]
   nestT P (binderFold P nr fs) (ctorBody P csd j nr z fs)
 
@@ -1577,8 +1578,8 @@ definitions ({name}`ctorDefsT`) before the marker of the datatype's atom and the
 entries. Of the characters of the datatype's atom and the number of all its constructors. -/
 def blockPendingT (P : Prog) (csd nc xs cs : Term) : Term :=
   let Da := nodeT (Term.pair (numeral 1) csd)
-  pc P "Datatype/Txs.append" [ctorDefsT P (pc P "Datatype.atomName" [Da]) nc cs,
-    pc P "Datatype/Txs.single" [markerT Da xs]]
+  pc P "(Seq.append Typing.Tx)" [ctorDefsT P (pc P "Datatype.atomName" [Da]) nc cs,
+    pc P "(Seq.single Typing.Tx)" [markerT Da xs]]
 
 /-- The hypotheses of the soundness at the forms that remain within a datatype's block, at a
 list of its constructors: the hypothesis on the forms after the block, the hypotheses at states
@@ -1802,15 +1803,15 @@ def stepData (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let eA (Γ : List Tree) : Term := nodeT (Term.pair (numeral 2) (xsA Γ))
     let xpA (Γ : List Tree) : Term := pc P "Datatype.xpStep" [xpState (dvA Γ) nil, eA Γ]
     let dTxA (Γ : List Tree) : Term := pc P "Datatype.atomName" [dAA Γ]
-    let ncA (Γ : List Tree) : Term := pc P "Datatype/Txs.length" [csA Γ]
+    let ncA (Γ : List Tree) : Term := pc P "(Seq.length Typing.Tx)" [csA Γ]
     let declsA (Γ : List Tree) : Term := ctorDeclsT P (dTxA Γ) (ncA Γ) (csA Γ)
     let defsA (Γ : List Tree) : Term := ctorDefsT P (dTxA Γ) (ncA Γ) (csA Γ)
     let dsA (Γ : List Tree) : Term := consT treeTy (pc P "Datatype.dataD" [dTxA Γ]) (declsA Γ)
-    let dv'A (Γ : List Tree) : Term := pc P "Datatype/Decls.append" [dvA Γ, dsA Γ]
+    let dv'A (Γ : List Tree) : Term := pc P "(Seq.append Datatype.Decl)" [dvA Γ, dsA Γ]
     let m₀A (Γ : List Tree) : Term := pc P "Datatype.marker" [dvA Γ, dAA Γ, dsA Γ]
     -- the forms pending after the datatype's node, and with it
     let restA (Γ : List Tree) : Term :=
-      pc P "Datatype/Txs.append" [defsA Γ, pc P "Datatype/Txs.single" [m₀A Γ]]
+      pc P "(Seq.append Typing.Tx)" [defsA Γ, pc P "(Seq.single Typing.Tx)" [m₀A Γ]]
     let writtenA (Γ : List Tree) : Term := consT treeTy (pc P "Typing.tData" [dAA Γ]) (restA Γ)
     let afterA (Γ : List Tree) : Term := typedForms P (esA Γ) (dv'A Γ)
     -- the states after the datatype's node

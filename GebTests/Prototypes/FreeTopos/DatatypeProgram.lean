@@ -55,7 +55,7 @@ open GebTests.Prototypes.FreeTopos.Normalization
 /-- The names of the program's definitions {lit}`programφ` applies. -/
 def programNames : List String :=
   ["Datatype.expandTyped", "Datatype.markersFirst", "Datatype.kernelForms", "Typing.checkAll",
-    "Typing.env0", "Typing/OName.nothing", "Typing.envMs", "Recognize.insertRecognizers",
+    "Typing.env0", "(Option.nothing Typing.Name)", "Typing.envMs", "Recognize.insertRecognizers",
     "Reader.readProgram", "Check.checkProgram", "Reader.named", "Reader.kwDefnum",
     "Reader.nameOf", "implName", "Prelude.and", "Prelude.nth", "Prelude.get", "Prelude.isSome"]
 
@@ -85,7 +85,7 @@ def programφ (P : Prog) (T : Defs3) : Option Term := do
       (Internal.Logic.ff o))))
   let x := pc P "Datatype.expandTyped" [v 0]
   let ts := Term.snd x
-  let nothing := pc P "Typing/OName.nothing" []
+  let nothing := pc P "(Option.nothing Typing.Name)" []
   let run := pc P "Typing.checkAll" [Term.pair (pc P "Typing.env0" []) nothing,
     pc P "Datatype.markersFirst" [ts]]
   let E := Term.fst run
@@ -112,7 +112,7 @@ def checkAllAppend (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let o := P.o
     let Ls := list treeTy
     let CS := prod T.envTy treeTy
-    let app (xs ys : Term) : Term := pc P "Datatype/Txs.append" [xs, ys]
+    let app (xs ys : Term) : Term := pc P "(Seq.append Typing.Tx)" [xs, ys]
     let run (s xs : Term) : Term := pc P "Typing.checkAll" [s, xs]
     -- under the quantifiers: the state v0, the second list v1, the first v2
     let φ := Internal.Logic.all o Ls (Term.lam Ls (Internal.Logic.all o CS (Term.lam CS
@@ -134,7 +134,7 @@ only at a form whose label is known. -/
 def runProg (P : Prog) : Prog := { P with folded := P.folded ++ ["Typing.checkStep"] }
 
 /-- The typing's concatenation of lists of forms, at the two lists. -/
-def txsApp (P : Prog) (xs ys : Term) : Term := pc P "Typing/Txs.append" [xs, ys]
+def txsApp (P : Prog) (xs ys : Term) : Term := pc P "(Seq.append Typing.Tx)" [xs, ys]
 
 /-- The concatenation of a list with the empty list is the list, stated in normal form: by
 induction on it. -/
@@ -179,7 +179,7 @@ def checkStepMarker (P : Prog) (S : Defs) (T : Defs3) : Step :=
   ("checkStepMarker", fun ix E ↦ do
     let K : Kit := ⟨runProg P, S, E, ix, []⟩
     let Γ := [list treeTy, T.envTy]
-    let nothing := pc P "Typing/OName.nothing" []
+    let nothing := pc P "(Option.nothing Typing.Name)" []
     let m := nodeT (Term.pair (numeral 9) (v 0))
     let lhs := pc P "Typing.checkStep" [Term.pair (v 1) nothing, m]
     let rhs := Term.pair (pc P "Typing.withMs" [v 1, txsApp P (pc P "Typing.envMs" [v 1])
@@ -197,7 +197,7 @@ def checkStepMarker (P : Prog) (S : Defs) (T : Defs3) : Step :=
 {lit}`Datatype.markersFirst` orders them: the pair of the markers and of the other forms, read
 from its normal form, the concatenation kept folded. -/
 def partitionT (K : Kit) (Γ : List Tree) : Option Term := do
-  let K := { K with P := { K.P with folded := K.P.folded ++ ["Datatype/Txs.append"] } }
+  let K := { K with P := { K.P with folded := K.P.folded ++ ["(Seq.append Typing.Tx)"] } }
   let r ← nfE K.G K.E (K.rules []) Γ (pc K.P "Datatype.markersFirst" [v 0])
   match r.label, r.children with
   | .app, [f, _] => match f.label, f.children with
@@ -227,7 +227,7 @@ def markersRun (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let o := P.o
     let Ls := list treeTy
     let some X₀ := partitionT K [Ls] | dbgTrace "markersRun: no partition" fun _ ↦ none
-    let nothing := pc P "Typing/OName.nothing" []
+    let nothing := pc P "(Option.nothing Typing.Name)" []
     -- under the quantifiers: the markers v0, the environment v1, the forms v2
     let ms := Term.fst (Term.subst X₀ fun i ↦ v (i + 2))
     let φ := Internal.Logic.all o T.envTy (Term.lam T.envTy (Internal.Logic.all o Ls (Term.lam Ls
@@ -262,7 +262,7 @@ def checkAllRejected (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let o := P.o
     let Ls := list treeTy
     -- under the quantifiers: the name v0, the environment v1, the forms v2
-    let st := Term.pair (v 1) (pc P "Typing/OName.just" [v 0])
+    let st := Term.pair (v 1) (pc P "(Option.just Typing.Name)" [v 0])
     let φ := Internal.Logic.all o T.envTy (Term.lam T.envTy (Internal.Logic.all o treeTy
       (Term.lam treeTy (Term.eq (pc P "Typing.checkAll" [st, v 2]) st))))
     let some d₀ := dAllI L (dAllI L (linkK K "checkAllRejected: empty" K.byNorm)) [] []

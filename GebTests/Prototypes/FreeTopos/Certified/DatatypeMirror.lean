@@ -104,7 +104,7 @@ theorem loaded_at (L : Translated PST) {name : String} {T : Kernel.Tree} {f : Ke
 /-- The functions of the compiler's passes that the mirror defines. -/
 def passFns : PassFns where
   expandTyped := «Datatype.expandTyped»
-  nothing := «$547970696e672f4f4e616d652e6e6f7468696e67»
+  nothing := gebMirror% "(Option.nothing Typing.Name)"
   checkAll := «Typing.checkAll»
   env0 := «Typing.env0»
   markersFirst := «Datatype.markersFirst»
@@ -121,7 +121,7 @@ theorem passFns_loaded (L : Translated PST) : passFns.Loaded L.Gk PST.1.idx := b
   obtain ⟨f, hf⟩ := exists_passFns L
   exact
     { expandTyped := loaded_at L hf.expandTyped (entry 46 rfl) At.«Datatype.expandTyped»
-      nothing := loaded_at L hf.nothing (entry 32 rfl) At.«Typing/OName.nothing»
+      nothing := loaded_at L hf.nothing (entry 32 rfl) At.«(Option.nothing Typing.Name)»
       checkAll := loaded_at L hf.checkAll (entry 33 rfl) At.«Typing.checkAll»
       env0 := loaded_at L hf.env0 (entry 24 rfl) At.«Typing.env0»
       markersFirst := loaded_at L hf.markersFirst (entry 47 rfl) At.«Datatype.markersFirst»
@@ -200,8 +200,8 @@ def hypFns : HypFns where
   numOf := «Reader.numOf»
   nameOf := «Reader.nameOf»
   node2 := «Reader.node2»
-  reverse := «$44617461747970652f5478732e72657665727365»
-  drop := «$44617461747970652f5478732e64726f70»
+  reverse := gebMirror% "(Seq.reverse Typing.Tx)"
+  drop := gebMirror% "(Seq.drop Typing.Tx)"
   kernelForms := «Datatype.kernelForms»
   markers := «Recognize.markers»
   markerCtors := «Typing.markerCtors»
@@ -244,8 +244,8 @@ theorem hypFns_loaded (L : Translated PST) : hypFns.Loaded L.Gk PST.1.idx := by
       numOf := loaded_at L hf.numOf (entry 17 rfl) At.«Reader.numOf»
       nameOf := loaded_at L hf.nameOf (entry 7 rfl) At.«Reader.nameOf»
       node2 := loaded_at L hf.node2 (entry 18 rfl) At.«Reader.node2»
-      reverse := loaded_at L hf.reverse (entry 34 rfl) At.«Datatype/Txs.reverse»
-      drop := loaded_at L hf.drop (entry 35 rfl) At.«Datatype/Txs.drop»
+      reverse := loaded_at L hf.reverse (entry 34 rfl) At.«(Seq.reverse Typing.Tx)»
+      drop := loaded_at L hf.drop (entry 35 rfl) At.«(Seq.drop Typing.Tx)»
       kernelForms := loaded_at L hf.kernelForms (entry 48 rfl) At.«Datatype.kernelForms»
       markers := loaded_at L hf.markers (entry 49 rfl) At.«Recognize.markers»
       markerCtors := loaded_at L hf.markerCtors (entry 31 rfl) At.«Typing.markerCtors»

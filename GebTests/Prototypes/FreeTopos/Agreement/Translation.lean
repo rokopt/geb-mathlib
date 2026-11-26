@@ -406,13 +406,14 @@ def TRel (v : List Tree → List Tree → Tree) (w : Translation.Tr) : Prop :=
 
 /-- A list of optional translations without its head. -/
 theorem trTail_eq (rs : List Tree) :
-    «$5472616e736c6174696f6e2f547259732e7461696c» rs = rs.tail := by
+    gebMirror% "(Lists.tail 29:(Option.Maybe Language.TPair))" rs = rs.tail := by
   cases rs <;> rfl
 
 /-- The optional translation of a child at a position, nothing out of range. -/
 @[simp] theorem trAt_eq (ys : List Tree) (i : ℕ) :
     «Translation.trAt» ys (leaf i) = ys[i]?.getD «Prelude.none» := by
-  have hr : ∀ i : ℕ, Nat.repeat «$5472616e736c6174696f6e2f547259732e7461696c» i ys = ys.drop i :=
+  have hr : ∀ i : ℕ, Nat.repeat
+      gebMirror% "(Lists.tail 29:(Option.Maybe Language.TPair))" i ys = ys.drop i :=
     Nat.rec rfl fun i ih ↦ by rw [Nat.repeat, ih, trTail_eq, List.tail_drop]
   simp only [«Translation.trAt», iter_leaf, hr]
   cases h : ys.drop i with

@@ -31,8 +31,7 @@ exhaustive or mix datatypes, unknown constructors, patterns of the wrong length 
 recursion over what is not a datatype are rejected.
 
 The sources are read at elaboration by {lit}`include_str` and converted to lists of
-characters inside each {lit}`#guard`: core's {lit}`String.toList` depends on
-{lit}`Classical.choice`, and a {lit}`#guard` is not a declaration.
+characters for the seed. Each comparison applies a loaded entry to its inputs.
 
 ## Main definitions
 
@@ -40,7 +39,7 @@ characters inside each {lit}`#guard`: core's {lit}`String.toList` depends on
   those the program whose typing's soundness is proved reads; the other programs' are their
   manifests'.
 * {lit}`bundled` gives a program's definitions, as the stage-0 compiler's front end reads them.
-* {lit}`runDatatype` compiles a program with the stage-0 compiler and runs its last
+* {lit}`runDatatype` compiles a program with the stage-0 compiler and runs its main
   definition; {lit}`naturals` and {lit}`roses` are programs in the datatype language.
 * {lit}`checker` returns the types of a bundle's definitions, and {lit}`seedTypes` is the
   seed's answer; {lit}`malformed` are terms the checker rejects.
@@ -86,22 +85,32 @@ def serializer : String :=
 joins them. -/
 def compiler : String := include_manifest "bootstrap/stage0.manifest"
 
+/-- The loaded stage-0 compiler applied to source text encoded as a tree. -/
+def runCompiler : Tree → Option Tree :=
+  (loadMain compiler.toList).getD fun _ ↦ none
+
 /-- The stage-0 compiler with an entry point giving a program's bundle: its text read, its modules
 elaborated and its forms of the datatype language expanded, without the image written. -/
 def bundler : String :=
   compiler ++ "(def bundleMain (lam ((file T)) (Compile.bundleOf file)))"
 
+/-- The loaded stage-0 front end at its bundle entry. -/
+def runBundler : Tree → Option Tree :=
+  (loadMain bundler.toList).getD fun _ ↦ none
+
 /-- A program's definitions with their names, from its text, read and expanded by the stage-0
 compiler's front end. -/
 def bundled (text : List Char) : Option (List (List Char × Tree)) := do
-  let r ← runMain bundler.toList (nameTree text)
+  let r ← runBundler (nameTree text)
   unbundle (← if r.label == 1 then r.children.head? else none)
 
-/-- Compile a program with the stage-0 compiler, given as text, read the image back, and apply
+/-- Compile a program with the loaded stage-0 compiler, read the image back, and apply
 its definition named {lit}`main` to an input tree. -/
-def runDatatype (compilerText text : List Char) (input : Tree) : Option Tree := do
-  let img ← toBytes (← runMain compilerText (nameTree text))
-  runEntry (← readImage img) ['m', 'a', 'i', 'n'] input
+def runDatatype (text : List Char) : Tree → Option Tree :=
+  let entry := do
+    let img ← toBytes (← runCompiler (nameTree text))
+    Requests.entry (← readImage img) ['m', 'a', 'i', 'n']
+  fun input ↦ entry.bind (· input)
 
 /-- Naturals in unary: addition by structural recursion, conversions from and to labels, and
 the predecessor by case analysis. -/
@@ -180,17 +189,23 @@ def samples : List Tree :=
   [leaf 0, leaf (2 ^ 70 + 5), mk 7 ((List.range 300).map fun i ↦ leaf (i % 3)),
    mk 1 [mk 2 [leaf 3, mk 4 []], leaf 255, mk 256 [leaf 65536]]]
 
-#guard samples.all fun t ↦ runMain serializer.toList t == some (ofBytes (writeImage t))
+private def runSerializer : Tree → Option Tree :=
+  (loadMain serializer.toList).getD fun _ ↦ none
+
+private def runChecker : Tree → Option Tree :=
+  (loadMain checker.toList).getD fun _ ↦ none
+
+#guard samples.all fun t ↦ runSerializer t == some (ofBytes (writeImage t))
 #guard (readProgram serializer.toList).all fun ds ↦
-  runMain serializer.toList (bundle ds) == some (ofBytes (writeImage (bundle ds)))
+  runSerializer (bundle ds) == some (ofBytes (writeImage (bundle ds)))
 
 -- the checker agrees with the seed on the kernel's examples, the compiler and malformed terms
 #guard ([Tests.factorial, Tests.size, Tests.mirror, Tests.reverseChildren, Tests.quadruple,
     Tests.isZero, Tests.listCase, Tests.sugar, Tests.numerals, compiler].filterMap
     (readProgram ·.toList)
-    |>.map bundle).all fun b ↦ runMain checker.toList b == some (seedTypes b)
+    |>.map bundle).all fun b ↦ runChecker b == some (seedTypes b)
 #guard (malformed ++ [mk Label.lam [leaf 0, mk Label.var [leaf 0]]]).all fun t ↦
-  runMain checker.toList (bundle [("f".toList, t)]) == some (seedTypes (bundle [("f".toList, t)]))
+  runChecker (bundle [("f".toList, t)]) == some (seedTypes (bundle [("f".toList, t)]))
 #guard (malformed.map fun t ↦ seedTypes (bundle [("f".toList, t)])).all (· == leaf 0)
 -- the stage-0 compiler agrees with the seed on the kernel's examples, rejected and ill-typed
 -- ones included
@@ -199,7 +214,17 @@ def samples : List Tree :=
     "(def f (lam () 1))", "(def f (lam (x Nat) x))", "(def f (lam (x T) y))",
     "(def f (lam (x T) (add x unit)))", "(def f (lam (x T) (x x)))", "(defnum n m)",
     "(defnum n (1 2))"].all fun p ↦
-  runMain compiler.toList (nameTree p.toList) == some (seedCompile p.toList)
+  runCompiler (nameTree p.toList) == some (seedCompile p.toList)
+-- A long comment exercises the reader at fixed program size.
+#guard let program := Tests.sugar.toList
+  let source := ';' :: (List.replicate 262144 'a' ++ '\n' :: program)
+  runCompiler (nameTree source) == some (seedCompile program)
+-- Many short forms exercise token parsing as well as byte scanning.
+#guard let countForms := prelude ++ reader ++
+    "(def main (lam ((t T)) (let r T (Reader.readSExps (children t)) " ++
+    "(if (Prelude.isSome r) (arity (Prelude.get r)) 0))))"
+  let forms := (List.replicate 65536 ['(', ')']).flatten
+  runMain countForms.toList (nameTree forms) == some (leaf 65536)
 -- and on the authoring profile: quoted atoms and their escapes, comments, holes, the spellings
 -- of the strict encodings with and without lengths, lengths the bytes do not match, characters
 -- outside strings that no token admits, and reserved and repeated names
@@ -215,22 +240,22 @@ def samples : List Tree :=
     "(def f (lam (x T) (quote (0 007:abcdefg))))", "(def f (lam (x T) (quote (0 #616#))))",
     "(def f (lam (x T) (quote (0 |YWJjZ|))))", "(def f (lam (x T) (quote (0 [h]x))))",
     "(def *ann (lam (x T) x))"].all fun p ↦
-  runMain compiler.toList (nameTree p.toList) == some (seedCompile p.toList)
+  runCompiler (nameTree p.toList) == some (seedCompile p.toList)
 -- Programs in the datatype language, compiled by the stage-0 compiler and run from their images
-#guard runDatatype compiler.toList naturals.toList (leaf 5) = some (mk 0 [leaf 10, leaf 4])
-#guard runDatatype compiler.toList roses.toList (leaf 0) = some (mk 0 [leaf 4, leaf 1, leaf 0])
+#guard runDatatype naturals.toList (leaf 5) = some (mk 0 [leaf 10, leaf 4])
+#guard runDatatype roses.toList (leaf 0) = some (mk 0 [leaf 4, leaf 1, leaf 0])
 -- membership decided by the recognizers, at a natural, a rose tree, a pair of the two and the
 -- leaf zero
-#guard [(mk 1 [mk 1 [leaf 0]], [1, 0, 0]), (mk 0 [leaf 5, mk 0 [leaf 7]], [0, 1, 0]),
+#guard let run := runDatatype decoding.toList
+  [(mk 1 [mk 1 [leaf 0]], [1, 0, 0]), (mk 0 [leaf 5, mk 0 [leaf 7]], [0, 1, 0]),
     (mk 0 [mk 1 [leaf 0], mk 0 [leaf 3]], [0, 1, 1]), (leaf 0, [1, 0, 0])].all fun (t, bs) ↦
-  runDatatype compiler.toList decoding.toList t ==
-    some (mk 0 (bs.map leaf ++ [mk 1 [mk 1 [leaf 0]]]))
+    run t == some (mk 0 (bs.map leaf ++ [mk 1 [mk 1 [leaf 0]]]))
 #guard ["(data Nat (zero) (succ Nat)) (defn f ((n Nat)) T (case n ((zero) 1))) (def main f)",
     "(data A (a)) (data B (b)) (defn f ((n A)) T (case n ((a) 1) ((b) 0))) (def main f)",
     "(data A (a)) (defn f ((n A)) T (case n ((c) 1) (else 0))) (def main f)",
     "(data A (a T)) (defn f ((n A)) T (case n ((a x y) x))) (def main f)",
     "(defn f ((n T)) T (cata T T n ((a) 1))) (def main f)"].all fun p ↦
-  runMain compiler.toList (nameTree p.toList) == some (mk 0 [])
+  runCompiler (nameTree p.toList) == some (mk 0 [])
 
 -- the numeral abbreviations of the prelude are the Lean abbreviations of the kernel's labels and
 -- the primitives' indices, name for name and value for value

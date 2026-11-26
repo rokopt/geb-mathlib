@@ -521,7 +521,7 @@ def walkEntry (K : Kit) (e raw : List Tree → Term) (absent : String → Deduce
   let E' := atPos 9
   let es (Γ : List Tree) : Term := pc P "Typing.elemsTx" [e Γ]
   let atE (i : ℕ) (Γ : List Tree) : Term :=
-    pc P "Typing/Txs.atOr" [pc P "Typing.tx0" [], es Γ, leafT (numeral i)]
+    pc P "(Seq.atOr Typing.Tx)" [pc P "Typing.tx0" [], es Γ, leafT (numeral i)]
   let isRec (Γ : List Tree) : Term := apps equalT [raw Γ, atPos 3 Γ]
   let f (Γ : List Tree) : Term := pc P "Typing.numTx" [atE 1 Γ]
   let test (Γ : List Tree) : Term := pc P "Prelude.and" [pc P "Prelude.isSome" [f Γ],

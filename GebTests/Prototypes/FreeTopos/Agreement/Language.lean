@@ -348,7 +348,7 @@ theorem travL_bound {M : Type} (V : M → ℕ → Term) (L : M → M) (l : Label
 
 /-- The mirror's list of children's traversals without its head. -/
 @[simp] theorem rvTail_eq (rs : List ((Tree → Tree) → Tree)) :
-    «$4c616e67756167652f5256732e7461696c» rs = rs.tail := by
+    gebMirror% "(Lists.tail (Arrow (Arrow T T) T))" rs = rs.tail := by
   cases rs <;> rfl
 
 /-- The mirror's composition of the traversals of a node's children, from a position, is each
@@ -744,7 +744,9 @@ def CRel (v : Tree → List Tree → Tree)
 
 /-- The children's compilations without their head. -/
 @[simp] theorem cvTail_eq (rs : List (Tree → List Tree → Tree)) :
-    «$4c616e67756167652f4356732e7461696c» rs = rs.tail := by
+    gebMirror%
+      "(Lists.tail (Arrow T (Arrow (List Language.TPair) 29:(Option.Maybe Language.TPair))))"
+      rs = rs.tail := by
   cases rs <;> rfl
 
 /-- The children's compilations at an object and environment. -/
@@ -769,7 +771,7 @@ theorem cvThree_eq (rs : List (Tree → List Tree → Tree))
 
 /-- A list of the children's tests of a variable's occurrence without its head. -/
 @[simp] theorem ofTail_eq (rs : List (Tree → Tree)) :
-    «$4c616e67756167652f4f46732e7461696c» rs = rs.tail := by
+    gebMirror% "(Lists.tail (Arrow T T))" rs = rs.tail := by
   cases rs <;> rfl
 
 /-- The mirror's composition of the tests of a node's children, at an index and from a position,

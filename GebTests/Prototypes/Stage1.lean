@@ -29,7 +29,6 @@ checked natively by the same script, with the Lean backend.
 
 * {lit}`seq`, {lit}`typing`, {lit}`datatype` — the sources the stage-1 compiler adds to the
   stage-0 compiler's, in the datatype language.
-* {lit}`runImage` runs an image's definition named {lit}`main` on an input tree.
 * {lit}`agreesOn` compares the stage-1 compiler's image with the stage-0 compiler on a program.
 * The typing of the stage-1 compiler, {lit}`bootstrap/stage1/typing.geb`, is tested through the
   image's {lit}`Datatype.typeErrorOf`, which names the first definition it rejects.
@@ -53,7 +52,7 @@ open scoped FinEnum
 #guard GebMirror.Hygiene.«main» (leaf 99) = mk 99 ((List.range 10).map fun n ↦ leaf (n + 1))
 #guard GebMirror.Hygiene.«Prefix._root_.GebBoot.name» = leaf 10
 
-/-- The source of the lists of the datatype language, a module with a parameter. -/
+/-- The source of the generic lists and optional values of the datatype language. -/
 def seq : String := include_str "../../bootstrap/seq.geb"
 
 /-- The source of the stage-1 typing. -/
@@ -62,22 +61,31 @@ def typing : String := include_str "../../bootstrap/stage1/typing.geb"
 /-- The source of the stage-1 expansion of the datatype language. -/
 def datatype : String := include_str "../../bootstrap/stage1/datatype.geb"
 
-/-- Run an image on an input tree: apply its definition named {lit}`main`. -/
-def runImage (img : ByteArray) (input : Tree) : Option Tree := do
-  runEntry (← readImage img) ['m', 'a', 'i', 'n'] input
+/-- The named definitions of the committed compiler image, loaded for one comparison. -/
+private def compilerEntries : IO (List Char → Option Glob) := do
+  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let some entries := (readImage img).bind loadEntries
+    | throw (IO.userError "the committed compiler image does not load")
+  return entries
 
-/-- Whether an image of the stage-1 compiler compiles a program as the stage-0 compiler, given as
-text, does. -/
-def agreesOn (img : ByteArray) (compilerText p : List Char) : Bool :=
-  runImage img (nameTree p) == runMain compilerText (nameTree p)
+/-- The application of a named compiler entry to trees. -/
+private def compilerEntry (entries : List Char → Option Glob) (name : String) :
+    IO (Tree → Option Tree) := do
+  let some g := entries name.toList | throw (IO.userError s!"missing compiler entry {name}")
+  return g.apply
+
+/-- Whether the two loaded compilers produce the same output on a program. -/
+def agreesOn (stage1 stage0 : Tree → Option Tree) (p : List Char) : Bool :=
+  let input := nameTree p
+  (stage1 input).any fun out ↦ stage0 input == some out
 
 /-- Names that exercise the Lean backend's escaping and qualification. -/
 def hygieneSource : String := include_str "../../bootstrap/hygiene.geb"
 
 -- The loader finds the escaped mirror names and proves each definition's denotation.
 run_cmd do
-  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
-  let some b := (runImage img (ofBytes hygieneSource.toUTF8)).bind toBytes |>.bind readImage
+  let stage1 ← compilerEntry (← compilerEntries) "main"
+  let some b := (stage1 (ofBytes hygieneSource.toUTF8)).bind toBytes |>.bind readImage
     | throwError "the hygiene fixture does not compile"
   let some ds := unbundle b | throwError "the hygiene fixture does not unbundle"
   let some gs := load (ds.map Prod.snd) | throwError "the hygiene fixture does not load"
@@ -87,9 +95,9 @@ run_cmd do
 -- the stage-1 compiler, from the committed image, agrees with the stage-0 compiler on the
 -- programs in the datatype language and the kernel's examples
 #eval show IO Unit from do
-  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let stage1 ← compilerEntry (← compilerEntries) "main"
   unless [naturals, roses, decoding, Tests.factorial, Tests.sugar, Tests.numerals, Tests.listCase,
-      "(def f (lam (x T) y))", "(defnum n m)"].all (agreesOn img compiler.toList ·.toList) do
+      "(def f (lam (x T) y))", "(defnum n m)"].all (agreesOn stage1 runCompiler ·.toList) do
     throw (IO.userError "the stage-1 compiler disagrees with the stage-0 compiler")
 
 -- the stage-1 compiler checks the datatypes data declares, each distinct from the trees: it
@@ -110,10 +118,10 @@ run_cmd do
 -- also rejects names reserved for generated operations; module elaboration gives source binders
 -- private names, so the public compiler accepts these binders.
 #eval show IO Unit from do
-  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
-  let some t := readImage img | throw (IO.userError "the committed image does not read")
-  let typeErrorOf (p : String) : Option Tree :=
-    runEntry t "Datatype.typeErrorOf".toList (nameTree p.toList)
+  let entries ← compilerEntries
+  let stage1 ← compilerEntry entries "main"
+  let typeError ← compilerEntry entries "Datatype.typeErrorOf"
+  let typeErrorOf (p : String) := typeError (nameTree p.toList)
   let nat := "(data Nat (zero) (succ Nat)) "
   let rejected := [(nat ++ "(def f (lam ((t T)) (case t ((zero) 0) ((succ n) 1))))", "f"),
     (nat ++ "(def g (lam ((t T)) (succ t)))", "g"),
@@ -141,14 +149,14 @@ run_cmd do
     unless typeErrorOf p == some (nameTree n.toList) do
       throw (IO.userError s!"the typing does not reject {n}")
   for (p, n) in rejected do
-    unless runImage img (nameTree p.toList) == some (mk 0 []) do
+    unless stage1 (nameTree p.toList) == some (mk 0 []) do
       throw (IO.userError s!"the stage-1 compiler compiles {n}")
   for (p, n) in privateBinders do
-    unless ((runImage img (nameTree p.toList)).bind toBytes).bind readImage |>.isSome do
+    unless ((stage1 (nameTree p.toList)).bind toBytes).bind readImage |>.isSome do
       throw (IO.userError s!"the stage-1 compiler rejects the private binder in {n}")
   let clause (x : String) : String :=
     nat ++ "(data Q (mk T Nat)) (def s (lam ((p Q)) (case p ((mk " ++ x ++ " y) y))))"
-  unless runImage img (nameTree (clause "\"%s\"").toList) == some (mk 0 []) do
+  unless stage1 (nameTree (clause "\"%s\"").toList) == some (mk 0 []) do
     throw (IO.userError "the stage-1 compiler compiles a clause's variable named %s")
   let accepted := [nat ++ "(def h (lam ((n Nat)) (label (rep n))))", clause "x",
     "(def p (lam ((f (Arrow T (Arrow T T))) (x T)) (f x x)))",
@@ -159,8 +167,8 @@ run_cmd do
 -- Private source binders cannot capture generated operations. Patterns repeat &, and omitted
 -- bindings preserve field positions and lexical scope, including nested shadowing and quotations.
 #eval show IO Unit from do
-  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
-  let compile (p : String) : Option ByteArray := (runImage img (nameTree p.toList)).bind toBytes
+  let stage1 ← compilerEntry (← compilerEntries) "main"
+  let compile (p : String) : Option ByteArray := (stage1 (nameTree p.toList)).bind toBytes
   let run (p : String) : Option Tree := do
     runEntry (← readImage (← compile p)) "main".toList (leaf 0)
   let packet := "(data Packet (packet T T & T)) "
@@ -177,7 +185,7 @@ run_cmd do
       (packet ++ "(def choose (lam ((label T) (children T) (eq T) (child T)) " ++
         "(case " ++ value ++ " ((packet _ y & _) y))))" ++
         "(def main (lam ((t T)) (choose 1 2 3 4)))", leaf 20)] do
-    unless run p == some expected && agreesOn img compiler.toList p.toList do
+    unless run p == some expected && agreesOn stage1 runCompiler p.toList do
       throw (IO.userError s!"hygiene or pattern semantics disagree: {p}")
   for body in ["y", "((lam ((x T)) x) y)", "(quote (0 x))",
       "(case " ++ value ++ " ((packet x z & _) x))"] do
@@ -187,7 +195,7 @@ run_cmd do
       throw (IO.userError s!"an unused named pattern binding is omitted: {body}")
   for pat in ["x y xs", "& x y xs", "x & y xs", "x y & &", "x y & xs & ys"] do
     let p := clause pat "0"
-    unless compile p == some ByteArray.empty && agreesOn img compiler.toList p.toList do
+    unless compile p == some ByteArray.empty && agreesOn stage1 runCompiler p.toList do
       throw (IO.userError s!"a malformed rest pattern is accepted: {pat}")
   unless compile (clause "_ y & _" "_") == some ByteArray.empty do
     throw (IO.userError "a wildcard binds a name")
@@ -197,18 +205,18 @@ run_cmd do
     "(defn decodeSize ((Nat.member (Arrow T T)) (t T)) T " ++
     "(decode Nat t (lam ((n Nat)) (size 99 99 n)) 9)) " ++
     "(def main (lam ((t T)) (decodeSize (lam ((u T)) 0) (quote (1 (1 (0)))))))"
-  unless run p == some (leaf 2) && agreesOn img compiler.toList p.toList do
+  unless run p == some (leaf 2) && agreesOn stage1 runCompiler p.toList do
     throw (IO.userError "a source binder captures recursion or decoding")
   let ignored := nat ++ "(def main (lam ((t T)) " ++
     "(cata Nat T (succ (succ zero)) ((zero) 7) ((succ _) 3))))"
-  unless run ignored == some (leaf 3) && agreesOn img compiler.toList ignored.toList do
+  unless run ignored == some (leaf 3) && agreesOn stage1 runCompiler ignored.toList do
     throw (IO.userError "a discarded recursive field changes the result")
   let named := ignored.replace "(succ _)" "(succ unused)"
-  unless run named == some (leaf 3) && agreesOn img compiler.toList named.toList &&
+  unless run named == some (leaf 3) && agreesOn stage1 runCompiler named.toList &&
       compile named != compile ignored do
     throw (IO.userError "an unused named recursive field loses its binding")
   let abbreviated := "(defnum _ 42) " ++ ignored
-  unless run abbreviated == some (leaf 3) && agreesOn img compiler.toList abbreviated.toList do
+  unless run abbreviated == some (leaf 3) && agreesOn stage1 runCompiler abbreviated.toList do
     throw (IO.userError "a numeral abbreviation changes a wildcard")
   let foldClause (pat body : String) :=
     "(data Rose (tip T) (branch Rose Rose & Rose)) (def main (lam ((t T)) " ++
@@ -218,7 +226,7 @@ run_cmd do
       ("_ y & rs", "(add y (foldr T T add 0 rs))", 50),
       ("_ y & _", "y", 20), ("_ _ & _", "99", 99)] do
     let p := foldClause pat body
-    unless run p == some (leaf expected) && agreesOn img compiler.toList p.toList do
+    unless run p == some (leaf expected) && agreesOn stage1 runCompiler p.toList do
       throw (IO.userError s!"discarded recursive fields change later positions: {pat}")
   let namedRest := compile (foldClause "_ y & unused" "y")
   unless (namedRest.bind readImage).isSome && namedRest != compile (foldClause "_ y & _" "y") do
@@ -228,13 +236,14 @@ run_cmd do
 -- the datatype it abbreviates: the datum is checked a member of the datatype, and the datatype's
 -- recognizer decides the decoding, though a definition takes the abbreviation's recognizer name
 #eval show IO Unit from do
-  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let stage1 ← compilerEntry (← compilerEntries) "main"
   let p := "(data Nat (zero) (succ Nat)) (deftype N Nat) (def N.member (lam ((t T)) 1)) " ++
     "(def two (datum N (1 (1 (0))))) " ++
     "(def main (lam ((t T)) (decode N t (lam ((n Nat)) (rep n)) (rep two))))"
-  let run (input : Tree) : Option Tree := do
-    let out ← runImage img (nameTree p.toList)
-    runEntry (← readImage (← toBytes out)) "main".toList input
+  let some bundle := (stage1 (nameTree p.toList)).bind toBytes |>.bind readImage
+    | throw (IO.userError "the decoding program does not compile")
+  let some run := Requests.entry bundle "main".toList
+    | throw (IO.userError "the decoding program has no main entry")
   unless run (mk 7 []) == some (mk 1 [mk 1 [mk 0 []]]) && run (mk 0 []) == some (mk 0 []) do
     throw (IO.userError "a decoding through an abbreviation is not decided by its recognizer")
 
@@ -244,7 +253,7 @@ run_cmd do
 -- binders named as the variables the expansions of case and cata bind, which would take their
 -- places in the clauses; and both compile a program quoting such a name
 #eval show IO Unit from do
-  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let stage1 ← compilerEntry (← compilerEntries) "main"
   let nat := "(data Nat (zero) (succ Nat)) "
   let main := " (def main (lam ((t T)) t))"
   for p in [nat ++ "(def \"%e\" zero) " ++
@@ -252,13 +261,13 @@ run_cmd do
       nat ++ "(def g (lam ((\"%s\" T) (n Nat)) (case n ((zero) \"%s\") ((succ m) 1))))" ++ main,
       nat ++ "(def g (lam ((\"%o\" T) (n Nat)) (cata Nat T n ((zero) \"%o\") ((succ r) r))))" ++
         main] do
-    unless runImage img (nameTree p.toList) == some (mk 0 []) do
+    unless stage1 (nameTree p.toList) == some (mk 0 []) do
       throw (IO.userError s!"the stage-1 compiler compiles {p}")
-    unless runMain compiler.toList (nameTree p.toList) == some (mk 0 []) do
+    unless runCompiler (nameTree p.toList) == some (mk 0 []) do
       throw (IO.userError s!"the stage-0 compiler compiles {p}")
   let quoted := "(def q (quote (1 \"%s\")))" ++ main
-  unless runImage img (nameTree quoted.toList) != some (mk 0 []) &&
-      agreesOn img compiler.toList quoted.toList do
+  unless stage1 (nameTree quoted.toList) != some (mk 0 []) &&
+      agreesOn stage1 runCompiler quoted.toList do
     throw (IO.userError "a compiler rejects a program quoting an implementation's name")
 
 -- the stage-1 compiler checks a template at opaque sorts, which have no representation: it
@@ -267,13 +276,13 @@ run_cmd do
 -- stage-0 compiler does, a template over a sort and an operation, and one declaring a datatype
 -- whose field is of its sort
 #eval show IO Unit from do
-  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let stage1 ← compilerEntry (← compilerEntries) "main"
   let main := " (def main (lam ((t T)) t))"
   for p in ["(module Bad (parameter A) (export f) (def f (lam ((x A)) (label x))))" ++ main,
       "(module Peek (parameter A) (export f) (def f (lam ((x A)) (rep x))))" ++ main] do
-    unless runImage img (nameTree p.toList) == some (mk 0 []) do
+    unless stage1 (nameTree p.toList) == some (mk 0 []) do
       throw (IO.userError s!"the stage-1 compiler compiles {p}")
-    if runMain compiler.toList (nameTree p.toList) == some (mk 0 []) then
+    if runCompiler (nameTree p.toList) == some (mk 0 []) then
       throw (IO.userError s!"the stage-0 compiler rejects {p}")
   unless ["(module Twice (parameter A) (parameter (f (A) A)) (export twice)" ++
         " (def twice (lam ((x A)) (f (f x))))) (def inc (lam ((x T)) (add x 1)))" ++
@@ -281,7 +290,7 @@ run_cmd do
       "(module Box (parameter A) (export box unbox) (data Box (box A))" ++
         " (defn unbox ((b Box)) A (case b ((box x) x)))) (import (Box T))" ++
         " (def main (lam ((t T)) (unbox (box t))))"].all fun p ↦
-      runImage img (nameTree p.toList) != some (mk 0 []) && agreesOn img compiler.toList p.toList do
+      stage1 (nameTree p.toList) != some (mk 0 []) && agreesOn stage1 runCompiler p.toList do
     throw (IO.userError "the stage-1 compiler rejects a template the typing admits")
 
 -- the stage-1 compiler checks a declaration with type parameters at opaque sorts where it is
@@ -294,7 +303,7 @@ run_cmd do
 -- and at a datatype, and modules of which one returns an optional value that another consumes,
 -- with a function over lists and a composition each at two lists of types
 #eval show IO Unit from do
-  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let stage1 ← compilerEntry (← compilerEntries) "main"
   let main := " (def main (lam ((t T)) t))"
   let option := "(data (Option A) (none) (some A))"
   let orElse := " (defn (orElse A) ((d A) (m (Option A))) A (case m ((some A x) x) ((none A) d)))"
@@ -302,14 +311,14 @@ run_cmd do
       "(defn (peek A) ((x A)) T (rep x))" ++ main,
       option ++ " (defn (peek A) ((m (Option A))) T" ++
         " (case m ((some A x) (label x)) ((none A) 0)))" ++ main] do
-    unless runImage img (nameTree p.toList) == some (mk 0 []) do
+    unless stage1 (nameTree p.toList) == some (mk 0 []) do
       throw (IO.userError s!"the stage-1 compiler compiles {p}")
-    if runMain compiler.toList (nameTree p.toList) == some (mk 0 []) then
+    if runCompiler (nameTree p.toList) == some (mk 0 []) then
       throw (IO.userError s!"the stage-0 compiler rejects {p}")
   for p in [option ++ " (data Light (red) (green))" ++
         " (defn use ((t T)) (Option Light) (some T t))" ++ main,
       option ++ " (def lists (none (List T)))" ++ main] do
-    unless runImage img (nameTree p.toList) == some (mk 0 []) do
+    unless stage1 (nameTree p.toList) == some (mk 0 []) do
       throw (IO.userError s!"the stage-1 compiler compiles {p}")
   unless [option ++ orElse ++ " (data Light (red) (green))" ++
         " (def main (lam ((t T)) (node (orElse T t (none T))" ++
@@ -334,26 +343,26 @@ run_cmd do
         " (map Light T shade (map T Light lightOf (children t))))))" ++
         " (def main (lam ((t T)) (Client.run" ++
         " ((Functions.compose T T T (lam ((x T)) x) (lam ((x T)) x)) t))))"].all fun p ↦
-      runImage img (nameTree p.toList) != some (mk 0 []) && agreesOn img compiler.toList p.toList do
+      stage1 (nameTree p.toList) != some (mk 0 []) && agreesOn stage1 runCompiler p.toList do
     throw (IO.userError "the stage-1 compiler rejects declarations with type parameters")
 
 -- module elaboration removes chains before the datatype typing: both compilers emit the same
 -- image as the nested forms, and the stage-1 compiler checks their datatype annotations
 #eval show IO Unit from do
-  let img ← IO.FS.readBinFile "bootstrap/compiler.img"
+  let stage1 ← compilerEntry (← compilerEntries) "main"
   let program := "(data N (z) (s N)) (def main (lam ((t T)) "
   let chain := program ++ "(let* ((x N z) (y N (s x)))" ++
     " (cond ((eq t 0) (rep x)) (else (rep y))))))"
   let nested := program ++ "(let x N z (let y N (s x) (if (eq t 0) (rep x) (rep y))))))"
-  let out := runImage img (nameTree chain.toList)
+  let out := stage1 (nameTree chain.toList)
   unless ((out.bind toBytes).bind readImage).isSome &&
-      out == runImage img (nameTree nested.toList) &&
-      agreesOn img compiler.toList chain.toList do
+      out == stage1 (nameTree nested.toList) &&
+      agreesOn stage1 runCompiler chain.toList do
     throw (IO.userError "binding and conditional chains disagree with their nested forms")
   for body in ["(let* ((x N t)) (rep x))", "(cond (1 z) (else t))",
       "(cond ((eq t 0) (rep z)))", "(cond (else 0) (else 1))"] do
     let p := program ++ body ++ "))"
-    unless (readSExps p.toList).isSome && runImage img (nameTree p.toList) == some (mk 0 []) do
+    unless (readSExps p.toList).isSome && stage1 (nameTree p.toList) == some (mk 0 []) do
       throw (IO.userError s!"the stage-1 compiler accepts the invalid chain {body}")
 
 end Geb.Kernel.Stage1Tests

@@ -11,26 +11,6 @@ open Geb.Kernel renaming Tree → T
 
 namespace GebMirror.Metalogic
 
-def «$416666696e652f4346732e7461696c» :=
-  fun (x0 : _root_.List
-      (_root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List
-        (_root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      x0
-      ([] : _root_.List (_root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (_ : _root_.Geb.Kernel.Tree →
-           _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List
-           (_root_.Geb.Kernel.Tree →
-             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x2)
-
 def «Affine.isData» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.fold
@@ -250,6 +230,26 @@ def «Affine.belowPath» :=
       x1;
     x2
 
+def «$284c697374732e7461696c20284172726f77205420284172726f7720542054292929» :=
+  fun (x0 : _root_.List
+      (_root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (β := _root_.List
+        (_root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      x0
+      ([] : _root_.List (_root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      (fun (_ : _root_.Geb.Kernel.Tree →
+           _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List
+           (_root_.Geb.Kernel.Tree →
+             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+        x2)
+
 def «Affine.ctStep» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -296,7 +296,8 @@ def «Affine.ctStep» :=
                                         (_ : _root_.Geb.Kernel.Tree)
                                         (_ : _root_.Geb.Kernel.Tree) =>
                                        _root_.Geb.Kernel.leaf 1)
-                                     (_root_.GebMirror.Metalogic.«$416666696e652f4346732e7461696c» x2);
+                                     (_root_.GebMirror.Metalogic.«$284c697374732e7461696c20284172726f77205420284172726f7720542054292929»
+                                       x2);
                                    fun (x4 : _root_.Geb.Kernel.Tree)
                                      (x5 : _root_.Geb.Kernel.Tree) =>
                                      let x6 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.add

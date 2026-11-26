@@ -162,7 +162,7 @@ def envTy : Kernel.Tree :=
 /-- The names of the compilers' definitions the passes call, each with its kernel type. -/
 def passGlobals : List (String × Kernel.Tree) :=
   [("Datatype.expandTyped", tArrow (tList tT) (tProd tT (tList tT))),
-    ("Typing/OName.nothing", tT),
+    ("(Option.nothing Typing.Name)", tT),
     ("Typing.checkAll", tArrow (tProd envTy tT) (tArrow (tList tT) (tProd envTy tT))),
     ("Typing.env0", envTy),
     ("Datatype.markersFirst", tArrow (tList tT) (tList tT)),
@@ -223,8 +223,8 @@ def hypGlobals : List (String × Kernel.Tree) :=
     ("Reader.expandNums", tArrow (tList tT) (tArrow tT tT)),
     ("Reader.numOf", tArrow (tList tT) (tArrow tT tT)), ("Reader.nameOf", tArrow tT tT),
     ("Reader.node2", tArrow tT (tArrow tT (tArrow tT tT))),
-    ("Datatype/Txs.reverse", tArrow (tList tT) (tList tT)),
-    ("Datatype/Txs.drop", tArrow tT (tArrow (tList tT) (tList tT))),
+    ("(Seq.reverse Typing.Tx)", tArrow (tList tT) (tList tT)),
+    ("(Seq.drop Typing.Tx)", tArrow tT (tArrow (tList tT) (tList tT))),
     ("Datatype.kernelForms", tArrow (tList tT) (tList tT)),
     ("Recognize.markers", tArrow (tList tT) (tList tT)),
     ("Typing.markerCtors", tArrow (tList tT) (tArrow tT (tProd tT (tList tT)))),
@@ -435,24 +435,24 @@ def indexedIn (o : Option (List (List Char × PartialHorn.Tree) × List PartialH
 /-- The entries of the manifest of the compilers' program, each with its index among the
 program's definitions. -/
 def mirrorIndices : List (String × ℕ) :=
-  [("Prelude.length", 1), ("Prelude.some", 5), ("Prelude.isSome", 7), ("Prelude.get", 8),
-    ("Prelude.and", 9), ("Prelude.nth", 12), ("Reader.isAtom", 50), ("Reader.nameOf", 52),
-    ("Reader.named", 53), ("Reader.kwT", 54), ("Reader.kwUnit", 55), ("Reader.kwDef", 74),
-    ("Reader.kwDeftype", 75), ("Reader.kwDefnum", 76), ("Reader.indexOf", 78),
-    ("Reader.numeral", 80), ("Reader.expandNums", 81), ("Reader.numOf", 82), ("Reader.node2", 85),
-    ("Reader.readProgram", 107), ("Check.checkProgram", 122), ("Typing.envDefs", 203),
-    ("Typing.envNoms", 204), ("Typing.envMs", 207), ("Typing.env0", 208),
-    ("Typing.lookupName", 209), ("Typing.hasName", 210), ("Typing.recognizerName", 213),
-    ("Typing.markerNames", 243), ("Typing.memberOf", 247), ("Typing.decimalChars", 269),
-    ("Typing.markerCtors", 286), ("Typing/OName.nothing", 300), ("Typing.checkAll", 314),
-    ("Datatype/Txs.reverse", 319), ("Datatype/Txs.drop", 321), ("Datatype.isListTx", 339),
-    ("Datatype.namedTx", 340), ("Datatype.elems", 341), ("Datatype.nthTx", 342),
-    ("Datatype.kwData", 388), ("Datatype.kwDefn", 391), ("Datatype.kwGeneric", 396),
-    ("Datatype.memberName", 401), ("Datatype.xpStep", 474), ("Datatype.genericStep", 475),
-    ("Datatype.expandTyped", 476), ("Datatype.markersFirst", 485), ("Datatype.kernelForms", 486),
-    ("Recognize.markers", 532), ("Recognize.insertRecognizers", 546), ("Eval.valQuote", 561),
-    ("Eval.valUnit", 562), ("Eval.valPair", 563), ("Eval.listOf", 568), ("Eval.next", 584),
-    ("Eval.level", 585), ("charsFixed", 594), ("srcForm", 595), ("implName", 597)]
+  [("Prelude.length", 1), ("Prelude.some", 6), ("Prelude.isSome", 8), ("Prelude.get", 9),
+    ("Prelude.and", 10), ("Prelude.nth", 13), ("Reader.isAtom", 51), ("Reader.nameOf", 53),
+    ("Reader.named", 54), ("Reader.kwT", 55), ("Reader.kwUnit", 56), ("Reader.kwDef", 75),
+    ("Reader.kwDeftype", 76), ("Reader.kwDefnum", 77), ("Reader.indexOf", 79),
+    ("Reader.numeral", 81), ("Reader.expandNums", 82), ("Reader.numOf", 83), ("Reader.node2", 86),
+    ("Reader.readProgram", 108), ("Check.checkProgram", 124), ("Typing.envDefs", 166),
+    ("Typing.envNoms", 167), ("Typing.envMs", 170), ("Typing.env0", 171),
+    ("Typing.lookupName", 172), ("Typing.hasName", 173), ("Typing.recognizerName", 176),
+    ("Typing.markerNames", 199), ("Typing.memberOf", 203), ("Typing.decimalChars", 222),
+    ("Typing.markerCtors", 245), ("(Option.nothing Typing.Name)", 264), ("Typing.checkAll", 277),
+    ("(Seq.reverse Typing.Tx)", 363), ("(Seq.drop Typing.Tx)", 193), ("Datatype.isListTx", 284),
+    ("Datatype.namedTx", 285), ("Datatype.elems", 286), ("Datatype.nthTx", 287),
+    ("Datatype.kwData", 333), ("Datatype.kwDefn", 336), ("Datatype.kwGeneric", 341),
+    ("Datatype.memberName", 346), ("Datatype.xpStep", 405), ("Datatype.genericStep", 406),
+    ("Datatype.expandTyped", 407), ("Datatype.markersFirst", 416), ("Datatype.kernelForms", 417),
+    ("Recognize.markers", 463), ("Recognize.insertRecognizers", 477), ("Eval.valQuote", 493),
+    ("Eval.valUnit", 494), ("Eval.valPair", 495), ("Eval.listOf", 500), ("Eval.next", 516),
+    ("Eval.level", 517), ("charsFixed", 526), ("srcForm", 527), ("implName", 529)]
 
 set_option doc.verso false in
 /-- The entries of the manifest of the compilers' program are at the indices named with them, as

@@ -51,9 +51,6 @@
     trState
     LDefns
     ldefns
-    OTrState.Maybe
-    OTrState.nothing
-    OTrState.just
     term
     program
     GEqn
@@ -67,11 +64,7 @@
   (import Theory)
   (import Language)
   (import Derivation)
-  (import (Seq OpSig) as OpSigs)
-  (import (Few Primitive) as PrimF)
-  (import (Seq LDefn) as LDefnL)
-  (import (Seq T) as KTyL)
-  (import (Map LDefn Definition) as DefLang)
+
   ; the types of bits, bitstrings, trees and comparisons
   (def bitTy (coprod one one))
   (def bitsTy (list bitTy))
@@ -96,7 +89,7 @@
       t))
 
   ; the primitive arrows, and the terms built with them
-  (def trPrims (PrimF.l6 nilPrim consPrim lnodePrim inlPrim inrPrim casePrim))
+  (def trPrims (Few.l6 Primitive nilPrim consPrim lnodePrim inlPrim inrPrim casePrim))
   (defn nilT ((a T)) T (mArr 0 (single a) mStar))
   (defn consT ((a T) (h T) (t T)) T (mArr 1 (single a) (mPair h t)))
   (defn nodeT ((p T)) T (mArr 2 (single bitsTy) p))
@@ -554,60 +547,63 @@
       (else none)))
 
   ; the parts of a kernel function type, product type and list type
-  (defn kArrowParts ((t T)) OTPair.Maybe
+  (defn kArrowParts ((t T)) (Option.Maybe TPair)
     (if (and (eq (label t) Label.tyArrow) (eq (arity t) 2))
-      (OTPair.just (pr (child t 0) (child t 1)))
-      OTPair.nothing))
-  (defn kProdParts ((t T)) OTPair.Maybe
+      (Option.just TPair (pr (child t 0) (child t 1)))
+      (Option.nothing TPair)))
+  (defn kProdParts ((t T)) (Option.Maybe TPair)
     (if (and (eq (label t) Label.tyProd) (eq (arity t) 2))
-      (OTPair.just (pr (child t 0) (child t 1)))
-      OTPair.nothing))
+      (Option.just TPair (pr (child t 0) (child t 1)))
+      (Option.nothing TPair)))
   (defn kListPart ((t T)) T
     (if (and (eq (label t) Label.tyList) (eq (arity t) 1)) (some (child t 0)) none))
 
   ; the translation of a term, as a function of the types of the globals and of the context: the
   ; pair of the term's kernel type and its translation, by the fold whose step sees the node
-  (deftype TrF (Arrow Ts (Arrow Ts OTPair.Maybe)))
+  (deftype TrF (Arrow Ts (Arrow Ts (Option.Maybe TPair))))
   (deftype TrFs (List TrF))
-  (import (Lists TrF) as TrFs)
+
   ; the results of a node's children the node reads, each at the context the child extends
-  (import (Lists OTPair.Maybe) as TrYs)
-  (deftype TrK (Arrow Ts (Arrow Ts (List OTPair.Maybe))))
+
+  (deftype TrK (Arrow Ts (Arrow Ts (List (Option.Maybe TPair)))))
   (defn trKids ((l T) (c0 T) (rs TrFs)) (Arrow T TrK)
     (lam ((i0 T))
       ((foldr TrF (Arrow T TrK)
          (lam ((r TrF) (c (Arrow T TrK)) (i T) (gt Ts) (ctx Ts))
            (cons
-             (cond ((eq l Label.lam) (if (eq i 1) (r gt (cons c0 ctx)) OTPair.nothing))
+             (cond ((eq l Label.lam) (if (eq i 1) (r gt (cons c0 ctx)) (Option.nothing TPair)))
                ((or (eq l Label.app)
                   (or (eq l Label.pair)
                     (or (eq l Label.fst)
                       (or (eq l Label.snd) (or (eq l Label.cond) (eq l Label.cons)))))) (r gt ctx))
-               (else OTPair.nothing))
+               (else (Option.nothing TPair)))
              (c (add i 1) gt ctx)))
-         (lam ((i T) (gt Ts) (ctx Ts)) (nil OTPair.Maybe))
+         (lam ((i T) (gt Ts) (ctx Ts)) (nil (Option.Maybe TPair)))
          rs) i0)))
-  (defn trAt ((ys (List OTPair.Maybe)) (i T)) OTPair.Maybe
-    (lcase OTPair.Maybe OTPair.Maybe (iter (List OTPair.Maybe) TrYs.tail ys i) OTPair.nothing
-      (lam ((y OTPair.Maybe) (r (List OTPair.Maybe))) y)))
+  (defn trAt ((ys (List (Option.Maybe TPair))) (i T)) (Option.Maybe TPair)
+    (lcase (Option.Maybe TPair) (Option.Maybe TPair)
+      (iter (List (Option.Maybe TPair)) (Lists.tail (Option.Maybe TPair)) ys i)
+      (Option.nothing TPair)
+      (lam ((y (Option.Maybe TPair)) (r (List (Option.Maybe TPair)))) y)))
   ; the optional pair a function gives of a present pair or tree, and the pair of a present tree
-  (defn bindP ((m OTPair.Maybe) (f (Arrow TPair OTPair.Maybe))) OTPair.Maybe
-    (case m ((OTPair.just q) (f q)) ((OTPair.nothing) OTPair.nothing)))
-  (defn bindTy ((m T) (f (Arrow T OTPair.Maybe))) OTPair.Maybe
-    (if (isSome m) (f (get m)) OTPair.nothing))
-  (defn mapTy ((f (Arrow T TPair)) (m T)) OTPair.Maybe
-    (if (isSome m) (OTPair.just (f (get m))) OTPair.nothing))
+  (defn bindP ((m (Option.Maybe TPair)) (f (Arrow TPair (Option.Maybe TPair)))) (Option.Maybe TPair)
+    (case m ((Option.just TPair q) (f q)) ((Option.nothing TPair) (Option.nothing TPair))))
+  (defn bindTy ((m T) (f (Arrow T (Option.Maybe TPair)))) (Option.Maybe TPair)
+    (if (isSome m) (f (get m)) (Option.nothing TPair)))
+  (defn mapTy ((f (Arrow T TPair)) (m T)) (Option.Maybe TPair)
+    (if (isSome m) (Option.just TPair (f (get m))) (Option.nothing TPair)))
   (defn termStep ((nd T) (rs TrFs)) TrF
     (let h TrK (trKids (label nd) (child nd 0) rs 0)
       (lam ((gt Ts) (ctx Ts))
         (let*
           ((l T (label nd)) (k T (arity nd)) (c0 T (child nd 0)) (c1 T (child nd 1))
-           (ys (List OTPair.Maybe) (h gt ctx)))
+           (ys (List (Option.Maybe TPair)) (h gt ctx)))
           (cond
             ((eq l Label.var)
              (if (eq k 1)
-               (bindTy (nth ctx (label c0)) (lam ((A T)) (OTPair.just (pr A (var (label c0))))))
-               OTPair.nothing))
+               (bindTy (nth ctx (label c0))
+                 (lam ((A T)) (Option.just TPair (pr A (var (label c0))))))
+               (Option.nothing TPair)))
             ((eq l Label.lam)
              (if (eq k 2)
                (if (Check.isTy c0)
@@ -615,8 +611,8 @@
                    (lam ((p TPair))
                      (mapTy (lam ((a T)) (pr (Check.tyArrow c0 (p1 p)) (mLam a (p2 p))))
                        (trTy c0))))
-                 OTPair.nothing)
-               OTPair.nothing))
+                 (Option.nothing TPair))
+               (Option.nothing TPair)))
             ((eq l Label.app)
              (if (eq k 2)
                (bindP (trAt ys 0)
@@ -626,36 +622,37 @@
                        (bindP (kArrowParts (p1 pf))
                          (lam ((ab TPair))
                            (if (equal (p1 px) (p1 ab))
-                             (OTPair.just (pr (p2 ab) (app (p2 pf) (p2 px))))
-                             OTPair.nothing)))))))
-               OTPair.nothing))
-            ((eq l Label.unit) (if (eq k 0) (OTPair.just (pr Label.tyUnit mStar)) OTPair.nothing))
+                             (Option.just TPair (pr (p2 ab) (app (p2 pf) (p2 px))))
+                             (Option.nothing TPair))))))))
+               (Option.nothing TPair)))
+            ((eq l Label.unit)
+             (if (eq k 0) (Option.just TPair (pr Label.tyUnit mStar)) (Option.nothing TPair)))
             ((eq l Label.pair)
              (if (eq k 2)
                (bindP (trAt ys 0)
                  (lam ((pa TPair))
                    (bindP (trAt ys 1)
                      (lam ((pb TPair))
-                       (OTPair.just
+                       (Option.just TPair
                          (pr (Reader.node2 Label.tyProd (p1 pa) (p1 pb))
                            (mPair (p2 pa) (p2 pb))))))))
-               OTPair.nothing))
+               (Option.nothing TPair)))
             ((eq l Label.fst)
              (if (eq k 1)
                (bindP (trAt ys 0)
                  (lam ((pp TPair))
                    (bindP (kProdParts (p1 pp))
-                     (lam ((ab TPair)) (OTPair.just (pr (p1 ab) (mFst (p2 pp))))))))
-               OTPair.nothing))
+                     (lam ((ab TPair)) (Option.just TPair (pr (p1 ab) (mFst (p2 pp))))))))
+               (Option.nothing TPair)))
             ((eq l Label.snd)
              (if (eq k 1)
                (bindP (trAt ys 0)
                  (lam ((pp TPair))
                    (bindP (kProdParts (p1 pp))
-                     (lam ((ab TPair)) (OTPair.just (pr (p2 ab) (mSnd (p2 pp))))))))
-               OTPair.nothing))
+                     (lam ((ab TPair)) (Option.just TPair (pr (p2 ab) (mSnd (p2 pp))))))))
+               (Option.nothing TPair)))
             ((eq l Label.quote)
-             (if (eq k 1) (OTPair.just (pr Label.tyTree (quoteT c0))) OTPair.nothing))
+             (if (eq k 1) (Option.just TPair (pr Label.tyTree (quoteT c0))) (Option.nothing TPair)))
             ((eq l Label.cond)
              (if (eq k 3)
                (bindP (trAt ys 0)
@@ -668,17 +665,17 @@
                              (mapTy
                                (lam ((a T)) (pr (p1 pa) (condT a (labT (p2 pc)) (p2 pa) (p2 pb))))
                                (trTy (p1 pa)))
-                             OTPair.nothing)))))))
-               OTPair.nothing))
+                             (Option.nothing TPair))))))))
+               (Option.nothing TPair)))
             ((eq l Label.fold)
              (if (eq k 1) (mapTy (lam ((a T)) (pr (Check.foldTy c0) (foldT a))) (trTy c0))
-               OTPair.nothing))
+               (Option.nothing TPair)))
             ((eq l Label.iter)
              (if (eq k 1) (mapTy (lam ((a T)) (pr (Check.iterTy c0) (iterT a))) (trTy c0))
-               OTPair.nothing))
+               (Option.nothing TPair)))
             ((eq l Label.nil)
              (if (eq k 1) (mapTy (lam ((a T)) (pr (Check.tyList c0) (nilT a))) (trTy c0))
-               OTPair.nothing))
+               (Option.nothing TPair)))
             ((eq l Label.cons)
              (if (eq k 2)
                (bindP (trAt ys 0)
@@ -689,58 +686,60 @@
                          (lam ((A T))
                            (if (equal (p1 px) A)
                              (mapTy (lam ((a T)) (pr (p1 pl) (consT a (p2 px) (p2 pl)))) (trTy A))
-                             OTPair.nothing)))))))
-               OTPair.nothing))
+                             (Option.nothing TPair))))))))
+               (Option.nothing TPair)))
             ((eq l Label.foldr)
              (if (eq k 2)
                (bindTy (trTy c0)
                  (lam ((a T))
                    (mapTy (lam ((b T)) (pr (Check.foldrTy c0 c1) (foldrT a b))) (trTy c1))))
-               OTPair.nothing))
+               (Option.nothing TPair)))
             ((eq l Label.prim)
              (if (eq k 1)
                (bindTy (nth Check.primTypes (label c0))
                  (lam ((P T)) (mapTy (lam ((t T)) (pr P t)) (primT (label c0)))))
-               OTPair.nothing))
+               (Option.nothing TPair)))
             ((eq l Label.ref)
              (if (eq k 1)
                (bindTy (nth gt (label c0))
                  (lam ((A T))
-                   (OTPair.just
-                     (pr A (call (add (LDefnL.length lib) (label c0)) (nil T) (nil T))))))
-               OTPair.nothing))
+                   (Option.just TPair
+                     (pr A (call (add (Seq.length LDefn lib) (label c0)) (nil T) (nil T))))))
+               (Option.nothing TPair)))
             ((eq l Label.lcase)
              (if (eq k 2)
                (bindTy (trTy c0)
                  (lam ((a T))
                    (mapTy (lam ((b T)) (pr (Check.lcaseTy c0 c1) (lcaseT a b))) (trTy c1))))
-               OTPair.nothing))
+               (Option.nothing TPair)))
             ((eq l Label.para)
              (if (eq k 1) (mapTy (lam ((a T)) (pr (Check.foldTy c0) (paraT a))) (trTy c0))
-               OTPair.nothing))
-            (else OTPair.nothing))))))
-  (defn term ((gt Ts) (ctx Ts) (t T)) OTPair.Maybe ((para TrF termStep t) gt ctx))
+               (Option.nothing TPair)))
+            (else (Option.nothing TPair)))))))
+  (defn term ((gt Ts) (ctx Ts) (t T)) (Option.Maybe TPair) ((para TrF termStep t) gt ctx))
 
   ; the translation of a program's definitions, each closed, over those before it: the pair of the
   ; node of the globals' kernel types and the node of the definitions of the language
   (data KTys (ktys & T))
   (data LDefns (ldefns & LDefn))
   (data TrState (trState KTys LDefns))
-  (import (Option TrState) as OTrState)
+
   (defn stTypes ((st TrState)) Ts (case st ((trState kg kd) (case kg ((ktys & xs) xs)))))
   (defn stDefns ((st TrState)) (List LDefn)
     (case st ((trState kg kd) (case kd ((ldefns & xs) xs)))))
   ; the bindings and images of optional values into optional states, as the base binds and maps
   ; optional trees
-  (defn bindSS ((m OTrState.Maybe) (f (Arrow TrState OTrState.Maybe))) OTrState.Maybe
-    (case m ((OTrState.just st) (f st)) ((OTrState.nothing) OTrState.nothing)))
-  (defn bindPS ((m OTPair.Maybe) (f (Arrow TPair OTrState.Maybe))) OTrState.Maybe
-    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OTrState.nothing)))
-  (defn mapTS ((f (Arrow T TrState)) (m T)) OTrState.Maybe
-    (if (isSome m) (OTrState.just (f (get m))) OTrState.nothing))
-  (defn program ((ds Ts)) OTrState.Maybe
-    (foldr T OTrState.Maybe
-      (lam ((t T) (acc OTrState.Maybe))
+  (defn bindSS ((m (Option.Maybe TrState)) (f (Arrow TrState (Option.Maybe TrState))))
+    (Option.Maybe TrState)
+    (case m ((Option.just TrState st) (f st)) ((Option.nothing TrState) (Option.nothing TrState))))
+  (defn bindPS ((m (Option.Maybe TPair)) (f (Arrow TPair (Option.Maybe TrState))))
+    (Option.Maybe TrState)
+    (case m ((Option.just TPair p) (f p)) ((Option.nothing TPair) (Option.nothing TrState))))
+  (defn mapTS ((f (Arrow T TrState)) (m T)) (Option.Maybe TrState)
+    (if (isSome m) (Option.just TrState (f (get m))) (Option.nothing TrState)))
+  (defn program ((ds Ts)) (Option.Maybe TrState)
+    (foldr T (Option.Maybe TrState)
+      (lam ((t T) (acc (Option.Maybe TrState)))
         (bindSS acc
           (lam ((st TrState))
             (let* ((gt Ts (stTypes st)) (lds (List LDefn) (stDefns st)))
@@ -748,17 +747,18 @@
                 (lam ((au TPair))
                   (mapTS
                     (lam ((a T))
-                      (trState (ktys (KTyL.append gt (KTyL.single (p1 au))))
-                        (ldefns (LDefnL.append lds (LDefnL.single (mkDefn 0 (nil T) a (p2 au)))))))
+                      (trState (ktys (Seq.append T gt (Seq.single T (p1 au))))
+                        (ldefns
+                          (Seq.append LDefn lds (Seq.single LDefn (mkDefn 0 (nil T) a (p2 au)))))))
                     (trTy (p1 au)))))))))
-      (OTrState.just (trState (ktys (nil T)) (ldefns (nil LDefn))))
+      (Option.just TrState (trState (ktys (nil T)) (ldefns (nil LDefn))))
       (reverse ds)))
 
   ; the constants of a translated program: the primitive arrows, and the library's definitions
   ; followed by the program's, whose operations follow the signature's
   (defn trGlobals ((lds (List LDefn))) Globals
-    (globals (prims trPrims) (defs (DefLang.map defLang (LDefnL.append lib lds)))
-      (OpSigs.length sig)))
+    (globals (prims trPrims) (defs (Map.map LDefn Definition defLang (Seq.append LDefn lib lds)))
+      (Seq.length OpSig sig)))
 
   ; the translation of a theorem of Gödel's T, with the types of the globals: the equality of its
   ; sides' translations, in the translation of its context
@@ -770,16 +770,17 @@
   (defn geqnRhs ((q GEqn)) T (case q ((geqn a l r) r)))
   ; the optional list of present objects, and the bindings and images of optional values into
   ; optional theorems, as the base collects, binds and maps optional trees
-  (import (Option Objs) as OObjs)
-  (defn allSomeObjs ((ms Ts)) OObjs.Maybe
-    (if (allT isSome ms) (OObjs.just (objs (mapT get ms))) OObjs.nothing))
-  (defn bindOH ((m OObjs.Maybe) (f (Arrow Objs OThm.Maybe))) OThm.Maybe
-    (case m ((OObjs.just c) (f c)) ((OObjs.nothing) OThm.nothing)))
-  (defn bindPH ((m OTPair.Maybe) (f (Arrow TPair OThm.Maybe))) OThm.Maybe
-    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) OThm.nothing)))
-  (defn mapPH ((f (Arrow TPair Thm)) (m OTPair.Maybe)) OThm.Maybe
-    (case m ((OTPair.just p) (OThm.just (f p))) ((OTPair.nothing) OThm.nothing)))
-  (defn thm ((gt Ts) (th GThm)) OThm.Maybe
+
+  (defn allSomeObjs ((ms Ts)) (Option.Maybe Objs)
+    (if (allT isSome ms) (Option.just Objs (objs (mapT get ms))) (Option.nothing Objs)))
+  (defn bindOH ((m (Option.Maybe Objs)) (f (Arrow Objs (Option.Maybe Thm)))) (Option.Maybe Thm)
+    (case m ((Option.just Objs c) (f c)) ((Option.nothing Objs) (Option.nothing Thm))))
+  (defn bindPH ((m (Option.Maybe TPair)) (f (Arrow TPair (Option.Maybe Thm)))) (Option.Maybe Thm)
+    (case m ((Option.just TPair p) (f p)) ((Option.nothing TPair) (Option.nothing Thm))))
+  (defn mapPH ((f (Arrow TPair Thm)) (m (Option.Maybe TPair))) (Option.Maybe Thm)
+    (case m ((Option.just TPair p) (Option.just Thm (f p)))
+      ((Option.nothing TPair) (Option.nothing Thm))))
+  (defn thm ((gt Ts) (th GThm)) (Option.Maybe Thm)
     (let* ((ctx Ts (gthmCtx th)) (q GEqn (gthmEqn th)))
       (bindOH (allSomeObjs (mapT trTy ctx))
         (lam ((cn Objs))

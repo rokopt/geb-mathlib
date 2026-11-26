@@ -46,9 +46,8 @@
 # not.
 
 set -euo pipefail
-# The interpreted reader's continuations grow with the largest layer's source text. Give both
-# the main thread and Lean's worker threads a finite stack size; an unlimited OS limit does not
-# raise the runtime's own stack-overflow threshold on every host.
+# Give the interpreter's main and worker threads a finite stack for the full compiler run.
+# An unlimited OS limit does not raise Lean's own stack-overflow threshold on every host.
 bootstrap_stack=$(ulimit -Hs)
 if [ "$bootstrap_stack" = unlimited ]; then bootstrap_stack=${LEAN_STACK_SIZE_KB:-2097152}; fi
 ulimit -s "$bootstrap_stack"

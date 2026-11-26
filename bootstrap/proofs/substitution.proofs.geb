@@ -17,12 +17,6 @@
   ; at the label and at the children's folds applied to it.
   (abbreviation rr-fold-step
     (lam ((f RRStep)) (f (node Bits (pair (fst n) (nil T))) (lib mapApp RRStep RR (snd n) f))))
-  ; The type checker's step in the environment G, as the internal language's term that the step
-  ; translates to.
-  (abbreviation check-step-reduced
-    (lam ((l T) (rs (List RR)))
-      ((lam ((raw T)) (pair raw (lam ((ctx (List T))) (Check.checkNode G raw rs ctx))))
-       ((lam ((x T) (y (List T))) (node Bits (pair (lib lab x) y))) l (Reader.rrTrees rs)))))
   ; The rules of the lemmas on bitstrings: the first components of the folds of the successor, of
   ; the predecessor and of the case analysis of lists.
   (abbreviation bit-rules rebuild-succ rebuild-pred (rebuild-lcase Bit Ord)
@@ -385,7 +379,7 @@
                                   (h1x G
                                     (cons T
                                       (fst
-                                        ((rose-rec RRFold (n) rr-fold-step d) check-step-reduced))
+                                        ((rose-rec RRFold (n) rr-fold-step d) (Check.typeInStep G)))
                                       c1)
                                     c
                                     a
@@ -408,7 +402,8 @@
                                     (h1x G
                                       (cons T
                                         (fst
-                                          ((rose-rec RRFold (n) rr-fold-step d) check-step-reduced))
+                                          ((rose-rec RRFold (n) rr-fold-step d)
+                                           (Check.typeInStep G)))
                                         c1)
                                       c
                                       a

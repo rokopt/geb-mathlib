@@ -71,7 +71,6 @@
     RRs
     rrTrees
     rrApply
-    RRs.tail
     rrAt
     app
     apps
@@ -105,7 +104,6 @@
   ; 14 are over the optional length a decimal prefix declares first, and the escapes 9 and 10
   ; then over the digits read and their value.
   (deftype Lex (Prod Ts (Prod Ts T)))
-  (deftype LexK (Arrow Lex Lex))
   (def lexFail (pair (nil T) (pair (nil T) 11)))
   (def lexIn (lam ((toks Ts) (cur Ts) (m T)) (pair toks (pair cur m))))
   (def lexIdle (lam ((toks Ts)) (lexIn toks (nil T) 0)))
@@ -133,7 +131,7 @@
       (cond ((inRange c 32 126) (cond ((eq c 34) 0) ((eq c 92) 0) (else 1))) ((eq c 10) 1)
         ((eq c 13) 1)
         (else (lt 127 c)))))
-  (def atomTok (lam ((cur Ts)) (node 3 (reverse cur))))
+  (def atomTok (lam ((cur Ts)) (node 3 (reverseIter cur))))
   (def kwHole (quote (0 hole)))
   ; the tokens of a hole's form, (hole name), after the tokens read
   (def holeToks
@@ -161,7 +159,7 @@
   ; a character of a quoted string
   (def strStep
     (lam ((toks Ts) (cur Ts) (want T) (c T))
-      (cond ((eq c 34) (endAtom toks want (reverse cur)))
+      (cond ((eq c 34) (endAtom toks want (reverseIter cur)))
         ((eq c 92) (lexIn toks cur (withLen 6 want)))
         ((isPlainIn c) (lexIn toks (cons c cur) (withLen 5 want)))
         (else lexFail))))
@@ -213,7 +211,6 @@
   ; the state of decoding base 64: whether every character so far is admitted, the bytes decoded,
   ; the latest first, the bits not yet a byte with their number, and the padding read
   (deftype B64 (Prod T (Prod Ts (Prod T (Prod T T)))))
-  (deftype B64K (Arrow B64 B64))
   (def b64Fail (pair 0 (pair (nil T) (pair 0 (pair 0 0)))))
   (def base64Step
     (lam ((st B64) (c T))
@@ -240,17 +237,18 @@
   (def decodeBase64
     (lam ((cs Ts))
       (let st B64
-        ((foldr T B64K (lam ((c T) (k B64K) (s B64)) (k (base64Step s c))) (lam ((s B64)) s) cs)
-         (pair 1 (pair (nil T) (pair 0 (pair 0 0)))))
+        (foldr T B64 (lam ((c T) (s B64)) (base64Step s c))
+          (pair 1 (pair (nil T) (pair 0 (pair 0 0))))
+          (reverseIter cs))
         (if (if (fst st) (lt (fst (snd (snd (snd st)))) 6) 0)
-          (some (node 0 (reverse (fst (snd st)))))
+          (some (node 0 (reverseIter (fst (snd st)))))
           none))))
   ; a character after a numeral beginning an atom of the length it declares, in shortest form: a
   ; colon a verbatim atom, a double quote a quoted string, a number sign a hexadecimal and a
   ; vertical bar a base-64 atom
   (def lengthStep
     (lam ((toks Ts) (cur Ts) (c T))
-      (let ds Ts (reverse cur)
+      (let ds Ts (reverseIter cur)
         (if (if (lt 1 (length ds)) (eq (at ds 0) 48) 0) lexFail
           (let n T (foldr T T (lam ((d T) (acc T)) (add (sub d 48) (mul 10 acc))) 0 cur)
             (cond
@@ -316,36 +314,34 @@
                 ((eq k 13)
                  (cond ((isSpace c) s) ((isSome (hexVal c)) (lexIn toks (cons c cur) m))
                    ((eq c 35)
-                    (let bs T (decodeHex (reverse cur))
+                    (let bs T (decodeHex (reverseIter cur))
                       (if (isSome bs) (endAtom toks want (children (get bs))) lexFail)))
                    (else lexFail)))
                 ((isSpace c) s)
                 ((if (isSome (base64Val c)) 1 (eq c 61)) (lexIn toks (cons c cur) m))
                 ((eq c 124)
-                 (let bs T (decodeBase64 (reverse cur))
+                 (let bs T (decodeBase64 (reverseIter cur))
                    (if (isSome bs) (endAtom toks want (children (get bs))) lexFail)))
                 (else lexFail))))))))
   ; the tokens of a text, in order, when it is well formed
   (def lexEnd
     (lam ((s Lex))
       (let* ((toks Ts (fst s)) (cur Ts (fst (snd s))) (k T (label (snd (snd s)))))
-        (cond ((if (eq k 0) 1 (eq k 4)) (some (node 0 (reverse toks))))
-          ((if (eq k 1) 1 (eq k 2)) (some (node 0 (reverse (cons (atomTok cur) toks)))))
-          ((eq k 3) (if (nonEmpty cur) (some (node 0 (reverse (holeToks cur toks)))) none))
+        (cond ((if (eq k 0) 1 (eq k 4)) (some (node 0 (reverseIter toks))))
+          ((if (eq k 1) 1 (eq k 2)) (some (node 0 (reverseIter (cons (atomTok cur) toks)))))
+          ((eq k 3) (if (nonEmpty cur) (some (node 0 (reverseIter (holeToks cur toks)))) none))
           (else none)))))
   ; the tokens of a text, or none when a character is beyond a byte or the text is not well formed
   (def tokenize
     (lam ((cs Ts))
       (if (foldr T T (lam ((c T) (ok T)) (if (lt c 256) ok 0)) 1 cs)
         (lexEnd
-          ((foldr T LexK (lam ((c T) (k LexK) (s Lex)) (k (lexStep s c))) (lam ((s Lex)) s) cs)
-           (lexIdle (nil T))))
+          (foldr T Lex (lam ((c T) (s Lex)) (lexStep s c)) (lexIdle (nil T)) (reverseIter cs)))
         none)))
 
   ; S-expressions, by a stack of lists under construction, innermost first, each in reverse
   (deftype Stack (List Ts))
   (deftype Par (Prod T Stack))
-  (deftype ParK (Arrow Par Par))
   (def fail (pair 0 (nil Ts)))
   (def parseStep
     (lam ((s Par) (tok T))
@@ -356,19 +352,20 @@
               ((eq (label tok) 3) (pair 1 (cons (cons (node 1 (children tok)) f) fs)))
               (else
                 (lcase Ts Par fs fail
-                  (lam ((g Ts) (gs Stack)) (pair 1 (cons (cons (node 2 (reverse f)) g) gs))))))))
+                  (lam ((g Ts) (gs Stack))
+                    (pair 1 (cons (cons (node 2 (reverseIter f)) g) gs))))))))
         s)))
   (def readSExps
     (lam ((cs Ts))
       (let toks T (tokenize cs)
         (if (isSome toks)
           (let s Par
-            ((foldr T ParK (lam ((t T) (k ParK) (s Par)) (k (parseStep s t))) (lam ((s Par)) s)
-               (children (get toks))) (pair 1 (cons (nil T) (nil Ts))))
+            (foldr T Par (lam ((t T) (s Par)) (parseStep s t)) (pair 1 (cons (nil T) (nil Ts)))
+              (reverseIter (children (get toks))))
             (if (fst s)
               (lcase Ts T (snd s) none
                 (lam ((f Ts) (fs Stack))
-                  (lcase Ts T fs (some (node 0 (reverse f))) (lam ((g Ts) (gs Stack)) none))))
+                  (lcase Ts T fs (some (node 0 (reverseIter f))) (lam ((g Ts) (gs Stack)) none))))
               none))
           none))))
 
@@ -540,16 +537,16 @@
   (def rrApply
     (lam ((rs RRs) (scope Scope))
       (foldr RR Ts (lam ((r RR) (acc Ts)) (cons ((snd r) scope) acc)) (nil T) rs)))
-  (import (Lists RR) as RRs)
+
   (def rrAt
     (lam ((rs RRs) (i T) (scope Scope))
-      ((lcase RR Res (iter RRs RRs.tail rs i) (lam ((s Scope)) none)
+      ((lcase RR Res (iter RRs (Lists.tail RR) rs i) (lam ((s Scope)) none)
          (lam ((r RR) (rest RRs)) (snd r))) scope)))
   (def app (lam ((f T) (x T)) (node2 Label.app f x)))
   (def apps (lam ((f T) (xs Ts)) (foldr T T (lam ((x T) (acc T)) (app acc x)) f (reverse xs))))
   (def some1 (lam ((l T) (a T)) (if (isSome a) (some (node l (single (get a)))) none)))
   (def argsOf
-    (lam ((rs RRs) (n T) (scope Scope)) (allSome (rrApply (iter RRs RRs.tail rs n) scope))))
+    (lam ((rs RRs) (n T) (scope Scope)) (allSome (rrApply (iter RRs (Lists.tail RR) rs n) scope))))
   (def mkArgs (lam ((l T) (a T)) (if (isSome a) (some (node l (children (get a)))) none)))
   (def appsOpt (lam ((f T) (a T)) (if (both f a) (some (apps (get f) (children (get a)))) none)))
 

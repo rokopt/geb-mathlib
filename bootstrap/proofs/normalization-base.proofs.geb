@@ -52,12 +52,6 @@
   (abbreviation pe-fold-step
     (lam ((f EStep))
       (pair (node Bits (pair (fst n) pe-kids)) (f (node Bits (pair (fst n) pe-kids)) pe-values))))
-  ; The type checker's step at the types GT of the globals, as bootstrap/check.geb writes it,
-  ; where no definition names it.
-  (abbreviation check-step
-    (lam ((l T) (rs (List RR)))
-      (let raw T (node l (Reader.rrTrees rs))
-        (pair raw (lam ((ctx (List T))) (Check.checkNode GT raw rs ctx))))))
   ; The relations at the first two children of a type's node n, of the pair of its label and the
   ; list of its children's relations; the relation that holds of nothing where a child is absent.
   (abbreviation rel-false (lam ((d Ts) (x T)) false))
@@ -132,7 +126,7 @@
                   (related D (Prelude.get (Prelude.nth GT i)))))))))))
   ; The type checker's fold at a tree, at the globals' types: the pair of the tree rebuilt and its
   ; type as a function of the context.
-  (definition check-fold ((GT Ts) (x T)) RR (kernel (fold RR check-step x)))
+  (definition check-fold ((GT Ts) (x T)) RR (kernel (fold RR (Check.typeInStep GT) x)))
   ; The evaluator's fold at a tree, at the definitions and the functions of the level below: the
   ; pair of the tree rebuilt and its value as a function of the environment.
   (definition eval-fold ((D Ts) (p Fns) (x T)) RE
@@ -1058,7 +1052,7 @@
   (theorem check-children-folds
     (internal ()
       (forall ((GT Ts) (cs Ts))
-        (equal (lib mapApp RRStep RR rr-children (kernel check-step)) check-folds)))
+        (equal (lib mapApp RRStep RR rr-children (kernel (Check.typeInStep GT))) check-folds)))
     (by
       (with-rules (v1 (unfold check-fold))
         (induction cs (y ys ih) (reduce full) (reduce-hypotheses full (ih) (reduce full ih)))))
@@ -1075,7 +1069,7 @@
     (internal ()
       (forall ((GT Ts) (l Bits) (cs Ts))
         (equal (check-fold GT (node Bits (pair l cs)))
-          ((kernel check-step) (node Bits (pair l (nil T))) check-folds))))
+          ((kernel (Check.typeInStep GT)) (node Bits (pair l (nil T))) check-folds))))
     (by (with-rules (check-children-folds v1 (unfold check-fold)) (reduce full)))
     (normal full check-children-folds v1))
   (theorem eval-fold-node

@@ -19,16 +19,13 @@
   (import Derivation)
   (import Prover)
   (import Tactics)
-  (import (Few LDefn) as LF)
-  (import (Few Decl) as DF)
-  (import (Seq LDefn) as LD)
-  (import (Seq Decl) as Decls)
+
   ; the conjunction of two formulas, the definition after truth
   (defn conjL ((o T) (p T) (q T)) T (mDefn (add o 1) (nil T) (l2 q p)))
   ; the definitions, the first of index o: truth, conjunction and implication
   (defn connectives ((o T)) (List LDefn)
     (let two Objs (objs (l2 omega omega))
-      (LF.l3 (ldefn 0 (objs (nil T)) omega (mEq mStar mStar))
+      (Few.l3 LDefn (ldefn 0 (objs (nil T)) omega (mEq mStar mStar))
         (ldefn 0 two omega (mEq (mPair (var 1) (var 0)) (mPair (ttL o) (ttL o))))
         (ldefn 0 two omega (mEq (conjL o (var 1) (var 0)) (var 1))))))
   ; the equality with truth of the hypothesis of an index, the unfolding of a hypothesis, and the
@@ -59,7 +56,7 @@
     (let*
       ((two Objs (objs (l2 omega omega))) (tt T (ttL o)) (conj T (conjL o (var 1) (var 0)))
        (refl T (dNode 0 (nil T) (nil T))))
-      (DF.l5 (declLang (mkThm 0 (objs (nil T)) (terms (nil T)) tt) trueI)
+      (Few.l5 Decl (declLang (mkThm 0 (objs (nil T)) (terms (nil T)) tt) trueI)
         (declLang (mkThm 0 two (terms (l2 (var 1) (var 0))) conj)
           (dNode 23 (nil T)
             (l2 (dNode 8 (nil T) (nil T))
@@ -100,8 +97,8 @@
     (let*
       ((two Objs (objs (l2 omega omega))) (pred Objs (objs (single (exp (x 0) omega))))
        (imp (Arrow T (Arrow T T)) (impL o)))
-      (LD.append (connectives o)
-        (LF.l6 (ldefn 1 pred omega (mEq (var 0) (mLam (x 0) (ttL o))))
+      (Seq.append LDefn (connectives o)
+        (Few.l6 LDefn (ldefn 1 pred omega (mEq (var 0) (mLam (x 0) (ttL o))))
           (ldefn 0 (objs (nil T)) omega (allL o omega (mLam omega (var 0))))
           (ldefn 0 (objs (single omega)) omega (imp (var 0) (ffL o)))
           (ldefn 0 two omega
@@ -167,9 +164,9 @@
                      (dApply (add j proj) none0 (l2 (imp (var 1) (var 0)) (imp (var 2) (var 0)))
                        (single (dHyp 2)))
                      (dHyp 0)))))))))
-      (Decls.append (connectiveRules o j)
-        (Decls.append
-          (DF.l4
+      (Seq.append Decl (connectiveRules o j)
+        (Seq.append Decl
+          (Few.l4 Decl
             (declLang
               (mkThm 1 (objs (l2 (x 0) pred)) (terms (single (allL o (x 0) (var 1))))
                 (app (var 1) (var 0)))
@@ -186,7 +183,7 @@
               (disjI (var 2) 2))
             (declLang (mkThm 0 two (terms (single (var 0))) (disjL o (var 1) (var 0)))
               (disjI (var 1) 3)))
-          (DF.l3
+          (Few.l3 Decl
             (declLang
               (mkThm 0 (objs (l3 omega omega omega))
                 (terms (l3 (disjL o (var 2) (var 1)) (imp (var 2) (var 0)) (imp (var 1) (var 0))))

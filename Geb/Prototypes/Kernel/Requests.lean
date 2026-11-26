@@ -151,10 +151,7 @@ def succeeded (values : List Tree) : Tree := mk 1 values
 /-- A bundle's definition of a name as a function of trees, the bundle loaded once; the function
 gives nothing at an input where the definition is not of type {lit}`T → T`. -/
 def entry (bundle : Tree) (name : List Char) : Option (Tree → Option Tree) := do
-  let ds ← unbundle bundle
-  let G ← load (ds.map Prod.snd)
-  let i ← (ds.map Prod.fst).idxOf? name
-  return (← G[i]?).apply
+  return (← (← loadEntries bundle) name).apply
 
 /-- The action a step returns at an event, or the message of what makes it none: the step is not
 a function from trees to trees, or the tree it returns represents no action. -/

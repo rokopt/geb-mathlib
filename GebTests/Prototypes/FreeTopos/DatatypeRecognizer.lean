@@ -3014,7 +3014,7 @@ def markerOfAt (P : Prog) (S : Defs) : Step :=
     let φ := Internal.Logic.all o treeTy (Term.lam treeTy (Internal.Logic.imp o
       (truth o (pc P "Prelude.isSome" [idx]))
       (Term.eq (pc P "Recognize.markerOf" [v 1, v 0]) (pc P "Prelude.some"
-        [pc P "Typing/Txs.atOr" [pc P "Typing.tx0" [], v 1, pc P "Prelude.get" [idx]]]))))
+        [pc P "(Seq.atOr Typing.Tx)" [pc P "Typing.tx0" [], v 1, pc P "Prelude.get" [idx]]]))))
     let lastFalse : Deducer := fun Γ Φ ψ ↦ K.hypFalse (Φ.length - 1) Γ Φ ψ
     let d₀ ← dAllI L (dImpI L (linkK K "markerOfAt: empty" lastFalse)) [] []
       (Term.subst φ (Internal.instVar (Term.arr 0 [treeTy] Term.star)))
@@ -3346,7 +3346,7 @@ def elemDen (P : Prog) (S : Defs) : Step :=
     let mp (h : ℕ) (prem k : Deducer) : Deducer := dImpE L h prem k
     let mnAt (Γ : List Tree) : Term := pc P "Recognize.markerOf" [msAt Γ, nAt Γ]
     let idxAt (Γ : List Tree) : Term := markerIdx P (nAt Γ) (msAt Γ)
-    let mAt (Γ : List Tree) : Term := pc P "Typing/Txs.atOr" [pc P "Typing.tx0" [], msAt Γ,
+    let mAt (Γ : List Tree) : Term := pc P "(Seq.atOr Typing.Tx)" [pc P "Typing.tx0" [], msAt Γ,
       pc P "Prelude.get" [idxAt Γ]]
     let ctsAt (Γ : List Tree) : Term := call D.tail [treeTy] [call D.children [] [mAt Γ]]
     let foldAt (Γ : List Tree) : Term := pc P "Prelude.get" [dataFold P (clAt Γ) (ctsAt Γ)]
