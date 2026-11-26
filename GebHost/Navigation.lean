@@ -682,7 +682,8 @@ def proofDeclaration (src : Source) (st : State) (t : Locate.Located) : State :=
     let formulas := (src.forms.find? (Locate.headIs Authoring.kwProofs)).any fun doc ↦
       ((doc.children[1]?.bind (·.label.2)) == some ['5'] ||
         (doc.children[1]?.bind (·.label.2)) == some ['6'] ||
-        (doc.children[1]?.bind (·.label.2)) == some ['7']) &&
+        (doc.children[1]?.bind (·.label.2)) == some ['7'] ||
+        (doc.children[1]?.bind (·.label.2)) == some ['8']) &&
         t.children[2]?.any (Locate.headIs "internal".toList)
     let locals := t.children[2]?.toList.flatMap (statementNames src.file formulas)
     let scope := if t.children[3]?.any (contains ·.label.1 p) then

@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.FreeTopos.Tactics.Hypotheses
 public import Geb.Prototypes.FreeTopos.Tactics.Induction
+public import Geb.Prototypes.FreeTopos.Tactics.Members
 public import Geb.Prototypes.FreeTopos.Tactics.Reduction
 public import Geb.Prototypes.FreeTopos.Tactics.Search
 public import Geb.Prototypes.FreeTopos.Tactics.Trees
@@ -17,8 +18,9 @@ set_option doc.verso true in
 
 Provers of the internal language's equations composed from the prover
 ({name}`Geb.FreeTopos.Internal.byNorm` and the provers beside it): proofs by reduction, by
-induction and case analysis, with hypotheses, by search, and about the translation's trees. The
-proofs about the compiler's components made in the language compose them.
+induction and case analysis, with hypotheses, by search, about the translation's trees, and by
+cases on a member of a datatype. The proofs about the compiler's components made in the language
+compose them.
 -/
 
 set_option doc.verso true

@@ -9334,6 +9334,590 @@ def «Authoring.scriptBits» :=
                                                       (_root_.Geb.Kernel.leaf 1)));
     x6
 
+def «Authoring.foldSucc» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 2)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let x4 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x4
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x5 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x4
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x7);
+                                          if (_root_.Geb.Kernel.Const.lt
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            x3).label ≠ 0 then
+                                            _root_.GebMirror.Metalogic.«Prover.nrBelow»
+                                              x3
+                                              (_root_.GebMirror.Metalogic.«Derivation.terms»
+                                                ((_root_.Geb.Kernel.leaf 11) ::
+                                                  (_root_.GebMirror.Metalogic.«Prover.termsOf» x5)))
+                                          else
+                                            x0
+                                        else
+                                          x0);
+    x1
+
+def Authoring.«$285365712e7461696c20284172726f77205420284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929» :=
+  fun (x0 : _root_.List
+      (_root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    let x1 : _root_.List
+      (_root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree →
+                _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (β := _root_.List
+        (_root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.List _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree →
+                _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      x0
+      ([] : _root_.List (_root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      (fun (_ : _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List
+           (_root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.List _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree →
+                   _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+        x2);
+    x1
+
+def Authoring.«$285365712e64726f7020284172726f77205420284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List
+      (_root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    let x2 : _root_.List
+      (_root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree →
+                _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List
+        (_root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.List _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree →
+                _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      _root_.GebMirror.Metalogic.Authoring.«$285365712e7461696c20284172726f77205420284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929»
+      x1
+      x0;
+    x2
+
+def Authoring.«$285365712e61744f7220284172726f77205420284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List
+      (_root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.Authoring.«$285365712e64726f7020284172726f77205420284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929»
+        x2
+        x1)
+      x0
+      (fun (x3 : _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (_ : _root_.List
+           (_root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.List _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree →
+                   _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+        x3);
+    x3
+
+def «Authoring.scriptMembers» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.List _root_.Geb.Kernel.Tree)
+    (x5 : _root_.List _root_.Geb.Kernel.Tree)
+    (x6 : _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree →
+                _root_.List _root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+    (x7 : _root_.List _root_.Geb.Kernel.Tree)
+    (x8 : _root_.List _root_.Geb.Kernel.Tree)
+    (x9 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x10 : _root_.Geb.Kernel.Tree ×
+      (_root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.List _root_.Geb.Kernel.Tree →
+              _root_.List _root_.Geb.Kernel.Tree →
+                _root_.Geb.Kernel.Tree →
+                  _root_.Geb.Kernel.Tree →
+                    _root_.Geb.Kernel.Tree) := (let x10 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.length»
+                                                  x5;
+                                                let x11 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.div
+                                                  (_root_.Geb.Kernel.Const.sub
+                                                    x10
+                                                    (_root_.Geb.Kernel.leaf 4))
+                                                  (_root_.Geb.Kernel.leaf 2);
+                                                let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Reader.nameOf»
+                                                  (_root_.GebMirror.Metalogic.«Prelude.at»
+                                                    x5
+                                                    (_root_.Geb.Kernel.leaf 1));
+                                                let x13 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Reader.isAtom»
+                                                  (_root_.GebMirror.Metalogic.«Prelude.at»
+                                                    x5
+                                                    (_root_.Geb.Kernel.leaf 1))).label ≠ 0 then
+                                                  _root_.GebMirror.Metalogic.«Reader.indexOf» x12 x9
+                                                else
+                                                  _root_.GebMirror.Metalogic.«Prelude.none»);
+                                                let x14 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Reader.isAtom»
+                                                  (_root_.GebMirror.Metalogic.«Prelude.at»
+                                                    x5
+                                                    (_root_.Geb.Kernel.leaf 2))).label ≠ 0 then
+                                                  _root_.GebMirror.Metalogic.«Reader.indexOf»
+                                                    (_root_.GebMirror.Metalogic.«Reader.nameOf»
+                                                      (_root_.GebMirror.Metalogic.«Prelude.at»
+                                                        x5
+                                                        (_root_.Geb.Kernel.leaf 2)))
+                                                    x7
+                                                else
+                                                  _root_.GebMirror.Metalogic.«Prelude.none»);
+                                                let x15 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Authoring.lemmaOf»
+                                                  x1
+                                                  x4
+                                                  (_root_.GebMirror.Metalogic.«Prelude.at»
+                                                    x5
+                                                    (_root_.Geb.Kernel.leaf 3));
+                                                let x16 : _root_.Geb.Kernel.Tree →
+                                                  _root_.Geb.Kernel.Tree := (fun (x16 : _root_.Geb.Kernel.Tree) =>
+                                                  _root_.GebMirror.Metalogic.«Authoring.word»
+                                                    x16
+                                                    (_root_.Geb.Kernel.mk 0 [_root_.Geb.Kernel.leaf 38]));
+                                                let x17 : _root_.Geb.Kernel.Tree →
+                                                  _root_.List
+                                                    _root_.Geb.Kernel.Tree := (fun (x17 : _root_.Geb.Kernel.Tree) =>
+                                                  _root_.Geb.Kernel.Const.children
+                                                    (_root_.GebMirror.Metalogic.«Prelude.at»
+                                                      x5
+                                                      (_root_.Geb.Kernel.Const.add
+                                                        (_root_.Geb.Kernel.leaf 4)
+                                                        (_root_.Geb.Kernel.Const.mul
+                                                          (_root_.Geb.Kernel.leaf 2)
+                                                          x17))));
+                                                let x18 : _root_.Geb.Kernel.Tree →
+                                                  _root_.Geb.Kernel.Tree := (fun (x18 : _root_.Geb.Kernel.Tree) =>
+                                                  _root_.Geb.Kernel.Const.foldr
+                                                    (α := _root_.Geb.Kernel.Tree)
+                                                    (β := _root_.Geb.Kernel.Tree)
+                                                    (fun (x19 : _root_.Geb.Kernel.Tree)
+                                                       (x20 : _root_.Geb.Kernel.Tree) =>
+                                                      if (x16 x19).label ≠ 0 then
+                                                        _root_.Geb.Kernel.Const.add
+                                                          x20
+                                                          (_root_.Geb.Kernel.leaf 1)
+                                                      else
+                                                        x20)
+                                                    (_root_.Geb.Kernel.leaf 0)
+                                                    (x17 x18));
+                                                let x19 : _root_.Geb.Kernel.Tree →
+                                                  _root_.Geb.Kernel.Tree := (fun (x19 : _root_.Geb.Kernel.Tree) =>
+                                                  let x20 : _root_.List
+                                                    _root_.Geb.Kernel.Tree := x17 x19;
+                                                  _root_.GebMirror.Metalogic.«Prelude.and»
+                                                    (_root_.Geb.Kernel.Const.lt
+                                                      (_root_.Geb.Kernel.leaf 1)
+                                                      (_root_.GebMirror.Metalogic.«Prelude.length» x20))
+                                                    (x16
+                                                      (_root_.GebMirror.Metalogic.«Prelude.at»
+                                                        x20
+                                                        (_root_.Geb.Kernel.Const.sub
+                                                          (_root_.GebMirror.Metalogic.«Prelude.length» x20)
+                                                          (_root_.Geb.Kernel.leaf 2)))));
+                                                let x20 : _root_.Geb.Kernel.Tree →
+                                                  _root_.List
+                                                    _root_.Geb.Kernel.Tree := (fun (x20 : _root_.Geb.Kernel.Tree) =>
+                                                  _root_.GebMirror.Metalogic.«Base.mapT»
+                                                    _root_.GebMirror.Metalogic.«Reader.nameOf»
+                                                    (_root_.Geb.Kernel.Const.foldr
+                                                      (α := _root_.Geb.Kernel.Tree)
+                                                      (β := _root_.List _root_.Geb.Kernel.Tree)
+                                                      (fun (x21 : _root_.Geb.Kernel.Tree)
+                                                         (x22 : _root_.List
+                                                           _root_.Geb.Kernel.Tree) =>
+                                                        if (x16 x21).label ≠ 0 then
+                                                          x22
+                                                        else
+                                                          (x21 :: x22))
+                                                      ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                      (x17 x20)));
+                                                let x21 : _root_.Geb.Kernel.Tree →
+                                                  _root_.Geb.Kernel.Tree := (fun (x21 : _root_.Geb.Kernel.Tree) =>
+                                                  _root_.Geb.Kernel.Const.sub
+                                                    (_root_.GebMirror.Metalogic.«Prelude.length» (x20 x21))
+                                                    (if (x19 x21).label ≠ 0 then
+                                                      _root_.Geb.Kernel.leaf 1
+                                                    else
+                                                      _root_.Geb.Kernel.leaf 0));
+                                                let x22 : _root_.Geb.Kernel.Tree →
+                                                  _root_.List
+                                                    _root_.Geb.Kernel.Tree := (fun (x22 : _root_.Geb.Kernel.Tree) =>
+                                                  _root_.GebMirror.Metalogic.«Base.mapT»
+                                                    (fun (_ : _root_.Geb.Kernel.Tree) =>
+                                                      _root_.GebMirror.Metalogic.«Authoring.unnamed»)
+                                                    (_root_.GebMirror.Metalogic.«Base.range» x22));
+                                                let x23 : _root_.List
+                                                  _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Base.mapT»
+                                                  (fun (x23 : _root_.Geb.Kernel.Tree) =>
+                                                    if (_root_.Geb.Kernel.Const.equal
+                                                      x23
+                                                      x12).label ≠ 0 then
+                                                      _root_.GebMirror.Metalogic.«Authoring.unnamed»
+                                                    else
+                                                      x23)
+                                                  x9;
+                                                let x24 : _root_.Geb.Kernel.Tree →
+                                                  _root_.Geb.Kernel.Tree ×
+                                                    (_root_.Geb.Kernel.Tree →
+                                                      _root_.List _root_.Geb.Kernel.Tree →
+                                                        _root_.List _root_.Geb.Kernel.Tree →
+                                                          _root_.List _root_.Geb.Kernel.Tree →
+                                                            _root_.List _root_.Geb.Kernel.Tree →
+                                                              _root_.Geb.Kernel.Tree →
+                                                                _root_.Geb.Kernel.Tree →
+                                                                  _root_.Geb.Kernel.Tree) := (fun (x24 : _root_.Geb.Kernel.Tree) =>
+                                                  let x25 : _root_.List
+                                                    _root_.Geb.Kernel.Tree := x20 x24;
+                                                  let x26 : _root_.Geb.Kernel.Tree := x21 x24;
+                                                  let x27 : _root_.Geb.Kernel.Tree := x19 x24;
+                                                  let x28 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.log2
+                                                    (_root_.Geb.Kernel.Const.add
+                                                      x24
+                                                      (_root_.Geb.Kernel.leaf 1));
+                                                  let x29 : _root_.List
+                                                    _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+                                                    (α := _root_.Geb.Kernel.Tree)
+                                                    (β := _root_.List _root_.Geb.Kernel.Tree)
+                                                    (fun (x29 : _root_.Geb.Kernel.Tree)
+                                                       (x30 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                                      _root_.GebMirror.Metalogic.«Prelude.append»
+                                                        x30
+                                                        (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                          (if (_root_.GebMirror.Metalogic.«Prelude.and»
+                                                            x27
+                                                            (_root_.Geb.Kernel.Const.eq
+                                                              (_root_.Geb.Kernel.Const.add
+                                                                x29
+                                                                (_root_.Geb.Kernel.leaf 1))
+                                                              x26)).label ≠ 0 then
+                                                            _root_.GebMirror.Metalogic.«Prelude.at» x25 x26
+                                                          else
+                                                            _root_.GebMirror.Metalogic.«Authoring.unnamed»)
+                                                          (_root_.GebMirror.Metalogic.«Prelude.at» x25 x29)))
+                                                    ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                    (_root_.GebMirror.Metalogic.«Base.range» x26);
+                                                  let x30 : _root_.List
+                                                    _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.append»
+                                                    x29
+                                                    (_root_.GebMirror.Metalogic.«Prelude.append»
+                                                      (x22
+                                                        (_root_.Geb.Kernel.Const.mul
+                                                          (_root_.Geb.Kernel.leaf 3)
+                                                          x28))
+                                                      (_root_.GebMirror.Metalogic.«Theory.l2»
+                                                        (if (_root_.GebMirror.Metalogic.«Prelude.and»
+                                                          x27
+                                                          (_root_.Geb.Kernel.Const.eq
+                                                            x26
+                                                            (_root_.Geb.Kernel.leaf 0))).label ≠ 0 then
+                                                          _root_.GebMirror.Metalogic.«Prelude.at»
+                                                            x25
+                                                            (_root_.Geb.Kernel.leaf 0)
+                                                        else
+                                                          _root_.GebMirror.Metalogic.«Authoring.unnamed»)
+                                                        _root_.GebMirror.Metalogic.«Authoring.unnamed»));
+                                                  x6
+                                                    (_root_.Geb.Kernel.Const.add
+                                                      (_root_.Geb.Kernel.leaf 5)
+                                                      (_root_.Geb.Kernel.Const.mul
+                                                        (_root_.Geb.Kernel.leaf 2)
+                                                        x24))
+                                                    (_root_.GebMirror.Metalogic.«Prelude.append» x30 x7)
+                                                    (_root_.GebMirror.Metalogic.«Prelude.append»
+                                                      (_root_.GebMirror.Metalogic.«Base.mapT»
+                                                        (fun (_ : _root_.Geb.Kernel.Tree) =>
+                                                          _root_.GebMirror.Metalogic.«Prelude.none»)
+                                                        x30)
+                                                      x8)
+                                                    (_root_.GebMirror.Metalogic.«Prelude.append»
+                                                      x23
+                                                      (_root_.GebMirror.Metalogic.«Prelude.append»
+                                                        (x22 (_root_.Geb.Kernel.Const.add x28 x26))
+                                                        (_root_.GebMirror.Metalogic.«Theory.l3»
+                                                          _root_.GebMirror.Metalogic.«Authoring.unnamed»
+                                                          _root_.GebMirror.Metalogic.«Authoring.unnamed»
+                                                          x12))));
+                                                let x25 : _root_.Geb.Kernel.Tree →
+                                                  _root_.Geb.Kernel.Tree := (fun (x25 : _root_.Geb.Kernel.Tree) =>
+                                                  let x26 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.at»
+                                                    x5
+                                                    (_root_.Geb.Kernel.Const.add
+                                                      (_root_.Geb.Kernel.leaf 4)
+                                                      (_root_.Geb.Kernel.Const.mul
+                                                        (_root_.Geb.Kernel.leaf 2)
+                                                        x25));
+                                                  _root_.GebMirror.Metalogic.«Prelude.and»
+                                                    (_root_.GebMirror.Metalogic.«Reader.isList» x26)
+                                                    (_root_.GebMirror.Metalogic.«Prelude.and»
+                                                      (_root_.GebMirror.Metalogic.«Base.allT»
+                                                        (fun (x27 : _root_.Geb.Kernel.Tree) =>
+                                                          _root_.GebMirror.Metalogic.«Prelude.or»
+                                                            (x16 x27)
+                                                            (_root_.GebMirror.Metalogic.«Authoring.bindable»
+                                                              x0
+                                                              x27))
+                                                        (_root_.Geb.Kernel.Const.children x26))
+                                                      (_root_.GebMirror.Metalogic.«Prelude.and»
+                                                        (_root_.Geb.Kernel.Const.eq
+                                                          (x18 x25)
+                                                          (if (x19 x25).label ≠ 0 then
+                                                            _root_.Geb.Kernel.leaf 1
+                                                          else
+                                                            _root_.Geb.Kernel.leaf 0))
+                                                        (_root_.GebMirror.Metalogic.«Prelude.and»
+                                                          (_root_.GebMirror.Metalogic.«Authoring.distinctFrom»
+                                                            (_root_.GebMirror.Metalogic.«Prelude.append»
+                                                              x7
+                                                              (_root_.GebMirror.Metalogic.«Prelude.append»
+                                                                x9
+                                                                x4))
+                                                            (x20 x25))
+                                                          (x24 x25).1))));
+                                                (_root_.GebMirror.Metalogic.«Prelude.and»
+                                                  (_root_.Geb.Kernel.Const.lt
+                                                    (_root_.Geb.Kernel.leaf 5)
+                                                    x10)
+                                                  (_root_.GebMirror.Metalogic.«Prelude.and»
+                                                    (_root_.Geb.Kernel.Const.eq
+                                                      (_root_.Geb.Kernel.Const.mod
+                                                        x10
+                                                        (_root_.Geb.Kernel.leaf 2))
+                                                      (_root_.Geb.Kernel.leaf 0))
+                                                    (_root_.GebMirror.Metalogic.«Prelude.and»
+                                                      (_root_.GebMirror.Metalogic.«Prelude.isSome» x13)
+                                                      (_root_.GebMirror.Metalogic.«Prelude.and»
+                                                        (_root_.GebMirror.Metalogic.«Prelude.isSome» x14)
+                                                        (_root_.GebMirror.Metalogic.«Prelude.and»
+                                                          (_root_.GebMirror.Metalogic.«Prelude.isSome» x15)
+                                                          (_root_.GebMirror.Metalogic.«Base.allT»
+                                                            x25
+                                                            (_root_.GebMirror.Metalogic.«Base.range» x11)))))),
+                                                  fun (x26 : _root_.Geb.Kernel.Tree)
+                                                    (x27 : _root_.List _root_.Geb.Kernel.Tree)
+                                                    (x28 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                                    let x29 : _root_.List
+                                                      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+                                                      (α := _root_.Geb.Kernel.Tree)
+                                                      (β := _root_.List _root_.Geb.Kernel.Tree)
+                                                      (fun (x29 : _root_.Geb.Kernel.Tree)
+                                                         (x30 : _root_.List
+                                                           _root_.Geb.Kernel.Tree) =>
+                                                        ((_root_.GebMirror.Metalogic.«Authoring.foldSucc»
+                                                          x29) ::
+                                                          x30))
+                                                      ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                                      x28;
+                                                    let x30 : _root_.List _root_.Geb.Kernel.Tree →
+                                                      _root_.List _root_.Geb.Kernel.Tree →
+                                                        _root_.Geb.Kernel.Tree →
+                                                          _root_.Geb.Kernel.Tree →
+                                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.refuteMember»
+                                                      x26
+                                                      x27
+                                                      x2
+                                                      x3
+                                                      (_root_.Geb.Kernel.leaf 0)
+                                                      x28;
+                                                    let x31 : _root_.List
+                                                      (_root_.Geb.Kernel.Tree →
+                                                        _root_.List _root_.Geb.Kernel.Tree →
+                                                          _root_.List _root_.Geb.Kernel.Tree →
+                                                            _root_.Geb.Kernel.Tree →
+                                                              _root_.Geb.Kernel.Tree →
+                                                                _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.foldr
+                                                      (α := _root_.Geb.Kernel.Tree)
+                                                      (β := _root_.List
+                                                        (_root_.Geb.Kernel.Tree →
+                                                          _root_.List _root_.Geb.Kernel.Tree →
+                                                            _root_.List _root_.Geb.Kernel.Tree →
+                                                              _root_.Geb.Kernel.Tree →
+                                                                _root_.Geb.Kernel.Tree →
+                                                                  _root_.Geb.Kernel.Tree))
+                                                      (fun (x31 : _root_.Geb.Kernel.Tree)
+                                                         (x32 : _root_.List
+                                                           (_root_.Geb.Kernel.Tree →
+                                                             _root_.List _root_.Geb.Kernel.Tree →
+                                                               _root_.List _root_.Geb.Kernel.Tree →
+                                                                 _root_.Geb.Kernel.Tree →
+                                                                   _root_.Geb.Kernel.Tree →
+                                                                     _root_.Geb.Kernel.Tree)) =>
+                                                        ((let x33 : _root_.List
+                                                            _root_.Geb.Kernel.Tree →
+                                                            _root_.List _root_.Geb.Kernel.Tree →
+                                                              _root_.Geb.Kernel.Tree →
+                                                                _root_.Geb.Kernel.Tree →
+                                                                  _root_.Geb.Kernel.Tree := (x24
+                                                            x31).2
+                                                            x26
+                                                            x27
+                                                            x28;
+                                                          if (x19 x31).label ≠ 0 then
+                                                            _root_.GebMirror.Metalogic.«Tactics.byRest»
+                                                              x26
+                                                              x27
+                                                              x2
+                                                              x3
+                                                              (_root_.Geb.Kernel.leaf 0)
+                                                              x28
+                                                              (x21 x31)
+                                                              x33
+                                                          else
+                                                            _root_.GebMirror.Metalogic.«Tactics.byFixed»
+                                                              x26
+                                                              x27
+                                                              x2
+                                                              x3
+                                                              (_root_.Geb.Kernel.leaf 0)
+                                                              x28
+                                                              x29
+                                                              (x21 x31)
+                                                              (_root_.Geb.Kernel.Const.add
+                                                                (_root_.Geb.Kernel.Const.log2
+                                                                  (_root_.Geb.Kernel.Const.add
+                                                                    (x21 x31)
+                                                                    (_root_.Geb.Kernel.leaf 1)))
+                                                                (_root_.Geb.Kernel.leaf 1))
+                                                              x33) ::
+                                                          x32))
+                                                      ([] : _root_.List (_root_.Geb.Kernel.Tree →
+                                                        _root_.List _root_.Geb.Kernel.Tree →
+                                                          _root_.List _root_.Geb.Kernel.Tree →
+                                                            _root_.Geb.Kernel.Tree →
+                                                              _root_.Geb.Kernel.Tree →
+                                                                _root_.Geb.Kernel.Tree))
+                                                      (_root_.GebMirror.Metalogic.«Base.range» x11);
+                                                    _root_.GebMirror.Metalogic.«Tactics.byMemberCases»
+                                                      x26
+                                                      x3
+                                                      (_root_.Geb.Kernel.leaf 0)
+                                                      (_root_.GebMirror.Metalogic.«Base.getD»
+                                                        x15
+                                                        (_root_.Geb.Kernel.leaf 0))
+                                                      (_root_.GebMirror.Metalogic.«Base.getD»
+                                                        x13
+                                                        (_root_.Geb.Kernel.leaf 0))
+                                                      (_root_.GebMirror.Metalogic.«Base.getD»
+                                                        x14
+                                                        (_root_.Geb.Kernel.leaf 0))
+                                                      (_root_.Geb.Kernel.Const.add
+                                                        (_root_.Geb.Kernel.Const.log2 x11)
+                                                        (_root_.Geb.Kernel.leaf 1))
+                                                      (fun (x32 : _root_.Geb.Kernel.Tree)
+                                                         (x33 : _root_.Geb.Kernel.Tree) =>
+                                                        _root_.GebMirror.Metalogic.Authoring.«$285365712e61744f7220284172726f77205420284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929»
+                                                          (fun (_ : _root_.Geb.Kernel.Tree) => x30)
+                                                          x31
+                                                          x32
+                                                          x33)
+                                                      x30));
+    x10
+
 def Authoring.«$285365712e7461696c20284c69737420284c6973742054292929» :=
   fun (x0 : _root_.List
       (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
@@ -10146,18 +10730,48 @@ def «Authoring.script4» :=
                                                                   x9
                                                                   x10
                                                               else
-                                                                _root_.GebMirror.Metalogic.«Authoring.script5»
-                                                                  x0
-                                                                  x1
-                                                                  x2
-                                                                  x3
-                                                                  x4
-                                                                  x5
-                                                                  x6
-                                                                  x7
-                                                                  x8
-                                                                  x9
-                                                                  x10);
+                                                                if (_root_.GebMirror.Metalogic.«Prelude.and»
+                                                                  (_root_.Geb.Kernel.Const.lt
+                                                                    (_root_.Geb.Kernel.leaf 7)
+                                                                    x0)
+                                                                  (_root_.GebMirror.Metalogic.«Authoring.headed»
+                                                                    x6
+                                                                    (_root_.Geb.Kernel.mk 0 [_root_.Geb.Kernel.leaf 109,
+                                                                      _root_.Geb.Kernel.leaf 101,
+                                                                      _root_.Geb.Kernel.leaf 109,
+                                                                      _root_.Geb.Kernel.leaf 98,
+                                                                      _root_.Geb.Kernel.leaf 101,
+                                                                      _root_.Geb.Kernel.leaf 114,
+                                                                      _root_.Geb.Kernel.leaf 45,
+                                                                      _root_.Geb.Kernel.leaf 99,
+                                                                      _root_.Geb.Kernel.leaf 97,
+                                                                      _root_.Geb.Kernel.leaf 115,
+                                                                      _root_.Geb.Kernel.leaf 101,
+                                                                      _root_.Geb.Kernel.leaf 115]))).label ≠ 0 then
+                                                                  _root_.GebMirror.Metalogic.«Authoring.scriptMembers»
+                                                                    x0
+                                                                    x1
+                                                                    x12
+                                                                    x13
+                                                                    x5
+                                                                    x11
+                                                                    x17
+                                                                    x8
+                                                                    x9
+                                                                    x10
+                                                                else
+                                                                  _root_.GebMirror.Metalogic.«Authoring.script5»
+                                                                    x0
+                                                                    x1
+                                                                    x2
+                                                                    x3
+                                                                    x4
+                                                                    x5
+                                                                    x6
+                                                                    x7
+                                                                    x8
+                                                                    x9
+                                                                    x10);
     x11
 
 def «Authoring.script2» :=
@@ -16127,7 +16741,7 @@ def «Authoring.readDocument» :=
                                                   (_root_.GebMirror.Metalogic.«Prelude.isSome» x3)
                                                   (_root_.Geb.Kernel.Const.lt
                                                     (_root_.GebMirror.Metalogic.«Prelude.get» x3)
-                                                    (_root_.Geb.Kernel.leaf 8))))))).label ≠ 0 then
+                                                    (_root_.Geb.Kernel.leaf 9))))))).label ≠ 0 then
                                           let x4 : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Authoring.expandForms»
                                             (_root_.GebMirror.Metalogic.«Prelude.get» x3)

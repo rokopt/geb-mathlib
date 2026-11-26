@@ -252,7 +252,7 @@ def headerAtoms (head : List Char) (d : Doc) : Except String (List String) :=
     let version := root.children[1]?.bind (·.label.2)
     if atoms.isEmpty || version == some ['2'] || version == some ['3'] ||
         version == some ['4'] || version == some ['5'] || version == some ['6'] ||
-        version == some ['7'] then .ok atoms
+        version == some ['7'] || version == some ['8'] then .ok atoms
     else .error s!"a document of a version before 2 has no form ({String.ofList head} …)"
   | none => .ok []
 
@@ -320,7 +320,7 @@ companion, version 2 the theorems of the documents imported before its own, vers
 connectives' rules before every theorem, and version 4 the rules of every connective and, after
 them, the declarations of the definitions the development declares. Version 5 preserves formula
 conclusions in their declarations and gives them companions equating them with truth, and
-versions 6 and 7 save what version 5 does. -/
+versions 6, 7 and 8 save what version 5 does. -/
 def formatOf (version : Tree) : Tree :=
   nameTree (match version.label with
     | 0 => "geb-proof/v1"
@@ -330,7 +330,8 @@ def formatOf (version : Tree) : Tree :=
     | 4 => "geb-proof/v5"
     | 5 => "geb-proof/v6"
     | 6 => "geb-proof/v7"
-    | _ => "geb-proof/v8").toList
+    | 7 => "geb-proof/v8"
+    | _ => "geb-proof/v9").toList
 
 /-! ## Failures and obligations -/
 

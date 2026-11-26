@@ -16,9 +16,9 @@ set_option doc.verso true in
 The functions of {lit}`bootstrap/free-topos/tactics.geb`, in the Lean the bootstrap compiler emits
 ({lit}`GebMirror.Metalogic`), agree with the tactics of the internal language
 ({lit}`Geb.FreeTopos.Tactics`) at every encoded input: the proofs by reduction, by induction and
-case analysis, with hypotheses, by search and about the translation's trees, each at related
-rules and provers, so that the tactics written in Geb construct exactly the derivations the Lean
-tactics construct.
+case analysis, with hypotheses, by search, about the translation's trees and by cases on a member
+of a datatype, each at related rules and provers, so that the tactics written in Geb construct
+exactly the derivations the Lean tactics construct.
 
 ## Main definitions
 
@@ -40,6 +40,9 @@ tactics construct.
 * {lit}`occRewrite_eq`, {lit}`abstractTerm_eq`, {lit}`byTreeSplit_eq`, {lit}`byAutoT_eq`,
   {lit}`byAutoC_eq`, {lit}`maskSub_eq`, {lit}`byMaskSubs_eq`, {lit}`byGeneralize_eq` — the
   tactics about the translation's trees agree.
+* {lit}`byRevert_eq`, {lit}`byLabelClash_eq`, {lit}`stuckLength_eq`, {lit}`byFixed_eq`,
+  {lit}`byRest_eq`, {lit}`byLabels_eq`, {lit}`byMemberCases_eq` and the lemmas beside them — the
+  case analysis of a member of a datatype agrees.
 
 ## Tags
 
@@ -2004,6 +2007,240 @@ theorem byGeneralize_eq (a : Tree) (c : Term) (p' : List Tree → List Tree → 
   simp only [«Tactics.byGeneralize», template, Tactics.byGeneralize]
   tac_simp [abstractTerm_eq, hp', applyAbs_eq]
   rcases p (a :: Γ) (Φ.map Internal.weaken1) _ _ with _ | q <;> rfl
+
+/-! Members of datatypes. -/
+
+/-- The mirror's proof of an equation from its implication by a hypothesis, at a related
+prover. -/
+theorem byRevert_eq (o lb h : ℕ) (p' : List Tree → List Tree → Tree → Tree → Tree)
+    (p : Internal.Prover) (hp : PRel p' p) :
+    PRel («Tactics.byRevert» (leaf o) (leaf lb) (leaf h) p') (Tactics.byRevert o lb h p) := by
+  have hp' : ∀ Γ Φ t u, p' Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
+      encOpt ((p Γ Φ t u).map encConv) := hp
+  intro Γ Φ t u
+  simp only [«Tactics.byRevert», template, Tactics.byRevert]
+  tac_simp []
+  rcases Φ[h]? with _ | ψ
+  · rfl
+  tac_simp [ttL_eq, impL_eq, hp', trueI_eq, add_leaf]
+  rcases p Γ Φ _ _ with _ | d <;> rfl
+
+/-- The mirror's conditional on a tree's label between two values, as a function. -/
+theorem labelPick_eq (a : Tree) (s : Bool) :
+    «Tactics.labelPick» a (ofBool s) = encTerm (Tactics.labelPick a s) := by
+  cases s <;> rfl
+
+/-- The mirror's proof of an equation from a hypothesis equating two trees whose labels select
+different branches of a conditional, at related rules. -/
+theorem labelClashWith_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
+    (rs' : List Tree) (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (h : ℕ) (s : Bool) :
+    PRel («Tactics.labelClashWith» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf h)
+        (ofBool s))
+      (Tactics.labelClashWith G E n rs h s) := by
+  have hext : ∀ Γ Φ t u, «Prover.byFunExt» (encGlobals G) (leaf n)
+      («Prover.byFunExt» (encGlobals G) (leaf n)
+        («Tactics.byWeak» (encGlobals G) (E.toList.map encEntry) (leaf n) rs'))
+      Γ (Φ.map encTerm) (encTerm t) (encTerm u) =
+      encOpt ((Internal.byFunExt G n (Internal.byFunExt G n (Tactics.byWeak G E n rs))
+        Γ Φ t u).map encConv) :=
+    byFunExt_eq G n _ _ (byFunExt_eq G n _ _ (byWeak_eq G E n rs' rs hrs))
+  intro Γ Φ t u
+  simp only [«Tactics.labelClashWith», template, Tactics.labelClashWith]
+  tac_simp [typeIn_eq]
+  rcases Internal.typeIn G n Γ t with _ | a
+  · rfl
+  tac_simp [eqParts_eq]
+  rcases Φ[h]? with _ | φ
+  · rfl
+  tac_simp [eqParts_eq]
+  rcases Internal.eqParts φ with _ | ⟨l₀, l₁⟩
+  · rfl
+  have h₁ := hext Γ (Φ ++ [Term.eq (Term.app (Tactics.labelPick a s) l₀)
+    (Term.lam a (Term.lam a (Term.var 1)))])
+  simp only [List.map_append, List.map_cons, List.map_nil] at h₁
+  tac_simp [p1_eq, p2_eq, labelPick_eq, mLam_eq, hext, h₁, append_eq, add_leaf]
+  rcases Internal.byFunExt G n (Internal.byFunExt G n (Tactics.byWeak G E n rs)) Γ Φ _ _
+    with _ | d₀
+  · rfl
+  tac_simp []
+  rcases Internal.byFunExt G n (Internal.byFunExt G n (Tactics.byWeak G E n rs)) Γ _ _ _
+    with _ | d₁ <;> rfl
+
+/-- The mirror's proof of an equation from a hypothesis equating a tree of empty label with one of
+a label that is not empty, at related rules. -/
+theorem byLabelClash_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
+    (rs' : List Tree) (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (h : ℕ) :
+    PRel («Tactics.byLabelClash» (encGlobals G) (E.toList.map encEntry) (leaf n) rs' (leaf h))
+      (Tactics.byLabelClash G E n rs h) := by
+  intro Γ Φ t u
+  have h₀ := labelClashWith_eq G E n rs' rs hrs h false Γ Φ t u
+  have h₁ := labelClashWith_eq G E n rs' rs hrs h true Γ Φ t u
+  simp only [ofBool_false, ofBool_true] at h₀ h₁
+  simp only [«Tactics.byLabelClash», template, Tactics.byLabelClash, h₀, h₁]
+  rcases Tactics.labelClashWith G E n rs h false Γ Φ t u with _ | d <;> rfl
+
+/-- The mirror's argument of an encoded application of the successor that is not itself one. -/
+theorem succArg_eq (u : Term) :
+    «Tactics.succArg» (encTerm u) = encOpt ((Tactics.succArg u).map encTerm) := by
+  obtain ⟨l, cs, rfl⟩ : ∃ l cs, u = RoseTree.node l cs :=
+    ⟨u.label, u.children, (RoseTree.node_label_children u).symm⟩
+  cases l <;> rcases cs with _ | ⟨a, _ | ⟨b, cs⟩⟩ <;>
+    mirror_simp [«Tactics.succArg», Tactics.succArg, labelData, mIs_eq, none_eq,
+      beq_iff_eq, Nat.reduceEqDiff, mD_eq, mArg_eq]
+  · rename_i k θ
+    obtain ⟨la, as, rfl⟩ : ∃ l cs, a = RoseTree.node l cs :=
+      ⟨a.label, a.children, (RoseTree.node_label_children a).symm⟩
+    by_cases hk : k = 11
+    · subst hk
+      cases la <;> mirror_simp [labelData, label_encTerm, mD_eq, none_eq, some_eq,
+        Translation.D.succ]
+      rename_i k' θ'
+      by_cases hk' : k' = 11
+      · simp only [hk', ↓reduceIte, Option.map_none]
+        rfl
+      · simp only [Nat.beq_eq_true_eq, hk', ↓reduceIte, Option.map_some]
+    · simp only [hk, ↓reduceIte, Translation.D.succ, Option.map_none]
+  · split
+    · rename_i h
+      simp only [Bool.and_eq_true, beq_iff_eq] at h
+      omega
+    · rfl
+
+/-- The mirror's term on which the successors of an encoded term are stuck. -/
+theorem stuckLength_eq (t : Term) :
+    «Tactics.stuckLength» (encTerm t) = encOpt ((Tactics.stuckLength t).map encTerm) := by
+  simp only [«Tactics.stuckLength», template, Tactics.stuckLength, openSubterms_eq]
+  exact findSomeT_eq encTerm encTerm _ _ succArg_eq _
+
+/-- The mirror's introduction of an implication's antecedent, cut in in normal form, before a
+related prover, at related rules. -/
+theorem withMember_eq (G : Internal.Globals) (E : Array Internal.Entry) (n o lb : ℕ)
+    (rs' : List Tree) (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs)
+    (k' : List Tree → List Tree → Tree → Tree → Tree) (k : Internal.Prover) (hk : PRel k' k) :
+    PRel («Tactics.withMember» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf o)
+        (leaf lb) rs' k')
+      (Tactics.withMember G E n o lb rs k) := by
+  simp only [«Tactics.withMember», template, Tactics.withMember]
+  refine byImpI_eq G E o lb _ _ fun Γ Φ t u ↦ ?_
+  have hw := withWeakHyps_eq G E n rs' rs hrs [Φ.length - 1] (fun _ ↦ k') (fun _ ↦ k)
+    (fun _ _ _ ↦ hk) .full Γ Φ t u
+  simpa only [length_eq, List.length_map, sub_leaf, single_eq, List.map_cons, List.map_nil,
+    encDepth] using hw
+
+/-- The mirror's refutation of a hypothesis of membership at a tree that is no member, at related
+rules. -/
+theorem refuteMember_eq (G : Internal.Globals) (E : Array Internal.Entry) (n o lb : ℕ)
+    (rs' : List Tree) (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) :
+    PRel («Tactics.refuteMember» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf o)
+        (leaf lb) rs')
+      (Tactics.refuteMember G E n o lb rs) := by
+  simp only [«Tactics.refuteMember», template, Tactics.refuteMember]
+  refine withMember_eq G E n o lb rs' rs hrs _ _ fun Γ Φ t u ↦ ?_
+  have hc := byLabelClash_eq G E n rs' rs hrs (Φ.length - 1) Γ Φ t u
+  simpa only [length_eq, List.length_map, sub_leaf] using hc
+
+/-- The mirror's refutation of a hypothesis of membership at a tree of more children than its
+constructor has fields, at related rules. -/
+theorem refuteLonger_eq (G : Internal.Globals) (E : Array Internal.Entry) (n o lb : ℕ)
+    (rs' : List Tree) (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs)
+    (rsS' : List Tree) (rsS : List NormRule) (hrsS : List.Forall₂ RRel rsS' rsS) (e : ℕ) :
+    PRel («Tactics.refuteLonger» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf o)
+        (leaf lb) rs' rsS' (leaf e))
+      (Tactics.refuteLonger G E n o lb rs rsS e) := by
+  simp only [«Tactics.refuteLonger», template, Tactics.refuteLonger]
+  refine withMember_eq G E n o lb rsS' rsS hrsS _ _ fun Γ Φ t u ↦ ?_
+  tac_simp [sub_leaf, stuckLength_eq]
+  rcases Φ[Φ.length - 1]? with _ | ψ
+  · rfl
+  tac_simp [stuckLength_eq]
+  rcases Tactics.stuckLength ψ with _ | s
+  · rfl
+  simp only [Option.map_some, Option.elim_some, Option.bind_some]
+  exact byRevert_eq o lb (Φ.length - 1) _ _ (byGeneralize_eq Translation.bitsTy s _ _
+    (byBits_eq G _ _ (refuteMember_eq G E n o lb rs' rs hrs) e 0)) Γ Φ t u
+
+/-- The mirror's case analysis of a list variable to a number of elements, at related provers. -/
+theorem byChildren_eq (G : Internal.Globals)
+    (short' : List Tree → List Tree → Tree → Tree → Tree) (short : Internal.Prover)
+    (hs : PRel short' short) (last' : Tree → List Tree → List Tree → Tree → Tree → Tree)
+    (last : ℕ → Internal.Prover) (hl : ∀ i, PRel (last' (leaf i)) (last i)) (a i : ℕ) :
+    PRel («Tactics.byChildren» (encGlobals G) short' last' (leaf a) (leaf i))
+      (Tactics.byChildren G short last a i) := by
+  simp only [«Tactics.byChildren», template, iter_leaf, Tactics.byChildren]
+  revert i
+  exact Nat.rec hl (fun a ih i ↦ by
+    rw [Nat.repeat]
+    exact byListSplit_eq G 0 i _ _ _ _ hs (ih 0)) a
+
+/-- The mirror's cases of the children of a constructor of a fixed number of fields, at related
+rules and a related prover. -/
+theorem byFixed_eq (G : Internal.Globals) (E : Array Internal.Entry) (n o lb : ℕ)
+    (rs' : List Tree) (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs)
+    (rsS' : List Tree) (rsS : List NormRule) (hrsS : List.Forall₂ RRel rsS' rsS) (a e : ℕ)
+    (p' : List Tree → List Tree → Tree → Tree → Tree) (p : Internal.Prover) (hp : PRel p' p)
+    (i : ℕ) :
+    PRel («Tactics.byFixed» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf o) (leaf lb)
+        rs' rsS' (leaf a) (leaf e) p' (leaf i))
+      (Tactics.byFixed G E n o lb rs rsS a e p i) := by
+  simp only [«Tactics.byFixed», template, Tactics.byFixed]
+  exact byChildren_eq G _ _ (refuteMember_eq G E n o lb rs' rs hrs)
+    (fun j ↦ «Tactics.byListSplit» (encGlobals G) (leaf 0) j
+      («Tactics.withMember» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf o) (leaf lb)
+        rs' p')
+      («Tactics.refuteLonger» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf o) (leaf lb)
+        rs' rsS' (leaf e)))
+    (fun j ↦ Tactics.byListSplit G 0 j (Tactics.withMember G E n o lb rs p)
+      (Tactics.refuteLonger G E n o lb rs rsS e))
+    (fun j ↦ byListSplit_eq G 0 j _ _ _ _ (withMember_eq G E n o lb rs' rs hrs _ _ hp)
+      (refuteLonger_eq G E n o lb rs' rs hrs rsS' rsS hrsS e)) a i
+
+/-- The mirror's cases of the children of a constructor whose last field takes the remaining
+children, at related rules and a related prover. -/
+theorem byRest_eq (G : Internal.Globals) (E : Array Internal.Entry) (n o lb : ℕ)
+    (rs' : List Tree) (rs : List NormRule) (hrs : List.Forall₂ RRel rs' rs) (a : ℕ)
+    (p' : List Tree → List Tree → Tree → Tree → Tree) (p : Internal.Prover) (hp : PRel p' p)
+    (i : ℕ) :
+    PRel («Tactics.byRest» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf o) (leaf lb)
+        rs' (leaf a) p' (leaf i))
+      (Tactics.byRest G E n o lb rs a p i) := by
+  simp only [«Tactics.byRest», template, Tactics.byRest]
+  exact byChildren_eq G _ _ (refuteMember_eq G E n o lb rs' rs hrs)
+    (fun _ ↦ «Tactics.withMember» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf o)
+      (leaf lb) rs' p')
+    (fun _ ↦ Tactics.withMember G E n o lb rs p)
+    (fun _ ↦ withMember_eq G E n o lb rs' rs hrs _ _ hp) a i
+
+/-- The mirror's case analysis of a label to a number of bits, at provers of the labels' cases
+that are related at every label and index, and a related prover. -/
+theorem byLabels_eq (G : Internal.Globals)
+    (p' : Tree → Tree → List Tree → List Tree → Tree → Tree → Tree)
+    (p : ℕ → ℕ → Internal.Prover) (hp : ∀ l c, PRel (p' (leaf l) (leaf c)) (p l c))
+    (q' : List Tree → List Tree → Tree → Tree → Tree) (q : Internal.Prover) (hq : PRel q' q)
+    (d pos acc w c : ℕ) :
+    PRel («Tactics.byLabels» (encGlobals G) p' q' (leaf d) (leaf pos) (leaf acc) (leaf w)
+        (leaf c))
+      (Tactics.byLabels G p q d pos acc w c) := by
+  simp only [«Tactics.byLabels», template, iter_leaf, Tactics.byLabels]
+  revert pos acc w c
+  exact Nat.rec (fun _ _ _ _ ↦ hq) (fun d ih pos acc w c ↦ by
+    rw [Nat.repeat]
+    exact byListSplit_eq G 0 pos _ _ _ _ (hp (acc - 1) c)
+      (bySplit2_eq 3 4 1 _ _ _ _ (ih 1 (acc + w) (2 * w) (c + 3))
+        (ih 1 (acc + 2 * w) (2 * w) (c + 3)))) d
+
+/-- The mirror's case analysis of a member of a datatype, at provers of the constructors' cases
+that are related at every label and index, and a related prover of the other labels' cases. -/
+theorem byMemberCases_eq (G : Internal.Globals) (o lb lk h i d : ℕ)
+    (clause' : Tree → Tree → List Tree → List Tree → Tree → Tree → Tree)
+    (clause : ℕ → ℕ → Internal.Prover)
+    (hc : ∀ l c, PRel (clause' (leaf l) (leaf c)) (clause l c))
+    (q' : List Tree → List Tree → Tree → Tree → Tree) (q : Internal.Prover) (hq : PRel q' q) :
+    PRel («Tactics.byMemberCases» (encGlobals G) (leaf o) (leaf lb) (leaf lk) (leaf h) (leaf i)
+        (leaf d) clause' q')
+      (Tactics.byMemberCases G o lb lk h i d clause q) := by
+  simp only [«Tactics.byMemberCases», template, Tactics.byMemberCases]
+  exact byRevert_eq o lb h _ _ (byTreeSplit_eq lk i _ _
+    (byLabels_eq G _ _ hc _ _ hq d 1 1 1 0))
 
 end GebTests.Prototypes.FreeTopos.Agreement.Tactics
 

@@ -165,7 +165,7 @@ with tempfile.TemporaryDirectory(prefix='geb-proof-formulas-') as directory:
            '(and-intro (all-intro x (reduce weak)) (exists-intro x (truth)))')
     reject('(internal () true)', '(truth)', version=4)
     reject('(internal () (equal false false))', '(reduce weak)', version=4)
-    reject('(internal () true)', '(truth)', version=8)
+    reject('(internal () true)', '(truth)', version=9)
     # The scripts of version 6 are read by no earlier version, and each fails where its
     # hypothesis, its goal or the theorem it cites does not fit.
     doc.write_text(SIX.replace('(proofs 6', '(proofs 5'))
