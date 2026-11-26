@@ -29,7 +29,7 @@
   (import Check)
   (deftype Sem (Arrow T (Arrow Ts (Arrow Ts (Arrow T T)))))
   (deftype CF (Arrow T (Arrow T T)))
-  (import (Lists CF) as CFs)
+
   (deftype DF (Arrow T T))
 
   ; simple and decorated types
@@ -86,7 +86,7 @@
           (let q T (snocPath p i)
             (and (if (anyT (lam ((x T)) (isPrefix q x)) paths) (r q e) 1) (c p e (add i 1)))))
         (lam ((p T) (e T) (i T)) 1)
-        (CFs.tail rs))
+        (Lists.tail CF rs))
       (lam ((p T) (acc T))
         (let* ((e T (add (dBang nd) acc)) (direct T (countPath p paths)))
           (cond ((dData nd) 1) ((or (lt 1 direct) (and (lt 0 direct) (belowPath p paths))) (lt 0 e))

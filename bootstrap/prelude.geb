@@ -43,6 +43,7 @@
     append
     length
     reverse
+    reverseIter
     replicate
     single
     some
@@ -108,6 +109,15 @@
     (lam ((xs Ts))
       ((foldr T Endo (lam ((x T) (k Endo) (acc Ts)) (k (cons x acc))) (lam ((acc Ts)) acc) xs)
        (nil T))))
+  ; reverse a list by iterating over its length, keeping the unread suffix and the result
+  (def reverseIter
+    (lam ((xs Ts))
+      (snd
+        (iter (Prod Ts Ts)
+          (lam ((s (Prod Ts Ts)))
+            (lcase T (Prod Ts Ts) (fst s) s (lam ((x T) (rest Ts)) (pair rest (cons x (snd s))))))
+          (pair xs (nil T))
+          (length xs)))))
   (def replicate (lam ((n T) (x T)) (iter Ts (lam ((r Ts)) (cons x r)) (nil T) n)))
   (def single (lam ((x T)) (cons x (nil T))))
 
@@ -139,7 +149,6 @@
           n))))
   (def digitsLsb (lam ((base T) (m T) (n T)) (reverse (digitsMsb base m n)))))
 
-; lists of the elements of a type, the module's parameter, instantiated at each element type
-; whose lists the sources take apart: the list without its first element
-(module Lists (parameter A) (export tail)
-  (def tail (lam ((xs (List A))) (lcase A (List A) xs (nil A) (lam ((x A) (r (List A))) r)))))
+; the tail of a list at its element type
+(module Lists (export tail)
+  (def (tail A) (lam ((xs (List A))) (lcase A (List A) xs (nil A) (lam ((x A) (r (List A))) r)))))

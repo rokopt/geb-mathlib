@@ -481,7 +481,7 @@ one the variable fields' keyword. -/
 def varFlagT (P : Prog) (fs : Term) : Term :=
   let ltT := (primT Kernel.Prim.lt).getD Term.star
   let subT := (primT Kernel.Prim.sub).getD Term.star
-  let nr := pc P "Datatype/Txs.length" [fs]
+  let nr := pc P "(Seq.length Typing.Tx)" [fs]
   pc P "Prelude.and" [apps ltT [leafT (numeral 1), nr], pc P "Datatype.namedTx"
     [pc P "Datatype.nthTx" [fs, apps subT [nr, leafT (numeral 2)]], pc P "Datatype.kwAmp" []]]
 
@@ -541,7 +541,7 @@ def preOk (P : Prog) (S : Defs) (e : Term) : List Term :=
   let second := pc P "Datatype.nthTx" [elems, leafT (numeral 1)]
   let user (kw : String) : Term := Internal.Logic.imp P.o (truth P.o (named kw))
     (userNameT P (pc P "Reader.nameOf" [second]))
-  let facts := dataFacts P S second (pc P "Datatype/Txs.drop" [leafT (numeral 2), elems])
+  let facts := dataFacts P S second (pc P "(Seq.drop Typing.Tx)" [leafT (numeral 2), elems])
   [Internal.Logic.imp P.o (truth P.o (named "Datatype.kwData"))
       (facts.dropLast.foldr (Internal.Logic.conj P.o) (facts.getLastD Term.star)),
     user "Reader.kwDefnum", user "Reader.kwDef", user "Datatype.kwDefn"]
@@ -725,7 +725,7 @@ def Passes.written (P : Prog) (s : Passes) (n b ws : Term) : Passes :=
   { s with
     env := pc P "Typing.withDefs" [s.env,
       declareT P (pc P "Typing.envDefs" [s.env]) nm (get syn)]
-    rej := pc P "Typing/OName.nothing" []
+    rej := pc P "(Option.nothing Typing.Name)" []
     names := pc P "Prelude.append" [s.names, pc P "Prelude.single" [nm]]
     terms := pc P "Prelude.append" [s.terms, pc P "Prelude.single" [get res]]
     ws := some ws }
@@ -1219,15 +1219,16 @@ def stepDeftype (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let sA (Γ : List Tree) : Passes :=
       passesAt (4 + (Γ.length - Γ₀.length)) (consT treeTy (eA Γ) (esA Γ))
     let nmA (Γ : List Tree) : Term := pc P "Reader.nameOf" [nA Γ]
-    let dv'A (Γ : List Tree) : Term := pc P "Datatype/Decls.append" [dvA Γ,
-      pc P "Datatype/Decls.single" [pc P "Datatype.aliasD" [pc P "Datatype.atomName" [nA Γ],
+    let dv'A (Γ : List Tree) : Term := pc P "(Seq.append Datatype.Decl)" [dvA Γ,
+      pc P "(Seq.single Datatype.Decl)" [pc P "Datatype.aliasD" [pc P "Datatype.atomName" [nA Γ],
         pc P "Datatype.expandAliases" [dvA Γ, XA Γ]]]]
     let E'A (Γ : List Tree) : Term := pc P "Typing.withAl" [EA Γ, consT treeTy
       (pc P "Typing.abbr" [pc P "Typing.atomName" [nA Γ],
         get (pc P "Typing.readTy" [EA Γ, XA Γ])]) (pc P "Typing.envAl" [EA Γ])]
     let tys'A (Γ : List Tree) : Term := consT treeTy
       (abbrevT P (nmA Γ) (get (pc P "Reader.readType" [tysA Γ, XA Γ]))) (tysA Γ)
-    let s'A (Γ : List Tree) : Passes := ⟨esA Γ, dv'A Γ, E'A Γ, pc P "Typing/OName.nothing" [],
+    let s'A (Γ : List Tree) : Passes :=
+      ⟨esA Γ, dv'A Γ, E'A Γ, pc P "(Option.nothing Typing.Name)" [],
       tys'A Γ, numsA Γ, namesA Γ, termsA Γ, msA Γ, fsA Γ, none, none⟩
     let restA (Γ : List Tree) : Passes := { s'A Γ with env := EA Γ, rej := rA Γ }
     let stA (Γ : List Tree) : Term := progState (tysA Γ) (numsA Γ) (namesA Γ) (termsA Γ)
@@ -1378,7 +1379,7 @@ def hasT (P : Prog) (x ns : Term) : Term := pc P "Typing.hasName" [x, ns]
 
 /-- The typing's names with a name after them. -/
 def namesSnoc (P : Prog) (ns nm : Term) : Term :=
-  pc P "Typing/Names.append" [ns, pc P "Typing/Names.single" [nm]]
+  pc P "(Seq.append Typing.Name)" [ns, pc P "(Seq.single Typing.Name)" [nm]]
 
 /-- A name among names is among them with a name after them: by induction on the names. In the
 context of the names, under the name and the name after them. -/
@@ -1646,7 +1647,8 @@ def stepDefnum (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let E'A (Γ : List Tree) : Term := pc P "Typing.withNums" [EA Γ,
       namesSnoc P (pc P "Typing.envNums" [EA Γ]) (pc P "Typing.atomName" [nA Γ])]
     let nums'A (Γ : List Tree) : Term := consT treeTy (abbrevT P (nmA Γ) (valA Γ)) (numsA Γ)
-    let s'A (Γ : List Tree) : Passes := ⟨esA Γ, dvA Γ, E'A Γ, pc P "Typing/OName.nothing" [],
+    let s'A (Γ : List Tree) : Passes :=
+      ⟨esA Γ, dvA Γ, E'A Γ, pc P "(Option.nothing Typing.Name)" [],
       tysA Γ, nums'A Γ, namesA Γ, termsA Γ, msA Γ, fsA Γ, none, none⟩
     let restA (Γ : List Tree) : Passes := { s'A Γ with env := EA Γ, rej := rA Γ }
     let stA (Γ : List Tree) : Term := progState (tysA Γ) (numsA Γ) (namesA Γ) (termsA Γ)
@@ -2120,7 +2122,7 @@ def programParts (P : Prog) (T : Defs3) (es : Term) : Option (List Term × Term)
   let ch (t : Term) (i : ℕ) : Term := apps childT [t, leafT (numeral i)]
   let x := pc P "Datatype.expandTyped" [es]
   let ts := Term.snd x
-  let nothing := pc P "Typing/OName.nothing" []
+  let nothing := pc P "(Option.nothing Typing.Name)" []
   let run := pc P "Typing.checkAll" [Term.pair (pc P "Typing.env0" []) nothing,
     pc P "Datatype.markersFirst" [ts]]
   let Ev := Term.fst run
@@ -2141,7 +2143,7 @@ def initialPasses (P : Prog) (X₀ es : Term) : Passes :=
   let ts := typedForms P es nil
   let fs := pc P "Datatype.kernelForms" [ts]
   ⟨es, nil, pc P "Typing.withMs" [pc P "Typing.env0" [],
-      txsApp P nil (Term.fst (Term.subst X₀ fun _ ↦ ts))], pc P "Typing/OName.nothing" [],
+      txsApp P nil (Term.fst (Term.subst X₀ fun _ ↦ ts))], pc P "(Option.nothing Typing.Name)" [],
     nil, nil, nil, nil, pc P "Recognize.markers" [fs], fs, none, none⟩
 
 /-- That each definition's body the expansion writes for a program's forms is a source form at
@@ -2172,7 +2174,7 @@ def programTop (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let a : Internal.Thm := ⟨0, [Ls], hs ++ [plainTop P (v 0)] ++ assumed ++ [passes], concl⟩
     let s₀ (Γ : List Tree) : Passes := initialPasses P X₀ (v (Γ.length - 1))
     let last (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦ k (Φ.length - 1) Γ Φ ψ
-    let nothing := pc P "Typing/OName.nothing" []
+    let nothing := pc P "(Option.nothing Typing.Name)" []
     let env0 := pc P "Typing.env0" []
     let tsA (Γ : List Tree) : Term := (s₀ Γ).typed P
     let partA (Γ : List Tree) : Term := Term.subst X₀ fun _ ↦ tsA Γ
@@ -2321,7 +2323,7 @@ def ctorDeclPlain (P : Prog) (S : Defs) : Step :=
     let ltT ← primT Kernel.Prim.lt
     let subT ← primT Kernel.Prim.sub
     let c := nodeT (Term.pair (numeral 2) (consT treeTy nm fs))
-    let nr := pc P "Datatype/Txs.length" [fs]
+    let nr := pc P "(Seq.length Typing.Tx)" [fs]
     let more := apps ltT [leafT (numeral 1), nr]
     let amp := pc P "Datatype.namedTx"
       [pc P "Datatype.nthTx" [fs, apps subT [nr, leafT (numeral 2)]], pc P "Datatype.kwAmp" []]
@@ -2779,8 +2781,9 @@ def findAliasSnoc (P : Prog) (S : Defs) : Step :=
     let childT ← primT Kernel.Prim.child
     let isSome (t : Term) : Term := pc P "Prelude.isSome" [t]
     let fa (n dv : Term) : Term := pc P "Datatype.findAlias" [n, dv]
-    let one (m a : Term) : Term := pc P "Datatype/Decls.single" [pc P "Datatype.aliasD" [m, a]]
-    let snoc (dv m a : Term) : Term := pc P "Datatype/Decls.append" [dv, one m a]
+    let one (m a : Term) : Term :=
+      pc P "(Seq.single Datatype.Decl)" [pc P "Datatype.aliasD" [m, a]]
+    let snoc (dv m a : Term) : Term := pc P "(Seq.append Datatype.Decl)" [dv, one m a]
     -- under the quantifiers: the name v0, the alias's name v1, its form v2, the declarations v3
     let φ := Internal.Logic.all o treeTy (Term.lam treeTy (Internal.Logic.all o treeTy
       (Term.lam treeTy (Internal.Logic.all o treeTy (Term.lam treeTy (Internal.Logic.conj o
@@ -2822,8 +2825,9 @@ def aliasTysExtend (P : Prog) (S : Defs) : Step :=
     let equalT ← primT Kernel.Prim.equal
     let Γ₀ := [treeTy, treeTy, treeTy, list treeTy, list treeTy]
     let (ty, a, nm, tys, dv) := (v 0, v 1, v 2, v 3, v 4)
-    let one (m a : Term) : Term := pc P "Datatype/Decls.single" [pc P "Datatype.aliasD" [m, a]]
-    let dv' := pc P "Datatype/Decls.append" [dv, one nm a]
+    let one (m a : Term) : Term :=
+      pc P "(Seq.single Datatype.Decl)" [pc P "Datatype.aliasD" [m, a]]
+    let dv' := pc P "(Seq.append Datatype.Decl)" [dv, one nm a]
     let thm : Internal.Thm := ⟨0, Γ₀, [aliasTysT P dv tys],
       aliasTysT P dv' (consT treeTy (abbrevT P nm ty) tys)⟩
     let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
@@ -2888,8 +2892,8 @@ def aliasExtend (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let (X, nm, ms, Ev, dv) := (v 0, v 1, v 2, v 3, v 4)
     let expand (dv X : Term) : Term := pc P "Datatype.expandAliases" [dv, X]
     let read (Ev X : Term) : Term := pc P "Typing.readTy" [Ev, X]
-    let dv' := pc P "Datatype/Decls.append" [dv,
-      pc P "Datatype/Decls.single" [pc P "Datatype.aliasD" [nm, expand dv X]]]
+    let dv' := pc P "(Seq.append Datatype.Decl)" [dv,
+      pc P "(Seq.single Datatype.Decl)" [pc P "Datatype.aliasD" [nm, expand dv X]]]
     let Ev' := pc P "Typing.withAl" [Ev, consT treeTy
       (pc P "Typing.abbr" [nm, get (read Ev X)]) (pc P "Typing.envAl" [Ev])]
     let a : Internal.Thm := ⟨0, Γ₀,

@@ -29,27 +29,26 @@
   (import Prelude)
   (import Reader)
   (import Typing)
-  (import (Seq Tx) as Txs)
-  (import (Option Tx) as OTx)
-  (deftype MTx OTx.Maybe)
-  (import (Seq MTx) as MTxs)
+
+  (deftype MTx (Option.Maybe Tx))
+
   (defn sameName ((a Name) (b Name)) T (equal (rep a) (rep b)))
   (defn atomName ((x Tx)) Name (case x ((tAtom & cs) (name cs)) (else (name (nil T)))))
   (defn isAtomTx ((x Tx)) T (case x ((tAtom & cs) 1) (else 0)))
   (defn isListTx ((x Tx)) T (case x ((tList & xs) 1) (else 0)))
   (defn namedTx ((x Tx) (kw T)) T (named (rep x) kw))
   (defn elems ((x Tx)) (List Tx) (case x ((tList & xs) xs) (else (nil Tx))))
-  (defn nthTx ((xs (List Tx)) (i T)) Tx (Txs.atOr tx0 xs i))
+  (defn nthTx ((xs (List Tx)) (i T)) Tx (Seq.atOr Tx tx0 xs i))
 
   ; forms under construction
-  (defn sx1 ((a Tx)) Tx (tList (Txs.single a)))
-  (defn sx2 ((a Tx) (b Tx)) Tx (tList (cons a (Txs.single b))))
-  (defn sx3 ((a Tx) (b Tx) (c Tx)) Tx (tList (cons a (cons b (Txs.single c)))))
-  (defn sx4 ((a Tx) (b Tx) (c Tx) (d Tx)) Tx (tList (cons a (cons b (cons c (Txs.single d))))))
+  (defn sx1 ((a Tx)) Tx (tList (Seq.single Tx a)))
+  (defn sx2 ((a Tx) (b Tx)) Tx (tList (cons a (Seq.single Tx b))))
+  (defn sx3 ((a Tx) (b Tx) (c Tx)) Tx (tList (cons a (cons b (Seq.single Tx c)))))
+  (defn sx4 ((a Tx) (b Tx) (c Tx) (d Tx)) Tx (tList (cons a (cons b (cons c (Seq.single Tx d))))))
   (defn sx5 ((a Tx) (b Tx) (c Tx) (d Tx) (e Tx)) Tx
-    (tList (cons a (cons b (cons c (cons d (Txs.single e)))))))
+    (tList (cons a (cons b (cons c (cons d (Seq.single Tx e)))))))
   (defn sx6 ((a Tx) (b Tx) (c Tx) (d Tx) (e Tx) (f Tx)) Tx
-    (tList (cons a (cons b (cons c (cons d (cons e (Txs.single f))))))))
+    (tList (cons a (cons b (cons c (cons d (cons e (Seq.single Tx f))))))))
 
   ; the atoms of the expansion
   (def aLet (datum Tx (1 let)))
@@ -123,7 +122,8 @@
   ; read them
   (defn bindersTx ((b Tx)) (List Tx)
     (case b
-      ((tList & xs) (if (and (eq (Txs.length xs) 2) (isAtomTx (nthTx xs 0))) (Txs.single b) xs))
+      ((tList & xs)
+       (if (and (eq (Seq.length Tx xs) 2) (isAtomTx (nthTx xs 0))) (Seq.single Tx b) xs))
       (else (nil Tx))))
   ; the abstraction over each binder of a list in turn around a body, the first outermost, each
   ; over a list of one binder, which the typing and the reader read as they read the abstraction
@@ -132,12 +132,13 @@
     (foldr Tx Tx (lam ((x Tx) (acc Tx)) (sx3 aLam (sx1 x) acc)) body bs))
   ; an abstraction over binders written by curry; none for an abstraction over none, which neither
   ; the typing nor the reader reads; any other form unchanged
-  (defn curried ((e Tx)) OTx.Maybe
+  (defn curried ((e Tx)) (Option.Maybe Tx)
     (let es (List Tx) (elems e)
-      (if (and (namedTx (nthTx es 0) kwLam) (eq (Txs.length es) 3))
+      (if (and (namedTx (nthTx es 0) kwLam) (eq (Seq.length Tx es) 3))
         (let bs (List Tx) (bindersTx (nthTx es 1))
-          (if (lt 0 (Txs.length bs)) (OTx.just (curry bs (nthTx es 2))) OTx.nothing))
-        (OTx.just e))))
+          (if (lt 0 (Seq.length Tx bs)) (Option.just Tx (curry bs (nthTx es 2)))
+            (Option.nothing Tx)))
+        (Option.just Tx e))))
   ; a list of trees' head, the tree 0 at the empty list, and its tail
   (defn sHeadOf ((xs Tx)) Tx (sx6 aLcase aT aT xs aZero (sLam2 aH aT aTl (sList aT) aH)))
   (defn sTailOf ((xs Tx)) Tx
@@ -148,27 +149,27 @@
   (defn ofTy ((ty Tx) (e Tx)) Tx (tOf ty e))
 
   ; lists by position and conjunctions
-  (defn dropLast ((xs (List Tx))) (List Tx) (Txs.reverse (Txs.tail (Txs.reverse xs))))
+  (defn dropLast ((xs (List Tx))) (List Tx) (Seq.reverse Tx (Seq.tail Tx (Seq.reverse Tx xs))))
   (defn allTrue ((xs Ts)) T (foldr T T (lam ((x T) (r T)) (and x r)) 1 xs))
 
   ; declarations: a constructor with its name, position, datatype, the list of its field types,
   ; whether a last field takes the remaining children, and that field's type; a datatype with
   ; its name; a type abbreviation with its name and its type, abbreviations expanded
   (data Decl (ctorD Name T Name Tx T Tx) (dataD Name) (aliasD Name Tx))
-  (import (Seq Decl) as Decls)
-  (import (Option Decl) as ODecl)
-  (defn findCtor ((n Name) (env (List Decl))) ODecl.Maybe
-    (foldr Decl ODecl.Maybe
-      (lam ((e Decl) (r ODecl.Maybe))
-        (case e ((ctorD m j d fs v w) (if (sameName m n) (ODecl.just e) r)) (else r)))
-      ODecl.nothing
+
+  (defn findCtor ((n Name) (env (List Decl))) (Option.Maybe Decl)
+    (foldr Decl (Option.Maybe Decl)
+      (lam ((e Decl) (r (Option.Maybe Decl)))
+        (case e ((ctorD m j d fs v w) (if (sameName m n) (Option.just Decl e) r)) (else r)))
+      (Option.nothing Decl)
       env))
   (defn isData ((n Name) (env (List Decl))) T
     (foldr Decl T (lam ((e Decl) (r T)) (case e ((dataD m) (or (sameName m n) r)) (else r))) 0 env))
   (defn findAlias ((n Name) (env (List Decl))) MTx
     (foldr Decl MTx
-      (lam ((e Decl) (r MTx)) (case e ((aliasD m ty) (if (sameName m n) (OTx.just ty) r)) (else r)))
-      OTx.nothing
+      (lam ((e Decl) (r MTx))
+        (case e ((aliasD m ty) (if (sameName m n) (Option.just Tx ty) r)) (else r)))
+      (Option.nothing Tx)
       env))
   (defn ctorsOf ((d Name) (env (List Decl))) (List Decl)
     (foldr Decl (List Decl)
@@ -184,11 +185,12 @@
   ; takes it only at a node with fewer children than its constructor has fields, which no member is
   (defn expandAliases ((env (List Decl)) (ty Tx)) Tx
     (cata Tx Tx ty
-      ((tAtom & cs) (case (findAlias (name cs) env) ((OTx.just a) a) ((OTx.nothing) (tAtom cs))))
+      ((tAtom & cs)
+       (case (findAlias (name cs) env) ((Option.just Tx a) a) ((Option.nothing Tx) (tAtom cs))))
       ((tList & rs) (tList rs))
       (else tx0)))
   (deftype TT (Prod Tx Tx))
-  (import (Seq TT) as TTs)
+
   (defn defaultOf ((ty Tx)) Tx
     (snd
       (cata Tx TT ty
@@ -198,7 +200,7 @@
          (let*
            ((fs (List Tx)
               (foldr TT (List Tx) (lam ((r TT) (a (List Tx))) (cons (fst r) a)) (nil Tx) rs))
-            (v (Arrow T Tx) (lam ((i T)) (snd (TTs.atOr (pair tx0 aZero) rs i))))
+            (v (Arrow T Tx) (lam ((i T)) (snd (Seq.atOr TT (pair tx0 aZero) rs i))))
             (h Tx (nthTx fs 0)))
            (pair (tList fs)
              (cond ((namedTx h kwProd) (sx3 aPair (v 1) (v 2)))
@@ -209,15 +211,15 @@
 
   ; the subterms of a form with their expansions as functions of the declarations
   (deftype XR (Prod Tx (Arrow (List Decl) MTx)))
-  (import (Seq XR) as XRs)
+
   (defn xrForms ((rs (List XR))) (List Tx)
     (foldr XR (List Tx) (lam ((r XR) (a (List Tx))) (cons (fst r) a)) (nil Tx) rs))
   (defn xrAt ((rs (List XR)) (i T) (env (List Decl))) MTx
-    ((snd (XRs.atOr (pair tx0 (lam ((e (List Decl))) OTx.nothing)) rs i)) env))
+    ((snd (Seq.atOr XR (pair tx0 (lam ((e (List Decl))) (Option.nothing Tx))) rs i)) env))
   (defn xrFrom ((rs (List XR)) (i T) (env (List Decl))) (Prod T (List Tx))
-    (OTx.allJust
+    (Option.allJust Tx
       (foldr XR (List MTx) (lam ((r XR) (a (List MTx))) (cons ((snd r) env) a)) (nil MTx)
-        (XRs.drop i rs))))
+        (Seq.drop XR i rs))))
 
   ; the parts of a case analysis's or a structural recursion's clauses, as the typing checks them
   ; against the datatype's marker: the datatype, the one given or the first clause's
@@ -225,9 +227,9 @@
   ; the constructor's label, whether the constructor takes the remaining children, the clause's
   ; variables and the parts extra gives of the constructor and the variables, numerals as atoms;
   ; and the clauses' bodies, an else clause's last
-  (defn clauseCtor ((env (List Decl)) (c Tx)) ODecl.Maybe
+  (defn clauseCtor ((env (List Decl)) (c Tx)) (Option.Maybe Decl)
     (case (nthTx (elems c) 0) ((tList & ps) (findCtor (atomName (nthTx ps 0)) env))
-      (else ODecl.nothing)))
+      (else (Option.nothing Decl))))
   (deftype CP (Prod Tx (Prod (List Tx) (List Tx))))
   ; a clause's variables split at its constructor's fixed fields, each written by entry with its
   ; field's type: those of the fixed fields, and those after them, at the type of the remaining
@@ -244,54 +246,57 @@
        (lam ((ts (List Tx))) (pair (nil Tx) (nil Tx)))
        vars) fts))
   (defn clauseParts
-    ((env (List Decl)) (d0 OName.Maybe) (cls (List Tx)) (xo (Prod T (List Tx))) (entry Entry))
+    ((env (List Decl)) (d0 (Option.Maybe Name)) (cls (List Tx)) (xo (Prod T (List Tx)))
+     (entry Entry))
     (Prod T CP)
     (let*
-      ((n T (Txs.length cls)) (lastC Tx (nthTx cls (sub n 1)))
+      ((n T (Seq.length Tx cls)) (lastC Tx (nthTx cls (sub n 1)))
        (hasElse T
          (and (isListTx lastC)
-           (and (eq (Txs.length (elems lastC)) 2) (namedTx (nthTx (elems lastC) 0) kwElse))))
+           (and (eq (Seq.length Tx (elems lastC)) 2) (namedTx (nthTx (elems lastC) 0) kwElse))))
        (d Name
-         (case d0 ((OName.just dd) dd)
-           ((OName.nothing)
-            (case (clauseCtor env (nthTx cls 0)) ((ODecl.just c0) (ctorData c0))
-              ((ODecl.nothing) (name (nil T)))))))
+         (case d0 ((Option.just Name dd) dd)
+           ((Option.nothing Name)
+            (case (clauseCtor env (nthTx cls 0)) ((Option.just Decl c0) (ctorData c0))
+              ((Option.nothing Decl) (name (nil T)))))))
        (metas (Prod T (List Tx))
-         (OTx.allJust
+         (Option.allJust Tx
            (foldr Tx (List MTx)
              (lam ((c Tx) (acc (List MTx)))
                (cons
                  (case (clauseCtor env c)
-                   ((ODecl.just e)
+                   ((Option.just Decl e)
                     (case e
                       ((ctorD m j dd fs v w)
                        (let*
-                         ((written (List Tx) (Txs.tail (elems (nthTx (elems c) 0))))
+                         ((written (List Tx) (Seq.tail Tx (elems (nthTx (elems c) 0))))
                           (vars (List Tx)
                             (if v
-                              (Txs.append (dropLast (dropLast written))
-                                (Txs.single (nthTx written (sub (Txs.length written) 1))))
+                              (Seq.append Tx (dropLast (dropLast written))
+                                (Seq.single Tx (nthTx written (sub (Seq.length Tx written) 1))))
                               written))
                           (p (Prod (List Tx) (List Tx)) (splitVars (elems fs) w vars entry)))
                          (if
-                           (and (eq (Txs.length (elems c)) 2)
+                           (and (eq (Seq.length Tx (elems c)) 2)
                              (and (sameName dd d)
                                (and
-                                 (eq (Txs.length written) (add (Txs.length (elems fs)) (mul 2 v)))
+                                 (eq (Seq.length Tx written)
+                                   (add (Seq.length Tx (elems fs)) (mul 2 v)))
                                  (and
-                                   (if v (namedTx (nthTx written (Txs.length (elems fs))) kwAmp) 1)
+                                   (if v (namedTx (nthTx written (Seq.length Tx (elems fs))) kwAmp)
+                                     1)
                                    (foldr Tx T
                                      (lam ((x Tx) (ok T))
                                        (and (and (isAtomTx x) (if (namedTx x kwAmp) 0 1)) ok))
                                      1
                                      vars)))))
-                           (OTx.just
+                           (Option.just Tx
                              (tList
                                (cons (numAtom j)
-                                 (cons (tList (fst p)) (Txs.single (tList (snd p)))))))
-                           OTx.nothing)))
-                      (else OTx.nothing)))
-                   ((ODecl.nothing) OTx.nothing))
+                                 (cons (tList (fst p)) (Seq.single Tx (tList (snd p)))))))
+                           (Option.nothing Tx))))
+                      (else (Option.nothing Tx))))
+                   ((Option.nothing Decl) (Option.nothing Tx)))
                  acc))
              (nil MTx)
              (if hasElse (dropLast cls) cls)))))
@@ -309,15 +314,16 @@
   ; clause's variables
   (defn expandCase ((env (List Decl)) (fs (List Tx)) (rs (List XR))) MTx
     (case (xrAt rs 1 env)
-      ((OTx.just s)
+      ((Option.just Tx s)
        (let*
          ((q (Prod T CP)
-            (clauseParts env OName.nothing (Txs.drop 2 fs) (xrFrom rs 2 env)
+            (clauseParts env (Option.nothing Name) (Seq.drop Tx 2 fs) (xrFrom rs 2 env)
               (lam ((x Tx) (t Tx)) x))) (p CP (snd q)))
          (if (fst q)
-           (OTx.just (tCase (cons (fst p) (cons s (cons (tList (fst (snd p))) (snd (snd p)))))))
-           OTx.nothing)))
-      ((OTx.nothing) OTx.nothing)))
+           (Option.just Tx
+             (tCase (cons (fst p) (cons s (cons (tList (fst (snd p))) (snd (snd p)))))))
+           (Option.nothing Tx))))
+      ((Option.nothing Tx) (Option.nothing Tx))))
 
   ; structural recursion, whose erasure takes the clause's fields' suspended results in order,
   ; one binding each, so that each is used once: a suspended result's type and a list of them
@@ -331,31 +337,31 @@
     (let*
       ((d Name (atomName (nthTx fs 1))) (r Tx (nthTx fs 2))
        (flagged Entry
-         (lam ((x Tx) (t Tx)) (tList (cons x (Txs.single (numAtom (named (rep t) (rep d)))))))))
+         (lam ((x Tx) (t Tx)) (tList (cons x (Seq.single Tx (numAtom (named (rep t) (rep d)))))))))
       (case (xrAt rs 3 env)
-        ((OTx.just s)
+        ((Option.just Tx s)
          (if (and (isAtomTx (nthTx fs 1)) (isData d env))
            (let*
              ((q (Prod T CP)
-                (clauseParts env (OName.just d) (Txs.drop 4 fs) (xrFrom rs 4 env) flagged))
+                (clauseParts env (Option.just Name d) (Seq.drop Tx 4 fs) (xrFrom rs 4 env) flagged))
               (p CP (snd q)))
              (if (fst q)
-               (OTx.just
+               (Option.just Tx
                  (tCata
                    (cons (fst p)
                      (cons r
                        (cons s
                          (cons (defaultOf (expandAliases env r))
                            (cons (tList (fst (snd p))) (snd (snd p)))))))))
-               OTx.nothing))
-           OTx.nothing))
-        ((OTx.nothing) OTx.nothing))))
+               (Option.nothing Tx)))
+           (Option.nothing Tx)))
+        ((Option.nothing Tx) (Option.nothing Tx)))))
 
   ; a list's children, the type a decoding or a datum reads with its abbreviations expanded, so
   ; that the typing reads a datatype by its own name, which names its recognizer and its marker
   (defn typeExpanded ((env (List Decl)) (h Tx) (k T) (es (List Tx))) (List Tx)
     (if (or (and (namedTx h kwDecode) (eq k 5)) (and (namedTx h kwDatum) (eq k 3)))
-      (cons (nthTx es 0) (cons (expandAliases env (nthTx es 1)) (Txs.drop 2 es)))
+      (cons (nthTx es 0) (cons (expandAliases env (nthTx es 1)) (Seq.drop Tx 2 es)))
       es))
 
   ; an expression expanded, given the declarations before it: each form's result is the form with
@@ -363,19 +369,19 @@
   (defn expandExpr ((env (List Decl)) (e Tx)) MTx
     ((snd
        (cata Tx XR e
-         ((tAtom & cs) (pair (tAtom cs) (lam ((env (List Decl))) (OTx.just (tAtom cs)))))
+         ((tAtom & cs) (pair (tAtom cs) (lam ((env (List Decl))) (Option.just Tx (tAtom cs)))))
          ((tList & rs)
           (let fs (List Tx) (xrForms rs)
             (pair (tList fs)
               (lam ((env (List Decl)))
-                (let* ((h Tx (nthTx fs 0)) (k T (XRs.length rs)))
+                (let* ((h Tx (nthTx fs 0)) (k T (Seq.length XR rs)))
                   (cond ((and (namedTx h kwCase) (lt 2 k)) (expandCase env fs rs))
                     ((and (namedTx h kwCata) (lt 4 k)) (expandCata env fs rs))
                     (else
                       (let a (Prod T (List Tx)) (xrFrom rs 0 env)
                         (if (fst a) (curried (tList (typeExpanded env h k (snd a))))
-                          OTx.nothing)))))))))
-         (else (pair tx0 (lam ((env (List Decl))) (OTx.just tx0)))))) env))
+                          (Option.nothing Tx))))))))))
+         (else (pair tx0 (lam ((env (List Decl))) (Option.just Tx tx0)))))) env))
 
   ; a datatype declaration: its declarations and kernel forms, the datatype's declaration, as a
   ; type distinct from the trees or as their abbreviation, and one definition for each
@@ -383,10 +389,10 @@
   (deftype CD (Prod Decl Tx))
   (defn ctorDecl ((d Name) (j T) (c Tx)) (Prod T CD)
     (let*
-      ((es (List Tx) (elems c)) (rest (List Tx) (Txs.tail es)) (nr T (Txs.length rest))
+      ((es (List Tx) (elems c)) (rest (List Tx) (Seq.tail Tx es)) (nr T (Seq.length Tx rest))
        (isVar T (and (lt 1 nr) (namedTx (nthTx rest (sub nr 2)) kwAmp)))
        (fields (List Tx) (if isVar (dropLast (dropLast rest)) rest))
-       (nf T (Txs.length fields))
+       (nf T (Seq.length Tx fields))
        (vt Tx (if isVar (nthTx rest (sub nr 1)) tx0))
        (ps (List Tx)
          (snd
@@ -404,7 +410,7 @@
                  (sx3 aCons (ofTy f (fieldAtom (sub (sub nf 1) (fst acc)))) (snd acc))))
              (pair 0 (if isVar (ofTy (sList vt) aRest) (sx2 aNil aT)))
              fields)))
-       (allPs (List Tx) (if isVar (Txs.append ps (Txs.single (sx2 aRest (sList vt)))) ps))
+       (allPs (List Tx) (if isVar (Seq.append Tx ps (Seq.single Tx (sx2 aRest (sList vt)))) ps))
        (body Tx (asTy (tAtom (children (rep d))) (sx3 aNode (numAtom j) listE))))
       (pair (and (isListTx c) (isAtomTx (nthTx es 0)))
         (pair (ctorD (atomName (nthTx es 0)) j d (tList fields) isVar vt)
@@ -412,8 +418,8 @@
   (deftype DS (Prod T (Prod (List Decl) (List Tx))))
   (defn dataDecl ((e Tx)) DS
     (let*
-      ((es (List Tx) (elems e)) (d Name (atomName (nthTx es 1))) (cs (List Tx) (Txs.drop 2 es))
-       (nc T (Txs.length cs))
+      ((es (List Tx) (elems e)) (d Name (atomName (nthTx es 1))) (cs (List Tx) (Seq.drop Tx 2 es))
+       (nc T (Seq.length Tx cs))
        (r (Prod T DS)
          (foldr Tx (Prod T DS)
            (lam ((c Tx) (acc (Prod T DS)))
@@ -462,37 +468,38 @@
       (let*
         ((env (List Decl) (fst (snd s))) (out (List Tx) (snd (snd s))) (es (List Tx) (elems e))
          (h Tx (nthTx es 0))
-         (k T (Txs.length es)))
+         (k T (Seq.length Tx es)))
         (cond
           ((namedTx h kwData)
            (let dd DS (dataDecl e)
              (if (fst dd)
                (let* ((ds (List Decl) (fst (snd dd))) (forms (List Tx) (snd (snd dd))))
                  (pair 1
-                   (pair (Decls.append env ds)
-                     (Txs.append
-                       (Txs.reverse
-                         (Txs.append (cons (tData (nthTx es 1)) (Txs.tail forms))
-                           (Txs.single (marker env (nthTx es 1) ds))))
+                   (pair (Seq.append Decl env ds)
+                     (Seq.append Tx
+                       (Seq.reverse Tx
+                         (Seq.append Tx (cons (tData (nthTx es 1)) (Seq.tail Tx forms))
+                           (Seq.single Tx (marker env (nthTx es 1) ds))))
                        out))))
                xpFail)))
           ((and (namedTx h kwDefn) (eq k 5))
            (case (expandExpr env (nthTx es 4))
-             ((OTx.just b)
+             ((Option.just Tx b)
               (let body Tx (sLet aR (nthTx es 3) b aR)
                 (pair 1
                   (pair env
                     (cons (sx3 aDef (nthTx es 1) (curry (bindersTx (nthTx es 2)) body)) out)))))
-             ((OTx.nothing) xpFail)))
+             ((Option.nothing Tx) xpFail)))
           ((and (namedTx h kwDef) (eq k 3))
            (case (expandExpr env (nthTx es 2))
-             ((OTx.just b) (pair 1 (pair env (cons (sx3 aDef (nthTx es 1) b) out))))
-             ((OTx.nothing) xpFail)))
+             ((Option.just Tx b) (pair 1 (pair env (cons (sx3 aDef (nthTx es 1) b) out))))
+             ((Option.nothing Tx) xpFail)))
           ((and (namedTx h kwDeftype) (eq k 3))
            (pair 1
              (pair
-               (Decls.append env
-                 (Decls.single (aliasD (atomName (nthTx es 1)) (expandAliases env (nthTx es 2)))))
+               (Seq.append Decl env
+                 (Seq.single Decl
+                   (aliasD (atomName (nthTx es 1)) (expandAliases env (nthTx es 2)))))
                (cons e out))))
           ((and (namedTx h kwDefnum) (eq k 3)) (pair 1 (pair env (cons e out))))
           (else xpFail)))
@@ -516,9 +523,10 @@
                      (else (xpStep t f))))
                  xpFail)))
            (lam ((t XP)) t)
-           (Txs.tail (elems e))) (pair 1 (pair (fst (snd s)) (nil Tx))))
+           (Seq.tail Tx (elems e))) (pair 1 (pair (fst (snd s)) (nil Tx))))
         (if (fst r)
-          (pair 1 (pair (fst (snd s)) (cons (tGeneric (Txs.reverse (snd (snd r)))) (snd (snd s)))))
+          (pair 1
+            (pair (fst (snd s)) (cons (tGeneric (Seq.reverse Tx (snd (snd r)))) (snd (snd s)))))
           xpFail))
       s))
   ; a program's forms expanded with their datatypes, before they are checked
@@ -531,7 +539,7 @@
                (xpStep s e))))
          (lam ((s XP)) s)
          es) (pair 1 (pair (nil Decl) (nil Tx))))
-      (pair (fst s) (Txs.reverse (snd (snd s))))))
+      (pair (fst s) (Seq.reverse Tx (snd (snd s))))))
 
   ; the erasure of the clauses of a case analysis and of a structural recursion: the chain of
   ; tests of the label of the tree sv, each clause's body with its variables bound by bind, the
@@ -541,8 +549,8 @@
     ((foldr Tx (Arrow (List Tx) Tx)
        (lam ((c Tx) (k (Arrow (List Tx) Tx)) (bs (List Tx)))
          (let b Tx (bind c (nthTx bs 0))
-           (if (lt 1 (Txs.length bs))
-             (sIf (sx3 aEq (sx2 aLabel sv) (nthTx (elems c) 0)) b (k (Txs.tail bs)))
+           (if (lt 1 (Seq.length Tx bs))
+             (sIf (sx3 aEq (sx2 aLabel sv) (nthTx (elems c) 0)) b (k (Seq.tail Tx bs)))
              b)))
        (lam ((bs (List Tx))) (nthTx bs 0))
        metas) bodies))
@@ -560,7 +568,7 @@
   ; to the rest
   (defn eraseCase ((rs (List Tx))) Tx
     (sLet aS aT (nthTx rs 1)
-      (eraseChain aS (elems (nthTx rs 2)) (Txs.drop 3 rs)
+      (eraseChain aS (elems (nthTx rs 2)) (Seq.drop Tx 3 rs)
         (lam ((meta Tx) (b Tx))
           (sLet aC (sList aT) (sx2 aChildren aS)
             (bindVars
@@ -581,7 +589,7 @@
         (sx4 aPara th
           (sLam2 aO aT aK (sList th)
             (sLam1 aU aUnit
-              (eraseChain aO (elems (nthTx rs 4)) (Txs.drop 5 rs)
+              (eraseChain aO (elems (nthTx rs 4)) (Seq.drop Tx 5 rs)
                 (lam ((meta Tx) (b Tx))
                   (sLet aQ (splitTy r) (sx3 aPair (sLam1 aU aUnit dr) aK)
                     (sLet aC (sList aT) (sx2 aChildren aO)
@@ -623,7 +631,7 @@
       ((tCase & rs) (eraseCase rs))
       ((tCata & rs) (eraseCata rs))
       ((tList & rs)
-       (let* ((k T (Txs.length rs)) (h Tx (nthTx rs 0)))
+       (let* ((k T (Seq.length Tx rs)) (h Tx (nthTx rs 0)))
          (cond ((and (namedTx h kwRep) (eq k 2)) (sx1 (nthTx rs 1)))
            ((and (namedTx h kwDecode) (eq k 5))
             (sLet aE aT (nthTx rs 2)
@@ -634,7 +642,7 @@
   (defn eraseForm ((f Tx)) Tx
     (case f ((tData d) (sx3 aDeftype d aT))
       ((tList & xs)
-       (if (and (eq (Txs.length xs) 3) (namedTx (nthTx xs 0) kwDef))
+       (if (and (eq (Seq.length Tx xs) 3) (namedTx (nthTx xs 0) kwDef))
          (sx3 (nthTx xs 0) (nthTx xs 1) (eraseExpr (nthTx xs 2)))
          f))
       (else f)))
@@ -649,7 +657,7 @@
             (else (pair (fst acc) (cons f (snd acc))))))
         (pair (nil Tx) (nil Tx))
         fs)
-      (Txs.append (fst p) (snd p))))
+      (Seq.append Tx (fst p) (snd p))))
   ; a program's checked forms erased, the templates' instances at opaque arguments dropped
   (defn kernelForms ((fs (List Tx))) (List Tx)
     (foldr Tx (List Tx)
@@ -661,15 +669,15 @@
   (defn expandChecked ((es (List Tx))) MTx
     (let x (Prod T (List Tx)) (expandTyped es)
       (if (fst x)
-        (case (checkForms (markersFirst (snd x))) ((OName.just n) OTx.nothing)
-          ((OName.nothing) (OTx.just (tList (kernelForms (snd x))))))
-        OTx.nothing)))
+        (case (checkForms (markersFirst (snd x))) ((Option.just Name n) (Option.nothing Tx))
+          ((Option.nothing Name) (Option.just Tx (tList (kernelForms (snd x))))))
+        (Option.nothing Tx))))
   ; a program's forms, as the front end gives them, expanded, when they expand and check
   (defn expandProgram ((es Ts)) T
     (decode Tx (node 2 es)
       (lam ((x Tx))
-        (case (expandChecked (elems x)) ((OTx.just y) (some (node 0 (children (rep y)))))
-          ((OTx.nothing) none)))
+        (case (expandChecked (elems x)) ((Option.just Tx y) (some (node 0 (children (rep y)))))
+          ((Option.nothing Tx) none)))
       none))
   ; the name of the first definition of a program's forms, or of its text, that does not check,
   ; or the empty tree
@@ -678,8 +686,8 @@
       (lam ((x Tx))
         (let r (Prod T (List Tx)) (expandTyped (elems x))
           (if (fst r)
-            (case (checkForms (markersFirst (snd r))) ((OName.just n) (rep n))
-              ((OName.nothing) (node 0 (nil T))))
+            (case (checkForms (markersFirst (snd r))) ((Option.just Name n) (rep n))
+              ((Option.nothing Name) (node 0 (nil T))))
             (node 0 (nil T)))))
       (node 0 (nil T))))
   (defn typeErrorOf ((file T)) T

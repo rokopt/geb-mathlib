@@ -34,9 +34,6 @@
     indices
     ConvState
     convState
-    OConvState.Maybe
-    OConvState.nothing
-    OConvState.just
     ConvDecl
     cdBase
     cdConv
@@ -54,8 +51,7 @@
   (import Prover)
   (import Literals)
   (import Machine)
-  (import (Map T NormRule) as RuleAt)
-  (import (Each NormRule) as EachRule)
+
   ; the checker's result at a node, as the checker of derivations gives it: a function of a mode, 0
   ; the rewriting and 1 the proving, a context, a number of variables, hypotheses and a term
   (deftype CK (Arrow T (Arrow Ts (Arrow T (Arrow Ts (Arrow T T))))))
@@ -84,7 +80,7 @@
         ((eq l 5) (nrThmAt (at cs 0) (objs (children (at cs 1))) (at cs 2) (at cs 3)))
         ((eq l 6) (nrHyp (at cs 0)))
         (else nrUnit))))
-  (defn rulesOf ((xs Ts)) NRs (RuleAt.map ruleOf xs))
+  (defn rulesOf ((xs Ts)) NRs (Map.map T NormRule ruleOf xs))
 
   ; a step of conversion by the prover's normalization, and by its reduction to a depth: the
   ; reduction's result under the hypotheses weakened past k new innermost variables, and no proof
@@ -105,13 +101,13 @@
   ; every variable of the theorem's context is matched: the optional node of the instance's terms
   (defn applyInst ((E (List Entry)) (j T) (th Ts) (phi T)) T
     (case (thmAt E j)
-      ((OThm.just a)
+      ((Option.just Thm a)
        (case
          ((matchTerm (if (isEmpty th) (thConcl a) (osubst th (thConcl a)))) 0 phi
           (replicate (length (thCtx a)) none))
-         ((OAssign.just sn) (allSomeT (assigned sn)))
-         ((OAssign.nothing) none)))
-      ((OThm.nothing) none)))
+         ((Option.just Assign sn) (allSomeT (assigned sn)))
+         ((Option.nothing Assign) none)))
+      ((Option.nothing Thm) none)))
   ; the application of a theorem at the instance that matches the formula: the checker's
   ; application at that instance, which rewrites no term
   (defn stepApply ((G Globals) (E (List Entry)) (n T) (dt Ts) (nd T) (rs CKs)) CK
@@ -134,18 +130,19 @@
   ; the reduction of a term in a context under hypotheses by the machine, which rewrites its
   ; normal form by the prover's rules, prepared once for the reduction; where there is no rule,
   ; the reduction reads no hypothesis
-  (deftype RWK (Arrow Ts (Arrow T (Arrow Ts (Arrow T OTPair.Maybe)))))
+  (deftype RWK (Arrow Ts (Arrow T (Arrow Ts (Arrow T (Option.Maybe TPair))))))
   (defn machineReduceBy
     ((G Globals) (E (List Entry)) (n T) (unf (Arrow T T)) (kl T) (kc T) (rs NRs) (fuel T) (g Ts)
      (hs Ts)
      (t T))
     T
-    (if (EachRule.isEmpty rs)
+    (if (Each.isEmpty NormRule rs)
       (machineReduce G n unf kl kc (lam ((g1 Ts) (k T) (u T)) none) fuel g t)
       (let rk RWK (rootRewriteK G E n (indexRules E (prepareRules E rs)) (prepareHyps hs))
         (machineReduce G n unf kl kc
           (lam ((g1 Ts) (k T) (u T))
-            (case (rk g1 k hs u) ((OTPair.just q) (some (p1 q))) ((OTPair.nothing) none)))
+            (case (rk g1 k hs u) ((Option.just TPair q) (some (p1 q)))
+              ((Option.nothing TPair) none)))
           fuel
           g
           t))))
@@ -198,7 +195,7 @@
   ; the indices at which the evaluation at literals is ready
   (data Indices (indices & T))
   (data ConvState (convState Globals EntryList Indices))
-  (import (Option ConvState) as OConvState)
+
   (defn csConsts ((st ConvState)) Globals (case st ((convState G E R) G)))
   (defn csEntries ((st ConvState)) (List Entry)
     (case st ((convState G E R) (case E ((entries & xs) xs)))))
@@ -210,49 +207,51 @@
   ; the check of a declaration with the constants, the entries and the indices: the base checker's
   ; step, which keeps the indices; a theorem added to the entries where its certificate proves it
   ; given the indices; and an index added to the indices where the evaluation is ready there
-  (defn convDeclStep ((G Globals) (E (List Entry)) (R Ts) (d ConvDecl)) OConvState.Maybe
+  (defn convDeclStep ((G Globals) (E (List Entry)) (R Ts) (d ConvDecl)) (Option.Maybe ConvState)
     (case d
       ((cdBase b)
        (case (declStep G E b)
-         ((ODevState.just s)
-          (case s ((devState G1 E1) (OConvState.just (convState G1 E1 (indices R))))))
-         ((ODevState.nothing) OConvState.nothing)))
+         ((Option.just DevState s)
+          (case s ((devState G1 E1) (Option.just ConvState (convState G1 E1 (indices R))))))
+         ((Option.nothing DevState) (Option.nothing ConvState))))
       ((cdConv a c)
        (if (thmConvChecks G E R a c)
-         (OConvState.just (convState G (entries (push E (entLang a))) (indices R)))
-         OConvState.nothing))
+         (Option.just ConvState (convState G (entries (push E (entLang a))) (indices R)))
+         (Option.nothing ConvState)))
       ((cdReady j)
-       (if (ready G E j) (OConvState.just (convState G (entries E) (indices (cons j R))))
-         OConvState.nothing))))
+       (if (ready G E j) (Option.just ConvState (convState G (entries E) (indices (cons j R))))
+         (Option.nothing ConvState)))))
   ; the state after a development, each declaration checked with the state the declarations before
   ; it leave, from no index at which the evaluation at literals is ready
-  (import (Seq ConvDecl) as ConvDecls)
-  (defn checkConvDev ((G Globals) (E (List Entry)) (ds (List ConvDecl))) OConvState.Maybe
-    (foldr ConvDecl OConvState.Maybe
-      (lam ((d ConvDecl) (st OConvState.Maybe))
-        (case st ((OConvState.just s) (convDeclStep (csConsts s) (csEntries s) (csIndices s) d))
-          ((OConvState.nothing) OConvState.nothing)))
-      (OConvState.just (convState G (entries E) (indices (nil T))))
-      (ConvDecls.reverse ds)))
+
+  (defn checkConvDev ((G Globals) (E (List Entry)) (ds (List ConvDecl))) (Option.Maybe ConvState)
+    (foldr ConvDecl (Option.Maybe ConvState)
+      (lam ((d ConvDecl) (st (Option.Maybe ConvState)))
+        (case st
+          ((Option.just ConvState s) (convDeclStep (csConsts s) (csEntries s) (csIndices s) d))
+          ((Option.nothing ConvState) (Option.nothing ConvState))))
+      (Option.just ConvState (convState G (entries E) (indices (nil T))))
+      (Seq.reverse ConvDecl ds)))
 
   ; the check of a declaration of the checker of developments whose theorem's derivation may
   ; hold steps of conversion, as a prover writes them: the declaration read as one of a
   ; development with certificates, a theorem's derivation its certificate, and checked with no
   ; index at which the evaluation at literals is ready
   (defn asConv ((d Decl)) ConvDecl (case d ((declLang a c) (cdConv a c)) (else (cdBase d))))
-  (defn certStep ((G Globals) (E (List Entry)) (d Decl)) ODevState.Maybe
+  (defn certStep ((G Globals) (E (List Entry)) (d Decl)) (Option.Maybe DevState)
     (case (convDeclStep G E (nil T) (asConv d))
-      ((OConvState.just s) (case s ((convState G1 E1 R1) (ODevState.just (devState G1 E1)))))
-      ((OConvState.nothing) ODevState.nothing)))
+      ((Option.just ConvState s)
+       (case s ((convState G1 E1 R1) (Option.just DevState (devState G1 E1)))))
+      ((Option.nothing ConvState) (Option.nothing DevState))))
   ; the state after a development of such declarations, each checked with the state the
   ; declarations before it leave
-  (import (Seq Decl) as Decls)
-  (defn checkCertDev ((G Globals) (E (List Entry)) (ds (List Decl))) ODevState.Maybe
-    (foldr Decl ODevState.Maybe
-      (lam ((d Decl) (st ODevState.Maybe))
+
+  (defn checkCertDev ((G Globals) (E (List Entry)) (ds (List Decl))) (Option.Maybe DevState)
+    (foldr Decl (Option.Maybe DevState)
+      (lam ((d Decl) (st (Option.Maybe DevState)))
         (case st
-          ((ODevState.just s)
+          ((Option.just DevState s)
            (case s ((devState G1 E1) (certStep G1 (case E1 ((entries & xs) xs)) d))))
-          ((ODevState.nothing) ODevState.nothing)))
-      (ODevState.just (devState G (entries E)))
-      (Decls.reverse ds))))
+          ((Option.nothing DevState) (Option.nothing DevState))))
+      (Option.just DevState (devState G (entries E)))
+      (Seq.reverse Decl ds))))

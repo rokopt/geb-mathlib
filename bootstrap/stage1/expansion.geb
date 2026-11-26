@@ -22,14 +22,12 @@
   (import Reader)
   (import Support)
   (import Typing)
-  (import (Seq Tx) as Txs)
-  (import (Seq Abbr) as Abbrs)
-  (import (Seq Name) as Names)
+
   ; the typing's environment and state, as bootstrap/stage1/typing.geb declares them
   (deftype Env
     (Prod (List Abbr)
       (Prod (List Abbr) (Prod (List Name) (Prod (List Name) (Prod (List Name) (List Tx)))))))
-  (deftype CS (Prod Env OName.Maybe))
+  (deftype CS (Prod Env (Option.Maybe Name)))
   ; a name's declarations are the node over the optional values at seven positions: its type
   ; abbreviation and its definition, each the name with its type as the typing holds them; whether
   ; it is a datatype, a sort and a numeral abbreviation; the datatype whose recognizer's name it
@@ -102,8 +100,8 @@
       ps))
   ; the state of the check of a program's forms: the name of the first definition that does not
   ; have its type, when there is one; the declarations; and the markers
-  (deftype St (Prod OName.Maybe (Prod Decls (List Tx))))
-  (def start (pair OName.nothing (pair (pair empty 0) (nil Tx))))
+  (deftype St (Prod (Option.Maybe Name) (Prod Decls (List Tx))))
+  (def start (pair (Option.nothing Name) (pair (pair empty 0) (nil Tx))))
   (defn abbrName ((a Abbr)) T (case a ((abbr m ty) (rep m))))
   ; the declarations with what a form declares, read off the environment the typing gives after
   ; the form from the one before it: a type abbreviation, the latest of its name; a definition,
@@ -112,33 +110,34 @@
   (defn declaredBy ((d Decls) (l Lists) (E Env)) Decls
     (let*
       ((d1 Decls
-         (if (lt (Abbrs.length (fst l)) (Abbrs.length (fst E)))
+         (if (lt (Seq.length Abbr (fst l)) (Seq.length Abbr (fst E)))
            (lcase Abbr Decls (fst E) d
              (lam ((a Abbr) (r (List Abbr))) (withSlot d (abbrName a) 0 (rep a))))
            d))
        (d2 Decls
-         (lcase Abbr Decls (Abbrs.drop (Abbrs.length (fst (snd l))) (fst (snd E))) d1
+         (lcase Abbr Decls (Seq.drop Abbr (Seq.length Abbr (fst (snd l))) (fst (snd E))) d1
            (lam ((a Abbr) (r (List Abbr)))
              (if (hasSlot d1 (abbrName a) 1) d1 (withSlot d1 (abbrName a) 1 (rep a))))))
        (d3 Decls
-         (lcase Name Decls (Names.drop (Names.length (fst (snd (snd l)))) (fst (snd (snd E)))) d2
+         (lcase Name Decls (Seq.drop Name (Seq.length Name (fst (snd (snd l)))) (fst (snd (snd E))))
+           d2
            (lam ((m Name) (r (List Name)))
              (withSlot (withSlot d2 (rep m) 2 1) (recognizerOf (rep m)) 5 (rep m)))))
        (d4 Decls
          (lcase Name Decls
-           (Names.drop (Names.length (fst (snd (snd (snd l))))) (fst (snd (snd (snd E)))))
+           (Seq.drop Name (Seq.length Name (fst (snd (snd (snd l))))) (fst (snd (snd (snd E)))))
            d3
            (lam ((m Name) (r (List Name))) (withSlot d3 (rep m) 3 1)))))
       (lcase Name Decls
-        (Names.drop (Names.length (snd (snd (snd (snd l))))) (fst (snd (snd (snd (snd E))))))
+        (Seq.drop Name (Seq.length Name (snd (snd (snd (snd l))))) (fst (snd (snd (snd (snd E))))))
         d4
         (lam ((m Name) (r (List Name))) (withSlot d4 (rep m) 4 1)))))
   ; one form checked, by the typing, in the environment of the declarations of its support and
   ; every marker; a marker is kept, and the names of its atoms declared under its datatype's name,
   ; where the name has no marker before
   (defn checkStep ((s St) (f Tx)) St
-    (case (fst s) ((OName.just n) s)
-      ((OName.nothing)
+    (case (fst s) ((Option.just Name n) s)
+      ((Option.nothing Name)
        (let*
          ((d Decls (fst (snd s))) (ms (List Tx) (snd (snd s))) (l Lists (listsOf (supportOf d f)))
           (r CS
@@ -148,20 +147,20 @@
                   (pair (fst (snd l))
                     (pair (fst (snd (snd l)))
                       (pair (fst (snd (snd (snd l)))) (pair (snd (snd (snd (snd l)))) ms)))))
-                OName.nothing)
-              (Txs.single f))))
-         (case (snd r) ((OName.just n) (pair (OName.just n) (snd s)))
-           ((OName.nothing)
+                (Option.nothing Name))
+              (Seq.single Tx f))))
+         (case (snd r) ((Option.just Name n) (pair (Option.just Name n) (snd s)))
+           ((Option.nothing Name)
             (case f
               ((tMarker & xs)
                (let n T (nameOf (child (rep f) 0))
-                 (pair OName.nothing
+                 (pair (Option.nothing Name)
                    (pair (if (hasSlot d n 6) d (withSlot d n 6 (node 0 (mentions (rep f)))))
                      (snd (snd (snd (snd (snd (fst r))))))))))
-              (else (pair OName.nothing (pair (declaredBy d l (fst r)) ms))))))))))
+              (else (pair (Option.nothing Name) (pair (declaredBy d l (fst r)) ms))))))))))
   ; a program's forms checked in order: the name of the first definition that does not have its
   ; type, when there is one
-  (defn check ((fs (List Tx))) OName.Maybe
+  (defn check ((fs (List Tx))) (Option.Maybe Name)
     (fst
       ((foldr Tx (Arrow St St) (lam ((f Tx) (k (Arrow St St)) (s St)) (k (checkStep s f)))
          (lam ((s St)) s)
@@ -173,8 +172,8 @@
       (lam ((x Tx))
         (let r (Prod T (List Tx)) (Datatype.expandTyped (case x ((tList & xs) xs) (else (nil Tx))))
           (if (fst r)
-            (case (check (Datatype.markersFirst (snd r))) ((OName.just n) none)
-              ((OName.nothing)
+            (case (check (Datatype.markersFirst (snd r))) ((Option.just Name n) none)
+              ((Option.nothing Name)
                (some (node 0 (children (rep (tList (Datatype.kernelForms (snd r)))))))))
             none)))
       none))
@@ -184,7 +183,7 @@
       (lam ((x Tx))
         (let r (Prod T (List Tx)) (Datatype.expandTyped (case x ((tList & xs) xs) (else (nil Tx))))
           (if (fst r)
-            (case (check (Datatype.markersFirst (snd r))) ((OName.just n) (rep n))
-              ((OName.nothing) (node 0 (nil T))))
+            (case (check (Datatype.markersFirst (snd r))) ((Option.just Name n) (rep n))
+              ((Option.nothing Name) (node 0 (nil T))))
             (node 0 (nil T)))))
       (node 0 (nil T)))))

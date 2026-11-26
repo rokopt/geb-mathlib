@@ -200,11 +200,11 @@ structure HypFns.Loaded (f : HypFns) (Gk : List Kernel.Glob) (idx : String â†’ â
   /-- The value of {lit}`Reader.node2`. -/
   node2 : DatatypeTranslated.Loaded Gk idx "Reader.node2"
     (tArrow tT (tArrow tT (tArrow tT tT))) f.node2
-  /-- The value of {lit}`Datatype/Txs.reverse`. -/
-  reverse : DatatypeTranslated.Loaded Gk idx "Datatype/Txs.reverse"
+  /-- The value of {lit}`(Seq.reverse Typing.Tx)`. -/
+  reverse : DatatypeTranslated.Loaded Gk idx "(Seq.reverse Typing.Tx)"
     (tArrow (tList tT) (tList tT)) f.reverse
-  /-- The value of {lit}`Datatype/Txs.drop`. -/
-  drop : DatatypeTranslated.Loaded Gk idx "Datatype/Txs.drop"
+  /-- The value of {lit}`(Seq.drop Typing.Tx)`. -/
+  drop : DatatypeTranslated.Loaded Gk idx "(Seq.drop Typing.Tx)"
     (tArrow tT (tArrow (tList tT) (tList tT))) f.drop
   /-- The value of {lit}`Datatype.kernelForms`. -/
   kernelForms : DatatypeTranslated.Loaded Gk idx "Datatype.kernelForms"

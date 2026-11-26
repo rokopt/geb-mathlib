@@ -347,7 +347,9 @@ theorem matchVar_eq (i d : ℕ) (t : Term) (σ : List (Option Term)) :
 
 /-- A list of matchings without its head. -/
 @[simp] theorem mtTail_eq (rs : List (Tree → Tree → List Tree → Tree)) :
-    «$50726f7665722f4d74732e7461696c» rs = rs.tail := by
+    gebMirror%
+      "(Lists.tail (Arrow T (Arrow T (Arrow (List T) 28:(Option.Maybe Prover.Assign)))))"
+      rs = rs.tail := by
   cases rs <;> rfl
 
 /-- The mirror's matching of the children of a pattern against a term's, one after another from a
@@ -880,7 +882,7 @@ starts in, each level's jobs normalized by the level below. -/
 def normJ (G' : Tree) (E' : List Tree) (n' : Tree)
     (rs' : List Tree) (fuel : ℕ) : Tree → Tree :=
   Nat.rec (fun j ↦
-    «$50726f7665722f4f4e46522e6a757374» («Prover.nfr» («Prover.jobTerm» j) «Prover.dRefl»))
+    gebMirror% "(Option.just Prover.NFR)" («Prover.nfr» («Prover.jobTerm» j) «Prover.dRefl»))
     (fun _ F j ↦ «Prover.nsResult»
       (nsAdvBy G' E' n' rs' F (nsAdvBy G' E' n' rs' F («Prover.nsStart» G' n' j)))) fuel
 
@@ -951,7 +953,7 @@ theorem normStep_eq (rs' : List Tree) (rs : List NormRule)
   rcases o with _ | cs
   · have h1 : nsAdvBy (encGlobals G) (E.toList.map encEntry) (leaf n) rs' F
         («Prover.nsKids» (encJob 0 Γ 0 Φ (RoseTree.node l ts)) («Prover.jobs» L)) =
-        «Prover.nsDone» «$50726f7665722f4f4e46522e6e6f7468696e67» := by
+        «Prover.nsDone» gebMirror% "(Option.nothing Prover.NFR)" := by
       mirror_simp [nsAdvBy, «Prover.nsAdv», «Prover.nsKids», «Prover.nsNeed», template, hj, hL]
     rw [h1]
     rfl
@@ -997,7 +999,6 @@ theorem normStep_eq (rs' : List Tree) (rs : List NormRule)
       rfl
     rw [h1]
     mirror_simp [nsAdvBy, «Prover.nsAdv», «Prover.nsNeed», «Prover.nsTail»,
-      «$50726f7665722f4a6f624c2e73696e676c65»,
       hF, firstR_single]
     rcases rec Γ Φ t₂ with _ | ⟨t₃, d₃⟩
     · rfl
@@ -1067,11 +1068,6 @@ theorem withHyp_eq (rs' : List Tree) (rs : List NormRule)
 
 /-! The reduction to a depth. -/
 
-/-- A list of use counts without its head. -/
-@[simp] theorem ufTail_eq (rs : List (Tree → Tree)) :
-    «$50726f7665722f5546732e7461696c» rs = rs.tail := by
-  cases rs <;> rfl
-
 /-- The mirror's composition of the use counts of a node's children, at a variable and from a
 position, each under the variables the child binds and counted twice where it binds one. -/
 theorem usesFold_eq (b : Tree → Tree) (B : ℕ → ℕ) (hb : ∀ i, b (leaf i) = leaf (B i)) (d : ℕ) :
@@ -1118,7 +1114,7 @@ theorem uses_eq (t : Term) (d : ℕ) :
           (if B p.2 = 0 then 1 else 2) * p.1.2.2 (d + B p.2)).sum) := fun B hB ↦ by
     rw [← usesFold_eq (fun i ↦ if (Const.eq (leaf (labelData l).1) (leaf 5)).label ≠ 0 then leaf 1
       else «Language.childBound» (leaf (labelData l).1) (leaf xs.length) i) B hB d xs hx 0]
-    simp only [«Prover.usesStep», foldr_eq, ufTail_eq, List.tail_cons, mArgs_eq,
+    simp only [«Prover.usesStep», foldr_eq, ofTail_eq, List.tail_cons, mArgs_eq,
       RoseTree.children_node, length_eq, List.length_map, List.map_map, Function.comp_def,
       label_eq, label_encTerm, RoseTree.label_node, eq_leaf, h0, ofBool_false, label_leaf, ne_eq,
       not_true_eq_false, ↓reduceIte]
@@ -1513,7 +1509,7 @@ theorem isRenameStep_eq_node (l : Internal.Label) (hl0 : (labelData l).1 ≠ 0)
   simp only [«Prover.isRenameStep», label_eq, label_encTerm,
     RoseTree.label_node, eq_leaf, equal_eq, child_encTerm, mArgs_eq, RoseTree.children_node,
     length_eq, List.length_map, label_ne_zero, ofBool_bne, beq_iff_eq, hl0, ↓reduceIte]
-  rw [show «$50726f7665722f5254732e7461696c» (v :: xs.map fun x ↦ x.2.1) =
+  rw [show gebMirror% "(Lists.tail (Arrow (Arrow T T) (Arrow T T)))" (v :: xs.map fun x ↦ x.2.1) =
       xs.map fun x ↦ x.2.1 from rfl, hh,
     and_eq, and_eq, ← Bool.and_assoc, labelData_beq lu l]
   simp only [List.zipIdx_map, List.map_map, Function.comp_def]
@@ -1570,7 +1566,9 @@ theorem prepareHyps_eq (Φ : List Term) :
 /-- The mirror's prepared hypothesis at a position, absent out of range. -/
 theorem phAt_eq (xs : List (Tree × Tree × Tree × ((Tree → Tree) → Tree → Tree))) (i : ℕ) :
     «Prover.phAt» xs (leaf i) = xs.getD i «Prover.ph0» := by
-  have hr : ∀ i : ℕ, Nat.repeat «$50726f7665722f5048732e7461696c» i xs = xs.drop i :=
+  have hr : ∀ i : ℕ, Nat.repeat
+      gebMirror% "(Lists.tail (Prod T (Prod T (Prod T (Arrow (Arrow T T) (Arrow T T))))))"
+      i xs = xs.drop i :=
     Nat.rec rfl fun i ih ↦ by
       rw [Nat.repeat, ih]
       cases h : xs.drop i
@@ -1803,7 +1801,7 @@ starts in, each level's jobs reduced by the level below. -/
 def evalJ (G' n' : Tree) (rw' : List Tree → Tree → List Tree → Tree → Tree) (fuel : ℕ) :
     Tree → Tree :=
   Nat.rec (fun j ↦
-    «$50726f7665722f4f4e46522e6a757374» («Prover.nfr» («Prover.jobTerm» j) «Prover.dRefl»))
+    gebMirror% "(Option.just Prover.NFR)" («Prover.nfr» («Prover.jobTerm» j) «Prover.dRefl»))
     (fun _ F j ↦ «Prover.stResult»
       ((advBy G' n' rw' F)^[5] («Prover.stStart» G' n' rw' j))) fuel
 
@@ -1900,7 +1898,6 @@ theorem stTail_eq (hF : JRel Φ F rec) (da : Internal.Depth) (Γ : List Tree) (k
         K (r.1, Internal.dTrans p₁ (Internal.dTrans p₂ (Internal.dTrans mk r.2))))) := by
   refine reach_step rfl ?_
   mirror_simp [advBy, «Prover.stAdv», «Prover.stNeed», «Prover.stTail»,
-    «$50726f7665722f4a6f624c2e73696e676c65»,
     hF.1 da Γ k t₂, firstR_single]
   rcases rec da Γ k Φ t₂ with _ | ⟨t₃, d₃⟩
   · exact reach_done _ _
@@ -2136,7 +2133,7 @@ theorem stArg_eq (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (c : ℕ)
         (Internal.dCong [df, r.2])).bind K)) := by
   refine reach_step rfl ?_
   mirror_simp [advBy, «Prover.stAdv», «Prover.stArg», «Prover.stNeed»,
-    «$50726f7665722f4a6f624c2e73696e676c65», hq,
+    hq,
     firstR_single, jobDp_enc]
   rcases o with _ | ⟨u', du⟩
   · exact reach_done _ _
@@ -2181,7 +2178,6 @@ theorem stFun_eq (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (c : ℕ)
   rw [hh]
   refine reach_step rfl ?_
   mirror_simp [advBy, «Prover.stAdv», «Prover.stFun», «Prover.stNeed»,
-    «$50726f7665722f4a6f624c2e73696e676c65»,
     firstR_single, jobTerm_enc, mArg_eq, jobAt_enc, h0, hc0, hc1]
   rcases rec .head Γ k Φ f with _ | ⟨f', df⟩
   · exact reach_done _ _
@@ -2224,7 +2220,6 @@ theorem stChild_eq (hrw : WRel Φ rw' rw) (hF : JRel Φ F rec) (c : ℕ)
   have h0 : F (encJob 0 Γ k Φ x) = encR (rec .head Γ k Φ x) := hF.1 .head Γ k x
   refine reach_step rfl ?_
   mirror_simp [advBy, «Prover.stAdv», «Prover.stChild», «Prover.stNeed»,
-    «$50726f7665722f4a6f624c2e73696e676c65»,
     firstR_single, jobAt_enc, jobDp_enc, jobTerm_enc, h0, mArgs_eq, RoseTree.children_node]
   rcases rec .head Γ k Φ x with _ | ⟨c', dd, _ | _⟩
   · simp only [encR, Option.map_none, label_none, Option.bind_none, Nat.reduceBEq,

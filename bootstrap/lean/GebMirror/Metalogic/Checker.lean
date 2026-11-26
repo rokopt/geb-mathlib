@@ -48,6 +48,25 @@ def «Prelude.reverse» :=
       x0
       ([] : _root_.List _root_.Geb.Kernel.Tree)
 
+def «Prelude.reverseIter» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    (_root_.Geb.Kernel.Const.iter
+      (α := _root_.List _root_.Geb.Kernel.Tree ×
+        _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree ×
+           _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.lcase
+          (α := _root_.Geb.Kernel.Tree)
+          (β := _root_.List _root_.Geb.Kernel.Tree ×
+            _root_.List _root_.Geb.Kernel.Tree)
+          (x1).1
+          x1
+          (fun (x2 : _root_.Geb.Kernel.Tree)
+             (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+            (x3, (x2 :: (x1).2))))
+      (x0, ([] : _root_.List _root_.Geb.Kernel.Tree))
+      (_root_.GebMirror.Metalogic.«Prelude.length» x0)).2
+
 def «Prelude.replicate» :=
   fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.iter
@@ -341,151 +360,6 @@ def «PartialHorn.opSig» :=
       (_root_.Geb.Kernel.leaf 0)
       (x0 :: (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)))
 
-def «$5061727469616c486f726e2f4f4f705369672e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$5061727469616c486f726e2f4f4f705369672e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$5061727469616c486f726e2f4f4f705369672e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$5061727469616c486f726e2f4f4f705369672e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$5061727469616c486f726e2f4f4f705369672e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f4f705369672e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f4f705369672e6a757374» x2);
-    x2
-
-def «$5061727469616c486f726e2f4f4f705369672e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
 def «PartialHorn.opArgs» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
@@ -575,6 +449,17 @@ def «PartialHorn.opSort» :=
                                         x5);
     x1
 
+def «$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e4f7053696729» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a757374205061727469616c486f726e2e4f7053696729» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
+
 def «PartialHorn.bindOT» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
@@ -610,6 +495,32 @@ def «PartialHorn.bindOT» :=
                                           _root_.GebMirror.Metalogic.«Prelude.none»);
     x2
 
+def «$284f7074696f6e2e6e74684f66205061727469616c486f726e2e4f7053696729» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            x2
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
+        x0
+        x1)
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e4f7053696729»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e4f7053696729»
+          x2);
+    x2
+
 def «PartialHorn.sortOf» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -641,7 +552,7 @@ def «PartialHorn.sortOf» :=
               _root_.GebMirror.Metalogic.«Prelude.none»
           else
             _root_.GebMirror.Metalogic.«PartialHorn.bindOT»
-              (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f4f705369672e6e74684f66»
+              (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e4f7053696729»
                 x0
                 (_root_.Geb.Kernel.Const.sub x3 (_root_.Geb.Kernel.leaf 1)))
               (fun (x6 : _root_.Geb.Kernel.Tree) =>
@@ -843,464 +754,16 @@ def «PartialHorn.eqns» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x0
 
-def «$5061727469616c486f726e2f45716e732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$5061727469616c486f726e2f45716e732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$5061727469616c486f726e2f45716e732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$5061727469616c486f726e2f45716e732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$5061727469616c486f726e2f45716e732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$5061727469616c486f726e2f45716e732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f45716e732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$5061727469616c486f726e2f45716e732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f45716e732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$5061727469616c486f726e2f4561636845716e2e616c6c» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.and» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 1)
-      x1;
-    x2
-
-def «$5061727469616c486f726e2f4561636845716e2e616e79» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.or» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 0)
-      x1;
-    x2
-
-def «$5061727469616c486f726e2f4561636845716e2e6973456d707479» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.eq
-      (_root_.Geb.Kernel.Const.foldr
-        (α := _root_.Geb.Kernel.Tree)
-        (β := _root_.Geb.Kernel.Tree)
-        (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-        (_root_.Geb.Kernel.leaf 0)
-        x0)
-      (_root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$5061727469616c486f726e2f4561636845716e2e74616b65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree)
-                                   (fun (_ : _root_.Geb.Kernel.Tree)
-                                      (x3 : _root_.Geb.Kernel.Tree) =>
-                                     _root_.Geb.Kernel.Const.add x3 (_root_.Geb.Kernel.leaf 1))
-                                   (_root_.Geb.Kernel.leaf 0)
-                                   x1;
-                                 (_root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree ×
-                                     _root_.List _root_.Geb.Kernel.Tree)
-                                   (fun (x3 : _root_.Geb.Kernel.Tree)
-                                      (x4 : _root_.Geb.Kernel.Tree ×
-                                        _root_.List _root_.Geb.Kernel.Tree) =>
-                                     (_root_.Geb.Kernel.Const.add (x4).1 (_root_.Geb.Kernel.leaf 1),
-                                       if (_root_.Geb.Kernel.Const.lt
-                                         (_root_.Geb.Kernel.Const.sub
-                                           (_root_.Geb.Kernel.Const.sub x2 (x4).1)
-                                           (_root_.Geb.Kernel.leaf 1))
-                                         x0).label ≠ 0 then
-                                         (x3 :: (x4).2)
-                                       else
-                                         (x4).2))
-                                   (_root_.Geb.Kernel.leaf 0,
-                                     ([] : _root_.List _root_.Geb.Kernel.Tree))
-                                   x1).2);
-    x2
-
-def «$5061727469616c486f726e2f4f45716e2e6e6f7468696e67» :=
+def «$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29» :=
   _root_.Geb.Kernel.Const.node
     (_root_.Geb.Kernel.leaf 0)
     ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «$5061727469616c486f726e2f4f45716e2e6a757374» :=
+def «$284f7074696f6e2e6a757374205061727469616c486f726e2e45716e29» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 1)
       (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$5061727469616c486f726e2f4f45716e2e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$5061727469616c486f726e2f4f45716e2e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$5061727469616c486f726e2f4f45716e2e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6a757374» x2);
-    x2
-
-def «$5061727469616c486f726e2f4f45716e2e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
-def «$5061727469616c486f726e2f4f45716e732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$5061727469616c486f726e2f4f45716e732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$5061727469616c486f726e2f4f45716e732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$5061727469616c486f726e2f4f45716e732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$5061727469616c486f726e2f4f45716e732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$5061727469616c486f726e2f4f45716e732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$5061727469616c486f726e2f4f45716e732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$5061727469616c486f726e2f456163684f45716e2e616c6c» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.and» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 1)
-      x1;
-    x2
-
-def «$5061727469616c486f726e2f456163684f45716e2e616e79» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.or» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 0)
-      x1;
-    x2
-
-def «$5061727469616c486f726e2f456163684f45716e2e6973456d707479» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.eq
-      (_root_.Geb.Kernel.Const.foldr
-        (α := _root_.Geb.Kernel.Tree)
-        (β := _root_.Geb.Kernel.Tree)
-        (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-        (_root_.Geb.Kernel.leaf 0)
-        x0)
-      (_root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$5061727469616c486f726e2f456163684f45716e2e74616b65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree)
-                                   (fun (_ : _root_.Geb.Kernel.Tree)
-                                      (x3 : _root_.Geb.Kernel.Tree) =>
-                                     _root_.Geb.Kernel.Const.add x3 (_root_.Geb.Kernel.leaf 1))
-                                   (_root_.Geb.Kernel.leaf 0)
-                                   x1;
-                                 (_root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree ×
-                                     _root_.List _root_.Geb.Kernel.Tree)
-                                   (fun (x3 : _root_.Geb.Kernel.Tree)
-                                      (x4 : _root_.Geb.Kernel.Tree ×
-                                        _root_.List _root_.Geb.Kernel.Tree) =>
-                                     (_root_.Geb.Kernel.Const.add (x4).1 (_root_.Geb.Kernel.leaf 1),
-                                       if (_root_.Geb.Kernel.Const.lt
-                                         (_root_.Geb.Kernel.Const.sub
-                                           (_root_.Geb.Kernel.Const.sub x2 (x4).1)
-                                           (_root_.Geb.Kernel.leaf 1))
-                                         x0).label ≠ 0 then
-                                         (x3 :: (x4).2)
-                                       else
-                                         (x4).2))
-                                   (_root_.Geb.Kernel.leaf 0,
-                                     ([] : _root_.List _root_.Geb.Kernel.Tree))
-                                   x1).2);
-    x2
 
 def «PartialHorn.oeqns» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
@@ -1329,152 +792,6 @@ def «PartialHorn.seq» :=
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 0)
       (x0 :: (x1 :: (x2 :: ([] : _root_.List _root_.Geb.Kernel.Tree))))
-
-def «$5061727469616c486f726e2f4f53657175656e742e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$5061727469616c486f726e2f4f53657175656e742e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$5061727469616c486f726e2f4f53657175656e742e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$5061727469616c486f726e2f4f53657175656e742e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$5061727469616c486f726e2f4f53657175656e742e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6a757374»
-          x2);
-    x2
-
-def «$5061727469616c486f726e2f4f53657175656e742e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
 
 def «PartialHorn.seqCtx» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
@@ -1672,12 +989,24 @@ def «PartialHorn.mkSeq» :=
       x2;
     x3
 
+def «$28456163682e616c6c205061727469616c486f726e2e45716e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Prelude.and» (x0 x2) x3)
+      (_root_.Geb.Kernel.leaf 1)
+      x1;
+    x2
+
 def «PartialHorn.seqScoped» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.length»
                                           (_root_.GebMirror.Metalogic.«PartialHorn.seqCtx» x0);
                                         _root_.GebMirror.Metalogic.«Prelude.and»
-                                          (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4561636845716e2e616c6c»
+                                          (_root_.GebMirror.Metalogic.«$28456163682e616c6c205061727469616c486f726e2e45716e29»
                                             (_root_.GebMirror.Metalogic.«PartialHorn.eqScoped» x1)
                                             (_root_.GebMirror.Metalogic.«PartialHorn.seqHyps» x0))
                                           (_root_.GebMirror.Metalogic.«PartialHorn.eqScoped»
@@ -1791,30 +1120,10 @@ def «PartialHorn.thyAxioms» :=
                                  let x9 : _root_.List _root_.Geb.Kernel.Tree := x8; x9);
     x1
 
-def «$5061727469616c486f726e2f5043732e7461696c» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    _root_.Geb.Kernel.Const.lcase
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      x0
-      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (_ : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x2)
-
 def «PartialHorn.pc0» :=
   fun (_ : _root_.List _root_.Geb.Kernel.Tree)
     (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-    _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»
+    _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»
 
 def «PartialHorn.pcAll» :=
   fun (x0 : _root_.List
@@ -1984,7 +1293,7 @@ def «PartialHorn.bindE» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»);
     x2
 
 def «PartialHorn.mapE» :=
@@ -2014,14 +1323,25 @@ def «PartialHorn.mapE» :=
                                             (fun (_ : _root_.Geb.Kernel.Tree)
                                                (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
                                               x6);
-                                          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e45716e29»
                                             (x0 x4)
                                         else
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»);
     x2
+
+def «$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e53657175656e7429» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a757374205061727469616c486f726e2e53657175656e7429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
 def «PartialHorn.bindSE» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -2055,7 +1375,7 @@ def «PartialHorn.bindSE» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»);
     x2
 
 def «PartialHorn.bindTE» :=
@@ -2065,7 +1385,7 @@ def «PartialHorn.bindTE» :=
       x0).label ≠ 0 then
       x1 (_root_.GebMirror.Metalogic.«Prelude.get» x0)
     else
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»);
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»);
     x2
 
 def «PartialHorn.mapTE» :=
@@ -2073,10 +1393,10 @@ def «PartialHorn.mapTE» :=
     (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Prelude.isSome»
       x1).label ≠ 0 then
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6a757374»
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e45716e29»
         (x0 (_root_.GebMirror.Metalogic.«Prelude.get» x1))
     else
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»);
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»);
     x2
 
 def «PartialHorn.leafIndex» :=
@@ -2089,7 +1409,7 @@ def «PartialHorn.leafIndex» :=
       _root_.GebMirror.Metalogic.«Prelude.none»);
     x1
 
-def «$5061727469616c486f726e2f4c68734f662e6d6170» :=
+def «$284d61702e6d61702033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e29205429» :=
   fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -2103,7 +1423,64 @@ def «$5061727469616c486f726e2f4c68734f662e6d6170» :=
       x1;
     x2
 
-def «$5061727469616c486f726e2f4a75737445716e2e6d6170» :=
+def «$28456163682e74616b652033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e2929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+                                   (α := _root_.Geb.Kernel.Tree)
+                                   (β := _root_.Geb.Kernel.Tree)
+                                   (fun (_ : _root_.Geb.Kernel.Tree)
+                                      (x3 : _root_.Geb.Kernel.Tree) =>
+                                     _root_.Geb.Kernel.Const.add x3 (_root_.Geb.Kernel.leaf 1))
+                                   (_root_.Geb.Kernel.leaf 0)
+                                   x1;
+                                 (_root_.Geb.Kernel.Const.foldr
+                                   (α := _root_.Geb.Kernel.Tree)
+                                   (β := _root_.Geb.Kernel.Tree ×
+                                     _root_.List _root_.Geb.Kernel.Tree)
+                                   (fun (x3 : _root_.Geb.Kernel.Tree)
+                                      (x4 : _root_.Geb.Kernel.Tree ×
+                                        _root_.List _root_.Geb.Kernel.Tree) =>
+                                     (_root_.Geb.Kernel.Const.add (x4).1 (_root_.Geb.Kernel.leaf 1),
+                                       if (_root_.Geb.Kernel.Const.lt
+                                         (_root_.Geb.Kernel.Const.sub
+                                           (_root_.Geb.Kernel.Const.sub x2 (x4).1)
+                                           (_root_.Geb.Kernel.leaf 1))
+                                         x0).label ≠ 0 then
+                                         (x3 :: (x4).2)
+                                       else
+                                         (x4).2))
+                                   (_root_.Geb.Kernel.leaf 0,
+                                     ([] : _root_.List _root_.Geb.Kernel.Tree))
+                                   x1).2);
+    x2
+
+def «$285365712e7461696c2033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e2929» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      x0
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+        x2);
+    x1
+
+def «$285365712e64726f702033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e2929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      _root_.GebMirror.Metalogic.«$285365712e7461696c2033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e2929»
+      x1
+      x0;
+    x2
+
+def «$284d61702e6d6170205061727469616c486f726e2e45716e2033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e2929» :=
   fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -2142,32 +1519,32 @@ def «PartialHorn.inst» :=
                                                 (_root_.GebMirror.Metalogic.«PartialHorn.seqCtx» x1)))
                                             (_root_.GebMirror.Metalogic.«Prelude.and»
                                               (_root_.GebMirror.Metalogic.«Base.equalTs»
-                                                (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4c68734f662e6d6170»
+                                                (_root_.GebMirror.Metalogic.«$284d61702e6d61702033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e29205429»
                                                   _root_.GebMirror.Metalogic.«PartialHorn.lhsOf»
-                                                  (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f456163684f45716e2e74616b65»
+                                                  (_root_.GebMirror.Metalogic.«$28456163682e74616b652033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e2929»
                                                     x6
-                                                    (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e732e64726f70»
+                                                    (_root_.GebMirror.Metalogic.«$285365712e64726f702033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e2929»
                                                       x6
                                                       x3)))
                                                 (_root_.GebMirror.Metalogic.«Base.mapT»
                                                   _root_.GebMirror.Metalogic.«Prelude.some»
                                                   x7))
                                               (_root_.GebMirror.Metalogic.«PartialHorn.sameOEqns»
-                                                (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e732e64726f70»
+                                                (_root_.GebMirror.Metalogic.«$285365712e64726f702033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e2929»
                                                   (_root_.Geb.Kernel.Const.add x6 x6)
                                                   x3)
-                                                (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4a75737445716e2e6d6170»
+                                                (_root_.GebMirror.Metalogic.«$284d61702e6d6170205061727469616c486f726e2e45716e2033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e2929»
                                                   (fun (x8 : _root_.Geb.Kernel.Tree) =>
-                                                    _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6a757374»
+                                                    _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e45716e29»
                                                       (_root_.GebMirror.Metalogic.«PartialHorn.eqSubst» x7 x8))
                                                   (_root_.GebMirror.Metalogic.«PartialHorn.seqHyps»
                                                     x1)))))).label ≠ 0 then
-                                          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e45716e29»
                                             (_root_.GebMirror.Metalogic.«PartialHorn.eqSubst»
                                               x7
                                               (_root_.GebMirror.Metalogic.«PartialHorn.seqConcl» x1))
                                         else
-                                          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»);
     x6
 
 def «PartialHorn.pShape» :=
@@ -2179,6 +1556,78 @@ def «PartialHorn.pShape» :=
       (_root_.Geb.Kernel.Const.eq x0 x2)
       (_root_.Geb.Kernel.Const.eq x1 x3);
     x4
+
+def «$284f7074696f6e2e6e74684f66205061727469616c486f726e2e45716e29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            x2
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
+        x0
+        x1)
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e45716e29»
+          x2);
+    x2
+
+def «$284c697374732e7461696c20284172726f7720284c69737420542920284172726f7720284c697374205061727469616c486f726e2e45716e292033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e29292929» :=
+  fun (x0 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    _root_.Geb.Kernel.Const.lcase
+      (α := _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (β := _root_.List
+        (_root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      x0
+      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      (fun (_ : _root_.List _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List
+           (_root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+        x2)
+
+def «$284f7074696f6e2e6e74684f66205061727469616c486f726e2e53657175656e7429» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            x2
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
+        x0
+        x1)
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e53657175656e7429»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e53657175656e7429»
+          x2);
+    x2
 
 def «PartialHorn.pcheckStep» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -2208,7 +1657,7 @@ def «PartialHorn.pcheckStep» :=
                                        _root_.GebMirror.Metalogic.«PartialHorn.bindTE»
                                          (_root_.GebMirror.Metalogic.«PartialHorn.leafIndex» x7)
                                          (fun (x10 : _root_.Geb.Kernel.Tree) =>
-                                           _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e74684f66»
+                                           _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e45716e29»
                                              x9
                                              x10)
                                    else
@@ -2225,12 +1674,12 @@ def «PartialHorn.pcheckStep» :=
                                              if (_root_.Geb.Kernel.Const.lt
                                                x10
                                                (_root_.GebMirror.Metalogic.«Prelude.length» x8)).label ≠ 0 then
-                                               _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6a757374»
+                                               _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e45716e29»
                                                  (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
                                                    (_root_.GebMirror.Metalogic.«PartialHorn.phVar» x10)
                                                    (_root_.GebMirror.Metalogic.«PartialHorn.phVar» x10))
                                              else
-                                               _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»)
+                                               _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»)
                                      else
                                        if (_root_.GebMirror.Metalogic.«PartialHorn.pShape»
                                          x4
@@ -2279,14 +1728,14 @@ def «PartialHorn.pcheckStep» :=
                                                          (_root_.GebMirror.Metalogic.«PartialHorn.eqRhs» x12)
                                                          (_root_.GebMirror.Metalogic.«PartialHorn.eqLhs»
                                                            x13)).label ≠ 0 then
-                                                         _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6a757374»
+                                                         _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e45716e29»
                                                            (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
                                                              (_root_.GebMirror.Metalogic.«PartialHorn.eqLhs»
                                                                x12)
                                                              (_root_.GebMirror.Metalogic.«PartialHorn.eqRhs»
                                                                x13))
                                                        else
-                                                         _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»)))
+                                                         _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»)))
                                          else
                                            if (_root_.GebMirror.Metalogic.«Prelude.and»
                                              (_root_.Geb.Kernel.Const.eq
@@ -2306,7 +1755,7 @@ def «PartialHorn.pcheckStep» :=
                                                  (α := _root_.Geb.Kernel.Tree)
                                                  (β := _root_.Geb.Kernel.Tree)
                                                  (x8 x9 x10)
-                                                 _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»
+                                                 _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»
                                                  (fun (x11 : _root_.Geb.Kernel.Tree)
                                                     (x12 : _root_.List _root_.Geb.Kernel.Tree) =>
                                                    _root_.GebMirror.Metalogic.«PartialHorn.bindE»
@@ -2320,7 +1769,7 @@ def «PartialHorn.pcheckStep» :=
                                                                  x13))
                                                              (_root_.Geb.Kernel.leaf 0)))
                                                          (_root_.GebMirror.Metalogic.«Base.equalTs»
-                                                           (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4c68734f662e6d6170»
+                                                           (_root_.GebMirror.Metalogic.«$284d61702e6d61702033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e29205429»
                                                              _root_.GebMirror.Metalogic.«PartialHorn.lhsOf»
                                                              x12)
                                                            (_root_.GebMirror.Metalogic.«Base.mapT»
@@ -2340,11 +1789,11 @@ def «PartialHorn.pcheckStep» :=
                                                                  (_root_.Geb.Kernel.Const.children
                                                                    x14)))
                                                            (_root_.GebMirror.Metalogic.«Base.allSomeT»
-                                                             (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4c68734f662e6d6170»
+                                                             (_root_.GebMirror.Metalogic.«$284d61702e6d61702033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e29205429»
                                                                _root_.GebMirror.Metalogic.«PartialHorn.rhsOf»
                                                                x12))
                                                        else
-                                                         _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»))
+                                                         _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»))
                                            else
                                              if (_root_.GebMirror.Metalogic.«PartialHorn.pShape»
                                                x4
@@ -2384,7 +1833,7 @@ def «PartialHorn.pcheckStep» :=
                                                                      x13))
                                                                  x12)
                                                            else
-                                                             _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»)))
+                                                             _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»)))
                                              else
                                                if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                  (_root_.Geb.Kernel.Const.eq
@@ -2397,7 +1846,7 @@ def «PartialHorn.pcheckStep» :=
                                                    _root_.List _root_.Geb.Kernel.Tree →
                                                      _root_.List
                                                        _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«PartialHorn.pcAll»
-                                                   (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f5043732e7461696c»
+                                                   (_root_.GebMirror.Metalogic.«$284c697374732e7461696c20284172726f7720284c69737420542920284172726f7720284c697374205061727469616c486f726e2e45716e292033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e29292929»
                                                      x3);
                                                  fun (x9 : _root_.List _root_.Geb.Kernel.Tree)
                                                    (x10 : _root_.List _root_.Geb.Kernel.Tree) =>
@@ -2405,7 +1854,7 @@ def «PartialHorn.pcheckStep» :=
                                                      (_root_.GebMirror.Metalogic.«PartialHorn.leafIndex» x7)
                                                      (fun (x11 : _root_.Geb.Kernel.Tree) =>
                                                        _root_.GebMirror.Metalogic.«PartialHorn.bindSE»
-                                                         (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6e74684f66»
+                                                         (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e53657175656e7429»
                                                            (_root_.GebMirror.Metalogic.«PartialHorn.thyAxioms»
                                                              x0)
                                                            x11)
@@ -2451,7 +1900,7 @@ def «PartialHorn.pcheckStep» :=
                                                        _root_.List _root_.Geb.Kernel.Tree →
                                                          _root_.List
                                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«PartialHorn.pcAll»
-                                                       (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f5043732e7461696c»
+                                                       (_root_.GebMirror.Metalogic.«$284c697374732e7461696c20284172726f7720284c69737420542920284172726f7720284c697374205061727469616c486f726e2e45716e292033303a284f7074696f6e2e4d61796265205061727469616c486f726e2e45716e29292929»
                                                          x3);
                                                      fun (x9 : _root_.List _root_.Geb.Kernel.Tree)
                                                        (x10 : _root_.List _root_.Geb.Kernel.Tree) =>
@@ -2459,7 +1908,7 @@ def «PartialHorn.pcheckStep» :=
                                                          (_root_.GebMirror.Metalogic.«PartialHorn.leafIndex» x7)
                                                          (fun (x11 : _root_.Geb.Kernel.Tree) =>
                                                            _root_.GebMirror.Metalogic.«PartialHorn.bindSE»
-                                                             (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6e74684f66»
+                                                             (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e53657175656e7429»
                                                                x1
                                                                x11)
                                                              (fun (x12 : _root_.Geb.Kernel.Tree) =>
@@ -2499,297 +1948,6 @@ def «PartialHorn.pdefn» :=
 def «PartialHorn.pdefns» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x0
-
-def «$5061727469616c486f726e2f4f504465666e2e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$5061727469616c486f726e2f4f504465666e2e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$5061727469616c486f726e2f4f504465666e2e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$5061727469616c486f726e2f4f504465666e2e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$5061727469616c486f726e2f4f504465666e2e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e2e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e2e6a757374» x2);
-    x2
-
-def «$5061727469616c486f726e2f4f504465666e2e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
-def «$5061727469616c486f726e2f4f504465666e4c6973742e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$5061727469616c486f726e2f4f504465666e4c6973742e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$5061727469616c486f726e2f4f504465666e4c6973742e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$5061727469616c486f726e2f4f504465666e4c6973742e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$5061727469616c486f726e2f4f504465666e4c6973742e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e4c6973742e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e4c6973742e6a757374»
-          x2);
-    x2
-
-def «$5061727469616c486f726e2f4f504465666e4c6973742e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
 
 def «PartialHorn.pdCtx» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
@@ -2983,181 +2141,19 @@ def «PartialHorn.opVars» :=
         (_root_.GebMirror.Metalogic.«Base.range» x1));
     x2
 
-def «$5061727469616c486f726e2f536571732e73696e676c65» :=
+def «$285365712e73696e676c65205061727469616c486f726e2e45716e29» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
       ([] : _root_.List _root_.Geb.Kernel.Tree));
     x1
 
-def «$5061727469616c486f726e2f536571732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$5061727469616c486f726e2f536571732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$5061727469616c486f726e2f536571732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$5061727469616c486f726e2f536571732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$5061727469616c486f726e2f536571732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f536571732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$5061727469616c486f726e2f536571732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f536571732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$5061727469616c486f726e2f4f70536967732e73696e676c65» :=
+def «$285365712e73696e676c65205061727469616c486f726e2e53657175656e7429» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
       ([] : _root_.List _root_.Geb.Kernel.Tree));
     x1
-
-def «$5061727469616c486f726e2f4f70536967732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$5061727469616c486f726e2f4f70536967732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$5061727469616c486f726e2f4f70536967732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$5061727469616c486f726e2f4f70536967732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$5061727469616c486f726e2f4f70536967732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f70536967732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$5061727469616c486f726e2f4f70536967732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f70536967732e64726f70»
-        x2
-        x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
 
 def «PartialHorn.pdAxioms» :=
   fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
@@ -3170,59 +2166,18 @@ def «PartialHorn.pdAxioms» :=
                                    x1;
                                  ((_root_.GebMirror.Metalogic.«PartialHorn.mkSeq»
                                    (_root_.GebMirror.Metalogic.«PartialHorn.pdCtx» x1)
-                                   (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f45716e732e73696e676c65»
+                                   (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
                                      (_root_.GebMirror.Metalogic.«PartialHorn.eqn» x3 x3))
                                    (_root_.GebMirror.Metalogic.«PartialHorn.eqn» x2 x3)) ::
-                                   (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f536571732e73696e676c65»
+                                   (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e53657175656e7429»
                                      (_root_.GebMirror.Metalogic.«PartialHorn.mkSeq»
                                        (_root_.GebMirror.Metalogic.«PartialHorn.pdCtx» x1)
-                                       (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f45716e732e73696e676c65»
+                                       (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
                                          (_root_.GebMirror.Metalogic.«PartialHorn.eqn» x2 x2))
                                        (_root_.GebMirror.Metalogic.«PartialHorn.eqn» x3 x3)))));
     x2
 
-def «PartialHorn.thyExtend» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.List
-                                          _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«PartialHorn.thySig»
-                                          x0;
-                                        _root_.GebMirror.Metalogic.«PartialHorn.theory»
-                                          (_root_.GebMirror.Metalogic.«PartialHorn.opSigs»
-                                            (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f70536967732e617070656e64»
-                                              x2
-                                              (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f70536967732e73696e676c65»
-                                                (_root_.GebMirror.Metalogic.«PartialHorn.opSig»
-                                                  (_root_.GebMirror.Metalogic.«PartialHorn.sorts»
-                                                    (_root_.GebMirror.Metalogic.«PartialHorn.pdCtx» x1))
-                                                  (_root_.GebMirror.Metalogic.«PartialHorn.pdSort» x1)))))
-                                          (_root_.GebMirror.Metalogic.«PartialHorn.seqs»
-                                            (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f536571732e617070656e64»
-                                              (_root_.GebMirror.Metalogic.«PartialHorn.thyAxioms» x0)
-                                              (_root_.GebMirror.Metalogic.«PartialHorn.pdAxioms»
-                                                (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f70536967732e6c656e677468»
-                                                  x2)
-                                                x1))));
-    x2
-
-def «$5061727469616c486f726e2f504465666e732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$5061727469616c486f726e2f504465666e732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$5061727469616c486f726e2f504465666e732e617070656e64» :=
+def «$285365712e617070656e64205061727469616c486f726e2e4f7053696729» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -3236,7 +2191,62 @@ def «$5061727469616c486f726e2f504465666e732e617070656e64» :=
       x0;
     x2
 
-def «$5061727469616c486f726e2f504465666e732e72657665727365» :=
+def «$285365712e73696e676c65205061727469616c486f726e2e4f7053696729» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      ([] : _root_.List _root_.Geb.Kernel.Tree));
+    x1
+
+def «$285365712e617070656e64205061727469616c486f726e2e53657175656e7429» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «$285365712e6c656e677468205061727469616c486f726e2e4f7053696729» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+      (_root_.Geb.Kernel.leaf 0)
+      x0;
+    x1
+
+def «PartialHorn.thyExtend» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.List
+                                          _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«PartialHorn.thySig»
+                                          x0;
+                                        _root_.GebMirror.Metalogic.«PartialHorn.theory»
+                                          (_root_.GebMirror.Metalogic.«PartialHorn.opSigs»
+                                            (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+                                              x2
+                                              (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e4f7053696729»
+                                                (_root_.GebMirror.Metalogic.«PartialHorn.opSig»
+                                                  (_root_.GebMirror.Metalogic.«PartialHorn.sorts»
+                                                    (_root_.GebMirror.Metalogic.«PartialHorn.pdCtx» x1))
+                                                  (_root_.GebMirror.Metalogic.«PartialHorn.pdSort» x1)))))
+                                          (_root_.GebMirror.Metalogic.«PartialHorn.seqs»
+                                            (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+                                              (_root_.GebMirror.Metalogic.«PartialHorn.thyAxioms» x0)
+                                              (_root_.GebMirror.Metalogic.«PartialHorn.pdAxioms»
+                                                (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e4f7053696729»
+                                                  x2)
+                                                x1))));
+    x2
+
+def «$285365712e72657665727365205061727469616c486f726e2e504465666e29» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
       _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
@@ -3252,46 +2262,6 @@ def «$5061727469616c486f726e2f504465666e732e72657665727365» :=
       x0
       ([] : _root_.List _root_.Geb.Kernel.Tree);
     x1
-
-def «$5061727469616c486f726e2f504465666e732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$5061727469616c486f726e2f504465666e732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f504465666e732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$5061727469616c486f726e2f504465666e732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f504465666e732e64726f70»
-        x2
-        x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
 
 def «PartialHorn.thyExtendAll» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -3302,417 +2272,9 @@ def «PartialHorn.thyExtendAll» :=
       (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
         _root_.GebMirror.Metalogic.«PartialHorn.thyExtend» x3 x2)
       x0
-      (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f504465666e732e72657665727365»
+      (_root_.GebMirror.Metalogic.«$285365712e72657665727365205061727469616c486f726e2e504465666e29»
         x1);
     x2
-
-def «$5468656f72792f4f70536967732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$5468656f72792f4f70536967732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$5468656f72792f4f70536967732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$5468656f72792f4f70536967732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$5468656f72792f4f70536967732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$5468656f72792f4f70536967732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$5468656f72792f4f70536967732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$5468656f72792f4f705369674c2e6c32» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
-    x2
-
-def «$5468656f72792f4f705369674c2e6c33» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c32» x1 x2));
-    x3
-
-def «$5468656f72792f4f705369674c2e6c34» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree) =>
-    let x4 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c33» x1 x2 x3));
-    x4
-
-def «$5468656f72792f4f705369674c2e6c35» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree) =>
-    let x5 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c34» x1 x2 x3 x4));
-    x5
-
-def «$5468656f72792f4f705369674c2e6c36» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree)
-    (x5 : _root_.Geb.Kernel.Tree) =>
-    let x6 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c35» x1 x2 x3 x4 x5));
-    x6
-
-def «$5468656f72792f536571732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$5468656f72792f536571732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$5468656f72792f536571732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$5468656f72792f536571732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$5468656f72792f536571732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$5468656f72792f536571732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$5468656f72792f536571732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$5468656f72792f536571732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$5468656f72792f5365714c2e6c32» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
-    x2
-
-def «$5468656f72792f5365714c2e6c33» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c32» x1 x2));
-    x3
-
-def «$5468656f72792f5365714c2e6c34» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree) =>
-    let x4 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c33» x1 x2 x3));
-    x4
-
-def «$5468656f72792f5365714c2e6c35» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree) =>
-    let x5 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c34» x1 x2 x3 x4));
-    x5
-
-def «$5468656f72792f5365714c2e6c36» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree)
-    (x5 : _root_.Geb.Kernel.Tree) =>
-    let x6 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c35» x1 x2 x3 x4 x5));
-    x6
-
-def «$5468656f72792f45716e732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$5468656f72792f45716e732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$5468656f72792f45716e732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$5468656f72792f45716e732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$5468656f72792f45716e732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$5468656f72792f45716e732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$5468656f72792f45716e732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$5468656f72792f45716e732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$5468656f72792f45716e4c2e6c32» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
-    x2
-
-def «$5468656f72792f45716e4c2e6c33» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c32» x1 x2));
-    x3
-
-def «$5468656f72792f45716e4c2e6c34» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree) =>
-    let x4 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c33» x1 x2 x3));
-    x4
-
-def «$5468656f72792f45716e4c2e6c35» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree) =>
-    let x5 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c34» x1 x2 x3 x4));
-    x5
-
-def «$5468656f72792f45716e4c2e6c36» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree)
-    (x5 : _root_.Geb.Kernel.Tree) =>
-    let x6 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c35» x1 x2 x3 x4 x5));
-    x6
 
 def «Theory.l2» :=
   fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
@@ -3771,9 +2333,40 @@ def «Theory.os» :=
       x1;
     x2
 
+def «$284665772e6c32205061727469616c486f726e2e4f7053696729» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
+    x2
+
+def «$284665772e6c33205061727469616c486f726e2e4f7053696729» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e4f7053696729»
+        x1
+        x2));
+    x3
+
+def «$284665772e6c34205061727469616c486f726e2e4f7053696729» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e4f7053696729»
+        x1
+        x2
+        x3));
+    x4
+
 def «Theory.sig» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e617070656e64»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c34»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+    (_root_.GebMirror.Metalogic.«$284665772e6c34205061727469616c486f726e2e4f7053696729»
       (_root_.GebMirror.Metalogic.«Theory.os»
         (_root_.GebMirror.Metalogic.«Prelude.single» (_root_.Geb.Kernel.leaf 1))
         (_root_.Geb.Kernel.leaf 0))
@@ -3788,16 +2381,16 @@ def «Theory.sig» :=
           (_root_.Geb.Kernel.leaf 1)
           (_root_.Geb.Kernel.leaf 1))
         (_root_.Geb.Kernel.leaf 1)))
-    (_root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e617070656e64»
-      (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c32»
+    (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+      (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e4f7053696729»
         (_root_.GebMirror.Metalogic.«Theory.os»
           ([] : _root_.List _root_.Geb.Kernel.Tree)
           (_root_.Geb.Kernel.leaf 0))
         (_root_.GebMirror.Metalogic.«Theory.os»
           (_root_.GebMirror.Metalogic.«Prelude.single» (_root_.Geb.Kernel.leaf 0))
           (_root_.Geb.Kernel.leaf 1)))
-      (_root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e617070656e64»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c34»
+      (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+        (_root_.GebMirror.Metalogic.«$284665772e6c34205061727469616c486f726e2e4f7053696729»
           (_root_.GebMirror.Metalogic.«Theory.os»
             (_root_.GebMirror.Metalogic.«Theory.l2»
               (_root_.Geb.Kernel.leaf 0)
@@ -3818,8 +2411,8 @@ def «Theory.sig» :=
               (_root_.Geb.Kernel.leaf 1)
               (_root_.Geb.Kernel.leaf 1))
             (_root_.Geb.Kernel.leaf 1)))
-        (_root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e617070656e64»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c33»
+        (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+          (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e4f7053696729»
             (_root_.GebMirror.Metalogic.«Theory.os»
               (_root_.GebMirror.Metalogic.«Theory.l2»
                 (_root_.Geb.Kernel.leaf 1)
@@ -3836,16 +2429,16 @@ def «Theory.sig» :=
                 (_root_.Geb.Kernel.leaf 1)
                 (_root_.Geb.Kernel.leaf 1))
               (_root_.Geb.Kernel.leaf 1)))
-          (_root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e617070656e64»
-            (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c32»
+          (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+            (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e4f7053696729»
               (_root_.GebMirror.Metalogic.«Theory.os»
                 ([] : _root_.List _root_.Geb.Kernel.Tree)
                 (_root_.Geb.Kernel.leaf 0))
               (_root_.GebMirror.Metalogic.«Theory.os»
                 (_root_.GebMirror.Metalogic.«Prelude.single» (_root_.Geb.Kernel.leaf 0))
                 (_root_.Geb.Kernel.leaf 1)))
-            (_root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e617070656e64»
-              (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c34»
+            (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+              (_root_.GebMirror.Metalogic.«$284665772e6c34205061727469616c486f726e2e4f7053696729»
                 (_root_.GebMirror.Metalogic.«Theory.os»
                   (_root_.GebMirror.Metalogic.«Theory.l2»
                     (_root_.Geb.Kernel.leaf 0)
@@ -3866,8 +2459,8 @@ def «Theory.sig» :=
                     (_root_.Geb.Kernel.leaf 1)
                     (_root_.Geb.Kernel.leaf 1))
                   (_root_.Geb.Kernel.leaf 1)))
-              (_root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e617070656e64»
-                (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c33»
+              (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+                (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e4f7053696729»
                   (_root_.GebMirror.Metalogic.«Theory.os»
                     (_root_.GebMirror.Metalogic.«Theory.l2»
                       (_root_.Geb.Kernel.leaf 1)
@@ -3884,8 +2477,8 @@ def «Theory.sig» :=
                       (_root_.Geb.Kernel.leaf 1)
                       (_root_.Geb.Kernel.leaf 1))
                     (_root_.Geb.Kernel.leaf 1)))
-                (_root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e617070656e64»
-                  (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c33»
+                (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+                  (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e4f7053696729»
                     (_root_.GebMirror.Metalogic.«Theory.os»
                       (_root_.GebMirror.Metalogic.«Theory.l2»
                         (_root_.Geb.Kernel.leaf 0)
@@ -3902,8 +2495,8 @@ def «Theory.sig» :=
                         (_root_.Geb.Kernel.leaf 0)
                         (_root_.Geb.Kernel.leaf 1))
                       (_root_.Geb.Kernel.leaf 1)))
-                  (_root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e617070656e64»
-                    (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c34»
+                  (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+                    (_root_.GebMirror.Metalogic.«$284665772e6c34205061727469616c486f726e2e4f7053696729»
                       (_root_.GebMirror.Metalogic.«Theory.os»
                         ([] : _root_.List _root_.Geb.Kernel.Tree)
                         (_root_.Geb.Kernel.leaf 0))
@@ -3916,8 +2509,8 @@ def «Theory.sig» :=
                       (_root_.GebMirror.Metalogic.«Theory.os»
                         (_root_.GebMirror.Metalogic.«Prelude.single» (_root_.Geb.Kernel.leaf 1))
                         (_root_.Geb.Kernel.leaf 1)))
-                    (_root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e617070656e64»
-                      (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c34»
+                    (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+                      (_root_.GebMirror.Metalogic.«$284665772e6c34205061727469616c486f726e2e4f7053696729»
                         (_root_.GebMirror.Metalogic.«Theory.os»
                           ([] : _root_.List _root_.Geb.Kernel.Tree)
                           (_root_.Geb.Kernel.leaf 0))
@@ -3932,8 +2525,8 @@ def «Theory.sig» :=
                             (_root_.Geb.Kernel.leaf 1)
                             (_root_.Geb.Kernel.leaf 1))
                           (_root_.Geb.Kernel.leaf 1)))
-                      (_root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e617070656e64»
-                        (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c34»
+                      (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+                        (_root_.GebMirror.Metalogic.«$284665772e6c34205061727469616c486f726e2e4f7053696729»
                           (_root_.GebMirror.Metalogic.«Theory.os»
                             (_root_.GebMirror.Metalogic.«Prelude.single» (_root_.Geb.Kernel.leaf 0))
                             (_root_.Geb.Kernel.leaf 0))
@@ -3949,8 +2542,8 @@ def «Theory.sig» :=
                               (_root_.Geb.Kernel.leaf 1)
                               (_root_.Geb.Kernel.leaf 1))
                             (_root_.Geb.Kernel.leaf 1)))
-                        (_root_.GebMirror.Metalogic.«$5468656f72792f4f70536967732e617070656e64»
-                          (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c33»
+                        (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e4f7053696729»
+                          (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e4f7053696729»
                             (_root_.GebMirror.Metalogic.«Theory.os»
                               ([] : _root_.List _root_.Geb.Kernel.Tree)
                               (_root_.Geb.Kernel.leaf 0))
@@ -3960,7 +2553,7 @@ def «Theory.sig» :=
                             (_root_.GebMirror.Metalogic.«Theory.os»
                               (_root_.GebMirror.Metalogic.«Prelude.single» (_root_.Geb.Kernel.leaf 1))
                               (_root_.Geb.Kernel.leaf 1)))
-                          (_root_.GebMirror.Metalogic.«$5468656f72792f4f705369674c2e6c33»
+                          (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e4f7053696729»
                             (_root_.GebMirror.Metalogic.«Theory.os»
                               (_root_.GebMirror.Metalogic.«Prelude.single» (_root_.Geb.Kernel.leaf 0))
                               (_root_.Geb.Kernel.leaf 0))
@@ -4569,9 +3162,72 @@ def «Theory.ctxA» :=
 def «Theory.ctxO» :=
   _root_.GebMirror.Metalogic.«Prelude.single» (_root_.Geb.Kernel.leaf 0)
 
+def «$284665772e6c32205061727469616c486f726e2e53657175656e7429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
+    x2
+
+def «$284665772e6c33205061727469616c486f726e2e53657175656e7429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e53657175656e7429»
+        x1
+        x2));
+    x3
+
+def «$284665772e6c34205061727469616c486f726e2e53657175656e7429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e53657175656e7429»
+        x1
+        x2
+        x3));
+    x4
+
+def «$284665772e6c35205061727469616c486f726e2e53657175656e7429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c34205061727469616c486f726e2e53657175656e7429»
+        x1
+        x2
+        x3
+        x4));
+    x5
+
+def «$284665772e6c36205061727469616c486f726e2e53657175656e7429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree) =>
+    let x6 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c35205061727469616c486f726e2e53657175656e7429»
+        x1
+        x2
+        x3
+        x4
+        x5));
+    x6
+
 def «Theory.categoryAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxA»
         ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -4592,7 +3248,7 @@ def «Theory.categoryAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.comp»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4604,7 +3260,7 @@ def «Theory.categoryAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
             (_root_.GebMirror.Metalogic.«Theory.cod»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))
@@ -4616,7 +3272,7 @@ def «Theory.categoryAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.comp»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4628,10 +3284,10 @@ def «Theory.categoryAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))
           (_root_.GebMirror.Metalogic.«Theory.dom»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))))
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.comp»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4645,7 +3301,7 @@ def «Theory.categoryAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.comp»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4701,7 +3357,7 @@ def «Theory.categoryAxioms» :=
           (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
 
 def «Theory.terminalAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c34»
+  _root_.GebMirror.Metalogic.«$284665772e6c34205061727469616c486f726e2e53657175656e7429»
     (_root_.GebMirror.Metalogic.«Theory.sq»
       ([] : _root_.List _root_.Geb.Kernel.Tree)
       ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -4724,7 +3380,7 @@ def «Theory.terminalAxioms» :=
         _root_.GebMirror.Metalogic.«Theory.one»))
     (_root_.GebMirror.Metalogic.«Theory.sq»
       _root_.GebMirror.Metalogic.«Theory.ctxA»
-      (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+      (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
         (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
           (_root_.GebMirror.Metalogic.«Theory.cod»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
@@ -4736,8 +3392,8 @@ def «Theory.terminalAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))))
 
 def «Theory.productAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOO»
         ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -4787,7 +3443,7 @@ def «Theory.productAxioms» :=
           (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.cPair»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4797,10 +3453,10 @@ def «Theory.productAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
           (_root_.GebMirror.Metalogic.«Theory.dom»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))))
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
             (_root_.GebMirror.Metalogic.«Theory.dom»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
@@ -4812,7 +3468,7 @@ def «Theory.productAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.cPair»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4826,7 +3482,7 @@ def «Theory.productAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.cPair»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4843,7 +3499,7 @@ def «Theory.productAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.cPair»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4861,7 +3517,7 @@ def «Theory.productAxioms» :=
           (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.cPair»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4882,7 +3538,7 @@ def «Theory.productAxioms» :=
           (_root_.Geb.Kernel.leaf 1)
           (_root_.Geb.Kernel.leaf 0)
           (_root_.Geb.Kernel.leaf 0))
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
             (_root_.GebMirror.Metalogic.«Theory.cod»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
@@ -4903,12 +3559,19 @@ def «Theory.productAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
           (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
 
+def «$284665772e6c32205061727469616c486f726e2e45716e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
+    x2
+
 def «Theory.equalizerAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.eqz»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4920,7 +3583,7 @@ def «Theory.equalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.eqz»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4932,7 +3595,7 @@ def «Theory.equalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c32»
+        (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
             (_root_.GebMirror.Metalogic.«Theory.dom»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
@@ -4949,7 +3612,7 @@ def «Theory.equalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.eqIncl»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4960,7 +3623,7 @@ def «Theory.equalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.eqz»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4971,7 +3634,7 @@ def «Theory.equalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.eqz»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -4984,11 +3647,11 @@ def «Theory.equalizerAxioms» :=
           (_root_.GebMirror.Metalogic.«Theory.eqz»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))))
-    (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+    (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+      (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.eqz»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5002,7 +3665,7 @@ def «Theory.equalizerAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.eqz»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5020,7 +3683,7 @@ def «Theory.equalizerAxioms» :=
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.eqLift»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5032,7 +3695,7 @@ def «Theory.equalizerAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.eqLift»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5047,7 +3710,7 @@ def «Theory.equalizerAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c32»
+          (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.eqz»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5066,7 +3729,7 @@ def «Theory.equalizerAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.eqLift»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5080,10 +3743,10 @@ def «Theory.equalizerAxioms» :=
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2))))
             (_root_.GebMirror.Metalogic.«Theory.dom»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2))))))
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c33»
+      (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e53657175656e7429»
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.eqLift»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5100,7 +3763,7 @@ def «Theory.equalizerAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.eqLift»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5118,7 +3781,7 @@ def «Theory.equalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c32»
+          (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.eqz»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5141,7 +3804,7 @@ def «Theory.equalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2))))))
 
 def «Theory.initialAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c34»
+  _root_.GebMirror.Metalogic.«$284665772e6c34205061727469616c486f726e2e53657175656e7429»
     (_root_.GebMirror.Metalogic.«Theory.sq»
       ([] : _root_.List _root_.Geb.Kernel.Tree)
       ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -5164,7 +3827,7 @@ def «Theory.initialAxioms» :=
         (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
     (_root_.GebMirror.Metalogic.«Theory.sq»
       _root_.GebMirror.Metalogic.«Theory.ctxA»
-      (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+      (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
         (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
           (_root_.GebMirror.Metalogic.«Theory.dom»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
@@ -5176,8 +3839,8 @@ def «Theory.initialAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))))
 
 def «Theory.coproductAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOO»
         ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -5227,7 +3890,7 @@ def «Theory.coproductAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.copair»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5237,10 +3900,10 @@ def «Theory.coproductAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
           (_root_.GebMirror.Metalogic.«Theory.cod»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))))
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
             (_root_.GebMirror.Metalogic.«Theory.cod»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
@@ -5252,7 +3915,7 @@ def «Theory.coproductAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.copair»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5269,7 +3932,7 @@ def «Theory.coproductAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.copair»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5283,7 +3946,7 @@ def «Theory.coproductAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.copair»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5301,7 +3964,7 @@ def «Theory.coproductAxioms» :=
           (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.copair»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5322,7 +3985,7 @@ def «Theory.coproductAxioms» :=
           (_root_.Geb.Kernel.leaf 1)
           (_root_.Geb.Kernel.leaf 0)
           (_root_.Geb.Kernel.leaf 0))
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
             (_root_.GebMirror.Metalogic.«Theory.dom»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
@@ -5344,11 +4007,11 @@ def «Theory.coproductAxioms» :=
           (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
 
 def «Theory.coequalizerAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.coeqz»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5360,7 +4023,7 @@ def «Theory.coequalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.coeqz»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5372,7 +4035,7 @@ def «Theory.coequalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c32»
+        (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
             (_root_.GebMirror.Metalogic.«Theory.dom»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
@@ -5389,7 +4052,7 @@ def «Theory.coequalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.coeqProj»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5400,7 +4063,7 @@ def «Theory.coequalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.coeqz»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5411,7 +4074,7 @@ def «Theory.coequalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.coeqz»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5423,11 +4086,11 @@ def «Theory.coequalizerAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))
           (_root_.GebMirror.Metalogic.«Theory.cod»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))))
-    (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+    (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+      (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.coeqz»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5442,7 +4105,7 @@ def «Theory.coequalizerAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.coeqz»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5460,7 +4123,7 @@ def «Theory.coequalizerAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.coeqDesc»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5472,7 +4135,7 @@ def «Theory.coequalizerAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.coeqDesc»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5487,7 +4150,7 @@ def «Theory.coequalizerAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c32»
+          (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.coeqz»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5506,7 +4169,7 @@ def «Theory.coequalizerAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.coeqDesc»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5521,10 +4184,10 @@ def «Theory.coequalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.coeqz»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))))
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c33»
+      (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e53657175656e7429»
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.coeqDesc»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5540,7 +4203,7 @@ def «Theory.coequalizerAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.coeqDesc»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5558,7 +4221,7 @@ def «Theory.coequalizerAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c32»
+          (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.coeqz»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5587,8 +4250,8 @@ def «Theory.ctxOOA» :=
     (_root_.Geb.Kernel.leaf 1)
 
 def «Theory.exponentialAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOO»
         ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -5620,7 +4283,7 @@ def «Theory.exponentialAxioms» :=
           (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOOA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.curry»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5634,7 +4297,7 @@ def «Theory.exponentialAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOOA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
             (_root_.GebMirror.Metalogic.«Theory.dom»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2)))
@@ -5648,7 +4311,7 @@ def «Theory.exponentialAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOOA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.curry»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5661,10 +4324,10 @@ def «Theory.exponentialAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2))))
           (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c33»
+    (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOOA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.curry»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5682,7 +4345,7 @@ def «Theory.exponentialAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2))))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOOA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.curry»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5707,7 +4370,7 @@ def «Theory.exponentialAxioms» :=
           (_root_.Geb.Kernel.leaf 0)
           (_root_.Geb.Kernel.leaf 0)
           (_root_.Geb.Kernel.leaf 1))
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c32»
+        (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
             (_root_.GebMirror.Metalogic.«Theory.dom»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 3)))
@@ -5731,9 +4394,65 @@ def «Theory.exponentialAxioms» :=
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
           (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 3)))))
 
+def «$284665772e6c33205061727469616c486f726e2e45716e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e45716e29»
+        x1
+        x2));
+    x3
+
+def «$284665772e6c34205061727469616c486f726e2e45716e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e45716e29»
+        x1
+        x2
+        x3));
+    x4
+
+def «$284665772e6c35205061727469616c486f726e2e45716e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c34205061727469616c486f726e2e45716e29»
+        x1
+        x2
+        x3
+        x4));
+    x5
+
+def «$284665772e6c36205061727469616c486f726e2e45716e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree) =>
+    let x6 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c35205061727469616c486f726e2e45716e29»
+        x1
+        x2
+        x3
+        x4
+        x5));
+    x6
+
 def «Theory.classifierAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         ([] : _root_.List _root_.Geb.Kernel.Tree)
         ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -5752,7 +4471,7 @@ def «Theory.classifierAxioms» :=
           _root_.GebMirror.Metalogic.«Theory.omega»))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.chi»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -5760,7 +4479,7 @@ def «Theory.classifierAxioms» :=
           (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.monoCond»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
         (_root_.GebMirror.Metalogic.«Theory.dfd»
@@ -5768,7 +4487,7 @@ def «Theory.classifierAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.chi»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -5778,11 +4497,11 @@ def «Theory.classifierAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
           (_root_.GebMirror.Metalogic.«Theory.cod»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))))
-    (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+    (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+      (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.chi»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -5793,7 +4512,7 @@ def «Theory.classifierAxioms» :=
             _root_.GebMirror.Metalogic.«Theory.omega»))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.chi»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -5809,7 +4528,7 @@ def «Theory.classifierAxioms» :=
                   (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.chiInv»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -5818,7 +4537,7 @@ def «Theory.classifierAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.chi»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -5827,7 +4546,7 @@ def «Theory.classifierAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.chi»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -5840,7 +4559,7 @@ def «Theory.classifierAxioms» :=
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.chi»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -5850,10 +4569,10 @@ def «Theory.classifierAxioms» :=
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
             (_root_.GebMirror.Metalogic.«Theory.dom»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))))
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c33»
+      (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e53657175656e7429»
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.chi»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -5871,7 +4590,7 @@ def «Theory.classifierAxioms» :=
                   (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.chi»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -5892,7 +4611,7 @@ def «Theory.classifierAxioms» :=
             (_root_.Geb.Kernel.leaf 1)
             (_root_.Geb.Kernel.leaf 1)
             (_root_.Geb.Kernel.leaf 1))
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c36»
+          (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.chi»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
@@ -5931,8 +4650,8 @@ def «Theory.classifierAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))))
 
 def «Theory.natAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         ([] : _root_.List _root_.Geb.Kernel.Tree)
         ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -5959,7 +4678,7 @@ def «Theory.natAxioms» :=
           _root_.GebMirror.Metalogic.«Theory.nat»))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.natRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5970,7 +4689,7 @@ def «Theory.natAxioms» :=
           _root_.GebMirror.Metalogic.«Theory.one»))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.natRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5980,11 +4699,11 @@ def «Theory.natAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
           (_root_.GebMirror.Metalogic.«Theory.dom»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))))
-    (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+    (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+      (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.natRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -5996,7 +4715,7 @@ def «Theory.natAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c33»
+          (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
               (_root_.GebMirror.Metalogic.«Theory.dom»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
@@ -6017,7 +4736,7 @@ def «Theory.natAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.natRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6030,7 +4749,7 @@ def «Theory.natAxioms» :=
             _root_.GebMirror.Metalogic.«Theory.nat»))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.natRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6044,7 +4763,7 @@ def «Theory.natAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.natRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6058,7 +4777,7 @@ def «Theory.natAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.natRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6074,10 +4793,10 @@ def «Theory.natAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.natRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))))
-      (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e73696e676c65»
+      (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e53657175656e7429»
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxAAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c34»
+          (_root_.GebMirror.Metalogic.«$284665772e6c34205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.natRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6111,8 +4830,8 @@ def «Theory.ctxOAA» :=
     (_root_.Geb.Kernel.leaf 1)
 
 def «Theory.listAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxO»
         ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -6158,7 +4877,7 @@ def «Theory.listAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.listRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6168,11 +4887,11 @@ def «Theory.listAxioms» :=
           (_root_.GebMirror.Metalogic.«Theory.dom»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))
           _root_.GebMirror.Metalogic.«Theory.one»)))
-    (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+    (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+      (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxOAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.listRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6185,7 +4904,7 @@ def «Theory.listAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxOAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.listRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6200,7 +4919,7 @@ def «Theory.listAxioms» :=
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2))))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxOAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c33»
+          (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
               (_root_.GebMirror.Metalogic.«Theory.dom»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))
@@ -6224,7 +4943,7 @@ def «Theory.listAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxOAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.listRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6240,7 +4959,7 @@ def «Theory.listAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxOAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.listRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6256,7 +4975,7 @@ def «Theory.listAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxOAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.listRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6271,10 +4990,10 @@ def «Theory.listAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.cNil»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
-      (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c32»
+      (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e53657175656e7429»
         (_root_.GebMirror.Metalogic.«Theory.sq»
           _root_.GebMirror.Metalogic.«Theory.ctxOAA»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+          (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.listRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6302,7 +5021,7 @@ def «Theory.listAxioms» :=
             (_root_.Geb.Kernel.leaf 1)
             (_root_.Geb.Kernel.leaf 1)
             (_root_.Geb.Kernel.leaf 1))
-          (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c34»
+          (_root_.GebMirror.Metalogic.«$284665772e6c34205061727469616c486f726e2e45716e29»
             (_root_.GebMirror.Metalogic.«Theory.dfd»
               (_root_.GebMirror.Metalogic.«Theory.listRec»
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6337,8 +5056,8 @@ def «Theory.listAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 2)))))))
 
 def «Theory.roseAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         ([] : _root_.List _root_.Geb.Kernel.Tree)
         ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -6355,7 +5074,7 @@ def «Theory.roseAxioms» :=
           _root_.GebMirror.Metalogic.«Theory.rose»))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.roseRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -6369,7 +5088,7 @@ def «Theory.roseAxioms» :=
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
             (_root_.GebMirror.Metalogic.«Theory.dom»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))
@@ -6383,7 +5102,7 @@ def «Theory.roseAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.roseRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -6394,7 +5113,7 @@ def «Theory.roseAxioms» :=
           _root_.GebMirror.Metalogic.«Theory.rose»))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.roseRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -6404,10 +5123,10 @@ def «Theory.roseAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
           (_root_.GebMirror.Metalogic.«Theory.cod»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))))
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c32»
+    (_root_.GebMirror.Metalogic.«$284665772e6c32205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.roseRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
@@ -6425,7 +5144,7 @@ def «Theory.roseAxioms» :=
                   (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c33»
+        (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.roseRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))
@@ -6454,8 +5173,8 @@ def «Theory.ctxOA» :=
     (_root_.Geb.Kernel.leaf 1)
 
 def «Theory.lroseAxioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c36»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
+    (_root_.GebMirror.Metalogic.«$284665772e6c36205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxO»
         ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -6485,7 +5204,7 @@ def «Theory.lroseAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.lroseRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6500,7 +5219,7 @@ def «Theory.lroseAxioms» :=
                 (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
             (_root_.GebMirror.Metalogic.«Theory.dom»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))
@@ -6515,7 +5234,7 @@ def «Theory.lroseAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.lroseRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6527,10 +5246,10 @@ def «Theory.lroseAxioms» :=
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))
           (_root_.GebMirror.Metalogic.«Theory.lrose»
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))))))
-    (_root_.GebMirror.Metalogic.«$5468656f72792f5365714c2e6c33»
+    (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e53657175656e7429»
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.lroseRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6544,7 +5263,7 @@ def «Theory.lroseAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1)))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e732e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.lroseRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6566,7 +5285,7 @@ def «Theory.lroseAxioms» :=
                   (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))))))
       (_root_.GebMirror.Metalogic.«Theory.sq»
         _root_.GebMirror.Metalogic.«Theory.ctxOAA»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f45716e4c2e6c33»
+        (_root_.GebMirror.Metalogic.«$284665772e6c33205061727469616c486f726e2e45716e29»
           (_root_.GebMirror.Metalogic.«Theory.dfd»
             (_root_.GebMirror.Metalogic.«Theory.lroseRec»
               (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 0))
@@ -6594,29 +5313,29 @@ def «Theory.lroseAxioms» :=
             (_root_.GebMirror.Metalogic.«Theory.x» (_root_.Geb.Kernel.leaf 1))))))
 
 def «Theory.axioms» :=
-  _root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
+  _root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
     _root_.GebMirror.Metalogic.«Theory.categoryAxioms»
-    (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
+    (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
       _root_.GebMirror.Metalogic.«Theory.terminalAxioms»
-      (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
+      (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
         _root_.GebMirror.Metalogic.«Theory.productAxioms»
-        (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
+        (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
           _root_.GebMirror.Metalogic.«Theory.equalizerAxioms»
-          (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
+          (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
             _root_.GebMirror.Metalogic.«Theory.initialAxioms»
-            (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
+            (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
               _root_.GebMirror.Metalogic.«Theory.coproductAxioms»
-              (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
+              (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
                 _root_.GebMirror.Metalogic.«Theory.coequalizerAxioms»
-                (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
+                (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
                   _root_.GebMirror.Metalogic.«Theory.exponentialAxioms»
-                  (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
+                  (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
                     _root_.GebMirror.Metalogic.«Theory.classifierAxioms»
-                    (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
+                    (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
                       _root_.GebMirror.Metalogic.«Theory.natAxioms»
-                      (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
+                      (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
                         _root_.GebMirror.Metalogic.«Theory.listAxioms»
-                        (_root_.GebMirror.Metalogic.«$5468656f72792f536571732e617070656e64»
+                        (_root_.GebMirror.Metalogic.«$285365712e617070656e64205061727469616c486f726e2e53657175656e7429»
                           _root_.GebMirror.Metalogic.«Theory.roseAxioms»
                           _root_.GebMirror.Metalogic.«Theory.lroseAxioms»)))))))))))
 
@@ -6624,337 +5343,6 @@ def «Theory.toposTheory» :=
   _root_.GebMirror.Metalogic.«PartialHorn.theory»
     (_root_.GebMirror.Metalogic.«PartialHorn.opSigs» _root_.GebMirror.Metalogic.«Theory.sig»)
     (_root_.GebMirror.Metalogic.«PartialHorn.seqs» _root_.GebMirror.Metalogic.«Theory.axioms»)
-
-def «$496e6665722f4f70536967732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$496e6665722f4f70536967732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$496e6665722f4f70536967732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$496e6665722f4f70536967732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$496e6665722f4f70536967732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$496e6665722f4f70536967732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$496e6665722f4f70536967732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$496e6665722f4f70536967732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$496e6665722f4f70536967732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$496e6665722f536571732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$496e6665722f536571732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$496e6665722f536571732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$496e6665722f536571732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$496e6665722f536571732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$496e6665722f536571732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$496e6665722f536571732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$496e6665722f536571732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$496e6665722f536571732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$496e6665722f45716e732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$496e6665722f45716e732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$496e6665722f45716e732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$496e6665722f45716e732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$496e6665722f45716e732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$496e6665722f45716e732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$496e6665722f45716e732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$496e6665722f45716e732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$496e6665722f45716e732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$496e6665722f4561636845716e2e616c6c» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.and» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 1)
-      x1;
-    x2
-
-def «$496e6665722f4561636845716e2e616e79» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.or» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 0)
-      x1;
-    x2
-
-def «$496e6665722f4561636845716e2e6973456d707479» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.eq
-      (_root_.Geb.Kernel.Const.foldr
-        (α := _root_.Geb.Kernel.Tree)
-        (β := _root_.Geb.Kernel.Tree)
-        (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-        (_root_.Geb.Kernel.leaf 0)
-        x0)
-      (_root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$496e6665722f4561636845716e2e74616b65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree)
-                                   (fun (_ : _root_.Geb.Kernel.Tree)
-                                      (x3 : _root_.Geb.Kernel.Tree) =>
-                                     _root_.Geb.Kernel.Const.add x3 (_root_.Geb.Kernel.leaf 1))
-                                   (_root_.Geb.Kernel.leaf 0)
-                                   x1;
-                                 (_root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree ×
-                                     _root_.List _root_.Geb.Kernel.Tree)
-                                   (fun (x3 : _root_.Geb.Kernel.Tree)
-                                      (x4 : _root_.Geb.Kernel.Tree ×
-                                        _root_.List _root_.Geb.Kernel.Tree) =>
-                                     (_root_.Geb.Kernel.Const.add (x4).1 (_root_.Geb.Kernel.leaf 1),
-                                       if (_root_.Geb.Kernel.Const.lt
-                                         (_root_.Geb.Kernel.Const.sub
-                                           (_root_.Geb.Kernel.Const.sub x2 (x4).1)
-                                           (_root_.Geb.Kernel.leaf 1))
-                                         x0).label ≠ 0 then
-                                         (x3 :: (x4).2)
-                                       else
-                                         (x4).2))
-                                   (_root_.Geb.Kernel.leaf 0,
-                                     ([] : _root_.List _root_.Geb.Kernel.Tree))
-                                   x1).2);
-    x2
 
 def «Infer.direct» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
@@ -6973,296 +5361,6 @@ def «Infer.rhsRule» :=
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 2)
       (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$496e6665722f4f4466642e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$496e6665722f4f4466642e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$496e6665722f4f4466642e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$496e6665722f4f4466642e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$496e6665722f4f4466642e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$496e6665722f4f4466642e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$496e6665722f4f4466642e6a757374» x2);
-    x2
-
-def «$496e6665722f4f4466642e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
-def «$496e6665722f4f4f4466642e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$496e6665722f4f4f4466642e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$496e6665722f4f4f4466642e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$496e6665722f4f4f4466642e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$496e6665722f4f4f4466642e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$496e6665722f4f4f4466642e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$496e6665722f4f4f4466642e6a757374» x2);
-    x2
-
-def «$496e6665722f4f4f4466642e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
 
 def «Infer.mapOT» :=
   fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
@@ -7299,15 +5397,26 @@ def «Infer.mapOT» :=
                                           _root_.GebMirror.Metalogic.«Prelude.none»);
     x2
 
+def «$284f7074696f6e2e6e6f7468696e6720496e6665722e44666452756c6529» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a75737420496e6665722e44666452756c6529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
+
 def «Infer.mapTD» :=
   fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Prelude.isSome»
       x1).label ≠ 0 then
-      _root_.GebMirror.Metalogic.«$496e6665722f4f4466642e6a757374»
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e44666452756c6529»
         (x0 (_root_.GebMirror.Metalogic.«Prelude.get» x1))
     else
-      _root_.GebMirror.Metalogic.«$496e6665722f4f4466642e6e6f7468696e67»);
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e44666452756c6529»);
     x2
 
 def «Infer.bindST» :=
@@ -7355,12 +5464,23 @@ def «Infer.argSorts» :=
             _root_.Geb.Kernel.Const.node
               (_root_.Geb.Kernel.leaf 0)
               (_root_.GebMirror.Metalogic.«PartialHorn.opArgs» x1))
-          (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f4f705369672e6e74684f66»
+          (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e4f7053696729»
             _root_.GebMirror.Metalogic.«Theory.sig»
             x0))
         (_root_.Geb.Kernel.Const.node
           (_root_.Geb.Kernel.leaf 0)
           ([] : _root_.List _root_.Geb.Kernel.Tree)));
+    x1
+
+def «$285365712e6c656e677468205061727469616c486f726e2e53657175656e7429» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+      (_root_.Geb.Kernel.leaf 0)
+      x0;
     x1
 
 def «Infer.findAxiom» :=
@@ -7376,10 +5496,23 @@ def «Infer.findAxiom» :=
               (_root_.Geb.Kernel.Const.sub (x2).1 (_root_.Geb.Kernel.leaf 1))
           else
             (x2).2))
-      (_root_.GebMirror.Metalogic.«$496e6665722f536571732e6c656e677468»
+      (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e53657175656e7429»
         _root_.GebMirror.Metalogic.«Theory.axioms»,
         _root_.GebMirror.Metalogic.«Prelude.none»)
       _root_.GebMirror.Metalogic.«Theory.axioms»).2;
+    x1
+
+def «$28456163682e6973456d707479205061727469616c486f726e2e45716e29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.eq
+      (_root_.Geb.Kernel.Const.foldr
+        (α := _root_.Geb.Kernel.Tree)
+        (β := _root_.Geb.Kernel.Tree)
+        (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+        (_root_.Geb.Kernel.leaf 0)
+        x0)
+      (_root_.Geb.Kernel.leaf 0);
     x1
 
 def «Infer.dfdRule» :=
@@ -7406,7 +5539,7 @@ def «Infer.dfdRule» :=
                                                     (_root_.GebMirror.Metalogic.«PartialHorn.seqConcl» x3))
                                                   x2)));
                                         if (_root_.GebMirror.Metalogic.«Prelude.isSome» x3).label ≠ 0 then
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f4466642e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e44666452756c6529»
                                             (_root_.GebMirror.Metalogic.«Infer.direct»
                                               (_root_.GebMirror.Metalogic.«Prelude.get» x3))
                                         else
@@ -7417,7 +5550,7 @@ def «Infer.dfdRule» :=
                                                   (_root_.GebMirror.Metalogic.«PartialHorn.seqCtx» x4)
                                                   x1)
                                                 (_root_.GebMirror.Metalogic.«Prelude.and»
-                                                  (_root_.GebMirror.Metalogic.«$496e6665722f4561636845716e2e6973456d707479»
+                                                  (_root_.GebMirror.Metalogic.«$28456163682e6973456d707479205061727469616c486f726e2e45716e29»
                                                     (_root_.GebMirror.Metalogic.«PartialHorn.seqHyps» x4))
                                                   (_root_.GebMirror.Metalogic.«Prelude.and»
                                                     (_root_.GebMirror.Metalogic.«Base.not»
@@ -7434,7 +5567,7 @@ def «Infer.dfdRule» :=
                                                             x4)))
                                                       (_root_.GebMirror.Metalogic.«Prelude.single» x2)))));
                                           if (_root_.GebMirror.Metalogic.«Prelude.isSome» x4).label ≠ 0 then
-                                            _root_.GebMirror.Metalogic.«$496e6665722f4f4466642e6a757374»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e44666452756c6529»
                                               (_root_.GebMirror.Metalogic.«Infer.strict»
                                                 (_root_.GebMirror.Metalogic.«Prelude.get» x4))
                                           else
@@ -7446,7 +5579,7 @@ def «Infer.dfdRule» :=
                                                     (_root_.GebMirror.Metalogic.«Base.isEmpty»
                                                       (_root_.GebMirror.Metalogic.«PartialHorn.seqCtx» x5))
                                                     (_root_.GebMirror.Metalogic.«Prelude.and»
-                                                      (_root_.GebMirror.Metalogic.«$496e6665722f4561636845716e2e6973456d707479»
+                                                      (_root_.GebMirror.Metalogic.«$28456163682e6973456d707479205061727469616c486f726e2e45716e29»
                                                         (_root_.GebMirror.Metalogic.«PartialHorn.seqHyps» x5))
                                                       (_root_.Geb.Kernel.Const.equal
                                                         (_root_.GebMirror.Metalogic.«PartialHorn.eqRhs»
@@ -7476,7 +5609,7 @@ def «Infer.boundRule» :=
                                                   (_root_.GebMirror.Metalogic.«PartialHorn.phOp»
                                                     x0
                                                     (_root_.GebMirror.Metalogic.«Prelude.single» x3)))
-                                                (_root_.GebMirror.Metalogic.«$496e6665722f4561636845716e2e616c6c»
+                                                (_root_.GebMirror.Metalogic.«$28456163682e616c6c205061727469616c486f726e2e45716e29»
                                                   (fun (x5 : _root_.Geb.Kernel.Tree) =>
                                                     _root_.Geb.Kernel.Const.equal
                                                       (_root_.GebMirror.Metalogic.«PartialHorn.eqLhs» x5)
@@ -7484,7 +5617,7 @@ def «Infer.boundRule» :=
                                                   (_root_.GebMirror.Metalogic.«PartialHorn.seqHyps» x4)))));
     x2
 
-def «$496e6665722f44666452756c654f662e6d6170» :=
+def «$284d61702e6d617020542032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929» :=
   fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -7499,30 +5632,30 @@ def «$496e6665722f44666452756c654f662e6d6170» :=
     x2
 
 def «Infer.dfdRules» :=
-  _root_.GebMirror.Metalogic.«$496e6665722f44666452756c654f662e6d6170»
+  _root_.GebMirror.Metalogic.«$284d61702e6d617020542032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929»
     _root_.GebMirror.Metalogic.«Infer.dfdRule»
     (_root_.GebMirror.Metalogic.«Base.range»
-      (_root_.GebMirror.Metalogic.«$496e6665722f4f70536967732e6c656e677468»
+      (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e4f7053696729»
         _root_.GebMirror.Metalogic.«Theory.sig»))
 
 def «Infer.domRules» :=
   _root_.GebMirror.Metalogic.«Base.mapT»
     (_root_.GebMirror.Metalogic.«Infer.boundRule» (_root_.Geb.Kernel.leaf 0))
     (_root_.GebMirror.Metalogic.«Base.range»
-      (_root_.GebMirror.Metalogic.«$496e6665722f4f70536967732e6c656e677468»
+      (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e4f7053696729»
         _root_.GebMirror.Metalogic.«Theory.sig»))
 
 def «Infer.codRules» :=
   _root_.GebMirror.Metalogic.«Base.mapT»
     (_root_.GebMirror.Metalogic.«Infer.boundRule» (_root_.Geb.Kernel.leaf 1))
     (_root_.GebMirror.Metalogic.«Base.range»
-      (_root_.GebMirror.Metalogic.«$496e6665722f4f70536967732e6c656e677468»
+      (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e4f7053696729»
         _root_.GebMirror.Metalogic.«Theory.sig»))
 
 def «Infer.defAxIdx» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.add
-      (_root_.GebMirror.Metalogic.«$496e6665722f536571732e6c656e677468»
+      (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e53657175656e7429»
         _root_.GebMirror.Metalogic.«Theory.axioms»)
       (_root_.Geb.Kernel.Const.mul (_root_.Geb.Kernel.leaf 2) x0);
     x1
@@ -7534,238 +5667,6 @@ def «Infer.ann» :=
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 0)
       (x0 :: (x1 :: (x2 :: ([] : _root_.List _root_.Geb.Kernel.Tree))))
-
-def «$496e6665722f4f416e6e2e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$496e6665722f4f416e6e2e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$496e6665722f4f416e6e2e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$496e6665722f4f416e6e2e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$496e6665722f4f416e6e2e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6a757374» x2);
-    x2
-
-def «$496e6665722f4f416e6e2e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
-def «$496e6665722f416e6e732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$496e6665722f416e6e732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$496e6665722f416e6e732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$496e6665722f416e6e732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$496e6665722f416e6e732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$496e6665722f416e6e732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$496e6665722f416e6e732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$496e6665722f416e6e732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$496e6665722f416e6e732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
 
 def «Infer.annSort» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
@@ -7952,308 +5853,6 @@ def «Infer.typed» :=
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 0)
       (x0 :: (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)))
-
-def «$496e6665722f4f54797065642e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$496e6665722f4f54797065642e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$496e6665722f4f54797065642e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$496e6665722f4f54797065642e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$496e6665722f4f54797065642e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e6a757374» x2);
-    x2
-
-def «$496e6665722f4f54797065642e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
-def «$496e6665722f5479706564732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$496e6665722f5479706564732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$496e6665722f5479706564732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$496e6665722f5479706564732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$496e6665722f5479706564732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$496e6665722f5479706564732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$496e6665722f5479706564732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$496e6665722f5479706564732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$496e6665722f5479706564732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$496e6665722f4561636854797065642e616c6c» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.and» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 1)
-      x1;
-    x2
-
-def «$496e6665722f4561636854797065642e616e79» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.or» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 0)
-      x1;
-    x2
-
-def «$496e6665722f4561636854797065642e6973456d707479» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.eq
-      (_root_.Geb.Kernel.Const.foldr
-        (α := _root_.Geb.Kernel.Tree)
-        (β := _root_.Geb.Kernel.Tree)
-        (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-        (_root_.Geb.Kernel.leaf 0)
-        x0)
-      (_root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$496e6665722f4561636854797065642e74616b65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree)
-                                   (fun (_ : _root_.Geb.Kernel.Tree)
-                                      (x3 : _root_.Geb.Kernel.Tree) =>
-                                     _root_.Geb.Kernel.Const.add x3 (_root_.Geb.Kernel.leaf 1))
-                                   (_root_.Geb.Kernel.leaf 0)
-                                   x1;
-                                 (_root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree ×
-                                     _root_.List _root_.Geb.Kernel.Tree)
-                                   (fun (x3 : _root_.Geb.Kernel.Tree)
-                                      (x4 : _root_.Geb.Kernel.Tree ×
-                                        _root_.List _root_.Geb.Kernel.Tree) =>
-                                     (_root_.Geb.Kernel.Const.add (x4).1 (_root_.Geb.Kernel.leaf 1),
-                                       if (_root_.Geb.Kernel.Const.lt
-                                         (_root_.Geb.Kernel.Const.sub
-                                           (_root_.Geb.Kernel.Const.sub x2 (x4).1)
-                                           (_root_.Geb.Kernel.leaf 1))
-                                         x0).label ≠ 0 then
-                                         (x3 :: (x4).2)
-                                       else
-                                         (x4).2))
-                                   (_root_.Geb.Kernel.leaf 0,
-                                     ([] : _root_.List _root_.Geb.Kernel.Tree))
-                                   x1).2);
-    x2
 
 def «Infer.tyTerm» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
@@ -9083,7 +6682,29 @@ def «Infer.envOfDefs» :=
                                             _root_.GebMirror.Metalogic.«Infer.codRules»));
     x1
 
-def «$496e6665722f536f72744f662e6d6170» :=
+def «$284f7074696f6e2e6e6f7468696e6720496e6665722e547970656429» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a75737420496e6665722e547970656429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
+
+def «$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a75737420496e6665722e416e6e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
+
+def «$284d61702e6d617020496e6665722e5479706564205429» :=
   fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -9100,7 +6721,7 @@ def «$496e6665722f536f72744f662e6d6170» :=
 def «Infer.argSortsOf» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$496e6665722f536f72744f662e6d6170»
+      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284d61702e6d617020496e6665722e5479706564205429»
       (fun (x1 : _root_.Geb.Kernel.Tree) =>
         _root_.GebMirror.Metalogic.«Infer.annSort» (_root_.GebMirror.Metalogic.«Infer.tyAnn» x1))
       x0;
@@ -9203,12 +6824,13 @@ def «Infer.mapYA» :=
                                             (fun (_ : _root_.Geb.Kernel.Tree)
                                                (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
                                               x6);
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6a757374» (x0 x4)
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e416e6e29»
+                                            (x0 x4)
                                         else
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»);
     x2
 
 def «Infer.mapAY» :=
@@ -9238,13 +6860,13 @@ def «Infer.mapAY» :=
                                             (fun (_ : _root_.Geb.Kernel.Tree)
                                                (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
                                               x6);
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e547970656429»
                                             (x0 x4)
                                         else
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e547970656429»);
     x2
 
 def «Infer.bindOA» :=
@@ -9279,7 +6901,7 @@ def «Infer.bindOA» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»);
     x2
 
 def «Infer.bindTA» :=
@@ -9289,7 +6911,7 @@ def «Infer.bindTA» :=
       x0).label ≠ 0 then
       x1 (_root_.GebMirror.Metalogic.«Prelude.get» x0)
     else
-      _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»);
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»);
     x2
 
 def «Infer.mapTA» :=
@@ -9297,10 +6919,10 @@ def «Infer.mapTA» :=
     (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Prelude.isSome»
       x1).label ≠ 0 then
-      _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6a757374»
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e416e6e29»
         (x0 (_root_.GebMirror.Metalogic.«Prelude.get» x1))
     else
-      _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»);
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»);
     x2
 
 def «Infer.seq0» :=
@@ -9326,6 +6948,74 @@ def «Infer.pdefn0» :=
 def «Infer.dfd0» :=
   _root_.GebMirror.Metalogic.«Infer.direct» (_root_.Geb.Kernel.leaf 0)
 
+def «$284f7074696f6e2e69734a75737420496e6665722e547970656429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
+    x1
+
+def «$284f7074696f6e2e66726f6d4d6179626520496e6665722e547970656429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
+    x2
+
 def «Infer.hypOk» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
       _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
@@ -9334,7 +7024,7 @@ def «Infer.hypOk» :=
     let x3 : _root_.Geb.Kernel.Tree := (if (_root_.Geb.Kernel.Const.equal
       (_root_.GebMirror.Metalogic.«PartialHorn.eqLhs» x2)
       (_root_.GebMirror.Metalogic.«PartialHorn.eqRhs» x2)).label ≠ 0 then
-      _root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e69734a757374»
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a75737420496e6665722e547970656429»
         (x0 x1 (_root_.GebMirror.Metalogic.«PartialHorn.eqLhs» x2))
     else
       let x3 : _root_.Geb.Kernel.Tree := x0
@@ -9344,15 +7034,16 @@ def «Infer.hypOk» :=
         x1
         (_root_.GebMirror.Metalogic.«PartialHorn.eqRhs» x2);
       if (_root_.GebMirror.Metalogic.«Prelude.and»
-        (_root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e69734a757374» x3)
-        (_root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e69734a757374»
+        (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a75737420496e6665722e547970656429»
+          x3)
+        (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a75737420496e6665722e547970656429»
           x4)).label ≠ 0 then
         let x5 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Infer.tyAnn»
-          (_root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e66726f6d4d61796265»
+          (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d6179626520496e6665722e547970656429»
             _root_.GebMirror.Metalogic.«Infer.typed0»
             x3);
         let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Infer.tyAnn»
-          (_root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e66726f6d4d61796265»
+          (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d6179626520496e6665722e547970656429»
             _root_.GebMirror.Metalogic.«Infer.typed0»
             x4);
         _root_.GebMirror.Metalogic.«Prelude.and»
@@ -9370,6 +7061,17 @@ def «Infer.hypOk» :=
         _root_.Geb.Kernel.leaf 0);
     x3
 
+def «$285365712e6c656e67746820496e6665722e547970656429» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+      (_root_.Geb.Kernel.leaf 0)
+      x0;
+    x1
+
 def «Infer.bound» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree →
@@ -9379,13 +7081,14 @@ def «Infer.bound» :=
     (x4 : _root_.Geb.Kernel.Tree)
     (x5 : _root_.Geb.Kernel.Tree) =>
     let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Infer.bindST»
-      (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6e74684f66»
+      (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e53657175656e7429»
         (_root_.GebMirror.Metalogic.«Infer.envAxs» x0)
         x5)
       (fun (x6 : _root_.Geb.Kernel.Tree) =>
         let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«PartialHorn.opVars»
           x4
-          (_root_.GebMirror.Metalogic.«$496e6665722f5479706564732e6c656e677468» x2);
+          (_root_.GebMirror.Metalogic.«$285365712e6c656e67746820496e6665722e547970656429»
+            x2);
         if (_root_.GebMirror.Metalogic.«Prelude.and»
           (_root_.GebMirror.Metalogic.«PartialHorn.seqScoped» x6)
           (_root_.GebMirror.Metalogic.«Prelude.and»
@@ -9399,7 +7102,7 @@ def «Infer.bound» :=
                 (_root_.GebMirror.Metalogic.«PartialHorn.phOp»
                   x3
                   (_root_.GebMirror.Metalogic.«Prelude.single» x7)))
-              (_root_.GebMirror.Metalogic.«$496e6665722f4561636845716e2e616c6c»
+              (_root_.GebMirror.Metalogic.«$28456163682e616c6c205061727469616c486f726e2e45716e29»
                 (fun (x8 : _root_.Geb.Kernel.Tree) =>
                   _root_.GebMirror.Metalogic.«Prelude.and»
                     (_root_.Geb.Kernel.Const.equal
@@ -9409,7 +7112,7 @@ def «Infer.bound» :=
                       (_root_.Geb.Kernel.Const.equal
                         (_root_.GebMirror.Metalogic.«PartialHorn.eqLhs» x8)
                         x7)
-                      (_root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e69734a757374»
+                      (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a75737420496e6665722e547970656429»
                         (x1 x2 (_root_.GebMirror.Metalogic.«PartialHorn.eqLhs» x8)))))
                 (_root_.GebMirror.Metalogic.«PartialHorn.seqHyps» x6))))).label ≠ 0 then
           _root_.GebMirror.Metalogic.«Infer.bindYT»
@@ -9429,6 +7132,260 @@ def «Infer.bound» :=
           _root_.GebMirror.Metalogic.«Prelude.none»);
     x6
 
+def «$284f7074696f6e2e6e6f7468696e672032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a7573742032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
+
+def «$284f7074696f6e2e6e74684f662032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            x2
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
+        x0
+        x1)
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929»
+          x2);
+    x2
+
+def «$284f7074696f6e2e69734a7573742032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
+    x1
+
+def «$284f7074696f6e2e69734a75737420496e6665722e44666452756c6529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
+    x1
+
+def «$284f7074696f6e2e66726f6d4d617962652032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
+    x2
+
+def «$284f7074696f6e2e66726f6d4d6179626520496e6665722e44666452756c6529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
+    x2
+
+def «$284f7074696f6e2e69734a757374205061727469616c486f726e2e53657175656e7429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
+    x1
+
+def «$284f7074696f6e2e66726f6d4d61796265205061727469616c486f726e2e53657175656e7429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
+    x2
+
+def «$28456163682e6973456d70747920496e6665722e547970656429» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.eq
+      (_root_.Geb.Kernel.Const.foldr
+        (α := _root_.Geb.Kernel.Tree)
+        (β := _root_.Geb.Kernel.Tree)
+        (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+        (_root_.Geb.Kernel.leaf 0)
+        x0)
+      (_root_.Geb.Kernel.leaf 0);
+    x1
+
 def «Infer.dfdOk» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree →
@@ -9440,22 +7397,22 @@ def «Infer.dfdOk» :=
                                           x2;
                                         let x5 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«PartialHorn.opVars»
                                           x3
-                                          (_root_.GebMirror.Metalogic.«$496e6665722f5479706564732e6c656e677468»
+                                          (_root_.GebMirror.Metalogic.«$285365712e6c656e67746820496e6665722e547970656429»
                                             x2);
-                                        let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$496e6665722f4f4f4466642e6e74684f66»
+                                        let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f662032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929»
                                           (_root_.GebMirror.Metalogic.«Infer.envDfds» x0)
                                           x3;
                                         if (_root_.GebMirror.Metalogic.«Prelude.and»
-                                          (_root_.GebMirror.Metalogic.«$496e6665722f4f4f4466642e69734a757374»
+                                          (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a7573742032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929»
                                             x6)
-                                          (_root_.GebMirror.Metalogic.«$496e6665722f4f4466642e69734a757374»
-                                            (_root_.GebMirror.Metalogic.«$496e6665722f4f4f4466642e66726f6d4d61796265»
-                                              _root_.GebMirror.Metalogic.«$496e6665722f4f4466642e6e6f7468696e67»
+                                          (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a75737420496e6665722e44666452756c6529»
+                                            (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d617962652032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929»
+                                              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e44666452756c6529»
                                               x6))).label ≠ 0 then
-                                          let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$496e6665722f4f4466642e66726f6d4d61796265»
+                                          let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d6179626520496e6665722e44666452756c6529»
                                             _root_.GebMirror.Metalogic.«Infer.dfd0»
-                                            (_root_.GebMirror.Metalogic.«$496e6665722f4f4f4466642e66726f6d4d61796265»
-                                              _root_.GebMirror.Metalogic.«$496e6665722f4f4466642e6e6f7468696e67»
+                                            (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d617962652032383a284f7074696f6e2e4d6179626520496e6665722e44666452756c652929»
+                                              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e44666452756c6529»
                                               x6);
                                           let x8 : _root_.Geb.Kernel.Tree := x7;
                                           if (_root_.Geb.Kernel.Const.eq
@@ -9481,12 +7438,12 @@ def «Infer.dfdOk» :=
                                               (fun (_ : _root_.Geb.Kernel.Tree)
                                                  (x12 : _root_.List _root_.Geb.Kernel.Tree) =>
                                                 x12);
-                                            let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6e74684f66»
+                                            let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e53657175656e7429»
                                               (_root_.GebMirror.Metalogic.«Infer.envAxs» x0)
                                               x10;
-                                            if (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e69734a757374»
+                                            if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374205061727469616c486f726e2e53657175656e7429»
                                               x12).label ≠ 0 then
-                                              let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e66726f6d4d61796265»
+                                              let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265205061727469616c486f726e2e53657175656e7429»
                                                 _root_.GebMirror.Metalogic.«Infer.seq0»
                                                 x12;
                                               _root_.GebMirror.Metalogic.«Prelude.and»
@@ -9506,7 +7463,7 @@ def «Infer.dfdOk» :=
                                                           (_root_.GebMirror.Metalogic.«PartialHorn.seqConcl»
                                                             x13))
                                                         x5)
-                                                      (_root_.GebMirror.Metalogic.«$496e6665722f4561636845716e2e616c6c»
+                                                      (_root_.GebMirror.Metalogic.«$28456163682e616c6c205061727469616c486f726e2e45716e29»
                                                         (_root_.GebMirror.Metalogic.«Infer.hypOk» x1 x2)
                                                         (_root_.GebMirror.Metalogic.«PartialHorn.seqHyps»
                                                           x13)))))
@@ -9536,12 +7493,12 @@ def «Infer.dfdOk» :=
                                                 (fun (_ : _root_.Geb.Kernel.Tree)
                                                    (x12 : _root_.List _root_.Geb.Kernel.Tree) =>
                                                   x12);
-                                              let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6e74684f66»
+                                              let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e53657175656e7429»
                                                 (_root_.GebMirror.Metalogic.«Infer.envAxs» x0)
                                                 x10;
-                                              if (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e69734a757374»
+                                              if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374205061727469616c486f726e2e53657175656e7429»
                                                 x12).label ≠ 0 then
-                                                let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e66726f6d4d61796265»
+                                                let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265205061727469616c486f726e2e53657175656e7429»
                                                   _root_.GebMirror.Metalogic.«Infer.seq0»
                                                   x12;
                                                 _root_.GebMirror.Metalogic.«Prelude.and»
@@ -9549,7 +7506,7 @@ def «Infer.dfdOk» :=
                                                     (_root_.GebMirror.Metalogic.«PartialHorn.seqCtx» x13)
                                                     x4)
                                                   (_root_.GebMirror.Metalogic.«Prelude.and»
-                                                    (_root_.GebMirror.Metalogic.«$496e6665722f4561636845716e2e6973456d707479»
+                                                    (_root_.GebMirror.Metalogic.«$28456163682e6973456d707479205061727469616c486f726e2e45716e29»
                                                       (_root_.GebMirror.Metalogic.«PartialHorn.seqHyps» x13))
                                                     (_root_.GebMirror.Metalogic.«Prelude.and»
                                                       (_root_.GebMirror.Metalogic.«Base.not»
@@ -9588,22 +7545,22 @@ def «Infer.dfdOk» :=
                                                 (fun (_ : _root_.Geb.Kernel.Tree)
                                                    (x12 : _root_.List _root_.Geb.Kernel.Tree) =>
                                                   x12);
-                                              let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6e74684f66»
+                                              let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e53657175656e7429»
                                                 (_root_.GebMirror.Metalogic.«Infer.envAxs» x0)
                                                 x10;
-                                              if (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e69734a757374»
+                                              if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374205061727469616c486f726e2e53657175656e7429»
                                                 x12).label ≠ 0 then
-                                                let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e66726f6d4d61796265»
+                                                let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265205061727469616c486f726e2e53657175656e7429»
                                                   _root_.GebMirror.Metalogic.«Infer.seq0»
                                                   x12;
                                                 _root_.GebMirror.Metalogic.«Prelude.and»
                                                   (_root_.GebMirror.Metalogic.«Base.isEmpty»
                                                     (_root_.GebMirror.Metalogic.«PartialHorn.seqCtx» x13))
                                                   (_root_.GebMirror.Metalogic.«Prelude.and»
-                                                    (_root_.GebMirror.Metalogic.«$496e6665722f4561636845716e2e6973456d707479»
+                                                    (_root_.GebMirror.Metalogic.«$28456163682e6973456d707479205061727469616c486f726e2e45716e29»
                                                       (_root_.GebMirror.Metalogic.«PartialHorn.seqHyps» x13))
                                                     (_root_.GebMirror.Metalogic.«Prelude.and»
-                                                      (_root_.GebMirror.Metalogic.«$496e6665722f4561636854797065642e6973456d707479»
+                                                      (_root_.GebMirror.Metalogic.«$28456163682e6973456d70747920496e6665722e547970656429»
                                                         x2)
                                                       (_root_.Geb.Kernel.Const.equal
                                                         (_root_.GebMirror.Metalogic.«PartialHorn.eqRhs»
@@ -9616,53 +7573,91 @@ def «Infer.dfdOk» :=
                                           _root_.Geb.Kernel.leaf 0);
     x4
 
+def «$285365712e7461696c20496e6665722e547970656429» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      x0
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+        x2);
+    x1
+
+def «$285365712e64726f7020496e6665722e547970656429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      _root_.GebMirror.Metalogic.«$285365712e7461696c20496e6665722e547970656429»
+      x1
+      x0;
+    x2
+
+def «$285365712e61744f7220496e6665722e547970656429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«$285365712e64726f7020496e6665722e547970656429» x2 x1)
+      x0
+      (fun (x3 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        x3);
+    x3
+
 def «Infer.inferObj» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Infer.tyAnn»
-                                          (_root_.GebMirror.Metalogic.«$496e6665722f5479706564732e61744f72»
+                                          (_root_.GebMirror.Metalogic.«$285365712e61744f7220496e6665722e547970656429»
                                             _root_.GebMirror.Metalogic.«Infer.typed0»
                                             x1
                                             (_root_.Geb.Kernel.leaf 0));
                                         if (_root_.GebMirror.Metalogic.«Prelude.and»
                                           (_root_.Geb.Kernel.Const.eq x0 (_root_.Geb.Kernel.leaf 0))
                                           (_root_.Geb.Kernel.Const.eq
-                                            (_root_.GebMirror.Metalogic.«$496e6665722f5479706564732e6c656e677468»
+                                            (_root_.GebMirror.Metalogic.«$285365712e6c656e67746820496e6665722e547970656429»
                                               x1)
                                             (_root_.Geb.Kernel.leaf 1))).label ≠ 0 then
                                           if (_root_.Geb.Kernel.Const.eq
                                             (_root_.GebMirror.Metalogic.«Infer.annSort» x2)
                                             (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                            _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6a757374»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e416e6e29»
                                               (_root_.GebMirror.Metalogic.«Infer.ann»
                                                 (_root_.Geb.Kernel.leaf 0)
                                                 (_root_.GebMirror.Metalogic.«Infer.annLo» x2)
                                                 (_root_.GebMirror.Metalogic.«Infer.annLo» x2))
                                           else
-                                            _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»
                                         else
                                           if (_root_.GebMirror.Metalogic.«Prelude.and»
                                             (_root_.Geb.Kernel.Const.eq
                                               x0
                                               (_root_.Geb.Kernel.leaf 1))
                                             (_root_.Geb.Kernel.Const.eq
-                                              (_root_.GebMirror.Metalogic.«$496e6665722f5479706564732e6c656e677468»
+                                              (_root_.GebMirror.Metalogic.«$285365712e6c656e67746820496e6665722e547970656429»
                                                 x1)
                                               (_root_.Geb.Kernel.leaf 1))).label ≠ 0 then
                                             if (_root_.Geb.Kernel.Const.eq
                                               (_root_.GebMirror.Metalogic.«Infer.annSort» x2)
                                               (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                              _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6a757374»
+                                              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e416e6e29»
                                                 (_root_.GebMirror.Metalogic.«Infer.ann»
                                                   (_root_.Geb.Kernel.leaf 0)
                                                   (_root_.GebMirror.Metalogic.«Infer.annHi» x2)
                                                   (_root_.GebMirror.Metalogic.«Infer.annHi» x2))
                                             else
-                                              _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»
+                                              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»
                                           else
                                             let x3 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«PartialHorn.phOp»
                                               x0
-                                              (_root_.GebMirror.Metalogic.«$496e6665722f536f72744f662e6d6170»
+                                              (_root_.GebMirror.Metalogic.«$284d61702e6d617020496e6665722e5479706564205429»
                                                 (fun (x3 : _root_.Geb.Kernel.Tree) =>
                                                   if (_root_.Geb.Kernel.Const.eq
                                                     (_root_.GebMirror.Metalogic.«Infer.annSort»
@@ -9673,7 +7668,7 @@ def «Infer.inferObj» :=
                                                   else
                                                     _root_.GebMirror.Metalogic.«Infer.tyTerm» x3)
                                                 x1);
-                                            _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6a757374»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e416e6e29»
                                               (_root_.GebMirror.Metalogic.«Infer.ann»
                                                 (_root_.Geb.Kernel.leaf 0)
                                                 x3
@@ -9713,14 +7708,119 @@ def «Infer.inferArr» :=
                                         if (_root_.GebMirror.Metalogic.«Prelude.and»
                                           (_root_.GebMirror.Metalogic.«Prelude.isSome» x4)
                                           (_root_.GebMirror.Metalogic.«Prelude.isSome» x5)).label ≠ 0 then
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e416e6e29»
                                             (_root_.GebMirror.Metalogic.«Infer.ann»
                                               (_root_.Geb.Kernel.leaf 1)
                                               (_root_.GebMirror.Metalogic.«Prelude.get» x4)
                                               (_root_.GebMirror.Metalogic.«Prelude.get» x5))
                                         else
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»);
     x4
+
+def «$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e504465666e29» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a757374205061727469616c486f726e2e504465666e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
+
+def «$284f7074696f6e2e6e74684f66205061727469616c486f726e2e504465666e29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            x2
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
+        x0
+        x1)
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e504465666e29»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e504465666e29»
+          x2);
+    x2
+
+def «$284f7074696f6e2e69734a757374205061727469616c486f726e2e504465666e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
+    x1
+
+def «$284f7074696f6e2e66726f6d4d61796265205061727469616c486f726e2e504465666e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
+    x2
 
 def «Infer.inferDef» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -9730,24 +7830,24 @@ def «Infer.inferDef» :=
     (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x4 : _root_.Geb.Kernel.Tree := (let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.sub
                                           x2
-                                          (_root_.GebMirror.Metalogic.«$496e6665722f4f70536967732e6c656e677468»
+                                          (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e4f7053696729»
                                             _root_.GebMirror.Metalogic.«Theory.sig»);
-                                        let x5 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e2e6e74684f66»
+                                        let x5 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e504465666e29»
                                           (_root_.GebMirror.Metalogic.«Infer.envDefs» x0)
                                           x4;
-                                        let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6e74684f66»
+                                        let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e53657175656e7429»
                                           (_root_.GebMirror.Metalogic.«Infer.envAxs» x0)
                                           (_root_.GebMirror.Metalogic.«Infer.defAxIdx» x4);
                                         if (_root_.GebMirror.Metalogic.«Prelude.and»
-                                          (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e2e69734a757374»
+                                          (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374205061727469616c486f726e2e504465666e29»
                                             x5)
-                                          (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e69734a757374»
+                                          (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374205061727469616c486f726e2e53657175656e7429»
                                             x6)).label ≠ 0 then
                                           let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«PartialHorn.pdBody»
-                                            (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e2e66726f6d4d61796265»
+                                            (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265205061727469616c486f726e2e504465666e29»
                                               _root_.GebMirror.Metalogic.«Infer.pdefn0»
                                               x5);
-                                          let x8 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e66726f6d4d61796265»
+                                          let x8 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265205061727469616c486f726e2e53657175656e7429»
                                             _root_.GebMirror.Metalogic.«Infer.seq0»
                                             x6;
                                           if (_root_.GebMirror.Metalogic.«Prelude.and»
@@ -9759,23 +7859,23 @@ def «Infer.inferDef» :=
                                               (_root_.GebMirror.Metalogic.«Prelude.and»
                                                 (_root_.GebMirror.Metalogic.«PartialHorn.sameEqns»
                                                   (_root_.GebMirror.Metalogic.«PartialHorn.seqHyps» x8)
-                                                  (_root_.GebMirror.Metalogic.«$496e6665722f45716e732e73696e676c65»
+                                                  (_root_.GebMirror.Metalogic.«$285365712e73696e676c65205061727469616c486f726e2e45716e29»
                                                     (_root_.GebMirror.Metalogic.«PartialHorn.eqn» x7 x7)))
                                                 (_root_.Geb.Kernel.Const.equal
                                                   (_root_.GebMirror.Metalogic.«PartialHorn.seqConcl» x8)
                                                   (_root_.GebMirror.Metalogic.«PartialHorn.eqn»
                                                     (_root_.GebMirror.Metalogic.«PartialHorn.opVars»
                                                       x2
-                                                      (_root_.GebMirror.Metalogic.«$496e6665722f5479706564732e6c656e677468»
+                                                      (_root_.GebMirror.Metalogic.«$285365712e6c656e67746820496e6665722e547970656429»
                                                         x3))
                                                     x7))))).label ≠ 0 then
                                             _root_.GebMirror.Metalogic.«Infer.mapYA»
                                               _root_.GebMirror.Metalogic.«Infer.tyAnn»
                                               (x1 x3 x7)
                                           else
-                                            _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»
                                         else
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»);
     x4
 
 def «Infer.inferOp» :=
@@ -9785,7 +7885,7 @@ def «Infer.inferOp» :=
     (x2 : _root_.Geb.Kernel.Tree)
     (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x4 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Infer.bindOA»
-      (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f4f705369672e6e74684f66»
+      (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e4f7053696729»
         (_root_.GebMirror.Metalogic.«Infer.envSg» x0)
         x2)
       (fun (x4 : _root_.Geb.Kernel.Tree) =>
@@ -9794,7 +7894,7 @@ def «Infer.inferOp» :=
           (_root_.GebMirror.Metalogic.«PartialHorn.opArgs» x4)).label ≠ 0 then
           if (_root_.Geb.Kernel.Const.lt
             x2
-            (_root_.GebMirror.Metalogic.«$496e6665722f4f70536967732e6c656e677468»
+            (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e4f7053696729»
               _root_.GebMirror.Metalogic.«Theory.sig»)).label ≠ 0 then
             if (_root_.GebMirror.Metalogic.«Infer.dfdOk» x0 x1 x3 x2).label ≠ 0 then
               if (_root_.Geb.Kernel.Const.eq
@@ -9807,14 +7907,82 @@ def «Infer.inferOp» :=
                   (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
                   _root_.GebMirror.Metalogic.«Infer.inferArr» x0 x1 x2 x3
                 else
-                  _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»
+                  _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»
             else
-              _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»
+              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»
           else
             _root_.GebMirror.Metalogic.«Infer.inferDef» x0 x1 x2 x3
         else
-          _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»);
+          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»);
     x4
+
+def «$284f7074696f6e2e69734a757374205061727469616c486f726e2e45716e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
+    x1
+
+def «$284f7074696f6e2e66726f6d4d61796265205061727469616c486f726e2e45716e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
+    x2
 
 def «Infer.inferSide» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -9823,7 +7991,7 @@ def «Infer.inferSide» :=
     (x3 : _root_.Geb.Kernel.Tree)
     (x4 : _root_.Geb.Kernel.Tree) =>
     let x5 : _root_.Geb.Kernel.Tree := (let x5 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Infer.bindST»
-                                          (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6e74684f66»
+                                          (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66205061727469616c486f726e2e53657175656e7429»
                                             (_root_.GebMirror.Metalogic.«Infer.envAxs» x0)
                                             x4)
                                           (fun (x5 : _root_.Geb.Kernel.Tree) =>
@@ -9834,7 +8002,7 @@ def «Infer.inferSide» :=
                                                   (_root_.GebMirror.Metalogic.«Prelude.single»
                                                     (_root_.Geb.Kernel.leaf 1)))
                                                 (_root_.GebMirror.Metalogic.«Prelude.and»
-                                                  (_root_.GebMirror.Metalogic.«$496e6665722f4561636845716e2e6973456d707479»
+                                                  (_root_.GebMirror.Metalogic.«$28456163682e6973456d707479205061727469616c486f726e2e45716e29»
                                                     (_root_.GebMirror.Metalogic.«PartialHorn.seqHyps» x5))
                                                   (_root_.Geb.Kernel.Const.equal
                                                     (_root_.GebMirror.Metalogic.«PartialHorn.seqConcl» x5)
@@ -9859,18 +8027,18 @@ def «Infer.inferSide» :=
                                                   (_root_.GebMirror.Metalogic.«Prelude.single»
                                                     (_root_.GebMirror.Metalogic.«PartialHorn.phVar»
                                                       x3)))).label ≠ 0 then
-                                                _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6a757374»
+                                                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e45716e29»
                                                   x6
                                               else
                                                 x7)
-                                            _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6e6f7468696e67»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e45716e29»
                                             x1;
-                                          if (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e69734a757374»
+                                          if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374205061727469616c486f726e2e45716e29»
                                             x6).label ≠ 0 then
                                             _root_.GebMirror.Metalogic.«Infer.bindAT»
                                               (x2
                                                 (_root_.GebMirror.Metalogic.«PartialHorn.eqRhs»
-                                                  (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e66726f6d4d61796265»
+                                                  (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265205061727469616c486f726e2e45716e29»
                                                     _root_.GebMirror.Metalogic.«Infer.eqn0»
                                                     x6)))
                                               (fun (x7 : _root_.Geb.Kernel.Tree) =>
@@ -9903,7 +8071,7 @@ def «Infer.inferVar» :=
         if (_root_.Geb.Kernel.Const.eq
           x5
           (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
-          _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6a757374»
+          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e416e6e29»
             (_root_.GebMirror.Metalogic.«Infer.ann»
               (_root_.Geb.Kernel.leaf 0)
               (_root_.GebMirror.Metalogic.«PartialHorn.phVar» x4)
@@ -9930,267 +8098,29 @@ def «Infer.inferVar» :=
                     x4
                     (_root_.Geb.Kernel.leaf 1)))
           else
-            _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»);
+            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»);
     x5
 
 def «Infer.typeds» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x0
 
-def «$496e6665722f4f54797065644c6973742e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$496e6665722f4f54797065644c6973742e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$496e6665722f4f54797065644c6973742e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$496e6665722f4f54797065644c6973742e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$496e6665722f4f54797065644c6973742e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$496e6665722f4f54797065644c6973742e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$496e6665722f4f54797065644c6973742e6a757374» x2);
-    x2
-
-def «$496e6665722f4f54797065644c6973742e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
 def «Infer.anns» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x0
 
-def «$496e6665722f4f416e6e4c6973742e6e6f7468696e67» :=
+def «$284f7074696f6e2e6e6f7468696e6720496e6665722e54797065644c69737429» :=
   _root_.Geb.Kernel.Const.node
     (_root_.Geb.Kernel.leaf 0)
     ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «$496e6665722f4f416e6e4c6973742e6a757374» :=
+def «$284f7074696f6e2e6a75737420496e6665722e54797065644c69737429» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 1)
       (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
-def «$496e6665722f4f416e6e4c6973742e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$496e6665722f4f416e6e4c6973742e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$496e6665722f4f416e6e4c6973742e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e4c6973742e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e4c6973742e6a757374» x2);
-    x2
-
-def «$496e6665722f4f416e6e4c6973742e616c6c4a757374» :=
+def «$284f7074696f6e2e616c6c4a75737420496e6665722e547970656429» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree ×
       _root_.List
@@ -10235,26 +8165,78 @@ def «Infer.allSomeY» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree ×
                                           _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e616c6c4a757374»
+                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e616c6c4a75737420496e6665722e547970656429»
                                           x0;
                                         if ((x1).1).label ≠ 0 then
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f54797065644c6973742e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e54797065644c69737429»
                                             (_root_.GebMirror.Metalogic.«Infer.typeds» (x1).2)
                                         else
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f54797065644c6973742e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e54797065644c69737429»);
+    x1
+
+def «$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e4c69737429» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a75737420496e6665722e416e6e4c69737429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
+
+def «$284f7074696f6e2e616c6c4a75737420496e6665722e416e6e29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree ×
+      _root_.List
+        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
+        let x3 : _root_.Geb.Kernel.Tree := x1;
+        if (_root_.Geb.Kernel.Const.eq
+          (_root_.Geb.Kernel.Const.label x3)
+          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+          let x4 : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
+          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.Geb.Kernel.Tree)
+            x4
+            (_root_.Geb.Kernel.leaf 0)
+            (fun (x5 : _root_.Geb.Kernel.Tree)
+               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+              x5);
+          let _ : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            x4
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x7);
+          ((x2).1, (x5 :: (x2).2))
+        else
+          let _ : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
+          (_root_.Geb.Kernel.leaf 0, (x2).2))
+      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
+      x0;
     x1
 
 def «Infer.allSomeA» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree ×
                                           _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e616c6c4a757374»
+                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e616c6c4a75737420496e6665722e416e6e29»
                                           x0;
                                         if ((x1).1).label ≠ 0 then
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e4c6973742e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e416e6e4c69737429»
                                             (_root_.GebMirror.Metalogic.«Infer.anns» (x1).2)
                                         else
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e4c6973742e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e4c69737429»);
     x1
 
 def «Infer.bindLY» :=
@@ -10289,7 +8271,7 @@ def «Infer.bindLY» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e547970656429»);
     x2
 
 def «Infer.bindLA» :=
@@ -10324,7 +8306,7 @@ def «Infer.bindLA» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»);
     x2
 
 def «Infer.poTrees» :=
@@ -10383,6 +8365,32 @@ def «Infer.paValues» :=
       x0;
     x1
 
+def «$284f7074696f6e2e6e74684f6620496e6665722e547970656429» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            x2
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
+        x0
+        x1)
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e547970656429»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420496e6665722e547970656429»
+          x2);
+    x2
+
 def «Infer.patInfer» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree →
@@ -10409,13 +8417,13 @@ def «Infer.patInfer» :=
               if (_root_.Geb.Kernel.Const.eq
                 (_root_.Geb.Kernel.Const.arity x7)
                 (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
-                _root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e6e74684f66»
+                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f6620496e6665722e547970656429»
                   x2
                   (_root_.Geb.Kernel.Const.label x7)
               else
-                _root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e6e6f7468696e67»
+                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e547970656429»
             else
-              _root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e6e6f7468696e67»
+              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e547970656429»
           else
             _root_.GebMirror.Metalogic.«Infer.bindLY»
               (_root_.GebMirror.Metalogic.«Infer.allSomeY» (_root_.GebMirror.Metalogic.«Infer.poValues» x5))
@@ -10432,7 +8440,7 @@ def «Infer.patInfer» :=
                     _root_.GebMirror.Metalogic.«Infer.typed»
                       (_root_.GebMirror.Metalogic.«PartialHorn.phOp»
                         (_root_.Geb.Kernel.Const.sub x4 (_root_.Geb.Kernel.leaf 1))
-                        (_root_.GebMirror.Metalogic.«$496e6665722f536f72744f662e6d6170»
+                        (_root_.GebMirror.Metalogic.«$284d61702e6d617020496e6665722e5479706564205429»
                           _root_.GebMirror.Metalogic.«Infer.tyTerm»
                           x8))
                       x9)
@@ -10443,6 +8451,61 @@ def «Infer.patInfer» :=
                     x8))))
       x3).2;
     x4
+
+def «$285365712e7461696c20496e6665722e416e6e29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      x0
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+        x2);
+    x1
+
+def «$285365712e64726f7020496e6665722e416e6e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      _root_.GebMirror.Metalogic.«$285365712e7461696c20496e6665722e416e6e29»
+      x1
+      x0;
+    x2
+
+def «$285365712e61744f7220496e6665722e416e6e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«$285365712e64726f7020496e6665722e416e6e29» x2 x1)
+      x0
+      (fun (x3 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        x3);
+    x3
+
+def «$285365712e7265766572736520496e6665722e416e6e29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        x2 (x1 :: x3))
+      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
+      x0
+      ([] : _root_.List _root_.Geb.Kernel.Tree);
+    x1
 
 def «Infer.treeInfer» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -10479,9 +8542,9 @@ def «Infer.treeInfer» :=
                   x4
                   (_root_.Geb.Kernel.Const.label x9)
               else
-                _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»
+                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»
             else
-              _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»
+              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»
           else
             _root_.GebMirror.Metalogic.«Infer.bindLA»
               (_root_.GebMirror.Metalogic.«Infer.allSomeA» (_root_.GebMirror.Metalogic.«Infer.paValues» x7))
@@ -10497,15 +8560,15 @@ def «Infer.treeInfer» :=
                     (fun (x10 : _root_.Geb.Kernel.Tree)
                        (x11 : _root_.List _root_.Geb.Kernel.Tree ×
                          _root_.List _root_.Geb.Kernel.Tree) =>
-                      (_root_.GebMirror.Metalogic.«$496e6665722f416e6e732e7461696c» (x11).1,
+                      (_root_.GebMirror.Metalogic.«$285365712e7461696c20496e6665722e416e6e29» (x11).1,
                         ((_root_.GebMirror.Metalogic.«Infer.typed»
                           x10
-                          (_root_.GebMirror.Metalogic.«$496e6665722f416e6e732e61744f72»
+                          (_root_.GebMirror.Metalogic.«$285365712e61744f7220496e6665722e416e6e29»
                             _root_.GebMirror.Metalogic.«Infer.ann0»
                             (x11).1
                             (_root_.Geb.Kernel.leaf 0))) ::
                           (x11).2)))
-                    (_root_.GebMirror.Metalogic.«$496e6665722f416e6e732e72657665727365»
+                    (_root_.GebMirror.Metalogic.«$285365712e7265766572736520496e6665722e416e6e29»
                       (let x10 : _root_.Geb.Kernel.Tree := x9;
                        let x11 : _root_.List
                          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x10;
@@ -10583,96 +8646,9 @@ def «Infer.infers» :=
         x2
         (fun (_ : _root_.List _root_.Geb.Kernel.Tree)
            (_ : _root_.Geb.Kernel.Tree) =>
-          _root_.GebMirror.Metalogic.«$496e6665722f4f54797065642e6e6f7468696e67»,
+          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e547970656429»,
           fun (_ : _root_.Geb.Kernel.Tree) =>
-            _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e6e6f7468696e67»));
-    x3
-
-def «$4c616e67756167652f45716e732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$4c616e67756167652f45716e732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$4c616e67756167652f45716e732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$4c616e67756167652f45716e732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$4c616e67756167652f45716e732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$4c616e67756167652f45716e732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f45716e732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$4c616e67756167652f45716e732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f45716e732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
+            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720496e6665722e416e6e29»));
     x3
 
 def «Language.pr» :=
@@ -10766,350 +8742,6 @@ def «Language.p2» :=
                                             x7);
                                         x5);
     x1
-
-def «$4c616e67756167652f4f54506169722e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$4c616e67756167652f4f54506169722e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$4c616e67756167652f4f54506169722e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$4c616e67756167652f4f54506169722e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$4c616e67756167652f4f54506169722e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374» x2);
-    x2
-
-def «$4c616e67756167652f4f54506169722e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
-def «$4c616e67756167652f5450616972732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$4c616e67756167652f5450616972732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$4c616e67756167652f5450616972732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$4c616e67756167652f5450616972732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$4c616e67756167652f5450616972732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$4c616e67756167652f5450616972732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f5450616972732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$4c616e67756167652f5450616972732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f5450616972732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$4c616e67756167652f4561636854506169722e616c6c» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.and» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 1)
-      x1;
-    x2
-
-def «$4c616e67756167652f4561636854506169722e616e79» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.or» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 0)
-      x1;
-    x2
-
-def «$4c616e67756167652f4561636854506169722e6973456d707479» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.eq
-      (_root_.Geb.Kernel.Const.foldr
-        (α := _root_.Geb.Kernel.Tree)
-        (β := _root_.Geb.Kernel.Tree)
-        (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-        (_root_.Geb.Kernel.leaf 0)
-        x0)
-      (_root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$4c616e67756167652f4561636854506169722e74616b65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree)
-                                   (fun (_ : _root_.Geb.Kernel.Tree)
-                                      (x3 : _root_.Geb.Kernel.Tree) =>
-                                     _root_.Geb.Kernel.Const.add x3 (_root_.Geb.Kernel.leaf 1))
-                                   (_root_.Geb.Kernel.leaf 0)
-                                   x1;
-                                 (_root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree ×
-                                     _root_.List _root_.Geb.Kernel.Tree)
-                                   (fun (x3 : _root_.Geb.Kernel.Tree)
-                                      (x4 : _root_.Geb.Kernel.Tree ×
-                                        _root_.List _root_.Geb.Kernel.Tree) =>
-                                     (_root_.Geb.Kernel.Const.add (x4).1 (_root_.Geb.Kernel.leaf 1),
-                                       if (_root_.Geb.Kernel.Const.lt
-                                         (_root_.Geb.Kernel.Const.sub
-                                           (_root_.Geb.Kernel.Const.sub x2 (x4).1)
-                                           (_root_.Geb.Kernel.leaf 1))
-                                         x0).label ≠ 0 then
-                                         (x3 :: (x4).2)
-                                       else
-                                         (x4).2))
-                                   (_root_.Geb.Kernel.leaf 0,
-                                     ([] : _root_.List _root_.Geb.Kernel.Tree))
-                                   x1).2);
-    x2
-
-def «$4c616e67756167652f54506169724d61702e6d6170» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        ((x0 x2) :: x3))
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      x1;
-    x2
-
-def «$4c616e67756167652f54506169724f75742e6d6170» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        ((x0 x2) :: x3))
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      x1;
-    x2
-
-def «$4c616e67756167652f5450616972496e2e6d6170» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        ((x0 x2) :: x3))
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      x1;
-    x2
 
 def «Language.mNode» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -11325,7 +8957,7 @@ def «Language.childBound» :=
             _root_.Geb.Kernel.leaf 0);
     x3
 
-def «$4c616e67756167652f5256732e7461696c» :=
+def «$284c697374732e7461696c20284172726f7720284172726f77205420542920542929» :=
   fun (x0 : _root_.List
       ((_root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) →
         _root_.Geb.Kernel.Tree)) =>
@@ -11396,7 +9028,8 @@ def «Language.travStep» :=
                                    (fun (_ : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
                                       (_ : _root_.Geb.Kernel.Tree) =>
                                      ([] : _root_.List _root_.Geb.Kernel.Tree))
-                                   (_root_.GebMirror.Metalogic.«$4c616e67756167652f5256732e7461696c» x3);
+                                   (_root_.GebMirror.Metalogic.«$284c697374732e7461696c20284172726f7720284172726f77205420542920542929»
+                                     x3);
                                  fun (x7 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
                                    let x8 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.child
                                      x2
@@ -11539,6 +9172,13 @@ def «Language.osubst» :=
       x1).2;
     x2
 
+def «$285365712e73696e676c65204c616e67756167652e545061697229» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      ([] : _root_.List _root_.Geb.Kernel.Tree));
+    x1
+
 def «Language.tyOps» :=
   ((_root_.GebMirror.Metalogic.«Language.pr»
     (_root_.Geb.Kernel.leaf 4)
@@ -11567,7 +9207,7 @@ def «Language.tyOps» :=
                   ((_root_.GebMirror.Metalogic.«Language.pr»
                     (_root_.Geb.Kernel.leaf 37)
                     (_root_.Geb.Kernel.leaf 0)) ::
-                    (_root_.GebMirror.Metalogic.«$4c616e67756167652f5450616972732e73696e676c65»
+                    (_root_.GebMirror.Metalogic.«$285365712e73696e676c65204c616e67756167652e545061697229»
                       (_root_.GebMirror.Metalogic.«Language.pr»
                         (_root_.Geb.Kernel.leaf 40)
                         (_root_.Geb.Kernel.leaf 1))))))))))))
@@ -11583,18 +9223,29 @@ def «Language.opIs» :=
       (_root_.Geb.Kernel.Const.eq (_root_.Geb.Kernel.Const.arity x2) x1);
     x3
 
+def «$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a757374204c616e67756167652e545061697229» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
+
 def «Language.binParts» :=
   fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Language.opIs»
       x0
       (_root_.Geb.Kernel.leaf 2)
       x1).label ≠ 0 then
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
         (_root_.GebMirror.Metalogic.«Language.pr»
           (_root_.Geb.Kernel.Const.child x1 (_root_.Geb.Kernel.leaf 0))
           (_root_.Geb.Kernel.Const.child x1 (_root_.Geb.Kernel.leaf 1)))
     else
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»);
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»);
     x2
 
 def «Language.prodParts» :=
@@ -11676,6 +9327,20 @@ def «Language.ctxObj» :=
       x0).1;
     x1
 
+def «$284d61702e6d6170204c616e67756167652e5450616972204c616e67756167652e545061697229» :=
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        ((x0 x2) :: x3))
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      x1;
+    x2
+
 def «Language.extendEnv» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -11684,7 +9349,7 @@ def «Language.extendEnv» :=
       _root_.Geb.Kernel.Tree := ((_root_.GebMirror.Metalogic.«Language.pr»
       (_root_.GebMirror.Metalogic.«Theory.cSnd» x0 x1)
       x1) ::
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f54506169724d61702e6d6170»
+      (_root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e5450616972204c616e67756167652e545061697229»
         (fun (x3 : _root_.Geb.Kernel.Tree) =>
           _root_.GebMirror.Metalogic.«Language.pr»
             (_root_.GebMirror.Metalogic.«Theory.comp»
@@ -11705,7 +9370,7 @@ def «Language.stdEnv» :=
          (x2 : _root_.List _root_.Geb.Kernel.Tree ×
            _root_.List _root_.Geb.Kernel.Tree) =>
         (if (_root_.GebMirror.Metalogic.«Base.isEmpty» (x2).2).label ≠ 0 then
-          _root_.GebMirror.Metalogic.«$4c616e67756167652f5450616972732e73696e676c65»
+          _root_.GebMirror.Metalogic.«$285365712e73696e676c65204c616e67756167652e545061697229»
             (_root_.GebMirror.Metalogic.«Language.pr» (_root_.GebMirror.Metalogic.«Theory.idt» x1) x1)
         else
           _root_.GebMirror.Metalogic.«Language.extendEnv»
@@ -11735,7 +9400,7 @@ def «Language.tuple» :=
       x1).1;
     x2
 
-def «$4c616e67756167652f4f46732e7461696c» :=
+def «$284c697374732e7461696c20284172726f77205420542929» :=
   fun (x0 : _root_.List
       (_root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
     _root_.Geb.Kernel.Const.lcase
@@ -11780,7 +9445,8 @@ def «Language.occursStep» :=
                                            (_root_.Geb.Kernel.leaf 1))))
                                    (fun (_ : _root_.Geb.Kernel.Tree) (_ : _root_.Geb.Kernel.Tree) =>
                                      _root_.Geb.Kernel.leaf 0)
-                                   (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f46732e7461696c» x1);
+                                   (_root_.GebMirror.Metalogic.«$284c697374732e7461696c20284172726f77205420542929»
+                                     x1);
                                  fun (x5 : _root_.Geb.Kernel.Tree) =>
                                    if (_root_.Geb.Kernel.Const.eq
                                      x2
@@ -11860,20 +9526,94 @@ def «Language.idxOf» :=
       x1;
     x2
 
+def «$284d61702e6d61702054204c616e67756167652e545061697229» :=
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        ((x0 x2) :: x3))
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      x1;
+    x2
+
+def «$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e545061697229» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
+    x2
+
+def «$284f7074696f6e2e6e74684f66204c616e67756167652e545061697229» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            x2
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
+        x0
+        x1)
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
+          x2);
+    x2
+
 def «Language.selEnv» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$4c616e67756167652f5450616972496e2e6d6170»
+      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284d61702e6d61702054204c616e67756167652e545061697229»
       (fun (x3 : _root_.Geb.Kernel.Tree) =>
         let x4 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.idxOf»
           x3
           x0;
         if (_root_.GebMirror.Metalogic.«Prelude.isSome» x4).label ≠ 0 then
-          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e66726f6d4d61796265»
+          _root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e545061697229»
             (_root_.GebMirror.Metalogic.«Language.pr» (_root_.GebMirror.Metalogic.«Theory.idt» x1) x1)
-            (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e74684f66»
+            (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e545061697229»
               x2
               (_root_.GebMirror.Metalogic.«Prelude.get» x4))
         else
@@ -11906,6 +9646,17 @@ def «Language.foldEnv» :=
                                        (_root_.GebMirror.Metalogic.«Language.stdEnv» x3)));
     x3
 
+def «$285365712e6c656e677468204c616e67756167652e545061697229» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+      (_root_.Geb.Kernel.leaf 0)
+      x0;
+    x1
+
 def «Language.foldPs» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -11917,7 +9668,7 @@ def «Language.foldPs» :=
       (β := _root_.List _root_.Geb.Kernel.Tree)
       (fun (x4 : _root_.Geb.Kernel.Tree)
          (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-        let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e74684f66»
+        let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e545061697229»
           x1
           x4;
         if (_root_.Geb.Kernel.Const.eq
@@ -11950,10 +9701,25 @@ def «Language.foldPs» :=
       ([] : _root_.List _root_.Geb.Kernel.Tree)
       (_root_.GebMirror.Metalogic.«Language.foldParams»
         x0
-        (_root_.GebMirror.Metalogic.«$4c616e67756167652f5450616972732e6c656e677468» x1)
+        (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e545061697229»
+          x1)
         x2
         x3);
     x4
+
+def «$284d61702e6d6170204c616e67756167652e5450616972205429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        ((x0 x2) :: x3))
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      x1;
+    x2
 
 def «Language.foldEnvIn» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
@@ -11967,10 +9733,11 @@ def «Language.foldEnvIn» :=
       x0
       (_root_.GebMirror.Metalogic.«Language.foldParams»
         x1
-        (_root_.GebMirror.Metalogic.«$4c616e67756167652f5450616972732e6c656e677468» x2)
+        (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e545061697229»
+          x2)
         x3
         x4)
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f54506169724f75742e6d6170»
+      (_root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e5450616972205429»
         _root_.GebMirror.Metalogic.«Language.p2»
         (_root_.GebMirror.Metalogic.«Language.foldPs» x1 x2 x3 x4));
     x5
@@ -12369,151 +10136,6 @@ def «Language.ldBody» :=
                                         x9);
     x1
 
-def «$4c616e67756167652f4f4c4465666e2e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$4c616e67756167652f4f4c4465666e2e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$4c616e67756167652f4f4c4465666e2e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$4c616e67756167652f4f4c4465666e2e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$4c616e67756167652f4f4c4465666e2e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f4c4465666e2e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$4c616e67756167652f4f4c4465666e2e6a757374» x2);
-    x2
-
-def «$4c616e67756167652f4f4c4465666e2e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
 def «Language.primitive» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -12832,152 +10454,6 @@ def «Language.prCod» :=
                                         x9);
     x1
 
-def «$4c616e67756167652f4f5072696d69746976652e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$4c616e67756167652f4f5072696d69746976652e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$4c616e67756167652f4f5072696d69746976652e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$4c616e67756167652f4f5072696d69746976652e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$4c616e67756167652f4f5072696d69746976652e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f5072696d69746976652e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$4c616e67756167652f4f5072696d69746976652e6a757374»
-          x2);
-    x2
-
-def «$4c616e67756167652f4f5072696d69746976652e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
 def «Language.defLang» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
@@ -12989,6 +10465,17 @@ def «Language.defObj» :=
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 1)
       (x0 :: (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)))
+
+def «$284f7074696f6e2e6e6f7468696e67204c616e67756167652e4c4465666e29» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a757374204c616e67756167652e4c4465666e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
 def «Language.defLanguage» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
@@ -13016,7 +10503,7 @@ def «Language.defLanguage» :=
                                             (fun (_ : _root_.Geb.Kernel.Tree)
                                                (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
                                               x5);
-                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f4c4465666e2e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e4c4465666e29»
                                             x3
                                         else
                                           let x2 : _root_.List
@@ -13056,311 +10543,8 @@ def «Language.defLanguage» :=
                                             (fun (_ : _root_.Geb.Kernel.Tree)
                                                (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
                                               x7);
-                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f4c4465666e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e4c4465666e29»);
     x1
-
-def «$4c616e67756167652f4f446566696e6974696f6e2e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$4c616e67756167652f4f446566696e6974696f6e2e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$4c616e67756167652f4f446566696e6974696f6e2e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$4c616e67756167652f4f446566696e6974696f6e2e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$4c616e67756167652f4f446566696e6974696f6e2e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f446566696e6974696f6e2e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$4c616e67756167652f4f446566696e6974696f6e2e6a757374»
-          x2);
-    x2
-
-def «$4c616e67756167652f4f446566696e6974696f6e2e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
-def «$4c616e67756167652f446566732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$4c616e67756167652f446566732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$4c616e67756167652f446566732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$4c616e67756167652f446566732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$4c616e67756167652f446566732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$4c616e67756167652f446566732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f446566732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$4c616e67756167652f446566732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f446566732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$4c616e67756167652f456163684465662e616c6c» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.and» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 1)
-      x1;
-    x2
-
-def «$4c616e67756167652f456163684465662e616e79» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.or» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 0)
-      x1;
-    x2
-
-def «$4c616e67756167652f456163684465662e6973456d707479» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.eq
-      (_root_.Geb.Kernel.Const.foldr
-        (α := _root_.Geb.Kernel.Tree)
-        (β := _root_.Geb.Kernel.Tree)
-        (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-        (_root_.Geb.Kernel.leaf 0)
-        x0)
-      (_root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$4c616e67756167652f456163684465662e74616b65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree)
-                                   (fun (_ : _root_.Geb.Kernel.Tree)
-                                      (x3 : _root_.Geb.Kernel.Tree) =>
-                                     _root_.Geb.Kernel.Const.add x3 (_root_.Geb.Kernel.leaf 1))
-                                   (_root_.Geb.Kernel.leaf 0)
-                                   x1;
-                                 (_root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree ×
-                                     _root_.List _root_.Geb.Kernel.Tree)
-                                   (fun (x3 : _root_.Geb.Kernel.Tree)
-                                      (x4 : _root_.Geb.Kernel.Tree ×
-                                        _root_.List _root_.Geb.Kernel.Tree) =>
-                                     (_root_.Geb.Kernel.Const.add (x4).1 (_root_.Geb.Kernel.leaf 1),
-                                       if (_root_.Geb.Kernel.Const.lt
-                                         (_root_.Geb.Kernel.Const.sub
-                                           (_root_.Geb.Kernel.Const.sub x2 (x4).1)
-                                           (_root_.Geb.Kernel.leaf 1))
-                                         x0).label ≠ 0 then
-                                         (x3 :: (x4).2)
-                                       else
-                                         (x4).2))
-                                   (_root_.Geb.Kernel.leaf 0,
-                                     ([] : _root_.List _root_.Geb.Kernel.Tree))
-                                   x1).2);
-    x2
 
 def «Language.prims» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
@@ -13569,24 +10753,141 @@ def «Language.def0» :=
     (_root_.Geb.Kernel.leaf 0)
     (_root_.Geb.Kernel.leaf 0)
 
+def «$28456163682e616e79204c616e67756167652e545061697229» :=
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Prelude.or» (x0 x2) x3)
+      (_root_.Geb.Kernel.leaf 0)
+      x1;
+    x2
+
+def «$284f7074696f6e2e6e6f7468696e67204c616e67756167652e446566696e6974696f6e29» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a757374204c616e67756167652e446566696e6974696f6e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
+
+def «$284f7074696f6e2e6e74684f66204c616e67756167652e446566696e6974696f6e29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            x2
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
+        x0
+        x1)
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e446566696e6974696f6e29»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e446566696e6974696f6e29»
+          x2);
+    x2
+
+def «$284f7074696f6e2e69734a757374204c616e67756167652e446566696e6974696f6e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
+    x1
+
+def «$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e446566696e6974696f6e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
+    x2
+
 def «Language.isTyOp» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree) =>
     let x3 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.or»
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f4561636854506169722e616e79»
+      (_root_.GebMirror.Metalogic.«$28456163682e616e79204c616e67756167652e545061697229»
         (fun (x3 : _root_.Geb.Kernel.Tree) =>
           _root_.Geb.Kernel.Const.equal x3 (_root_.GebMirror.Metalogic.«Language.pr» x1 x2))
         _root_.GebMirror.Metalogic.«Language.tyOps»)
       (_root_.GebMirror.Metalogic.«Prelude.and»
         (_root_.GebMirror.Metalogic.«Base.not»
           (_root_.Geb.Kernel.Const.lt x1 (_root_.GebMirror.Metalogic.«Language.gBase» x0)))
-        (let x3 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$4c616e67756167652f4f446566696e6974696f6e2e6e74684f66»
+        (let x3 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e446566696e6974696f6e29»
            (_root_.GebMirror.Metalogic.«Language.gDefs» x0)
            (_root_.Geb.Kernel.Const.sub x1 (_root_.GebMirror.Metalogic.«Language.gBase» x0));
-         if (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f446566696e6974696f6e2e69734a757374»
+         if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374204c616e67756167652e446566696e6974696f6e29»
            x3).label ≠ 0 then
-           let x4 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$4c616e67756167652f4f446566696e6974696f6e2e66726f6d4d61796265»
+           let x4 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e446566696e6974696f6e29»
              _root_.GebMirror.Metalogic.«Language.def0»
              x3;
            if (_root_.Geb.Kernel.Const.eq
@@ -13715,30 +11016,10 @@ def «Language.isTy» :=
       x2).2).2;
     x3
 
-def «$4c616e67756167652f4356732e7461696c» :=
-  fun (x0 : _root_.List
-      (_root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List
-        (_root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      x0
-      ([] : _root_.List (_root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (_ : _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List
-           (_root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x2)
-
 def «Language.cv0» :=
   fun (_ : _root_.Geb.Kernel.Tree)
     (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-    _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»
+    _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»
 
 def «Language.cvThree» :=
   fun (x0 : _root_.List
@@ -13828,7 +11109,7 @@ def «Language.bindPP» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»);
     x2
 
 def «Language.bindTP» :=
@@ -13838,8 +11119,19 @@ def «Language.bindTP» :=
       x0).label ≠ 0 then
       x1 (_root_.GebMirror.Metalogic.«Prelude.get» x0)
     else
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»);
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»);
     x2
+
+def «$284f7074696f6e2e6e6f7468696e67204c616e67756167652e5072696d697469766529» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a757374204c616e67756167652e5072696d697469766529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
 def «Language.bindRP» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -13873,7 +11165,7 @@ def «Language.bindRP» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»);
     x2
 
 def «Language.bindDL» :=
@@ -13908,7 +11200,7 @@ def «Language.bindDL» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f4c4465666e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e4c4465666e29»);
     x2
 
 def «Language.bindLP» :=
@@ -13943,119 +11235,25 @@ def «Language.bindLP» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»);
     x2
 
 def «Language.tpairs» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x0
 
-def «$4c616e67756167652f4f54506169724c6973742e6e6f7468696e67» :=
+def «$284f7074696f6e2e6e6f7468696e67204c616e67756167652e54506169724c69737429» :=
   _root_.Geb.Kernel.Const.node
     (_root_.Geb.Kernel.leaf 0)
     ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «$4c616e67756167652f4f54506169724c6973742e6a757374» :=
+def «$284f7074696f6e2e6a757374204c616e67756167652e54506169724c69737429» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 1)
       (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
-def «$4c616e67756167652f4f54506169724c6973742e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$4c616e67756167652f4f54506169724c6973742e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$4c616e67756167652f4f54506169724c6973742e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169724c6973742e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169724c6973742e6a757374»
-          x2);
-    x2
-
-def «$4c616e67756167652f4f54506169724c6973742e616c6c4a757374» :=
+def «$284f7074696f6e2e616c6c4a757374204c616e67756167652e545061697229» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree ×
       _root_.List
@@ -14100,13 +11298,13 @@ def «Language.allSomeP» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree ×
                                           _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e616c6c4a757374»
+                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e616c6c4a757374204c616e67756167652e545061697229»
                                           x0;
                                         if ((x1).1).label ≠ 0 then
-                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169724c6973742e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e54506169724c69737429»
                                             (_root_.GebMirror.Metalogic.«Language.tpairs» (x1).2)
                                         else
-                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169724c6973742e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e54506169724c69737429»);
     x1
 
 def «Language.bindQP» :=
@@ -14141,62 +11339,34 @@ def «Language.bindQP» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»);
     x2
 
-def «$4c616e67756167652f5450616972462e6c32» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
+def «$284f7074696f6e2e6e74684f66204c616e67756167652e5072696d697469766529» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            x2
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
+        x0
+        x1)
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e5072696d697469766529»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e5072696d697469766529»
+          x2);
     x2
-
-def «$4c616e67756167652f5450616972462e6c33» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f5450616972462e6c32» x1 x2));
-    x3
-
-def «$4c616e67756167652f5450616972462e6c34» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree) =>
-    let x4 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f5450616972462e6c33» x1 x2 x3));
-    x4
-
-def «$4c616e67756167652f5450616972462e6c35» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree) =>
-    let x5 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f5450616972462e6c34» x1 x2 x3 x4));
-    x5
-
-def «$4c616e67756167652f5450616972462e6c36» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree)
-    (x5 : _root_.Geb.Kernel.Tree) =>
-    let x6 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f5450616972462e6c35»
-        x1
-        x2
-        x3
-        x4
-        x5));
-    x6
 
 def «Language.compileStep» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -14227,7 +11397,7 @@ def «Language.compileStep» :=
                                           (_root_.Geb.Kernel.Const.eq
                                             x11
                                             (_root_.Geb.Kernel.leaf 0))).label ≠ 0 then
-                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e74684f66»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e545061697229»
                                             x7
                                             (_root_.GebMirror.Metalogic.«Prelude.at»
                                               x9
@@ -14240,7 +11410,7 @@ def «Language.compileStep» :=
                                             (_root_.Geb.Kernel.Const.eq
                                               x11
                                               (_root_.Geb.Kernel.leaf 0))).label ≠ 0 then
-                                            _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                               (_root_.GebMirror.Metalogic.«Language.pr»
                                                 (_root_.GebMirror.Metalogic.«Theory.bang» x6)
                                                 _root_.GebMirror.Metalogic.«Theory.one»)
@@ -14258,7 +11428,7 @@ def «Language.compileStep» :=
                                                   _root_.GebMirror.Metalogic.«Language.bindPP»
                                                     (x4 x6 x7)
                                                     (fun (x13 : _root_.Geb.Kernel.Tree) =>
-                                                      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                                      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                                         (_root_.GebMirror.Metalogic.«Language.pr»
                                                           (_root_.GebMirror.Metalogic.«Theory.cPair»
                                                             (_root_.GebMirror.Metalogic.«Language.p1» x12)
@@ -14288,7 +11458,7 @@ def «Language.compileStep» :=
                                                         if (_root_.Geb.Kernel.Const.eq
                                                           x8
                                                           (_root_.Geb.Kernel.leaf 3)).label ≠ 0 then
-                                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                                             (_root_.GebMirror.Metalogic.«Language.pr»
                                                               (_root_.GebMirror.Metalogic.«Theory.comp»
                                                                 (_root_.GebMirror.Metalogic.«Theory.cFst»
@@ -14298,7 +11468,7 @@ def «Language.compileStep» :=
                                                                 (_root_.GebMirror.Metalogic.«Language.p1» x12))
                                                               (_root_.GebMirror.Metalogic.«Language.p1» x13))
                                                         else
-                                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                                             (_root_.GebMirror.Metalogic.«Language.pr»
                                                               (_root_.GebMirror.Metalogic.«Theory.comp»
                                                                 (_root_.GebMirror.Metalogic.«Theory.cSnd»
@@ -14330,7 +11500,7 @@ def «Language.compileStep» :=
                                                           x12
                                                           x7))
                                                       (fun (x13 : _root_.Geb.Kernel.Tree) =>
-                                                        _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                                        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                                           (_root_.GebMirror.Metalogic.«Language.pr»
                                                             (_root_.GebMirror.Metalogic.«Theory.curry»
                                                               x6
@@ -14340,7 +11510,7 @@ def «Language.compileStep» :=
                                                               x12
                                                               (_root_.GebMirror.Metalogic.«Language.p2» x13))))
                                                   else
-                                                    _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»
+                                                    _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»
                                                 else
                                                   if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                     (_root_.Geb.Kernel.Const.eq
@@ -14363,7 +11533,7 @@ def «Language.compileStep» :=
                                                                   (_root_.GebMirror.Metalogic.«Language.p2» x14)
                                                                   (_root_.GebMirror.Metalogic.«Language.p1»
                                                                     x13)).label ≠ 0 then
-                                                                  _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                                                  _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                                                     (_root_.GebMirror.Metalogic.«Language.pr»
                                                                       (_root_.GebMirror.Metalogic.«Theory.comp»
                                                                         (_root_.GebMirror.Metalogic.«Theory.ev»
@@ -14379,7 +11549,7 @@ def «Language.compileStep» :=
                                                                       (_root_.GebMirror.Metalogic.«Language.p2»
                                                                         x13))
                                                                 else
-                                                                  _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»)))
+                                                                  _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»)))
                                                   else
                                                     if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                       (_root_.Geb.Kernel.Const.eq
@@ -14394,7 +11564,7 @@ def «Language.compileStep» :=
                                                           x9
                                                           (_root_.Geb.Kernel.leaf 1));
                                                       _root_.GebMirror.Metalogic.«Language.bindRP»
-                                                        (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f5072696d69746976652e6e74684f66»
+                                                        (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e5072696d697469766529»
                                                           (_root_.GebMirror.Metalogic.«Language.gPrims» x0)
                                                           (_root_.GebMirror.Metalogic.«Prelude.at»
                                                             x9
@@ -14422,7 +11592,7 @@ def «Language.compileStep» :=
                                                                       x12
                                                                       (_root_.GebMirror.Metalogic.«Language.prDom»
                                                                         x13))))).label ≠ 0 then
-                                                                _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                                                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                                                   (_root_.GebMirror.Metalogic.«Language.pr»
                                                                     (_root_.GebMirror.Metalogic.«Theory.comp»
                                                                       (_root_.GebMirror.Metalogic.«PartialHorn.phSubst»
@@ -14436,7 +11606,7 @@ def «Language.compileStep» :=
                                                                       (_root_.GebMirror.Metalogic.«Language.prCod»
                                                                         x13)))
                                                               else
-                                                                _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»))
+                                                                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»))
                                                     else
                                                       if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                         (_root_.Geb.Kernel.Const.eq
@@ -14493,10 +11663,10 @@ def «Language.compileStep» :=
                                                                         (_root_.GebMirror.Metalogic.«Language.p2»
                                                                           x20)
                                                                         _root_.GebMirror.Metalogic.«Theory.nat»)).label ≠ 0 then
-                                                                      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                                                      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                                                         (_root_.GebMirror.Metalogic.«Language.pr»
                                                                           (_root_.GebMirror.Metalogic.«Language.natFold»
-                                                                            (_root_.GebMirror.Metalogic.«$4c616e67756167652f54506169724f75742e6d6170»
+                                                                            (_root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e5450616972205429»
                                                                               _root_.GebMirror.Metalogic.«Language.p2»
                                                                               x14)
                                                                             x17
@@ -14506,14 +11676,14 @@ def «Language.compileStep» :=
                                                                               x19)
                                                                             (_root_.GebMirror.Metalogic.«Language.tuple»
                                                                               x6
-                                                                              (_root_.GebMirror.Metalogic.«$4c616e67756167652f54506169724f75742e6d6170»
+                                                                              (_root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e5450616972205429»
                                                                                 _root_.GebMirror.Metalogic.«Language.p1»
                                                                                 x14))
                                                                             (_root_.GebMirror.Metalogic.«Language.p1»
                                                                               x20))
                                                                           x17)
                                                                     else
-                                                                      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»)))
+                                                                      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»)))
                                                       else
                                                         if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                           (_root_.Geb.Kernel.Const.eq
@@ -14572,10 +11742,10 @@ def «Language.compileStep» :=
                                                                             (_root_.GebMirror.Metalogic.«Language.p2»
                                                                               x21)
                                                                             x19).label ≠ 0 then
-                                                                            _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                                                               (_root_.GebMirror.Metalogic.«Language.pr»
                                                                                 (_root_.GebMirror.Metalogic.«Language.listFold»
-                                                                                  (_root_.GebMirror.Metalogic.«$4c616e67756167652f54506169724f75742e6d6170»
+                                                                                  (_root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e5450616972205429»
                                                                                     _root_.GebMirror.Metalogic.«Language.p2»
                                                                                     x16)
                                                                                   x13
@@ -14586,14 +11756,14 @@ def «Language.compileStep» :=
                                                                                     x21)
                                                                                   (_root_.GebMirror.Metalogic.«Language.tuple»
                                                                                     x6
-                                                                                    (_root_.GebMirror.Metalogic.«$4c616e67756167652f54506169724f75742e6d6170»
+                                                                                    (_root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e5450616972205429»
                                                                                       _root_.GebMirror.Metalogic.«Language.p1»
                                                                                       x16))
                                                                                   (_root_.GebMirror.Metalogic.«Language.p1»
                                                                                     x12))
                                                                                 x19)
                                                                           else
-                                                                            _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»))))
+                                                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»))))
                                                         else
                                                           if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                             (_root_.Geb.Kernel.Const.eq
@@ -14645,12 +11815,12 @@ def «Language.compileStep» :=
                                                                             (_root_.GebMirror.Metalogic.«Language.p2»
                                                                               x18)
                                                                             x12).label ≠ 0 then
-                                                                            _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                                                               (_root_.GebMirror.Metalogic.«Language.pr»
                                                                                 (_root_.GebMirror.Metalogic.«Language.roseFoldP»
                                                                                   (_root_.GebMirror.Metalogic.«Language.p2»
                                                                                     x13)
-                                                                                  (_root_.GebMirror.Metalogic.«$4c616e67756167652f54506169724f75742e6d6170»
+                                                                                  (_root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e5450616972205429»
                                                                                     _root_.GebMirror.Metalogic.«Language.p2»
                                                                                     x16)
                                                                                   x14
@@ -14659,16 +11829,16 @@ def «Language.compileStep» :=
                                                                                     x18)
                                                                                   (_root_.GebMirror.Metalogic.«Language.tuple»
                                                                                     x6
-                                                                                    (_root_.GebMirror.Metalogic.«$4c616e67756167652f54506169724f75742e6d6170»
+                                                                                    (_root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e5450616972205429»
                                                                                       _root_.GebMirror.Metalogic.«Language.p1»
                                                                                       x16))
                                                                                   (_root_.GebMirror.Metalogic.«Language.p1»
                                                                                     x13))
                                                                                 x12)
                                                                           else
-                                                                            _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»)))
+                                                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»)))
                                                             else
-                                                              _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»
+                                                              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»
                                                           else
                                                             if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                               (_root_.Geb.Kernel.Const.eq
@@ -14688,7 +11858,7 @@ def «Language.compileStep» :=
                                                                           x12)
                                                                         (_root_.GebMirror.Metalogic.«Language.p2»
                                                                           x13)).label ≠ 0 then
-                                                                        _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                                                        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                                                           (_root_.GebMirror.Metalogic.«Language.pr»
                                                                             (_root_.GebMirror.Metalogic.«Theory.comp»
                                                                               (_root_.GebMirror.Metalogic.«Theory.chi»
@@ -14702,9 +11872,9 @@ def «Language.compileStep» :=
                                                                                   x13)))
                                                                             _root_.GebMirror.Metalogic.«Theory.omega»)
                                                                       else
-                                                                        _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»))
+                                                                        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»))
                                                             else
-                                                              _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»);
+                                                              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»);
     x8
 
 def «Language.compileDefn» :=
@@ -14725,7 +11895,7 @@ def «Language.compileDefn» :=
                                             (_root_.Geb.Kernel.leaf 1));
                                         _root_.GebMirror.Metalogic.«Language.bindLP»
                                           (_root_.GebMirror.Metalogic.«Language.bindDL»
-                                            (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f446566696e6974696f6e2e6e74684f66»
+                                            (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e446566696e6974696f6e29»
                                               (_root_.GebMirror.Metalogic.«Language.gDefs» x0)
                                               (_root_.GebMirror.Metalogic.«Prelude.at»
                                                 x5
@@ -14752,14 +11922,14 @@ def «Language.compileDefn» :=
                                                       (_root_.GebMirror.Metalogic.«Language.isTy» x0 x1)
                                                       x6)
                                                     (_root_.GebMirror.Metalogic.«Base.equalTs»
-                                                      (_root_.GebMirror.Metalogic.«$4c616e67756167652f54506169724f75742e6d6170»
+                                                      (_root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e5450616972205429»
                                                         _root_.GebMirror.Metalogic.«Language.p2»
                                                         x9)
                                                       (_root_.GebMirror.Metalogic.«Base.mapT»
                                                         (_root_.GebMirror.Metalogic.«PartialHorn.phSubst» x6)
                                                         (_root_.GebMirror.Metalogic.«Language.ldParams»
                                                           x7))))).label ≠ 0 then
-                                                  _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                                  _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                                     (_root_.GebMirror.Metalogic.«Language.pr»
                                                       (_root_.GebMirror.Metalogic.«Theory.comp»
                                                         (_root_.GebMirror.Metalogic.«PartialHorn.phOp»
@@ -14771,14 +11941,14 @@ def «Language.compileDefn» :=
                                                           x6)
                                                         (_root_.GebMirror.Metalogic.«Language.tuple»
                                                           x4
-                                                          (_root_.GebMirror.Metalogic.«$4c616e67756167652f54506169724f75742e6d6170»
+                                                          (_root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e5450616972205429»
                                                             _root_.GebMirror.Metalogic.«Language.p1»
                                                             x9)))
                                                       (_root_.GebMirror.Metalogic.«PartialHorn.phSubst»
                                                         x6
                                                         (_root_.GebMirror.Metalogic.«Language.ldType» x7)))
                                                 else
-                                                  _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»)));
+                                                  _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»)));
     x5
 
 def «Language.cvAll» :=
@@ -14808,6 +11978,26 @@ def «Language.cvAll» :=
       x0;
     x1
 
+def «$284c697374732e7461696c20284172726f77205420284172726f7720284c697374204c616e67756167652e5450616972292032393a284f7074696f6e2e4d61796265204c616e67756167652e545061697229292929» :=
+  fun (x0 : _root_.List
+      (_root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (β := _root_.List
+        (_root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      x0
+      ([] : _root_.List (_root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      (fun (_ : _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List
+           (_root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+        x2)
+
 def «Language.compile» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -14828,13 +12018,15 @@ def «Language.compile» :=
             _root_.List _root_.Geb.Kernel.Tree →
               _root_.List
                 _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.cvAll»
-            (_root_.GebMirror.Metalogic.«$4c616e67756167652f4356732e7461696c» x4);
+            (_root_.GebMirror.Metalogic.«$284c697374732e7461696c20284172726f77205420284172726f7720284c697374204c616e67756167652e5450616972292032393a284f7074696f6e2e4d61796265204c616e67756167652e545061697229292929»
+              x4);
           fun (x6 : _root_.Geb.Kernel.Tree)
             (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
             _root_.GebMirror.Metalogic.«Language.compileDefn» x0 x1 x3 (x5 x6 x7) x6
         else
           _root_.GebMirror.Metalogic.«Language.cvThree»
-            (_root_.GebMirror.Metalogic.«$4c616e67756167652f4356732e7461696c» x4)
+            (_root_.GebMirror.Metalogic.«$284c697374732e7461696c20284172726f77205420284172726f7720284c697374204c616e67756167652e5450616972292032393a284f7074696f6e2e4d61796265204c616e67756167652e545061697229292929»
+              x4)
             (fun (x5 : _root_.Geb.Kernel.Tree →
                  _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
                (x6 : _root_.Geb.Kernel.Tree →
@@ -14939,7 +12131,7 @@ def «Language.typeUnary» :=
             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
             (_root_.GebMirror.Metalogic.«Prelude.at» x3 (_root_.Geb.Kernel.leaf 1));
           fun (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-            let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$4c616e67756167652f4f5072696d69746976652e6e74684f66»
+            let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e5072696d697469766529»
               (_root_.GebMirror.Metalogic.«Language.gPrims» x0)
               (_root_.GebMirror.Metalogic.«Prelude.at» x3 (_root_.Geb.Kernel.leaf 0));
             if (_root_.Geb.Kernel.Const.eq
@@ -15195,7 +12387,7 @@ def «Language.typeDefn» :=
                                    let x7 : _root_.Geb.Kernel.Tree ×
                                      _root_.List _root_.Geb.Kernel.Tree := x5 x6;
                                    let x8 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.bindDL»
-                                     (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f446566696e6974696f6e2e6e74684f66»
+                                     (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e446566696e6974696f6e29»
                                        (_root_.GebMirror.Metalogic.«Language.gDefs» x0)
                                        (_root_.GebMirror.Metalogic.«Prelude.at» x2 (_root_.Geb.Kernel.leaf 0)))
                                      _root_.GebMirror.Metalogic.«Language.defLanguage»;
@@ -15385,7 +12577,7 @@ def «Language.bindPD» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e504465666e29»);
     x2
 
 def «Language.bindPS» :=
@@ -15420,20 +12612,72 @@ def «Language.bindPS» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e53657175656e7429»);
     x2
+
+def «$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e504465666e4c69737429» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a757374205061727469616c486f726e2e504465666e4c69737429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
+
+def «$284f7074696f6e2e616c6c4a757374205061727469616c486f726e2e504465666e29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree ×
+      _root_.List
+        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
+        let x3 : _root_.Geb.Kernel.Tree := x1;
+        if (_root_.Geb.Kernel.Const.eq
+          (_root_.Geb.Kernel.Const.label x3)
+          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+          let x4 : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
+          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.Geb.Kernel.Tree)
+            x4
+            (_root_.Geb.Kernel.leaf 0)
+            (fun (x5 : _root_.Geb.Kernel.Tree)
+               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+              x5);
+          let _ : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            x4
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x7);
+          ((x2).1, (x5 :: (x2).2))
+        else
+          let _ : _root_.List
+            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
+          (_root_.Geb.Kernel.leaf 0, (x2).2))
+      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
+      x0;
+    x1
 
 def «Language.allSomeD» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree ×
                                           _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e2e616c6c4a757374»
+                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e616c6c4a757374205061727469616c486f726e2e504465666e29»
                                           x0;
                                         if ((x1).1).label ≠ 0 then
-                                          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e4c6973742e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e504465666e4c69737429»
                                             (_root_.GebMirror.Metalogic.«PartialHorn.pdefns» (x1).2)
                                         else
-                                          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e4c6973742e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e504465666e4c69737429»);
     x1
 
 def «Language.ldCompile» :=
@@ -15457,7 +12701,7 @@ def «Language.ldCompile» :=
           (_root_.Geb.Kernel.Const.equal
             (_root_.GebMirror.Metalogic.«Language.p2» x2)
             (_root_.GebMirror.Metalogic.«Language.ldType» x1))).label ≠ 0 then
-          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e2e6a757374»
+          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e504465666e29»
             (_root_.GebMirror.Metalogic.«PartialHorn.pdefn»
               (_root_.GebMirror.Metalogic.«PartialHorn.sorts»
                 (_root_.GebMirror.Metalogic.«Prelude.replicate»
@@ -15466,7 +12710,7 @@ def «Language.ldCompile» :=
               (_root_.Geb.Kernel.leaf 1)
               (_root_.GebMirror.Metalogic.«Language.p1» x2))
         else
-          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e2e6e6f7468696e67»);
+          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e504465666e29»);
     x2
 
 def «Language.defCompile» :=
@@ -15534,7 +12778,7 @@ def «Language.defCompile» :=
                                             (fun (_ : _root_.Geb.Kernel.Tree)
                                                (x8 : _root_.List _root_.Geb.Kernel.Tree) =>
                                               x8);
-                                          _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e2e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e504465666e29»
                                             (_root_.GebMirror.Metalogic.«PartialHorn.pdefn»
                                               (_root_.GebMirror.Metalogic.«PartialHorn.sorts»
                                                 (_root_.GebMirror.Metalogic.«Prelude.replicate»
@@ -15544,7 +12788,7 @@ def «Language.defCompile» :=
                                               x6));
     x2
 
-def «$4c616e67756167652f436f6d70696c6541742e6d6170» :=
+def «$284d61702e6d617020542033323a284f7074696f6e2e4d61796265205061727469616c486f726e2e504465666e2929» :=
   fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -15558,29 +12802,113 @@ def «$4c616e67756167652f436f6d70696c6541742e6d6170» :=
       x1;
     x2
 
+def «$28456163682e74616b65204c616e67756167652e446566696e6974696f6e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+                                   (α := _root_.Geb.Kernel.Tree)
+                                   (β := _root_.Geb.Kernel.Tree)
+                                   (fun (_ : _root_.Geb.Kernel.Tree)
+                                      (x3 : _root_.Geb.Kernel.Tree) =>
+                                     _root_.Geb.Kernel.Const.add x3 (_root_.Geb.Kernel.leaf 1))
+                                   (_root_.Geb.Kernel.leaf 0)
+                                   x1;
+                                 (_root_.Geb.Kernel.Const.foldr
+                                   (α := _root_.Geb.Kernel.Tree)
+                                   (β := _root_.Geb.Kernel.Tree ×
+                                     _root_.List _root_.Geb.Kernel.Tree)
+                                   (fun (x3 : _root_.Geb.Kernel.Tree)
+                                      (x4 : _root_.Geb.Kernel.Tree ×
+                                        _root_.List _root_.Geb.Kernel.Tree) =>
+                                     (_root_.Geb.Kernel.Const.add (x4).1 (_root_.Geb.Kernel.leaf 1),
+                                       if (_root_.Geb.Kernel.Const.lt
+                                         (_root_.Geb.Kernel.Const.sub
+                                           (_root_.Geb.Kernel.Const.sub x2 (x4).1)
+                                           (_root_.Geb.Kernel.leaf 1))
+                                         x0).label ≠ 0 then
+                                         (x3 :: (x4).2)
+                                       else
+                                         (x4).2))
+                                   (_root_.Geb.Kernel.leaf 0,
+                                     ([] : _root_.List _root_.Geb.Kernel.Tree))
+                                   x1).2);
+    x2
+
+def «$285365712e7461696c204c616e67756167652e446566696e6974696f6e29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      x0
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+        x2);
+    x1
+
+def «$285365712e64726f70204c616e67756167652e446566696e6974696f6e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      _root_.GebMirror.Metalogic.«$285365712e7461696c204c616e67756167652e446566696e6974696f6e29»
+      x1
+      x0;
+    x2
+
+def «$285365712e61744f72204c616e67756167652e446566696e6974696f6e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«$285365712e64726f70204c616e67756167652e446566696e6974696f6e29»
+        x2
+        x1)
+      x0
+      (fun (x3 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        x3);
+    x3
+
+def «$285365712e6c656e677468204c616e67756167652e446566696e6974696f6e29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+      (_root_.Geb.Kernel.leaf 0)
+      x0;
+    x1
+
 def «Language.compileDefs» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.List
                                           _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.gDefs»
                                           x0;
                                         _root_.GebMirror.Metalogic.«Language.allSomeD»
-                                          (_root_.GebMirror.Metalogic.«$4c616e67756167652f436f6d70696c6541742e6d6170»
+                                          (_root_.GebMirror.Metalogic.«$284d61702e6d617020542033323a284f7074696f6e2e4d61796265205061727469616c486f726e2e504465666e2929»
                                             (fun (x2 : _root_.Geb.Kernel.Tree) =>
                                               _root_.GebMirror.Metalogic.«Language.defCompile»
                                                 (_root_.GebMirror.Metalogic.«Language.globals»
                                                   (_root_.GebMirror.Metalogic.«Language.prims»
                                                     (_root_.GebMirror.Metalogic.«Language.gPrims» x0))
                                                   (_root_.GebMirror.Metalogic.«Language.defs»
-                                                    (_root_.GebMirror.Metalogic.«$4c616e67756167652f456163684465662e74616b65»
+                                                    (_root_.GebMirror.Metalogic.«$28456163682e74616b65204c616e67756167652e446566696e6974696f6e29»
                                                       x2
                                                       x1))
                                                   (_root_.GebMirror.Metalogic.«Language.gBase» x0))
-                                                (_root_.GebMirror.Metalogic.«$4c616e67756167652f446566732e61744f72»
+                                                (_root_.GebMirror.Metalogic.«$285365712e61744f72204c616e67756167652e446566696e6974696f6e29»
                                                   _root_.GebMirror.Metalogic.«Language.def0»
                                                   x1
                                                   x2))
                                             (_root_.GebMirror.Metalogic.«Base.range»
-                                              (_root_.GebMirror.Metalogic.«$4c616e67756167652f446566732e6c656e677468»
+                                              (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e446566696e6974696f6e29»
                                                 x1))));
     x1
 
@@ -15611,7 +12939,7 @@ def «Language.compileEq» :=
               (_root_.Geb.Kernel.Const.equal
                 (_root_.GebMirror.Metalogic.«Language.p2» x5)
                 (_root_.GebMirror.Metalogic.«Language.p2» x6))).label ≠ 0 then
-              _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6a757374»
+              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e53657175656e7429»
                 (_root_.GebMirror.Metalogic.«PartialHorn.mkSeq»
                   (_root_.GebMirror.Metalogic.«Prelude.replicate» x1 (_root_.Geb.Kernel.leaf 0))
                   ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -15619,7 +12947,7 @@ def «Language.compileEq» :=
                     (_root_.GebMirror.Metalogic.«Language.p1» x5)
                     (_root_.GebMirror.Metalogic.«Language.p1» x6)))
             else
-              _root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e6e6f7468696e67»));
+              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67205061727469616c486f726e2e53657175656e7429»));
     x5
 
 def «Language.ann1» :=
@@ -15659,6 +12987,74 @@ def «Language.primWf» :=
                                                   (_root_.Geb.Kernel.leaf 1))))));
     x3
 
+def «$284f7074696f6e2e69734a75737420496e6665722e416e6e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
+    x1
+
+def «$284f7074696f6e2e66726f6d4d6179626520496e6665722e416e6e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
+    x2
+
 def «Language.primOk» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -15682,18 +13078,20 @@ def «Language.primOk» :=
        let x6 : _root_.Geb.Kernel.Tree := x3
          (_root_.GebMirror.Metalogic.«Language.prCod» x2);
        if (_root_.GebMirror.Metalogic.«Prelude.and»
-         (_root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e69734a757374» x4)
+         (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a75737420496e6665722e416e6e29»
+           x4)
          (_root_.GebMirror.Metalogic.«Prelude.and»
-           (_root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e69734a757374» x5)
-           (_root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e69734a757374»
+           (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a75737420496e6665722e416e6e29»
+             x5)
+           (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a75737420496e6665722e416e6e29»
              x6))).label ≠ 0 then
-         let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e66726f6d4d61796265»
+         let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d6179626520496e6665722e416e6e29»
            _root_.GebMirror.Metalogic.«Language.ann1»
            x4;
-         let x8 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e66726f6d4d61796265»
+         let x8 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d6179626520496e6665722e416e6e29»
            _root_.GebMirror.Metalogic.«Language.ann1»
            x5;
-         let x9 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e66726f6d4d61796265»
+         let x9 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d6179626520496e6665722e416e6e29»
            _root_.GebMirror.Metalogic.«Language.ann1»
            x6;
          _root_.GebMirror.Metalogic.«Prelude.and»
@@ -15730,360 +13128,12 @@ def «Language.objOk» :=
           (_root_.GebMirror.Metalogic.«Prelude.replicate» x1 (_root_.Geb.Kernel.leaf 0))
           x2)
         (_root_.GebMirror.Metalogic.«Prelude.some» (_root_.Geb.Kernel.leaf 0)))
-      (_root_.GebMirror.Metalogic.«$496e6665722f4f416e6e2e69734a757374»
+      (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a75737420496e6665722e416e6e29»
         ((_root_.GebMirror.Metalogic.«Infer.infers»
           x0
           (_root_.GebMirror.Metalogic.«Prelude.replicate» x1 (_root_.Geb.Kernel.leaf 0))
           ([] : _root_.List _root_.Geb.Kernel.Tree)).2
           x2));
-    x3
-
-def «$44657269766174696f6e2f45716e732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$44657269766174696f6e2f45716e732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$44657269766174696f6e2f45716e732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f45716e732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$44657269766174696f6e2f45716e732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$44657269766174696f6e2f45716e732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f45716e732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f45716e732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f45716e732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$44657269766174696f6e2f4f70536967732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$44657269766174696f6e2f4f70536967732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$44657269766174696f6e2f4f70536967732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f4f70536967732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$44657269766174696f6e2f4f70536967732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$44657269766174696f6e2f4f70536967732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f70536967732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f4f70536967732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f70536967732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$44657269766174696f6e2f5072696d732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$44657269766174696f6e2f5072696d732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$44657269766174696f6e2f5072696d732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f5072696d732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$44657269766174696f6e2f5072696d732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$44657269766174696f6e2f5072696d732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f5072696d732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f5072696d732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f5072696d732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$44657269766174696f6e2f446566732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$44657269766174696f6e2f446566732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$44657269766174696f6e2f446566732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f446566732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$44657269766174696f6e2f446566732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$44657269766174696f6e2f446566732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f446566732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f446566732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f446566732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
     x3
 
 def «Derivation.copairIn» :=
@@ -16261,10 +13311,10 @@ def «Derivation.primIs» :=
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree) =>
     let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.equal
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f5072696d69746976652e6e74684f66»
+      (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e5072696d697469766529»
         (_root_.GebMirror.Metalogic.«Language.gPrims» x0)
         x1)
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f5072696d69746976652e6a757374»
+      (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e5072696d697469766529»
         x2);
     x3
 
@@ -16621,12 +13671,12 @@ def «Derivation.eqParts» :=
       (_root_.Geb.Kernel.leaf 12)
       (_root_.Geb.Kernel.leaf 2)
       x0).label ≠ 0 then
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
         (_root_.GebMirror.Metalogic.«Language.pr»
           (_root_.GebMirror.Metalogic.«Language.mArg» x0 (_root_.Geb.Kernel.leaf 0))
           (_root_.GebMirror.Metalogic.«Language.mArg» x0 (_root_.Geb.Kernel.leaf 1)))
     else
-      _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»);
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»);
     x1
 
 def «Derivation.instTerm» :=
@@ -16664,161 +13714,27 @@ def «Derivation.terms» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x0
 
-def «$44657269766174696f6e2f4f5465726d732e6e6f7468696e67» :=
+def «$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e5465726d7329» :=
   _root_.Geb.Kernel.Const.node
     (_root_.Geb.Kernel.leaf 0)
     ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «$44657269766174696f6e2f4f5465726d732e6a757374» :=
+def «$284f7074696f6e2e6a7573742044657269766174696f6e2e5465726d7329» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 1)
       (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$44657269766174696f6e2f4f5465726d732e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$44657269766174696f6e2f4f5465726d732e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$44657269766174696f6e2f4f5465726d732e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e6a757374» x2);
-    x2
-
-def «$44657269766174696f6e2f4f5465726d732e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
 
 def «Derivation.allSomeTerms» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := (if (_root_.GebMirror.Metalogic.«Base.allT»
       _root_.GebMirror.Metalogic.«Prelude.isSome»
       x0).label ≠ 0 then
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e6a757374»
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e5465726d7329»
         (_root_.GebMirror.Metalogic.«Derivation.terms»
           (_root_.GebMirror.Metalogic.«Base.mapT» _root_.GebMirror.Metalogic.«Prelude.get» x0))
     else
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e6e6f7468696e67»);
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e5465726d7329»);
     x1
 
 def «Derivation.termsOr» :=
@@ -17202,151 +14118,6 @@ def «Derivation.thConcl» :=
                                         x9);
     x1
 
-def «$44657269766174696f6e2f4f54686d2e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$44657269766174696f6e2f4f54686d2e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$44657269766174696f6e2f4f54686d2e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$44657269766174696f6e2f4f54686d2e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$44657269766174696f6e2f4f54686d2e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f54686d2e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f54686d2e6a757374» x2);
-    x2
-
-def «$44657269766174696f6e2f4f54686d2e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
 def «Derivation.thm0» :=
   _root_.GebMirror.Metalogic.«Derivation.mkThm»
     (_root_.Geb.Kernel.leaf 0)
@@ -17449,81 +14220,7 @@ def «Derivation.thmSide» :=
               (_root_.GebMirror.Metalogic.«Derivation.thHyps» x1)))));
     x3
 
-def «Derivation.thmSeq» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Derivation.eqParts»
-                                          (_root_.GebMirror.Metalogic.«Derivation.thConcl» x1);
-                                        _root_.GebMirror.Metalogic.«PartialHorn.mkSeq»
-                                          (_root_.GebMirror.Metalogic.«Prelude.replicate»
-                                            (_root_.GebMirror.Metalogic.«Derivation.thArity» x1)
-                                            (_root_.Geb.Kernel.leaf 0))
-                                          ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                          (if (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
-                                            x2).label ≠ 0 then
-                                            _root_.GebMirror.Metalogic.«PartialHorn.eqn»
-                                              (_root_.GebMirror.Metalogic.«Derivation.thmSide»
-                                                x0
-                                                x1
-                                                (_root_.GebMirror.Metalogic.«Derivation.thmArrow»
-                                                  x0
-                                                  x1
-                                                  (_root_.GebMirror.Metalogic.«Language.p1»
-                                                    (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e66726f6d4d61796265»
-                                                      _root_.GebMirror.Metalogic.«Derivation.pr0»
-                                                      x2))))
-                                              (_root_.GebMirror.Metalogic.«Derivation.thmSide»
-                                                x0
-                                                x1
-                                                (_root_.GebMirror.Metalogic.«Derivation.thmArrow»
-                                                  x0
-                                                  x1
-                                                  (_root_.GebMirror.Metalogic.«Language.p2»
-                                                    (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e66726f6d4d61796265»
-                                                      _root_.GebMirror.Metalogic.«Derivation.pr0»
-                                                      x2))))
-                                          else
-                                            _root_.GebMirror.Metalogic.«PartialHorn.eqn»
-                                              (_root_.GebMirror.Metalogic.«Derivation.thmSide»
-                                                x0
-                                                x1
-                                                (_root_.GebMirror.Metalogic.«Derivation.thmArrow»
-                                                  x0
-                                                  x1
-                                                  (_root_.GebMirror.Metalogic.«Derivation.thConcl» x1)))
-                                              (_root_.GebMirror.Metalogic.«Derivation.thmSide»
-                                                x0
-                                                x1
-                                                (_root_.GebMirror.Metalogic.«Theory.comp»
-                                                  _root_.GebMirror.Metalogic.«Theory.tru»
-                                                  (_root_.GebMirror.Metalogic.«Theory.bang»
-                                                    (_root_.GebMirror.Metalogic.«Language.ctxObj»
-                                                      (_root_.GebMirror.Metalogic.«Derivation.thCtx» x1)))))));
-    x2
-
-def «Derivation.entLang» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 0)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «Derivation.entComb» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$44657269766174696f6e2f4f456e7472792e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$44657269766174696f6e2f4f456e7472792e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$44657269766174696f6e2f4f456e7472792e69734a757374» :=
+def «$284f7074696f6e2e69734a757374204c616e67756167652e545061697229» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
                                         if (_root_.Geb.Kernel.Const.eq
@@ -17557,194 +14254,79 @@ def «$44657269766174696f6e2f4f456e7472792e69734a757374» :=
                                           _root_.Geb.Kernel.leaf 0);
     x1
 
-def «$44657269766174696f6e2f4f456e7472792e66726f6d4d61796265» :=
+def «Derivation.thmSeq» :=
   fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Derivation.eqParts»
+                                          (_root_.GebMirror.Metalogic.«Derivation.thConcl» x1);
+                                        _root_.GebMirror.Metalogic.«PartialHorn.mkSeq»
+                                          (_root_.GebMirror.Metalogic.«Prelude.replicate»
+                                            (_root_.GebMirror.Metalogic.«Derivation.thArity» x1)
+                                            (_root_.Geb.Kernel.leaf 0))
+                                          ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                          (if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374204c616e67756167652e545061697229»
+                                            x2).label ≠ 0 then
+                                            _root_.GebMirror.Metalogic.«PartialHorn.eqn»
+                                              (_root_.GebMirror.Metalogic.«Derivation.thmSide»
+                                                x0
+                                                x1
+                                                (_root_.GebMirror.Metalogic.«Derivation.thmArrow»
+                                                  x0
+                                                  x1
+                                                  (_root_.GebMirror.Metalogic.«Language.p1»
+                                                    (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e545061697229»
+                                                      _root_.GebMirror.Metalogic.«Derivation.pr0»
+                                                      x2))))
+                                              (_root_.GebMirror.Metalogic.«Derivation.thmSide»
+                                                x0
+                                                x1
+                                                (_root_.GebMirror.Metalogic.«Derivation.thmArrow»
+                                                  x0
+                                                  x1
+                                                  (_root_.GebMirror.Metalogic.«Language.p2»
+                                                    (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e545061697229»
+                                                      _root_.GebMirror.Metalogic.«Derivation.pr0»
+                                                      x2))))
+                                          else
+                                            _root_.GebMirror.Metalogic.«PartialHorn.eqn»
+                                              (_root_.GebMirror.Metalogic.«Derivation.thmSide»
+                                                x0
+                                                x1
+                                                (_root_.GebMirror.Metalogic.«Derivation.thmArrow»
+                                                  x0
+                                                  x1
+                                                  (_root_.GebMirror.Metalogic.«Derivation.thConcl» x1)))
+                                              (_root_.GebMirror.Metalogic.«Derivation.thmSide»
+                                                x0
+                                                x1
+                                                (_root_.GebMirror.Metalogic.«Theory.comp»
+                                                  _root_.GebMirror.Metalogic.«Theory.tru»
+                                                  (_root_.GebMirror.Metalogic.«Theory.bang»
+                                                    (_root_.GebMirror.Metalogic.«Language.ctxObj»
+                                                      (_root_.GebMirror.Metalogic.«Derivation.thCtx» x1)))))));
     x2
 
-def «$44657269766174696f6e2f4f456e7472792e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f456e7472792e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f456e7472792e6a757374» x2);
-    x2
-
-def «$44657269766174696f6e2f4f456e7472792e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
-def «$44657269766174696f6e2f456e74726965732e73696e676c65» :=
+def «Derivation.entLang» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$44657269766174696f6e2f456e74726965732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+    _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
-def «$44657269766174696f6e2f456e74726965732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
+def «Derivation.entComb» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
-def «$44657269766174696f6e2f456e74726965732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
+def «$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e54686d29» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «$44657269766174696f6e2f456e74726965732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$44657269766174696f6e2f456e74726965732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f456e74726965732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f456e74726965732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f456e74726965732e64726f70»
-        x2
-        x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
+def «$284f7074696f6e2e6a7573742044657269766174696f6e2e54686d29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
 def «Derivation.entryLanguage» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
@@ -17772,7 +14354,7 @@ def «Derivation.entryLanguage» :=
                                             (fun (_ : _root_.Geb.Kernel.Tree)
                                                (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
                                               x5);
-                                          _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f54686d2e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e54686d29»
                                             x3
                                         else
                                           let x2 : _root_.List
@@ -17795,8 +14377,19 @@ def «Derivation.entryLanguage» :=
                                             (fun (_ : _root_.Geb.Kernel.Tree)
                                                (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
                                               x5);
-                                          _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f54686d2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e54686d29»);
     x1
+
+def «$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e456e74727929» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a7573742044657269766174696f6e2e456e74727929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
 def «Derivation.bindEH» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -17830,14 +14423,40 @@ def «Derivation.bindEH» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f54686d2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e54686d29»);
+    x2
+
+def «$284f7074696f6e2e6e74684f662044657269766174696f6e2e456e74727929» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.Geb.Kernel.Const.iter
+        (α := _root_.List _root_.Geb.Kernel.Tree)
+        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+          _root_.Geb.Kernel.Const.lcase
+            (α := _root_.Geb.Kernel.Tree)
+            (β := _root_.List _root_.Geb.Kernel.Tree)
+            x2
+            ([] : _root_.List _root_.Geb.Kernel.Tree)
+            (fun (_ : _root_.Geb.Kernel.Tree)
+               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+              x4))
+        x0
+        x1)
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e456e74727929»
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e456e74727929»
+          x2);
     x2
 
 def «Derivation.thmAt» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Derivation.bindEH»
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f456e7472792e6e74684f66»
+      (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f662044657269766174696f6e2e456e74727929»
         x0
         x1)
       _root_.GebMirror.Metalogic.«Derivation.entryLanguage»;
@@ -17907,23 +14526,91 @@ def «Derivation.pdefnsOf» :=
                                  let x3 : _root_.List _root_.Geb.Kernel.Tree := x2; x3);
     x1
 
+def «$284f7074696f6e2e69734a757374205061727469616c486f726e2e504465666e4c69737429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
+    x1
+
+def «$284f7074696f6e2e66726f6d4d61796265205061727469616c486f726e2e504465666e4c69737429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
+    x2
+
 def «Derivation.anyDefs» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.compileDefs»
                                           x0;
-                                        if (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e4c6973742e69734a757374»
+                                        if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374205061727469616c486f726e2e504465666e4c69737429»
                                           x2).label ≠ 0 then
                                           x1
                                             (_root_.GebMirror.Metalogic.«Derivation.pdefnsOf»
-                                              (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e4c6973742e66726f6d4d61796265»
+                                              (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265205061727469616c486f726e2e504465666e4c69737429»
                                                 _root_.GebMirror.Metalogic.«Derivation.pdl0»
                                                 x2))
                                         else
                                           _root_.Geb.Kernel.leaf 0);
     x2
 
-def «$44657269766174696f6e2f5365714f662e6d6170» :=
+def «$284d61702e6d61702044657269766174696f6e2e456e747279205061727469616c486f726e2e53657175656e7429» :=
   fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -17947,18 +14634,18 @@ def «Derivation.certifies» :=
       (fun (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
         if (_root_.Geb.Kernel.Const.eq
           (_root_.GebMirror.Metalogic.«Language.gBase» x0)
-          (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f70536967732e6c656e677468»
+          (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e4f7053696729»
             _root_.GebMirror.Metalogic.«Theory.sig»)).label ≠ 0 then
           _root_.Geb.Kernel.Const.equal
             (_root_.GebMirror.Metalogic.«PartialHorn.pcheck»
               (_root_.GebMirror.Metalogic.«Infer.ext» x4)
-              (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f5365714f662e6d6170»
+              (_root_.GebMirror.Metalogic.«$284d61702e6d61702044657269766174696f6e2e456e747279205061727469616c486f726e2e53657175656e7429»
                 (_root_.GebMirror.Metalogic.«Derivation.entrySeq» x0)
                 x1)
               x2
               (_root_.GebMirror.Metalogic.«PartialHorn.seqCtx» x3)
               (_root_.GebMirror.Metalogic.«PartialHorn.seqHyps» x3))
-            (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f45716e2e6a757374»
+            (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374205061727469616c486f726e2e45716e29»
               (_root_.GebMirror.Metalogic.«PartialHorn.seqConcl» x3))
         else
           _root_.Geb.Kernel.leaf 0);
@@ -18070,168 +14757,6 @@ def «Derivation.ctxPair» :=
       (_root_.GebMirror.Metalogic.«Derivation.terms» x1);
     x2
 
-def «$44657269766174696f6e2f53636f70654c2e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$44657269766174696f6e2f53636f70654c2e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$44657269766174696f6e2f53636f70654c2e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f53636f70654c2e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$44657269766174696f6e2f53636f70654c2e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$44657269766174696f6e2f53636f70654c2e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f53636f70654c2e7461696c»
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f53636f70654c2e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f53636f70654c2e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$44657269766174696f6e2f53636f7065462e6c32» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
-    x2
-
-def «$44657269766174696f6e2f53636f7065462e6c33» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f53636f7065462e6c32» x1 x2));
-    x3
-
-def «$44657269766174696f6e2f53636f7065462e6c34» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree) =>
-    let x4 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f53636f7065462e6c33»
-        x1
-        x2
-        x3));
-    x4
-
-def «$44657269766174696f6e2f53636f7065462e6c35» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree) =>
-    let x5 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f53636f7065462e6c34»
-        x1
-        x2
-        x3
-        x4));
-    x5
-
-def «$44657269766174696f6e2f53636f7065462e6c36» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree)
-    (x5 : _root_.Geb.Kernel.Tree) =>
-    let x6 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f53636f7065462e6c35»
-        x1
-        x2
-        x3
-        x4
-        x5));
-    x6
-
-def «$44657269766174696f6e2f53636f706541742e6d6170» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        ((x0 x2) :: x3))
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      x1;
-    x2
-
 def «Derivation.scopes» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x0
@@ -18243,151 +14768,6 @@ def «Derivation.scopesOf» :=
                                  let x2 : _root_.List
                                    _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x1;
                                  let x3 : _root_.List _root_.Geb.Kernel.Tree := x2; x3);
-    x1
-
-def «$44657269766174696f6e2f4f53636f7065732e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$44657269766174696f6e2f4f53636f7065732e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$44657269766174696f6e2f4f53636f7065732e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$44657269766174696f6e2f4f53636f7065732e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$44657269766174696f6e2f4f53636f7065732e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f53636f7065732e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f53636f7065732e6a757374» x2);
-    x2
-
-def «$44657269766174696f6e2f4f53636f7065732e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
     x1
 
 def «Derivation.scope0» :=
@@ -18498,170 +14878,6 @@ def «Derivation.ctxNum» :=
       x1;
     x2
 
-def «$44657269766174696f6e2f42696e6465724c2e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$44657269766174696f6e2f42696e6465724c2e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$44657269766174696f6e2f42696e6465724c2e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f42696e6465724c2e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$44657269766174696f6e2f42696e6465724c2e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$44657269766174696f6e2f42696e6465724c2e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e6465724c2e7461696c»
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f42696e6465724c2e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e6465724c2e64726f70»
-        x2
-        x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$44657269766174696f6e2f42696e646572462e6c32» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
-    x2
-
-def «$44657269766174696f6e2f42696e646572462e6c33» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e646572462e6c32» x1 x2));
-    x3
-
-def «$44657269766174696f6e2f42696e646572462e6c34» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree) =>
-    let x4 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e646572462e6c33»
-        x1
-        x2
-        x3));
-    x4
-
-def «$44657269766174696f6e2f42696e646572462e6c35» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree) =>
-    let x5 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e646572462e6c34»
-        x1
-        x2
-        x3
-        x4));
-    x5
-
-def «$44657269766174696f6e2f42696e646572462e6c36» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree)
-    (x5 : _root_.Geb.Kernel.Tree) =>
-    let x6 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e646572462e6c35»
-        x1
-        x2
-        x3
-        x4
-        x5));
-    x6
-
-def «$44657269766174696f6e2f42696e64657241742e6d6170» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        ((x0 x2) :: x3))
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      x1;
-    x2
-
 def «Derivation.binders» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) x0
@@ -18675,156 +14891,21 @@ def «Derivation.bindersOf» :=
                                  let x3 : _root_.List _root_.Geb.Kernel.Tree := x2; x3);
     x1
 
-def «$44657269766174696f6e2f4f42696e646572732e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$44657269766174696f6e2f4f42696e646572732e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$44657269766174696f6e2f4f42696e646572732e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$44657269766174696f6e2f4f42696e646572732e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$44657269766174696f6e2f4f42696e646572732e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f42696e646572732e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f42696e646572732e6a757374»
-          x2);
-    x2
-
-def «$44657269766174696f6e2f4f42696e646572732e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
 def «Derivation.binder0» :=
   _root_.GebMirror.Metalogic.«Derivation.ctxNum»
     ([] : _root_.List _root_.Geb.Kernel.Tree)
     (_root_.Geb.Kernel.leaf 0)
+
+def «$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e42696e6465727329» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a7573742044657269766174696f6e2e42696e6465727329» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
 def «Derivation.bindTB» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -18833,7 +14914,7 @@ def «Derivation.bindTB» :=
       x0).label ≠ 0 then
       x1 (_root_.GebMirror.Metalogic.«Prelude.get» x0)
     else
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f42696e646572732e6e6f7468696e67»);
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e42696e6465727329»);
     x2
 
 def «Derivation.bindBT» :=
@@ -18871,6 +14952,17 @@ def «Derivation.bindBT» :=
                                           _root_.GebMirror.Metalogic.«Prelude.none»);
     x2
 
+def «$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e53636f70657329» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a7573742044657269766174696f6e2e53636f70657329» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
+
 def «Derivation.bindTS» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
@@ -18878,7 +14970,7 @@ def «Derivation.bindTS» :=
       x0).label ≠ 0 then
       x1 (_root_.GebMirror.Metalogic.«Prelude.get» x0)
     else
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f53636f7065732e6e6f7468696e67»);
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e53636f70657329»);
     x2
 
 def «Derivation.bindST» :=
@@ -18916,6 +15008,45 @@ def «Derivation.bindST» :=
                                           _root_.GebMirror.Metalogic.«Prelude.none»);
     x2
 
+def «$285365712e73696e676c652044657269766174696f6e2e53636f706529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      ([] : _root_.List _root_.Geb.Kernel.Tree));
+    x1
+
+def «$284665772e6c322044657269766174696f6e2e53636f706529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
+    x2
+
+def «$284665772e6c332044657269766174696f6e2e53636f706529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c322044657269766174696f6e2e53636f706529»
+        x1
+        x2));
+    x3
+
+def «$284d61702e6d617020542044657269766174696f6e2e53636f706529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        ((x0 x2) :: x3))
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      x1;
+    x2
+
 def «Derivation.childCtxs» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -18934,9 +15065,9 @@ def «Derivation.childCtxs» :=
                                           (_root_.Geb.Kernel.Const.eq
                                             x7
                                             (_root_.Geb.Kernel.leaf 1))).label ≠ 0 then
-                                          _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f53636f7065732e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e53636f70657329»
                                             (_root_.GebMirror.Metalogic.«Derivation.scopes»
-                                              (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f53636f70654c2e73696e676c65»
+                                              (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e53636f706529»
                                                 (_root_.GebMirror.Metalogic.«Derivation.ctxPair»
                                                   ((_root_.GebMirror.Metalogic.«Language.mD»
                                                     x2
@@ -18962,9 +15093,9 @@ def «Derivation.childCtxs» :=
                                                   x6
                                                   (_root_.Geb.Kernel.leaf 0)))
                                               (fun (x8 : _root_.Geb.Kernel.Tree) =>
-                                                _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f53636f7065732e6a757374»
+                                                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e53636f70657329»
                                                   (_root_.GebMirror.Metalogic.«Derivation.scopes»
-                                                    (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f53636f7065462e6c33»
+                                                    (_root_.GebMirror.Metalogic.«$284665772e6c332044657269766174696f6e2e53636f706529»
                                                       (_root_.GebMirror.Metalogic.«Derivation.ctxPair» x3 x4)
                                                       (_root_.GebMirror.Metalogic.«Derivation.ctxPair»
                                                         (x8 :: x3)
@@ -19000,9 +15131,9 @@ def «Derivation.childCtxs» :=
                                                           (_root_.Geb.Kernel.leaf 2)))
                                                       _root_.GebMirror.Metalogic.«Language.listPart»)
                                                     (fun (x9 : _root_.Geb.Kernel.Tree) =>
-                                                      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f53636f7065732e6a757374»
+                                                      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e53636f70657329»
                                                         (_root_.GebMirror.Metalogic.«Derivation.scopes»
-                                                          (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f53636f7065462e6c33»
+                                                          (_root_.GebMirror.Metalogic.«$284665772e6c332044657269766174696f6e2e53636f706529»
                                                             (_root_.GebMirror.Metalogic.«Derivation.ctxPair»
                                                               x3
                                                               x4)
@@ -19033,9 +15164,9 @@ def «Derivation.childCtxs» :=
                                                         (_root_.Geb.Kernel.leaf 1)))
                                                     _root_.GebMirror.Metalogic.«Language.roseLabel»)
                                                   (fun (x8 : _root_.Geb.Kernel.Tree) =>
-                                                    _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f53636f7065732e6a757374»
+                                                    _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e53636f70657329»
                                                       (_root_.GebMirror.Metalogic.«Derivation.scopes»
-                                                        (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f53636f7065462e6c32»
+                                                        (_root_.GebMirror.Metalogic.«$284665772e6c322044657269766174696f6e2e53636f706529»
                                                           (_root_.GebMirror.Metalogic.«Derivation.ctxPair»
                                                             ((_root_.GebMirror.Metalogic.«Theory.prod»
                                                               x8
@@ -19051,9 +15182,9 @@ def «Derivation.childCtxs» :=
                                                             x3
                                                             x4))))
                                               else
-                                                _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f53636f7065732e6a757374»
+                                                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e53636f70657329»
                                                   (_root_.GebMirror.Metalogic.«Derivation.scopes»
-                                                    (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f53636f706541742e6d6170»
+                                                    (_root_.GebMirror.Metalogic.«$284d61702e6d617020542044657269766174696f6e2e53636f706529»
                                                       (fun (_ : _root_.Geb.Kernel.Tree) =>
                                                         _root_.GebMirror.Metalogic.«Derivation.ctxPair» x3 x4)
                                                       x6)));
@@ -19082,6 +15213,45 @@ def «Derivation.sameCtx» :=
           _root_.Geb.Kernel.leaf 1);
     x2
 
+def «$285365712e73696e676c652044657269766174696f6e2e42696e64657229» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      ([] : _root_.List _root_.Geb.Kernel.Tree));
+    x1
+
+def «$284665772e6c322044657269766174696f6e2e42696e64657229» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
+    x2
+
+def «$284665772e6c332044657269766174696f6e2e42696e64657229» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c322044657269766174696f6e2e42696e64657229»
+        x1
+        x2));
+    x3
+
+def «$284d61702e6d617020542044657269766174696f6e2e42696e64657229» :=
+  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        ((x0 x2) :: x3))
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      x1;
+    x2
+
 def «Derivation.childBinders» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -19099,9 +15269,9 @@ def «Derivation.childBinders» :=
                                           (_root_.Geb.Kernel.Const.eq
                                             x6
                                             (_root_.Geb.Kernel.leaf 1))).label ≠ 0 then
-                                          _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f42696e646572732e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e42696e6465727329»
                                             (_root_.GebMirror.Metalogic.«Derivation.binders»
-                                              (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e6465724c2e73696e676c65»
+                                              (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e42696e64657229»
                                                 (_root_.GebMirror.Metalogic.«Derivation.ctxNum»
                                                   ((_root_.GebMirror.Metalogic.«Language.mD»
                                                     x2
@@ -19125,9 +15295,9 @@ def «Derivation.childBinders» :=
                                                   x5
                                                   (_root_.Geb.Kernel.leaf 0)))
                                               (fun (x7 : _root_.Geb.Kernel.Tree) =>
-                                                _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f42696e646572732e6a757374»
+                                                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e42696e6465727329»
                                                   (_root_.GebMirror.Metalogic.«Derivation.binders»
-                                                    (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e646572462e6c33»
+                                                    (_root_.GebMirror.Metalogic.«$284665772e6c332044657269766174696f6e2e42696e64657229»
                                                       (_root_.GebMirror.Metalogic.«Derivation.ctxNum»
                                                         x3
                                                         (_root_.Geb.Kernel.leaf 0))
@@ -19165,9 +15335,9 @@ def «Derivation.childBinders» :=
                                                           (_root_.Geb.Kernel.leaf 2)))
                                                       _root_.GebMirror.Metalogic.«Language.listPart»)
                                                     (fun (x8 : _root_.Geb.Kernel.Tree) =>
-                                                      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f42696e646572732e6a757374»
+                                                      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e42696e6465727329»
                                                         (_root_.GebMirror.Metalogic.«Derivation.binders»
-                                                          (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e646572462e6c33»
+                                                          (_root_.GebMirror.Metalogic.«$284665772e6c332044657269766174696f6e2e42696e64657229»
                                                             (_root_.GebMirror.Metalogic.«Derivation.ctxNum»
                                                               x3
                                                               (_root_.Geb.Kernel.leaf 0))
@@ -19196,9 +15366,9 @@ def «Derivation.childBinders» :=
                                                         (_root_.Geb.Kernel.leaf 1)))
                                                     _root_.GebMirror.Metalogic.«Language.roseLabel»)
                                                   (fun (x7 : _root_.Geb.Kernel.Tree) =>
-                                                    _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f42696e646572732e6a757374»
+                                                    _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e42696e6465727329»
                                                       (_root_.GebMirror.Metalogic.«Derivation.binders»
-                                                        (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e646572462e6c32»
+                                                        (_root_.GebMirror.Metalogic.«$284665772e6c322044657269766174696f6e2e42696e64657229»
                                                           (_root_.GebMirror.Metalogic.«Derivation.ctxNum»
                                                             ((_root_.GebMirror.Metalogic.«Theory.prod»
                                                               x7
@@ -19212,9 +15382,9 @@ def «Derivation.childBinders» :=
                                                             x3
                                                             (_root_.Geb.Kernel.leaf 0)))))
                                               else
-                                                _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f42696e646572732e6a757374»
+                                                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e42696e6465727329»
                                                   (_root_.GebMirror.Metalogic.«Derivation.binders»
-                                                    (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e64657241742e6d6170»
+                                                    (_root_.GebMirror.Metalogic.«$284d61702e6d617020542044657269766174696f6e2e42696e64657229»
                                                       (fun (_ : _root_.Geb.Kernel.Tree) =>
                                                         _root_.GebMirror.Metalogic.«Derivation.ctxNum»
                                                           x3
@@ -19239,9 +15409,9 @@ def «Derivation.congBinders» :=
             (_root_.Geb.Kernel.leaf 0)))
       (_root_.GebMirror.Metalogic.«Base.range»
         (_root_.GebMirror.Metalogic.«Prelude.length» x4))).label ≠ 0 then
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f42696e646572732e6a757374»
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e42696e6465727329»
         (_root_.GebMirror.Metalogic.«Derivation.binders»
-          (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e64657241742e6d6170»
+          (_root_.GebMirror.Metalogic.«$284d61702e6d617020542044657269766174696f6e2e42696e64657229»
             (fun (_ : _root_.Geb.Kernel.Tree) =>
               _root_.GebMirror.Metalogic.«Derivation.ctxNum» x3 (_root_.Geb.Kernel.leaf 0))
             (_root_.GebMirror.Metalogic.«Language.mArgs» x2)))
@@ -19493,7 +15663,7 @@ def «Derivation.rootDelta» :=
             (_root_.GebMirror.Metalogic.«Language.substList»
               (_root_.GebMirror.Metalogic.«Language.mArgs» x1)))
         (_root_.GebMirror.Metalogic.«Language.bindDL»
-          (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f446566696e6974696f6e2e6e74684f66»
+          (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e446566696e6974696f6e29»
             (_root_.GebMirror.Metalogic.«Language.gDefs» x0)
             (_root_.GebMirror.Metalogic.«Language.mD» x1 (_root_.Geb.Kernel.leaf 0)))
           _root_.GebMirror.Metalogic.«Language.defLanguage»)
@@ -19897,7 +16067,7 @@ def «Derivation.rootThm» :=
                                           (_root_.Geb.Kernel.leaf 3);
                                         _root_.GebMirror.Metalogic.«Derivation.bindHT»
                                           (_root_.GebMirror.Metalogic.«Derivation.bindEH»
-                                            (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f456e7472792e6e74684f66»
+                                            (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f662044657269766174696f6e2e456e74727929»
                                               x1
                                               (_root_.GebMirror.Metalogic.«Prelude.at»
                                                 x4
@@ -19911,7 +16081,7 @@ def «Derivation.rootThm» :=
                                                 _root_.GebMirror.Metalogic.«Derivation.eqParts»
                                                   (_root_.GebMirror.Metalogic.«Derivation.thConcl» x9)
                                               else
-                                                _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»)
+                                                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»)
                                               (fun (x10 : _root_.Geb.Kernel.Tree) =>
                                                 if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                   (_root_.GebMirror.Metalogic.«Derivation.instOk»
@@ -20271,6 +16441,17 @@ def «Derivation.congAll» :=
       x0;
     x1
 
+def «$285365712e6c656e6774682044657269766174696f6e2e42696e64657229» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+      (_root_.Geb.Kernel.leaf 0)
+      x0;
+    x1
+
 def «Derivation.congStep» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -20296,7 +16477,7 @@ def «Derivation.congStep» :=
             (_root_.GebMirror.Metalogic.«Prelude.length» x2)
             (_root_.GebMirror.Metalogic.«Prelude.length» x10))
           (_root_.Geb.Kernel.Const.eq
-            (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f42696e6465724c2e6c656e677468»
+            (_root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e42696e64657229»
               x9)
             (_root_.GebMirror.Metalogic.«Prelude.length» x10))).label ≠ 0 then
           let x11 : _root_.Geb.Kernel.Tree ×
@@ -20362,6 +16543,108 @@ def «Derivation.seq0» :=
       (_root_.Geb.Kernel.leaf 0)
       (_root_.Geb.Kernel.leaf 0))
 
+def «$284f7074696f6e2e69734a7573742044657269766174696f6e2e5465726d7329» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
+    x1
+
+def «$284f7074696f6e2e69734a757374204c616e67756167652e5072696d697469766529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
+    x1
+
+def «$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e5072696d697469766529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
+    x2
+
 def «Derivation.proveStep» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -20391,11 +16674,11 @@ def «Derivation.proveStep» :=
                                          let x13 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Derivation.eqParts»
                                            x11;
                                          let x14 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.p1»
-                                           (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e66726f6d4d61796265»
+                                           (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e545061697229»
                                              _root_.GebMirror.Metalogic.«Derivation.pr0»
                                              x13);
                                          let x15 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.p2»
-                                           (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e66726f6d4d61796265»
+                                           (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e545061697229»
                                              _root_.GebMirror.Metalogic.«Derivation.pr0»
                                              x13);
                                          let x16 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.at»
@@ -20411,7 +16694,7 @@ def «Derivation.proveStep» :=
                                            (_root_.Geb.Kernel.Const.eq
                                              x12
                                              (_root_.Geb.Kernel.leaf 2))).label ≠ 0 then
-                                           if (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
+                                           if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374204c616e67756167652e545061697229»
                                              x13).label ≠ 0 then
                                              let x18 : _root_.Geb.Kernel.Tree := x6
                                                (_root_.Geb.Kernel.leaf 0)
@@ -20443,7 +16726,7 @@ def «Derivation.proveStep» :=
                                                x12
                                                (_root_.Geb.Kernel.leaf 3))).label ≠ 0 then
                                              if (_root_.GebMirror.Metalogic.«Prelude.and»
-                                               (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
+                                               (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374204c616e67756167652e545061697229»
                                                  x13)
                                                (_root_.GebMirror.Metalogic.«Base.not»
                                                  (_root_.GebMirror.Metalogic.«Base.isEmpty» x9))).label ≠ 0 then
@@ -20468,7 +16751,7 @@ def «Derivation.proveStep» :=
                                                  x10;
                                                if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                  (_root_.GebMirror.Metalogic.«Prelude.isSome» x21)
-                                                 (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e69734a757374»
+                                                 (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a7573742044657269766174696f6e2e5465726d7329»
                                                    x22)).label ≠ 0 then
                                                  let x23 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.get»
                                                    x21;
@@ -20564,7 +16847,7 @@ def «Derivation.proveStep» :=
                                                  x12
                                                  (_root_.Geb.Kernel.leaf 3))).label ≠ 0 then
                                                if (_root_.GebMirror.Metalogic.«Prelude.and»
-                                                 (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
+                                                 (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374204c616e67756167652e545061697229»
                                                    x13)
                                                  (_root_.GebMirror.Metalogic.«Base.not»
                                                    (_root_.GebMirror.Metalogic.«Base.isEmpty»
@@ -20594,7 +16877,7 @@ def «Derivation.proveStep» :=
                                                    (_root_.GebMirror.Metalogic.«Prelude.isSome» x21)
                                                    (_root_.GebMirror.Metalogic.«Prelude.and»
                                                      (_root_.GebMirror.Metalogic.«Prelude.isSome» x22)
-                                                     (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e69734a757374»
+                                                     (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a7573742044657269766174696f6e2e5465726d7329»
                                                        x23))).label ≠ 0 then
                                                    let x24 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.get»
                                                      x21;
@@ -20796,7 +17079,7 @@ def «Derivation.proveStep» :=
                                                          (_root_.Geb.Kernel.Const.eq
                                                            x12
                                                            (_root_.Geb.Kernel.leaf 2))).label ≠ 0 then
-                                                         if (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
+                                                         if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374204c616e67756167652e545061697229»
                                                            x13).label ≠ 0 then
                                                            if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                              (_root_.GebMirror.Metalogic.«Derivation.isFormula»
@@ -20841,7 +17124,7 @@ def «Derivation.proveStep» :=
                                                            (_root_.Geb.Kernel.Const.eq
                                                              x12
                                                              (_root_.Geb.Kernel.leaf 1))).label ≠ 0 then
-                                                           if (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
+                                                           if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374204c616e67756167652e545061697229»
                                                              x13).label ≠ 0 then
                                                              let x18 : _root_.Geb.Kernel.Tree := (let x18 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Derivation.typeIn»
                                                                                                     x0
@@ -20854,13 +17137,13 @@ def «Derivation.proveStep» :=
                                                                                                       (_root_.GebMirror.Metalogic.«Prelude.get»
                                                                                                         x18)
                                                                                                   else
-                                                                                                    _root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6e6f7468696e67»);
-                                                             if (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
+                                                                                                    _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e545061697229»);
+                                                             if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374204c616e67756167652e545061697229»
                                                                x18).label ≠ 0 then
                                                                x6
                                                                  (_root_.Geb.Kernel.leaf 1)
                                                                  ((_root_.GebMirror.Metalogic.«Language.p1»
-                                                                   (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e66726f6d4d61796265»
+                                                                   (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e545061697229»
                                                                      _root_.GebMirror.Metalogic.«Derivation.pr0»
                                                                      x18)) ::
                                                                    x9)
@@ -20910,7 +17193,7 @@ def «Derivation.proveStep» :=
                                                                    x2
                                                                    x19
                                                                    x10;
-                                                                 if (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e69734a757374»
+                                                                 if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a7573742044657269766174696f6e2e5465726d7329»
                                                                    x20).label ≠ 0 then
                                                                    if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                                      (_root_.Geb.Kernel.Const.equal
@@ -20990,7 +17273,7 @@ def «Derivation.proveStep» :=
                                                                    if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                                      (_root_.GebMirror.Metalogic.«Prelude.isSome»
                                                                        x20)
-                                                                     (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e69734a757374»
+                                                                     (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a7573742044657269766174696f6e2e5465726d7329»
                                                                        x21)).label ≠ 0 then
                                                                      let x22 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.get»
                                                                        x20;
@@ -21072,16 +17355,16 @@ def «Derivation.proveStep» :=
                                                                        x19
                                                                        x10;
                                                                      if (_root_.GebMirror.Metalogic.«Prelude.and»
-                                                                       (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
+                                                                       (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374204c616e67756167652e545061697229»
                                                                          x20)
-                                                                       (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e69734a757374»
+                                                                       (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a7573742044657269766174696f6e2e5465726d7329»
                                                                          x21)).label ≠ 0 then
                                                                        let x22 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.p1»
-                                                                         (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e66726f6d4d61796265»
+                                                                         (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e545061697229»
                                                                            _root_.GebMirror.Metalogic.«Derivation.pr0»
                                                                            x20);
                                                                        let x23 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.p2»
-                                                                         (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e66726f6d4d61796265»
+                                                                         (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e545061697229»
                                                                            _root_.GebMirror.Metalogic.«Derivation.pr0»
                                                                            x20);
                                                                        if (_root_.GebMirror.Metalogic.«Prelude.and»
@@ -21168,7 +17451,7 @@ def «Derivation.proveStep» :=
                                                                        let x18 : _root_.List
                                                                          _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                                                          x17;
-                                                                       let x19 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$4c616e67756167652f4f5072696d69746976652e6e74684f66»
+                                                                       let x19 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e5072696d697469766529»
                                                                          (_root_.GebMirror.Metalogic.«Language.gPrims»
                                                                            x0)
                                                                          x16;
@@ -21176,7 +17459,7 @@ def «Derivation.proveStep» :=
                                                                          (_root_.GebMirror.Metalogic.«Base.not»
                                                                            (_root_.GebMirror.Metalogic.«Base.isEmpty»
                                                                              x9))
-                                                                         (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f5072696d69746976652e69734a757374»
+                                                                         (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374204c616e67756167652e5072696d697469766529»
                                                                            x19)).label ≠ 0 then
                                                                          let x20 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.at»
                                                                            x9
@@ -21184,13 +17467,13 @@ def «Derivation.proveStep» :=
                                                                          let x21 : _root_.List
                                                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.tail»
                                                                            x9;
-                                                                         let x22 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$4c616e67756167652f4f5072696d69746976652e66726f6d4d61796265»
+                                                                         let x22 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265204c616e67756167652e5072696d697469766529»
                                                                            _root_.GebMirror.Metalogic.«Derivation.prim0»
                                                                            x19;
                                                                          if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                                            (_root_.GebMirror.Metalogic.«Derivation.isCoeqProj»
                                                                              x22)
-                                                                           (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e69734a757374»
+                                                                           (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a7573742044657269766174696f6e2e5465726d7329»
                                                                              (_root_.GebMirror.Metalogic.«Derivation.lowerHyps»
                                                                                x0
                                                                                x2
@@ -21251,7 +17534,7 @@ def «Derivation.proveStep» :=
                                                                          (_root_.Geb.Kernel.Const.eq
                                                                            x12
                                                                            (_root_.Geb.Kernel.leaf 0))).label ≠ 0 then
-                                                                         if (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
+                                                                         if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374204c616e67756167652e545061697229»
                                                                            x13).label ≠ 0 then
                                                                            let x18 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.compileEq»
                                                                              x0
@@ -21259,13 +17542,13 @@ def «Derivation.proveStep» :=
                                                                              x9
                                                                              x14
                                                                              x15;
-                                                                           if (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e69734a757374»
+                                                                           if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374205061727469616c486f726e2e53657175656e7429»
                                                                              x18).label ≠ 0 then
                                                                              _root_.GebMirror.Metalogic.«Derivation.certifies»
                                                                                x0
                                                                                x1
                                                                                x16
-                                                                               (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f53657175656e742e66726f6d4d61796265»
+                                                                               (_root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d61796265205061727469616c486f726e2e53657175656e7429»
                                                                                  _root_.GebMirror.Metalogic.«Derivation.seq0»
                                                                                  x18)
                                                                            else
@@ -21316,7 +17599,7 @@ def «Derivation.proveStep» :=
                                                                                x12
                                                                                (_root_.Geb.Kernel.leaf 2))).label ≠ 0 then
                                                                              if (_root_.GebMirror.Metalogic.«Prelude.and»
-                                                                               (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e69734a757374»
+                                                                               (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374204c616e67756167652e545061697229»
                                                                                  x13)
                                                                                (_root_.Geb.Kernel.Const.eq
                                                                                  (_root_.GebMirror.Metalogic.«Prelude.length»
@@ -21454,7 +17737,7 @@ def «Derivation.proveStep» :=
                                                                                  if (_root_.GebMirror.Metalogic.«Prelude.and»
                                                                                    (_root_.GebMirror.Metalogic.«Prelude.isSome»
                                                                                      x20)
-                                                                                   (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e69734a757374»
+                                                                                   (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a7573742044657269766174696f6e2e5465726d7329»
                                                                                      x21)).label ≠ 0 then
                                                                                    let x22 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.get»
                                                                                      x20;
@@ -21553,6 +17836,74 @@ def «Derivation.proveAll» :=
       x0;
     x1
 
+def «$284f7074696f6e2e69734a7573742044657269766174696f6e2e54686d29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x1)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x2 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x2
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x3 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x3);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x2
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x5);
+                                          _root_.Geb.Kernel.leaf 1
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x1;
+                                          _root_.Geb.Kernel.leaf 0);
+    x1
+
+def «$284f7074696f6e2e66726f6d4d617962652044657269766174696f6e2e54686d29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
+                                        if (_root_.Geb.Kernel.Const.eq
+                                          (_root_.Geb.Kernel.Const.label x2)
+                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
+                                          let x3 : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.Geb.Kernel.Tree)
+                                            x3
+                                            (_root_.Geb.Kernel.leaf 0)
+                                            (fun (x4 : _root_.Geb.Kernel.Tree)
+                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x4);
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+                                            (α := _root_.Geb.Kernel.Tree)
+                                            (β := _root_.List _root_.Geb.Kernel.Tree)
+                                            x3
+                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                            (fun (_ : _root_.Geb.Kernel.Tree)
+                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
+                                              x6);
+                                          x4
+                                        else
+                                          let _ : _root_.List
+                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
+                                            x2;
+                                          x0);
+    x2
+
 def «Derivation.proveApply» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -21580,9 +17931,9 @@ def «Derivation.proveApply» :=
                                           (_root_.GebMirror.Metalogic.«Prelude.at»
                                             x3
                                             (_root_.Geb.Kernel.leaf 0));
-                                        if (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f54686d2e69734a757374»
+                                        if (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a7573742044657269766174696f6e2e54686d29»
                                           x11).label ≠ 0 then
-                                          let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f54686d2e66726f6d4d61796265»
+                                          let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e66726f6d4d617962652044657269766174696f6e2e54686d29»
                                             _root_.GebMirror.Metalogic.«Derivation.thm0»
                                             x11;
                                           if (_root_.GebMirror.Metalogic.«Prelude.and»
@@ -22014,7 +18365,7 @@ def «Derivation.primConfirms» :=
         (fun (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
           if (_root_.Geb.Kernel.Const.eq
             (_root_.GebMirror.Metalogic.«Language.gBase» x0)
-            (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f70536967732e6c656e677468»
+            (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e4f7053696729»
               _root_.GebMirror.Metalogic.«Theory.sig»)).label ≠ 0 then
             _root_.GebMirror.Metalogic.«Language.primOk»
               x0
@@ -22058,7 +18409,7 @@ def «Derivation.objConfirms» :=
         (fun (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
           if (_root_.Geb.Kernel.Const.eq
             (_root_.GebMirror.Metalogic.«Language.gBase» x0)
-            (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f70536967732e6c656e677468»
+            (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e4f7053696729»
               _root_.GebMirror.Metalogic.«Theory.sig»)).label ≠ 0 then
             _root_.GebMirror.Metalogic.«Language.objOk»
               (_root_.GebMirror.Metalogic.«Infer.envOfDefs» x5)
@@ -22071,7 +18422,7 @@ def «Derivation.objConfirms» :=
 def «Derivation.ldChecks» :=
   fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.and»
-      (_root_.GebMirror.Metalogic.«$5061727469616c486f726e2f4f504465666e2e69734a757374»
+      (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a757374205061727469616c486f726e2e504465666e29»
         (_root_.GebMirror.Metalogic.«Language.ldCompile» x0 x1))
       (_root_.GebMirror.Metalogic.«Language.isTy»
         x0
@@ -22139,152 +18490,6 @@ def «Derivation.devState» :=
       (_root_.Geb.Kernel.leaf 0)
       (x0 :: (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)))
 
-def «$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$44657269766174696f6e2f4f44657653746174652e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$44657269766174696f6e2f4f44657653746174652e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$44657269766174696f6e2f4f44657653746174652e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$44657269766174696f6e2f4f44657653746174652e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6a757374»
-          x2);
-    x2
-
-def «$44657269766174696f6e2f4f44657653746174652e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
 def «Derivation.stateOf» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
@@ -22312,32 +18517,97 @@ def «Derivation.withDefs» :=
       (_root_.GebMirror.Metalogic.«Language.gBase» x0);
     x2
 
+def «$285365712e617070656e642044657269766174696f6e2e456e74727929» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «$285365712e73696e676c652044657269766174696f6e2e456e74727929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      ([] : _root_.List _root_.Geb.Kernel.Tree));
+    x1
+
 def «Derivation.push» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$44657269766174696f6e2f456e74726965732e617070656e64»
+      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e456e74727929»
       x0
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f456e74726965732e73696e676c65»
+      (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e456e74727929»
         x1);
     x2
+
+def «$285365712e617070656e64204c616e67756167652e5072696d697469766529» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «$285365712e73696e676c65204c616e67756167652e5072696d697469766529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      ([] : _root_.List _root_.Geb.Kernel.Tree));
+    x1
 
 def «Derivation.pushPrim» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$44657269766174696f6e2f5072696d732e617070656e64»
+      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e617070656e64204c616e67756167652e5072696d697469766529»
       x0
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f5072696d732e73696e676c65» x1);
+      (_root_.GebMirror.Metalogic.«$285365712e73696e676c65204c616e67756167652e5072696d697469766529»
+        x1);
     x2
+
+def «$285365712e617070656e64204c616e67756167652e446566696e6974696f6e29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        (x2 :: x3))
+      x1
+      x0;
+    x2
+
+def «$285365712e73696e676c65204c616e67756167652e446566696e6974696f6e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      ([] : _root_.List _root_.Geb.Kernel.Tree));
+    x1
 
 def «Derivation.pushDef» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$44657269766174696f6e2f446566732e617070656e64»
+      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e617070656e64204c616e67756167652e446566696e6974696f6e29»
       x0
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f446566732e73696e676c65» x1);
+      (_root_.GebMirror.Metalogic.«$285365712e73696e676c65204c616e67756167652e446566696e6974696f6e29»
+        x1);
     x2
 
 def «Derivation.sortsArr» :=
@@ -22354,6 +18624,17 @@ def «Derivation.sortsArr» :=
             x2)
           (_root_.GebMirror.Metalogic.«Prelude.some» (_root_.Geb.Kernel.leaf 1)));
     x3
+
+def «$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a7573742044657269766174696f6e2e446576537461746529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
 def «Derivation.bindPD» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -22387,7 +18668,7 @@ def «Derivation.bindPD» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»);
     x2
 
 def «Derivation.bindRD» :=
@@ -22422,7 +18703,7 @@ def «Derivation.bindRD» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»);
     x2
 
 def «Derivation.bindHD» :=
@@ -22457,7 +18738,7 @@ def «Derivation.bindHD» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»);
     x2
 
 def «Derivation.bindTD» :=
@@ -22467,7 +18748,7 @@ def «Derivation.bindTD» :=
       x0).label ≠ 0 then
       x1 (_root_.GebMirror.Metalogic.«Prelude.get» x0)
     else
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»);
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»);
     x2
 
 def «Derivation.bindSD» :=
@@ -22502,7 +18783,7 @@ def «Derivation.bindSD» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x2;
-                                          _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»);
     x2
 
 def «Derivation.stConsts» :=
@@ -22594,6 +18875,17 @@ def «Derivation.stEntries» :=
                                  let x9 : _root_.List _root_.Geb.Kernel.Tree := x8; x9);
     x1
 
+def «$285365712e6c656e677468204c616e67756167652e5072696d697469766529» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+      (_root_.Geb.Kernel.leaf 0)
+      x0;
+    x1
+
 def «Derivation.quotStep» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -22625,7 +18917,7 @@ def «Derivation.quotStep» :=
                                               (_root_.GebMirror.Metalogic.«PartialHorn.phOp»
                                                 (_root_.Geb.Kernel.Const.add
                                                   (_root_.GebMirror.Metalogic.«Language.gBase» x0)
-                                                  (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f446566732e6c656e677468»
+                                                  (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e446566696e6974696f6e29»
                                                     (_root_.GebMirror.Metalogic.«Language.gDefs» x0)))
                                                 (_root_.GebMirror.Metalogic.«Derivation.objVars» x2));
                                             let x10 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.globals»
@@ -22640,7 +18932,7 @@ def «Derivation.quotStep» :=
                                                     x2
                                                     (_root_.GebMirror.Metalogic.«Theory.coeqz» x7 x8))))
                                               (_root_.GebMirror.Metalogic.«Language.gBase» x0);
-                                            let x11 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$44657269766174696f6e2f5072696d732e6c656e677468»
+                                            let x11 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e5072696d697469766529»
                                               (_root_.GebMirror.Metalogic.«Language.gPrims» x0);
                                             let x12 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Derivation.mkThm»
                                               x2
@@ -22661,7 +18953,7 @@ def «Derivation.quotStep» :=
                                             if (_root_.GebMirror.Metalogic.«Prelude.and»
                                               (_root_.Geb.Kernel.Const.eq
                                                 (_root_.GebMirror.Metalogic.«Language.gBase» x0)
-                                                (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f70536967732e6c656e677468»
+                                                (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e4f7053696729»
                                                   _root_.GebMirror.Metalogic.«Theory.sig»))
                                               (_root_.GebMirror.Metalogic.«Prelude.and»
                                                 (_root_.GebMirror.Metalogic.«Language.isTy» x0 x2 x3)
@@ -22689,14 +18981,14 @@ def «Derivation.quotStep» :=
                                                           x5
                                                           (_root_.GebMirror.Metalogic.«Derivation.thConcl»
                                                             x12)))))))).label ≠ 0 then
-                                              _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6a757374»
+                                              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e446576537461746529»
                                                 (_root_.GebMirror.Metalogic.«Derivation.stateOf»
                                                   x10
                                                   (_root_.GebMirror.Metalogic.«Derivation.push»
                                                     x1
                                                     (_root_.GebMirror.Metalogic.«Derivation.entLang» x12)))
                                             else
-                                              _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»));
+                                              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»));
     x5
 
 def «Derivation.descStep» :=
@@ -22707,13 +18999,13 @@ def «Derivation.descStep» :=
     (x4 : _root_.Geb.Kernel.Tree)
     (x5 : _root_.Geb.Kernel.Tree) =>
     let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Derivation.bindRD»
-      (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f5072696d69746976652e6e74684f66»
+      (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e5072696d697469766529»
         (_root_.GebMirror.Metalogic.«Language.gPrims» x0)
         x2)
       (fun (x6 : _root_.Geb.Kernel.Tree) =>
         _root_.GebMirror.Metalogic.«Derivation.bindHD»
           (_root_.GebMirror.Metalogic.«Derivation.bindEH»
-            (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f456e7472792e6e74684f66»
+            (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f662044657269766174696f6e2e456e74727929»
               x1
               x5)
             _root_.GebMirror.Metalogic.«Derivation.entryLanguage»)
@@ -22763,7 +19055,7 @@ def «Derivation.descStep» :=
                           (_root_.GebMirror.Metalogic.«Language.gPrims» x0)
                           x14);
                       let x16 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Language.mArr»
-                        (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f5072696d732e6c656e677468»
+                        (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e5072696d697469766529»
                           (_root_.GebMirror.Metalogic.«Language.gPrims» x0))
                         (_root_.GebMirror.Metalogic.«Derivation.objVars» x9)
                         (_root_.GebMirror.Metalogic.«Language.mArr»
@@ -22779,7 +19071,7 @@ def «Derivation.descStep» :=
                       if (_root_.GebMirror.Metalogic.«Prelude.and»
                         (_root_.Geb.Kernel.Const.eq
                           (_root_.GebMirror.Metalogic.«Language.gBase» x0)
-                          (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f70536967732e6c656e677468»
+                          (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e4f7053696729»
                             _root_.GebMirror.Metalogic.«Theory.sig»))
                         (_root_.GebMirror.Metalogic.«Prelude.and»
                           (_root_.Geb.Kernel.Const.equal (_root_.GebMirror.Metalogic.«Language.p2» x11) x3)
@@ -22807,7 +19099,7 @@ def «Derivation.descStep» :=
                                         x12
                                         (_root_.GebMirror.Metalogic.«Language.ctxObj» x13)
                                         (_root_.GebMirror.Metalogic.«Language.stdEnv» x13))
-                                      (_root_.GebMirror.Metalogic.«$4c616e67756167652f4f54506169722e6a757374»
+                                      (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e545061697229»
                                         (_root_.GebMirror.Metalogic.«Language.pr»
                                           x8
                                           _root_.GebMirror.Metalogic.«Theory.omega»)))
@@ -22826,16 +19118,16 @@ def «Derivation.descStep» :=
                                           x10
                                           (_root_.GebMirror.Metalogic.«Derivation.thConcl»
                                             x17))))))))))).label ≠ 0 then
-                        _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6a757374»
+                        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e446576537461746529»
                           (_root_.GebMirror.Metalogic.«Derivation.stateOf»
                             x15
                             (_root_.GebMirror.Metalogic.«Derivation.push»
                               x1
                               (_root_.GebMirror.Metalogic.«Derivation.entLang» x17)))
                       else
-                        _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»
+                        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»
                     else
-                      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»))));
+                      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»))));
     x6
 
 def «Derivation.declStep» :=
@@ -22888,14 +19180,14 @@ def «Derivation.declStep» :=
                                             x1
                                             x5
                                             x7).label ≠ 0 then
-                                            _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6a757374»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e446576537461746529»
                                               (_root_.GebMirror.Metalogic.«Derivation.stateOf»
                                                 x0
                                                 (_root_.GebMirror.Metalogic.«Derivation.push»
                                                   x1
                                                   (_root_.GebMirror.Metalogic.«Derivation.entLang» x5)))
                                           else
-                                            _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»
                                         else
                                           if (_root_.Geb.Kernel.Const.eq
                                             (_root_.Geb.Kernel.Const.label x3)
@@ -22942,14 +19234,14 @@ def «Derivation.declStep» :=
                                               x1
                                               x7
                                               x5).label ≠ 0 then
-                                              _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6a757374»
+                                              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e446576537461746529»
                                                 (_root_.GebMirror.Metalogic.«Derivation.stateOf»
                                                   x0
                                                   (_root_.GebMirror.Metalogic.«Derivation.push»
                                                     x1
                                                     (_root_.GebMirror.Metalogic.«Derivation.entComb» x5)))
                                             else
-                                              _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»
+                                              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»
                                           else
                                             if (_root_.Geb.Kernel.Const.eq
                                               (_root_.Geb.Kernel.Const.label x3)
@@ -22977,7 +19269,7 @@ def «Derivation.declStep» :=
                                               if (_root_.GebMirror.Metalogic.«Derivation.ldChecks»
                                                 x0
                                                 x5).label ≠ 0 then
-                                                _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6a757374»
+                                                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e446576537461746529»
                                                   (_root_.GebMirror.Metalogic.«Derivation.stateOf»
                                                     (_root_.GebMirror.Metalogic.«Derivation.withDefs»
                                                       x0
@@ -22986,7 +19278,7 @@ def «Derivation.declStep» :=
                                                         (_root_.GebMirror.Metalogic.«Language.defLang» x5)))
                                                     x1)
                                               else
-                                                _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»
+                                                _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»
                                             else
                                               if (_root_.Geb.Kernel.Const.eq
                                                 (_root_.Geb.Kernel.Const.label x3)
@@ -23033,7 +19325,7 @@ def «Derivation.declStep» :=
                                                   x1
                                                   x5
                                                   x7).label ≠ 0 then
-                                                  _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6a757374»
+                                                  _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e446576537461746529»
                                                     (_root_.GebMirror.Metalogic.«Derivation.stateOf»
                                                       (_root_.GebMirror.Metalogic.«Derivation.withPrims»
                                                         x0
@@ -23042,7 +19334,7 @@ def «Derivation.declStep» :=
                                                           x5))
                                                       x1)
                                                 else
-                                                  _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»
+                                                  _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»
                                               else
                                                 if (_root_.Geb.Kernel.Const.eq
                                                   (_root_.Geb.Kernel.Const.label x3)
@@ -23107,7 +19399,7 @@ def «Derivation.declStep» :=
                                                     x5
                                                     x7
                                                     x9).label ≠ 0 then
-                                                    _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6a757374»
+                                                    _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e446576537461746529»
                                                       (_root_.GebMirror.Metalogic.«Derivation.stateOf»
                                                         (_root_.GebMirror.Metalogic.«Derivation.withDefs»
                                                           x0
@@ -23118,7 +19410,7 @@ def «Derivation.declStep» :=
                                                               x7)))
                                                         x1)
                                                   else
-                                                    _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6e6f7468696e67»
+                                                    _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e446576537461746529»
                                                 else
                                                   if (_root_.Geb.Kernel.Const.eq
                                                     (_root_.Geb.Kernel.Const.label x3)
@@ -23271,39 +19563,7 @@ def «Derivation.declStep» :=
                                                       x11);
     x3
 
-def «$44657269766174696f6e2f4465636c732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$44657269766174696f6e2f4465636c732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$44657269766174696f6e2f4465636c732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f4465636c732e72657665727365» :=
+def «$285365712e726576657273652044657269766174696f6e2e4465636c29» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
       _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
@@ -23320,44 +19580,6 @@ def «$44657269766174696f6e2f4465636c732e72657665727365» :=
       ([] : _root_.List _root_.Geb.Kernel.Tree);
     x1
 
-def «$44657269766174696f6e2f4465636c732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$44657269766174696f6e2f4465636c732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4465636c732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$44657269766174696f6e2f4465636c732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4465636c732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
 def «Derivation.checkDev» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -23373,9 +19595,9 @@ def «Derivation.checkDev» :=
               (_root_.GebMirror.Metalogic.«Derivation.stConsts» x5)
               (_root_.GebMirror.Metalogic.«Derivation.stEntries» x5)
               x3))
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f44657653746174652e6a757374»
+      (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e446576537461746529»
         (_root_.GebMirror.Metalogic.«Derivation.stateOf» x0 x1))
-      (_root_.GebMirror.Metalogic.«$44657269766174696f6e2f4465636c732e72657665727365»
+      (_root_.GebMirror.Metalogic.«$285365712e726576657273652044657269766174696f6e2e4465636c29»
         x2);
     x3
 
@@ -23577,7 +19799,7 @@ def «Reader.atomTok» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 3)
-      (_root_.GebMirror.Metalogic.«Prelude.reverse» x0)
+      (_root_.GebMirror.Metalogic.«Prelude.reverseIter» x0)
 
 def «Reader.kwHole» :=
   _root_.Geb.Kernel.mk 0 [_root_.Geb.Kernel.leaf 104,
@@ -23706,7 +19928,7 @@ def «Reader.strStep» :=
       _root_.GebMirror.Metalogic.«Reader.endAtom»
         x0
         x2
-        (_root_.GebMirror.Metalogic.«Prelude.reverse» x1)
+        (_root_.GebMirror.Metalogic.«Prelude.reverseIter» x1)
     else
       if (_root_.Geb.Kernel.Const.eq
         x3
@@ -23962,38 +20184,21 @@ def «Reader.decodeBase64» :=
           (_root_.Geb.Kernel.Tree ×
             _root_.Geb.Kernel.Tree))) := _root_.Geb.Kernel.Const.foldr
       (α := _root_.Geb.Kernel.Tree)
-      (β := (_root_.Geb.Kernel.Tree ×
+      (β := _root_.Geb.Kernel.Tree ×
         (_root_.List _root_.Geb.Kernel.Tree ×
           (_root_.Geb.Kernel.Tree ×
-            (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))) →
-        _root_.Geb.Kernel.Tree ×
-          (_root_.List _root_.Geb.Kernel.Tree ×
-            (_root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))
+            (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))
       (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : (_root_.Geb.Kernel.Tree ×
-           (_root_.List _root_.Geb.Kernel.Tree ×
-             (_root_.Geb.Kernel.Tree ×
-               (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))) →
-           _root_.Geb.Kernel.Tree ×
-             (_root_.List _root_.Geb.Kernel.Tree ×
-               (_root_.Geb.Kernel.Tree ×
-                 (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))
-         (x3 : _root_.Geb.Kernel.Tree ×
+         (x2 : _root_.Geb.Kernel.Tree ×
            (_root_.List _root_.Geb.Kernel.Tree ×
              (_root_.Geb.Kernel.Tree ×
                (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))) =>
-        x2 (_root_.GebMirror.Metalogic.«Reader.base64Step» x3 x1))
-      (fun (x1 : _root_.Geb.Kernel.Tree ×
-           (_root_.List _root_.Geb.Kernel.Tree ×
-             (_root_.Geb.Kernel.Tree ×
-               (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))) =>
-        x1)
-      x0
+        _root_.GebMirror.Metalogic.«Reader.base64Step» x2 x1)
       (_root_.Geb.Kernel.leaf 1,
         (([] : _root_.List _root_.Geb.Kernel.Tree),
           (_root_.Geb.Kernel.leaf 0,
-            (_root_.Geb.Kernel.leaf 0, _root_.Geb.Kernel.leaf 0))));
+            (_root_.Geb.Kernel.leaf 0, _root_.Geb.Kernel.leaf 0))))
+      (_root_.GebMirror.Metalogic.«Prelude.reverseIter» x0);
     if (if ((x1).1).label ≠ 0 then
       _root_.Geb.Kernel.Const.lt
         ((((x1).2).2).2).1
@@ -24003,7 +20208,7 @@ def «Reader.decodeBase64» :=
       _root_.GebMirror.Metalogic.«Prelude.some»
         (_root_.Geb.Kernel.Const.node
           (_root_.Geb.Kernel.leaf 0)
-          (_root_.GebMirror.Metalogic.«Prelude.reverse» ((x1).2).1))
+          (_root_.GebMirror.Metalogic.«Prelude.reverseIter» ((x1).2).1))
     else
       _root_.GebMirror.Metalogic.«Prelude.none»
 
@@ -24012,7 +20217,7 @@ def «Reader.lengthStep» :=
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree) =>
     let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.reverse» x1;
+      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.reverseIter» x1;
     if (if (_root_.Geb.Kernel.Const.lt
       (_root_.Geb.Kernel.leaf 1)
       (_root_.GebMirror.Metalogic.«Prelude.length» x3)).label ≠ 0 then
@@ -24366,7 +20571,7 @@ def «Reader.lexStep» :=
                                       x1
                                       (_root_.Geb.Kernel.leaf 35)).label ≠ 0 then
                                       let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Reader.decodeHex»
-                                        (_root_.GebMirror.Metalogic.«Prelude.reverse» x3);
+                                        (_root_.GebMirror.Metalogic.«Prelude.reverseIter» x3);
                                       if (_root_.GebMirror.Metalogic.«Prelude.isSome» x7).label ≠ 0 then
                                         _root_.GebMirror.Metalogic.«Reader.endAtom»
                                           x2
@@ -24394,7 +20599,7 @@ def «Reader.lexStep» :=
                                       x1
                                       (_root_.Geb.Kernel.leaf 124)).label ≠ 0 then
                                       let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Reader.decodeBase64»
-                                        (_root_.GebMirror.Metalogic.«Prelude.reverse» x3);
+                                        (_root_.GebMirror.Metalogic.«Prelude.reverseIter» x3);
                                       if (_root_.GebMirror.Metalogic.«Prelude.isSome» x7).label ≠ 0 then
                                         _root_.GebMirror.Metalogic.«Reader.endAtom»
                                           x2
@@ -24424,7 +20629,7 @@ def «Reader.lexEnd» :=
       _root_.GebMirror.Metalogic.«Prelude.some»
         (_root_.Geb.Kernel.Const.node
           (_root_.Geb.Kernel.leaf 0)
-          (_root_.GebMirror.Metalogic.«Prelude.reverse» x1))
+          (_root_.GebMirror.Metalogic.«Prelude.reverseIter» x1))
     else
       if (if (_root_.Geb.Kernel.Const.eq
         x3
@@ -24437,7 +20642,7 @@ def «Reader.lexEnd» :=
         _root_.GebMirror.Metalogic.«Prelude.some»
           (_root_.Geb.Kernel.Const.node
             (_root_.Geb.Kernel.leaf 0)
-            (_root_.GebMirror.Metalogic.«Prelude.reverse»
+            (_root_.GebMirror.Metalogic.«Prelude.reverseIter»
               ((_root_.GebMirror.Metalogic.«Reader.atomTok» x2) :: x1)))
       else
         if (_root_.Geb.Kernel.Const.eq
@@ -24447,7 +20652,7 @@ def «Reader.lexEnd» :=
             _root_.GebMirror.Metalogic.«Prelude.some»
               (_root_.Geb.Kernel.Const.node
                 (_root_.Geb.Kernel.leaf 0)
-                (_root_.GebMirror.Metalogic.«Prelude.reverse»
+                (_root_.GebMirror.Metalogic.«Prelude.reverseIter»
                   (_root_.GebMirror.Metalogic.«Reader.holeToks» x2 x1)))
           else
             _root_.GebMirror.Metalogic.«Prelude.none»
@@ -24471,24 +20676,15 @@ def «Reader.tokenize» :=
       _root_.GebMirror.Metalogic.«Reader.lexEnd»
         (_root_.Geb.Kernel.Const.foldr
           (α := _root_.Geb.Kernel.Tree)
-          (β := (_root_.List _root_.Geb.Kernel.Tree ×
-            (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)) →
-            _root_.List _root_.Geb.Kernel.Tree ×
-              (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))
+          (β := _root_.List _root_.Geb.Kernel.Tree ×
+            (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))
           (fun (x1 : _root_.Geb.Kernel.Tree)
-             (x2 : (_root_.List _root_.Geb.Kernel.Tree ×
-               (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)) →
-               _root_.List _root_.Geb.Kernel.Tree ×
-                 (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))
-             (x3 : _root_.List _root_.Geb.Kernel.Tree ×
+             (x2 : _root_.List _root_.Geb.Kernel.Tree ×
                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)) =>
-            x2 (_root_.GebMirror.Metalogic.«Reader.lexStep» x3 x1))
-          (fun (x1 : _root_.List _root_.Geb.Kernel.Tree ×
-               (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)) =>
-            x1)
-          x0
+            _root_.GebMirror.Metalogic.«Reader.lexStep» x2 x1)
           (_root_.GebMirror.Metalogic.«Reader.lexIdle»
-            ([] : _root_.List _root_.Geb.Kernel.Tree)))
+            ([] : _root_.List _root_.Geb.Kernel.Tree))
+          (_root_.GebMirror.Metalogic.«Prelude.reverseIter» x0))
     else
       _root_.GebMirror.Metalogic.«Prelude.none»
 
@@ -24536,7 +20732,7 @@ def «Reader.parseStep» :=
                   (_root_.Geb.Kernel.leaf 1,
                     (((_root_.Geb.Kernel.Const.node
                       (_root_.Geb.Kernel.leaf 2)
-                      (_root_.GebMirror.Metalogic.«Prelude.reverse» x2)) ::
+                      (_root_.GebMirror.Metalogic.«Prelude.reverseIter» x2)) ::
                       x4) ::
                       x5))))
     else
@@ -24552,25 +20748,17 @@ def «Reader.readSExps» :=
           (_root_.List
             _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.foldr
         (α := _root_.Geb.Kernel.Tree)
-        (β := (_root_.Geb.Kernel.Tree ×
-          _root_.List (_root_.List _root_.Geb.Kernel.Tree)) →
-          _root_.Geb.Kernel.Tree ×
-            _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+        (β := _root_.Geb.Kernel.Tree ×
+          _root_.List (_root_.List _root_.Geb.Kernel.Tree))
         (fun (x2 : _root_.Geb.Kernel.Tree)
-           (x3 : (_root_.Geb.Kernel.Tree ×
-             _root_.List (_root_.List _root_.Geb.Kernel.Tree)) →
-             _root_.Geb.Kernel.Tree ×
-               _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-           (x4 : _root_.Geb.Kernel.Tree ×
+           (x3 : _root_.Geb.Kernel.Tree ×
              _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
-          x3 (_root_.GebMirror.Metalogic.«Reader.parseStep» x4 x2))
-        (fun (x2 : _root_.Geb.Kernel.Tree ×
-             _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
-          x2)
-        (_root_.Geb.Kernel.Const.children (_root_.GebMirror.Metalogic.«Prelude.get» x1))
+          _root_.GebMirror.Metalogic.«Reader.parseStep» x3 x2)
         (_root_.Geb.Kernel.leaf 1,
           (([] : _root_.List _root_.Geb.Kernel.Tree) ::
-            ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree))));
+            ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree))))
+        (_root_.GebMirror.Metalogic.«Prelude.reverseIter»
+          (_root_.Geb.Kernel.Const.children (_root_.GebMirror.Metalogic.«Prelude.get» x1)));
       if ((x2).1).label ≠ 0 then
         _root_.Geb.Kernel.Const.lcase
           (α := _root_.List _root_.Geb.Kernel.Tree)
@@ -24586,7 +20774,7 @@ def «Reader.readSExps» :=
               (_root_.GebMirror.Metalogic.«Prelude.some»
                 (_root_.Geb.Kernel.Const.node
                   (_root_.Geb.Kernel.leaf 0)
-                  (_root_.GebMirror.Metalogic.«Prelude.reverse» x3)))
+                  (_root_.GebMirror.Metalogic.«Prelude.reverseIter» x3)))
               (fun (_ : _root_.List _root_.Geb.Kernel.Tree)
                  (_ : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
                 _root_.GebMirror.Metalogic.«Prelude.none»))
@@ -25173,7 +21361,7 @@ def «Reader.rrApply» :=
       ([] : _root_.List _root_.Geb.Kernel.Tree)
       x0
 
-def «$5265616465722f5252732e7461696c» :=
+def «$284c697374732e7461696c202850726f64205420284172726f7720284c6973742054292054292929» :=
   fun (x0 : _root_.List
       (_root_.Geb.Kernel.Tree ×
         (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
@@ -25207,7 +21395,7 @@ def «Reader.rrAt» :=
         (α := _root_.List
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-        _root_.GebMirror.Metalogic.«$5265616465722f5252732e7461696c»
+        _root_.GebMirror.Metalogic.«$284c697374732e7461696c202850726f64205420284172726f7720284c6973742054292054292929»
         x0
         x1)
       (fun (_ : _root_.List _root_.Geb.Kernel.Tree) =>
@@ -25257,7 +21445,7 @@ def «Reader.argsOf» :=
           (α := _root_.List
             (_root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-          _root_.GebMirror.Metalogic.«$5265616465722f5252732e7461696c»
+          _root_.GebMirror.Metalogic.«$284c697374732e7461696c202850726f64205420284172726f7720284c6973742054292054292929»
           x0
           x1)
         x2)
@@ -26456,6 +22644,19 @@ def «Check.checkNode» :=
                                       else
                                         _root_.GebMirror.Metalogic.«Prelude.none»
 
+def «Check.typeInStep» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
+    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.node
+      x1
+      (_root_.GebMirror.Metalogic.«Reader.rrTrees» x2);
+    (x3,
+      fun (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Metalogic.«Check.checkNode» x0 x3 x2 x4)
+
 def «Check.typeIn» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -26463,16 +22664,7 @@ def «Check.typeIn» :=
     (_root_.Geb.Kernel.Const.fold
       (α := _root_.Geb.Kernel.Tree ×
         (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (x4 : _root_.List
-           (_root_.Geb.Kernel.Tree ×
-             (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-        let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.node
-          x3
-          (_root_.GebMirror.Metalogic.«Reader.rrTrees» x4);
-        (x5,
-          fun (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-            _root_.GebMirror.Metalogic.«Check.checkNode» x0 x5 x4 x6))
+      (_root_.GebMirror.Metalogic.«Check.typeInStep» x0)
       x2).2
       x1
 

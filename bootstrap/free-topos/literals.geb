@@ -13,11 +13,7 @@
 ; and a definition evaluated by its position among them.
 
 (module Literals
-  (export Lit litBits litOrd litPair OLit.Maybe OLit.nothing OLit.just syms symOf host pairStep
-    valueOf
-    litTerm
-    litEval
-    lemmas
+  (export Lit litBits litOrd litPair syms symOf host pairStep valueOf litTerm litEval lemmas
     lemmasIn
     sigOk
     ready)
@@ -30,10 +26,7 @@
   (import Translation)
   ; literals: a bitstring by its number, a comparison's result, and a pair of bitstrings
   (data Lit (litBits T) (litOrd T) (litPair T T))
-  (import (Option Lit) as OLit)
-  (import (Lists OLit.Maybe) as OLits)
-  (import (Seq Lit) as Lits)
-  (import (Each Lit) as EachLit)
+
   (def pairTy (prod bitsTy bitsTy))
 
   ; the definitions evaluated, in order: each the node of its index among the library's
@@ -78,51 +71,54 @@
   (defn bits1 ((vs (List Lit))) T
     (lcase Lit T vs none
       (lam ((v Lit) (r (List Lit)))
-        (if (EachLit.isEmpty r) (case v ((litBits w) (some w)) (else none)) none))))
-  (defn bits2 ((vs (List Lit))) OTPair.Maybe
-    (lcase Lit OTPair.Maybe vs OTPair.nothing
+        (if (Each.isEmpty Lit r) (case v ((litBits w) (some w)) (else none)) none))))
+  (defn bits2 ((vs (List Lit))) (Option.Maybe TPair)
+    (lcase Lit (Option.Maybe TPair) vs (Option.nothing TPair)
       (lam ((v Lit) (r (List Lit)))
         (let m T (bits1 r)
-          (if (isSome m) (case v ((litBits a) (OTPair.just (pr a (get m)))) (else OTPair.nothing))
-            OTPair.nothing)))))
+          (if (isSome m)
+            (case v ((litBits a) (Option.just TPair (pr a (get m)))) (else (Option.nothing TPair)))
+            (Option.nothing TPair))))))
   ; the truth value of a test, as a number: one for truth, zero otherwise
   (defn truth ((b T)) T (if b 1 0))
   ; the conditional on a bitstring at bitstrings, of position 7, and at comparisons, of position 8
-  (defn hostCond ((s T) (vs (List Lit))) OLit.Maybe
-    (lcase Lit OLit.Maybe vs OLit.nothing
+  (defn hostCond ((s T) (vs (List Lit))) (Option.Maybe Lit)
+    (lcase Lit (Option.Maybe Lit) vs (Option.nothing Lit)
       (lam ((c Lit) (r1 (List Lit)))
-        (lcase Lit OLit.Maybe r1 OLit.nothing
+        (lcase Lit (Option.Maybe Lit) r1 (Option.nothing Lit)
           (lam ((t Lit) (r2 (List Lit)))
-            (lcase Lit OLit.Maybe r2 OLit.nothing
+            (lcase Lit (Option.Maybe Lit) r2 (Option.nothing Lit)
               (lam ((u Lit) (r3 (List Lit)))
-                (if (EachLit.isEmpty r3)
+                (if (Each.isEmpty Lit r3)
                   (case c
                     ((litBits k)
                      (case t
                        ((litBits a)
                         (case u
                           ((litBits b)
-                           (if (eq s 7) (OLit.just (litBits (if (eq k 0) b a))) OLit.nothing))
-                          (else OLit.nothing)))
+                           (if (eq s 7) (Option.just Lit (litBits (if (eq k 0) b a)))
+                             (Option.nothing Lit)))
+                          (else (Option.nothing Lit))))
                        ((litOrd a)
                         (case u
                           ((litOrd b)
-                           (if (eq s 8) (OLit.just (litOrd (if (eq k 0) b a))) OLit.nothing))
-                          (else OLit.nothing)))
-                       (else OLit.nothing)))
-                    (else OLit.nothing))
-                  OLit.nothing))))))))
+                           (if (eq s 8) (Option.just Lit (litOrd (if (eq k 0) b a)))
+                             (Option.nothing Lit)))
+                          (else (Option.nothing Lit))))
+                       (else (Option.nothing Lit))))
+                    (else (Option.nothing Lit)))
+                  (Option.nothing Lit)))))))))
   ; the value of the definition of a position at literals, the first argument first, by the
   ; arithmetic of the labels; nothing at literals of other types, and for the difference of a
   ; number greater than the first
-  (defn host ((s T) (vs (List Lit))) OLit.Maybe
-    (cond ((eq s 0) (if (EachLit.isEmpty vs) (OLit.just (litBits 0)) OLit.nothing))
+  (defn host ((s T) (vs (List Lit))) (Option.Maybe Lit)
+    (cond ((eq s 0) (if (Each.isEmpty Lit vs) (Option.just Lit (litBits 0)) (Option.nothing Lit)))
       ((or (eq s 7) (eq s 8)) (hostCond s vs))
       ((or (lt s 7) (eq s 17))
        (let m T (bits1 vs)
          (if (isSome m)
            (let w T (get m)
-             (OLit.just
+             (Option.just Lit
                (litBits
                  (cond ((eq s 1) (add (mul 2 w) 1)) ((eq s 2) (add (mul 2 w) 2))
                    ((eq s 3) (truth (eq w 0)))
@@ -130,52 +126,55 @@
                    ((eq s 5) (mul 2 w))
                    ((eq s 6) (sub w 1))
                    (else (log2 w))))))
-           OLit.nothing)))
+           (Option.nothing Lit))))
       (else
         (case (bits2 vs)
-          ((OTPair.just ab)
+          ((Option.just TPair ab)
            (let* ((a T (p1 ab)) (b T (p2 ab)))
-             (cond ((eq s 9) (OLit.just (litBits (add a b))))
-               ((eq s 10) (OLit.just (litBits (mul a b))))
-               ((eq s 11) (OLit.just (litBits (truth (eq a b)))))
-               ((eq s 12) (OLit.just (litOrd (cond ((lt a b) 0) ((eq a b) 1) (else 2)))))
-               ((eq s 13) (OLit.just (litBits (truth (lt a b)))))
-               ((eq s 14) (if (lt a b) OLit.nothing (OLit.just (litBits (sub a b)))))
-               ((eq s 15) (OLit.just (litBits (sub a b))))
-               ((eq s 16) (OLit.just (litPair (div a b) (mod a b))))
-               (else OLit.nothing))))
-          ((OTPair.nothing) OLit.nothing)))))
+             (cond ((eq s 9) (Option.just Lit (litBits (add a b))))
+               ((eq s 10) (Option.just Lit (litBits (mul a b))))
+               ((eq s 11) (Option.just Lit (litBits (truth (eq a b)))))
+               ((eq s 12) (Option.just Lit (litOrd (cond ((lt a b) 0) ((eq a b) 1) (else 2)))))
+               ((eq s 13) (Option.just Lit (litBits (truth (lt a b)))))
+               ((eq s 14) (if (lt a b) (Option.nothing Lit) (Option.just Lit (litBits (sub a b)))))
+               ((eq s 15) (Option.just Lit (litBits (sub a b))))
+               ((eq s 16) (Option.just Lit (litPair (div a b) (mod a b))))
+               (else (Option.nothing Lit)))))
+          ((Option.nothing TPair) (Option.nothing Lit))))))
 
   ; the pair of two bitstrings, or a component of a pair of bitstrings, at a node of a label from
   ; its children's values
-  (defn pairStep ((l T) (vs (List Lit))) OLit.Maybe
+  (defn pairStep ((l T) (vs (List Lit))) (Option.Maybe Lit)
     (if (eq l 2)
-      (case (bits2 vs) ((OTPair.just ab) (OLit.just (litPair (p1 ab) (p2 ab))))
-        ((OTPair.nothing) OLit.nothing))
-      (lcase Lit OLit.Maybe vs OLit.nothing
+      (case (bits2 vs) ((Option.just TPair ab) (Option.just Lit (litPair (p1 ab) (p2 ab))))
+        ((Option.nothing TPair) (Option.nothing Lit)))
+      (lcase Lit (Option.Maybe Lit) vs (Option.nothing Lit)
         (lam ((v Lit) (r (List Lit)))
-          (if (EachLit.isEmpty r)
+          (if (Each.isEmpty Lit r)
             (case v
               ((litPair a b)
-               (cond ((eq l 3) (OLit.just (litBits a))) ((eq l 4) (OLit.just (litBits b)))
-                 (else OLit.nothing)))
-              (else OLit.nothing))
-            OLit.nothing)))))
+               (cond ((eq l 3) (Option.just Lit (litBits a)))
+                 ((eq l 4) (Option.just Lit (litBits b)))
+                 (else (Option.nothing Lit))))
+              (else (Option.nothing Lit)))
+            (Option.nothing Lit))))))
 
   ; one step of the evaluation, at a node from its children's values: a comparison's result, a
   ; definition evaluated at its arguments' values, the children being the arguments last first, or
   ; a pair or its component
-  (defn evalStep ((nd T) (rs (List OLit.Maybe))) OLit.Maybe
-    (cond ((equal nd ltO) (OLit.just (litOrd 0))) ((equal nd eqO) (OLit.just (litOrd 1)))
-      ((equal nd gtO) (OLit.just (litOrd 2)))
+  (defn evalStep ((nd T) (rs (List (Option.Maybe Lit)))) (Option.Maybe Lit)
+    (cond ((equal nd ltO) (Option.just Lit (litOrd 0)))
+      ((equal nd eqO) (Option.just Lit (litOrd 1)))
+      ((equal nd gtO) (Option.just Lit (litOrd 2)))
       (else
-        (let r (Prod T (List Lit)) (OLit.allJust (OLits.tail rs))
+        (let r (Prod T (List Lit)) (Option.allJust Lit (Lists.tail (Option.Maybe Lit) rs))
           (if (fst r)
             (let s T (symOf nd)
-              (if (isSome s) (host (get s) (Lits.reverse (snd r))) (pairStep (label nd) (snd r))))
-            OLit.nothing)))))
+              (if (isSome s) (host (get s) (Seq.reverse Lit (snd r)))
+                (pairStep (label nd) (snd r))))
+            (Option.nothing Lit))))))
   ; the value of a term built of the definitions evaluated over literals
-  (defn valueOf ((t T)) OLit.Maybe (para OLit.Maybe evalStep t))
+  (defn valueOf ((t T)) (Option.Maybe Lit) (para (Option.Maybe Lit) evalStep t))
 
   ; the term of a literal: the numeral of a bitstring's number, the term of a comparison's result,
   ; and the pair of two numerals
@@ -184,12 +183,11 @@
       ((litPair a b) (mPair (trNumeral a) (trNumeral b)))))
   ; the term of the value of a term, where it has one
   (defn litEval ((t T)) T
-    (case (valueOf t) ((OLit.just v) (some (litTerm v))) ((OLit.nothing) none)))
+    (case (valueOf t) ((Option.just Lit v) (some (litTerm v))) ((Option.nothing Lit) none)))
 
   ; the definitions' equations at the numerals' bits, each a theorem in no object variables and
   ; under no hypotheses
-  (import (Few Thm) as ThmF)
-  (import (Seq Thm) as Thms)
+
   (defn lemEqn ((g Ts) (l T) (r T)) Thm (mkThm 0 (objs g) (terms (nil T)) (mEq l r)))
   (def vy (var 0))
   (def vx (var 1))
@@ -226,30 +224,31 @@
       (app (mLam pairTy (mPair (un D.succ (mFst vy)) (ifBit bitsTy vz (mSnd vy) trueT))) vy)
       w))
   (def lemSucc
-    (ThmF.l6 (lemEqn (nil T) (isNilT bnilT) trueT) (lemEqn b1c (isNilT (b0T vy)) bnilT)
+    (Few.l6 Thm (lemEqn (nil T) (isNilT bnilT) trueT) (lemEqn b1c (isNilT (b0T vy)) bnilT)
       (lemEqn b1c (isNilT (b1T vy)) bnilT)
       (lemEqn (nil T) (un D.succ bnilT) (b0T bnilT))
       (lemEqn b1c (un D.succ (b0T vy)) (b1T vy))
       (lemEqn b1c (un D.succ (b1T vy)) (b0T (un D.succ vy)))))
   (def lemPred
-    (ThmF.l6 (lemEqn (nil T) (un D.dbl bnilT) bnilT)
+    (Few.l6 Thm (lemEqn (nil T) (un D.dbl bnilT) bnilT)
       (lemEqn b1c (un D.dbl (b0T vy)) (b1T (un D.dbl vy)))
       (lemEqn b1c (un D.dbl (b1T vy)) (b1T (b0T vy)))
       (lemEqn (nil T) (un D.pred bnilT) bnilT)
       (lemEqn b1c (un D.pred (b0T vy)) (condB vy (b1T (un D.pred vy)) bnilT))
       (lemEqn b1c (un D.pred (b1T vy)) (b0T vy))))
   (def lemCond
-    (ThmF.l6 (lemEqn b2c (condB bnilT vx vy) vy) (lemEqn b3c (condB (b0T vz) vx vy) vx)
+    (Few.l6 Thm (lemEqn b2c (condB bnilT vx vy) vy) (lemEqn b3c (condB (b0T vz) vx vy) vx)
       (lemEqn b3c (condB (b1T vz) vx vy) vx)
       (lemEqn (l2 ordTy ordTy) (condO bnilT vx vy) vy)
       (lemEqn (l3 ordTy ordTy bitsTy) (condO (b0T vz) vx vy) vx)
       (lemEqn (l3 ordTy ordTy bitsTy) (condO (b1T vz) vx vy) vx)))
   (def lemAdd
-    (Thms.append
-      (ThmF.l4 (lemEqn b1c (bin D.add vy bnilT) vy) (lemEqn b1c (bin D.add bnilT (b0T vy)) (b0T vy))
+    (Seq.append Thm
+      (Few.l4 Thm (lemEqn b1c (bin D.add vy bnilT) vy)
+        (lemEqn b1c (bin D.add bnilT (b0T vy)) (b0T vy))
         (lemEqn b1c (bin D.add bnilT (b1T vy)) (b1T vy))
         (lemEqn b2c (bin D.add (b0T vx) (b0T vy)) (b1T (bin D.add vx vy))))
-      (ThmF.l6 (lemEqn b2c (bin D.add (b0T vx) (b1T vy)) (b0T (un D.succ (bin D.add vx vy))))
+      (Few.l6 Thm (lemEqn b2c (bin D.add (b0T vx) (b1T vy)) (b0T (un D.succ (bin D.add vx vy))))
         (lemEqn b2c (bin D.add (b1T vx) (b0T vy)) (b0T (un D.succ (bin D.add vx vy))))
         (lemEqn b2c (bin D.add (b1T vx) (b1T vy)) (b1T (un D.succ (bin D.add vx vy))))
         (lemEqn b1c (bin D.mul vy bnilT) bnilT)
@@ -258,7 +257,7 @@
           (bin D.add (un D.dbl (bin D.mul vx vy)) (un D.dbl vx))))))
   (def lemEq
     (cons (lemEqn b1c (bin D.eqB vy bnilT) (isNilT vy))
-      (ThmF.l6 (lemEqn b1c (bin D.eqB bnilT (b0T vy)) bnilT)
+      (Few.l6 Thm (lemEqn b1c (bin D.eqB bnilT (b0T vy)) bnilT)
         (lemEqn b1c (bin D.eqB bnilT (b1T vy)) bnilT)
         (lemEqn b2c (bin D.eqB (b0T vx) (b0T vy)) (bin D.eqB vx vy))
         (lemEqn b2c (bin D.eqB (b0T vx) (b1T vy)) bnilT)
@@ -266,33 +265,34 @@
         (lemEqn b2c (bin D.eqB (b1T vx) (b1T vy)) (bin D.eqB vx vy)))))
   (def o3c (l3 ordTy ordTy ordTy))
   (def lemCmp
-    (Thms.append
+    (Seq.append Thm
       (cons (lemEqn b1c (bin D.cmp vy bnilT) (condO vy gtO eqO))
-        (ThmF.l6 (lemEqn b1c (bin D.cmp bnilT (b0T vy)) ltO)
+        (Few.l6 Thm (lemEqn b1c (bin D.cmp bnilT (b0T vy)) ltO)
           (lemEqn b1c (bin D.cmp bnilT (b1T vy)) ltO)
           (lemEqn b2c (bin D.cmp (b0T vx) (b0T vy)) (ifOrd ordTy (bin D.cmp vx vy) ltO eqO gtO))
           (lemEqn b2c (bin D.cmp (b0T vx) (b1T vy)) (ifOrd ordTy (bin D.cmp vx vy) ltO ltO gtO))
           (lemEqn b2c (bin D.cmp (b1T vx) (b0T vy)) (ifOrd ordTy (bin D.cmp vx vy) ltO gtO gtO))
           (lemEqn b2c (bin D.cmp (b1T vx) (b1T vy)) (ifOrd ordTy (bin D.cmp vx vy) ltO eqO gtO))))
       (cons (lemEqn o3c (ifOrd ordTy ltO vz vx vy) vz)
-        (ThmF.l6 (lemEqn o3c (ifOrd ordTy eqO vz vx vy) vx)
+        (Few.l6 Thm (lemEqn o3c (ifOrd ordTy eqO vz vx vy) vx)
           (lemEqn o3c (ifOrd ordTy gtO vz vx vy) vy)
           (lemEqn b3c (ifOrd bitsTy ltO vz vx vy) vz)
           (lemEqn b3c (ifOrd bitsTy eqO vz vx vy) vx)
           (lemEqn b3c (ifOrd bitsTy gtO vz vx vy) vy)
           (lemEqn b2c (bin D.ltB vx vy) (ifOrd bitsTy (bin D.cmp vx vy) trueT bnilT bnilT))))))
   (def lemSub
-    (Thms.append
-      (ThmF.l4 (lemEqn b1c (bin D.subE vy bnilT) vy) (lemEqn b1c (bin D.subE bnilT (b0T vy)) bnilT)
+    (Seq.append Thm
+      (Few.l4 Thm (lemEqn b1c (bin D.subE vy bnilT) vy)
+        (lemEqn b1c (bin D.subE bnilT (b0T vy)) bnilT)
         (lemEqn b1c (bin D.subE bnilT (b1T vy)) bnilT)
         (lemEqn b2c (bin D.subE (b0T vx) (b0T vy)) (un D.dbl (bin D.subE vx vy))))
-      (ThmF.l4 (lemEqn b2c (bin D.subE (b0T vx) (b1T vy)) (b0T (un D.pred (bin D.subE vx vy))))
+      (Few.l4 Thm (lemEqn b2c (bin D.subE (b0T vx) (b1T vy)) (b0T (un D.pred (bin D.subE vx vy))))
         (lemEqn b2c (bin D.subE (b1T vx) (b0T vy)) (b0T (bin D.subE vx vy)))
         (lemEqn b2c (bin D.subE (b1T vx) (b1T vy)) (un D.dbl (bin D.subE vx vy)))
         (lemEqn b2c (bin D.sub vx vy) (condB (bin D.ltB vx vy) bnilT (bin D.subE vx vy))))))
   (def lemDiv
     (cons (lemEqn b1c (bin D.divMod vy bnilT) (mPair bnilT vy))
-      (ThmF.l6 (lemEqn b1c (bin D.divMod bnilT (b0T vy)) (mPair bnilT bnilT))
+      (Few.l6 Thm (lemEqn b1c (bin D.divMod bnilT (b0T vy)) (mPair bnilT bnilT))
         (lemEqn b1c (bin D.divMod bnilT (b1T vy)) (mPair bnilT bnilT))
         (lemEqn b2c (bin D.divMod (b0T vx) (b0T vy)) (divRhs 0 0))
         (lemEqn b2c (bin D.divMod (b0T vx) (b1T vy)) (divRhs 0 1))
@@ -301,44 +301,48 @@
   (def p3c (l3 pairTy pairTy pairTy))
   (def p6c (l6 pairTy pairTy pairTy ordTy pairTy pairTy))
   (def lemSel
-    (ThmF.l6 (lemEqn p3c (ifOrd pairTy ltO vz vx vy) vz) (lemEqn p3c (ifOrd pairTy eqO vz vx vy) vx)
+    (Few.l6 Thm (lemEqn p3c (ifOrd pairTy ltO vz vx vy) vz)
+      (lemEqn p3c (ifOrd pairTy eqO vz vx vy) vx)
       (lemEqn p3c (ifOrd pairTy gtO vz vx vy) vy)
       (lemEqn p6c (selSel ltO) (var 5))
       (lemEqn p6c (selSel eqO) (var 4))
       (lemEqn p6c (selSel gtO) selIn)))
   (def lemLog
-    (ThmF.l4 (lemEqn (nil T) (lenOneT bnilT) (mPair bnilT bnilT))
+    (Few.l4 Thm (lemEqn (nil T) (lenOneT bnilT) (mPair bnilT bnilT))
       (lemEqn b1c (lenOneT (b0T vy)) (mPair (un D.succ (mFst (lenOneT vy))) (mSnd (lenOneT vy))))
       (lemEqn b1c (lenOneT (b1T vy)) (mPair (un D.succ (mFst (lenOneT vy))) trueT))
       (lemEqn b1c (un D.log2 vy)
         (condB (mSnd (lenOneT vy)) (mFst (lenOneT vy)) (un D.pred (mFst (lenOneT vy)))))))
   (def lemmas
-    (Thms.append lemSucc
-      (Thms.append lemPred
-        (Thms.append lemCond
-          (Thms.append lemAdd
-            (Thms.append lemEq
-              (Thms.append lemCmp
-                (Thms.append lemSub (Thms.append lemDiv (Thms.append lemSel lemLog))))))))))
+    (Seq.append Thm lemSucc
+      (Seq.append Thm lemPred
+        (Seq.append Thm lemCond
+          (Seq.append Thm lemAdd
+            (Seq.append Thm lemEq
+              (Seq.append Thm lemCmp
+                (Seq.append Thm lemSub
+                  (Seq.append Thm lemDiv (Seq.append Thm lemSel lemLog))))))))))
 
   ; whether the theorems of the entries from an index on are the equations, in their order
   (defn lemmasIn ((E (List Entry)) (j T)) T
     ((foldr Thm (Arrow T T)
        (lam ((a Thm) (rest (Arrow T T)) (i T))
-         (and (case (thmAt E (add j i)) ((OThm.just b) (equal (rep b) (rep a))) ((OThm.nothing) 0))
+         (and
+           (case (thmAt E (add j i)) ((Option.just Thm b) (equal (rep b) (rep a)))
+             ((Option.nothing Thm) 0))
            (rest (add i 1))))
        (lam ((i T)) 1)
        lemmas) 0))
   ; whether the definition of an index among the constants has, at objects, the types of its
   ; arguments, the last first, and of its value
   (defn sigOk ((G Globals) (n T) (k T) (th Ts) (as Ts) (res T)) T
-    (case (bindDL (ODefinition.nthOf (gDefs G) k) defLanguage)
-      ((OLDefn.just d)
+    (case (bindDL (Option.nthOf Definition (gDefs G) k) defLanguage)
+      ((Option.just LDefn d)
        (and
          (and (and (eq (ldArity d) (length th)) (allT (isTy G n) th))
            (equalTs (mapT (lam ((p T)) (phSubst th p)) (ldParams d)) as))
          (equal (phSubst th (ldType d)) res)))
-      ((OLDefn.nothing) 0)))
+      ((Option.nothing LDefn) 0)))
   (defn sigs ((G Globals) (n T)) T
     (allT
       (lam ((row T))

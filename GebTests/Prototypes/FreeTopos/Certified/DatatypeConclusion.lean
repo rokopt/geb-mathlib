@@ -113,7 +113,7 @@ def conclT (P : Prog) (T : Defs3) (childT : Term) : Term :=
   let ch (t : Term) (i : ℕ) : Term := apps childT [t, leafT (numeral i)]
   let x := pc P "Datatype.expandTyped" [v 0]
   let ts := Term.snd x
-  let nothing := pc P "Typing/OName.nothing" []
+  let nothing := pc P "(Option.nothing Typing.Name)" []
   let run := pc P "Typing.checkAll" [Term.pair (pc P "Typing.env0" []) nothing,
     pc P "Datatype.markersFirst" [ts]]
   let Ev := Term.fst run

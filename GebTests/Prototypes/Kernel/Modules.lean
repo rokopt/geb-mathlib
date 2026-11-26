@@ -368,18 +368,18 @@ def formNames (text : String) : Option (List String) :=
 -- a datatype with a type parameter and a function over it, compiled by the stage-0 compiler: a
 -- function of one module returns an optional value that the root consumes
 #guard [(leaf 5, leaf 5), (leaf 0, leaf 7)].all fun (t, r) ↦
-  runDatatype compiler.toList (generic ++
+  runDatatype (generic ++
     " (module F (import L) (export pick)" ++
     " (defn pick ((t T)) (Option T) (if t (some T t) (none T))))" ++
     " (import L) (def main (lam ((t T)) (get T 7 (F.pick (id T t)))))").toList t == some r
 -- a constructor's type arguments precede the variables of its pattern, the remaining children's
 -- among them
-#guard runDatatype compiler.toList (polyTexts.getD 17 "").toList (leaf 5) = some (leaf 5)
+#guard runDatatype (polyTexts.getD 17 "").toList (leaf 5) = some (leaf 5)
 -- an operation of a module with parameters at a type that uses a declaration with type parameters
-#guard runDatatype compiler.toList (polyTexts.getD 25 "").toList (leaf 5) = some (mk 1 [leaf 5])
+#guard runDatatype (polyTexts.getD 25 "").toList (leaf 5) = some (mk 1 [leaf 5])
 
 -- a module of the datatype language, compiled by the stage-0 compiler
-#guard runDatatype compiler.toList ("(module Opt (export Maybe nothing just fromMaybe)" ++
+#guard runDatatype ("(module Opt (export Maybe nothing just fromMaybe)" ++
     " (data Maybe (nothing) (just T))" ++
     " (defn fromMaybe ((d T) (m Maybe)) T" ++
     " (let* ((fallback T (cond ((eq d 0) 7) (else d))))" ++
@@ -388,7 +388,7 @@ def formNames (text : String) : Option (List String) :=
 
 -- a datatype of a module decoded, its name qualified in the recognizer the decoding refers to
 #guard [(leaf 0, leaf 1), (mk 1 [leaf 0], leaf 1), (mk 2 [], leaf 0)].all fun (t, r) ↦
-  runDatatype compiler.toList ("(module N (export Nat zero succ isNat)" ++
+  runDatatype ("(module N (export Nat zero succ isNat)" ++
     " (data Nat (zero) (succ Nat)) (def isNat (lam ((t T)) (decode Nat t (lam ((n Nat)) 1) 0))))" ++
     " (def main (lam ((t T)) (N.isNat t)))").toList t == some r
 

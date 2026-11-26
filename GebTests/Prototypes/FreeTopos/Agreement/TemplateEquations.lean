@@ -13,8 +13,8 @@ set_option doc.verso true in
 /-!
 # The equations of the templates' instances in the mirror
 
-The bootstrap compiler emits each instance of a template of the datatype language as copies of the
-template's definitions under the instance's name, and
+The bootstrap compiler emits a definition with type parameters once at each list of arguments.
+Its name spells the application to those types, and
 {lit}`GebTests.Prototypes.FreeTopos.Agreement.Templates` states each such definition once as a Lean
 function. The command {lit}`template_equations` declares, for each copy among the constants of a
 namespace, its equation with that function, closed by reflexivity, as a simp lemma, also of the
@@ -44,35 +44,38 @@ namespace GebTests.Prototypes.FreeTopos.Agreement.TemplateEquations
 {lit}`GebTests.Prototypes.FreeTopos.Agreement.Templates`. -/
 register_simp_attr template
 
+private meta def nameBytes : List Char → Option (List UInt8)
+  | [] => some []
+  | a :: b :: rest => do
+    guard (a.isHexDigit && b.isHexDigit)
+    let byte ← Lean.Syntax.decodeNatLitVal? (String.ofList ['0', 'x', a, b])
+    return byte.toUInt8 :: (← nameBytes rest)
+  | [_] => none
+
 open Lean Elab Command Meta in
-/-- {lit}`template_equations ns`: for each constant of the namespace {lit}`ns` whose name's last
-component names a definition of a template's instance, {lit}`P/I.f` with {lit}`f` a function of
-{lit}`GebTests.Prototypes.FreeTopos.Agreement.Templates` of the same type, the theorem
-{lit}`P/I.f_template` equating it with {lit}`f`, by reflexivity, a simp lemma in the default set
-and the set {lit}`template`. -/
+/-- Register each erased instance of a generic bootstrap function whose type matches its
+representative in {lit}`Templates`. The emitted name encodes the application to its types. -/
 elab "template_equations " ns:ident : command => do
   let ns := ns.getId
   let here := `GebTests.Prototypes.FreeTopos.Agreement.Templates
   let fns := ["single", "length", "append", "reverse", "tail", "drop", "atOr", "nothing", "just",
     "isJust", "fromMaybe", "nthOf", "allJust", "all", "any", "isEmpty", "take", "map", "l2", "l3",
-    "l4", "l5", "l6", "res", "bad", "ok", "pure", "fail", "orElse"]
+    "l4", "l5", "l6", "res", "bad", "ok", "pure", "fail", "orElse", "bind"]
   let cands := (← getEnv).constants.fold (init := #[]) fun acc c _ ↦
     match c with
     | .str p s =>
-      let original := if s.startsWith "$" then do
-          let cs := s.toList.drop 1
-          if cs.length % 2 != 0 || !cs.all Char.isHexDigit then none else do
-            let bs ← (List.range (cs.length / 2)).mapM fun i ↦
-              (Syntax.decodeNatLitVal? ("0x" ++ String.ofList ((cs.drop (2 * i)).take 2))).map
-                Nat.toUInt8
-            String.fromUTF8? ⟨bs.toArray⟩
-        else some s
-      match original with
-      | some s => if p == ns && s.contains '/' then acc.push (c, s) else acc
-      | none => acc
+      if p == ns && s.startsWith "$28" then
+        let original := (nameBytes (s.toList.drop 1)).bind fun bs ↦
+          String.fromUTF8? ⟨bs.toArray⟩
+        original.elim acc fun name ↦ acc.push (c, name)
+      else acc
     | _ => acc
   for (c, s) in cands.qsort (fun a b ↦ a.2 < b.2) do
-    let f := (s.splitOn ".").getLast!
+    let head := ((s.drop 1).takeWhile (· != ' ')).toString
+    let parts := head.splitOn "."
+    unless ["Seq", "Option", "Lists", "Each", "Few", "Map", "Combinator.Comp"].contains
+        (".".intercalate parts.dropLast) do continue
+    let f := parts.getLast!
     unless fns.contains f do continue
     let t := here ++ Name.mkSimple f
     let same ← liftTermElabM do

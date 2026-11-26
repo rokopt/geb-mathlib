@@ -155,182 +155,11 @@ def pmBind (m : Tree → Tree → Tree) (k : Tree → Tree → Tree → Tree) : 
       (Const.child (Const.child (m sc st) (leaf 0)) (leaf 1))
   else Templates.bad
 
-/-- The mirror's compositions at each pair of types of values are one function. -/
-@[template] theorem bindTToT_def : «Combinator.bindTToT» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindTToT», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindTToY_def : «Combinator.bindTToY» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindTToY», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindTToP_def : «Combinator.bindTToP» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindTToP», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindTToC_def : «Combinator.bindTToC» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindTToC», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindYToT_def : «Combinator.bindYToT» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindYToT», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindYToY_def : «Combinator.bindYToY» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindYToY», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindYToP_def : «Combinator.bindYToP» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindYToP», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindYToYs_def : «Combinator.bindYToYs» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindYToYs», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindYToA_def : «Combinator.bindYToA» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindYToA», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindQToT_def : «Combinator.bindQToT» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindQToT», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindQToP_def : «Combinator.bindQToP» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindQToP», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindQToE_def : «Combinator.bindQToE» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindQToE», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindSToY_def : «Combinator.bindSToY» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindSToY», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindSToQ_def : «Combinator.bindSToQ» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindSToQ», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindSToP_def : «Combinator.bindSToP» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindSToP», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindPToT_def : «Combinator.bindPToT» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindPToT», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindPToY_def : «Combinator.bindPToY» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindPToY», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindPToP_def : «Combinator.bindPToP» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindPToP», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindPToPs_def : «Combinator.bindPToPs» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindPToPs», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindPToOP_def : «Combinator.bindPToOP» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindPToOP», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindEToT_def : «Combinator.bindEToT» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindEToT», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindEToP_def : «Combinator.bindEToP» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindEToP», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindCToT_def : «Combinator.bindCToT» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindCToT», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindCToP_def : «Combinator.bindCToP» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindCToP», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindCToE_def : «Combinator.bindCToE» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindCToE», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindCToC_def : «Combinator.bindCToC» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindCToC», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindYsToY_def : «Combinator.bindYsToY» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindYsToY», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindYsToP_def : «Combinator.bindYsToP» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindYsToP», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindYsToE_def : «Combinator.bindYsToE» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindYsToE», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindYsToYs_def :
-    «Combinator.bindYsToYs» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindYsToYs», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindPsToP_def : «Combinator.bindPsToP» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindPsToP», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindPsToPs_def :
-    «Combinator.bindPsToPs» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindPsToPs», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindOYToY_def : «Combinator.bindOYToY» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindOYToY», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindOPToP_def : «Combinator.bindOPToP» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindOPToP», children_eq, lcase_children_head, lcase_children_second]
-  rfl
-
-@[template, inherit_doc bindTToT_def] theorem bindAToP_def : «Combinator.bindAToP» = pmBind := by
-  funext a b
-  simp only [«Combinator.bindAToP», children_eq, lcase_children_head, lcase_children_second]
+/-- Composition at erased types passes the first value and its updated state to the continuation. -/
+@[template] theorem bind_def : Templates.bind = pmBind := by
+  funext m k sc st
+  unfold Templates.bind «$28436f6d62696e61746f722e436f6d702e62696e642054205429»
+  simp only [children_eq, lcase_children_head, lcase_children_second]
   rfl
 
 /-- The mirror's bindings of optional matches and of optional proofs added to a development are
@@ -415,28 +244,28 @@ state's entries are the nodes of label 0 over them. -/
 /-- The mirror's values of computations from the elements of lists of each type. -/
 @[template] theorem mapMEqC_def : «Combinator.mapMEqC» = pmMapM := by
   funext a b
-  simp only [«Combinator.mapMEqC», bindTToC_def, bindCToC_def]
+  simp only [«Combinator.mapMEqC», template]
   rfl
 
 @[template, inherit_doc mapMEqC_def] theorem mapMPairC_def : «Combinator.mapMPairC» = pmMapM := by
   funext a b
-  simp only [«Combinator.mapMPairC», bindTToC_def, bindCToC_def]
+  simp only [«Combinator.mapMPairC», template]
   rfl
 
 @[template, inherit_doc mapMEqC_def] theorem mapMTY_def : «Combinator.mapMTY» = pmMapM := by
   funext a b
-  simp only [«Combinator.mapMTY», bindYToYs_def, bindYsToYs_def]
+  simp only [«Combinator.mapMTY», template]
   rfl
 
 /-- The mirror's values of lists of computations at each type. -/
 @[template] theorem seqY_def : «Combinator.seqY» = pmSeq := by
   funext a b
-  simp only [«Combinator.seqY», bindYToYs_def, bindYsToYs_def]
+  simp only [«Combinator.seqY», template]
   rfl
 
 @[template, inherit_doc seqY_def] theorem seqP_def : «Combinator.seqP» = pmSeq := by
   funext a b
-  simp only [«Combinator.seqP», bindPToPs_def, bindPsToPs_def]
+  simp only [«Combinator.seqP», template]
   rfl
 
 /-- The mirror's computation of a value. -/

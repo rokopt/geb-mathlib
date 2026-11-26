@@ -622,7 +622,7 @@ def cataCore (P : Prog) (S : Defs) (T : Defs3) : Step :=
                               let bodies (Δ : List Tree) : Term :=
                                 (forcedMapOf K Δ (bodiesF Δ)).getD Term.star
                               let srs (Δ : List Tree) : Term :=
-                                pc P "Typing/SRs.drop" [leafT (numeral 5), rs Δ]
+                                pc P (srSeq "drop") [leafT (numeral 5), rs Δ]
                               let rebSR : List Internal.NormRule :=
                                 [.thm (ix "rebT") [srTy], .thm (ix "rebL") [srTy, list srTy]]
                               let KL : Kit := { K with more := K.more ++

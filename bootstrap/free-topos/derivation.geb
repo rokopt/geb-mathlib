@@ -39,19 +39,11 @@
     typeIn
     Terms
     terms
-    OTerms.Maybe
-    OTerms.nothing
-    OTerms.just
     lowerHyps
     Thm
     mkThm
     thCtx
     thConcl
-    OThm.Maybe
-    OThm.nothing
-    OThm.just
-    OThm.isJust
-    OThm.fromMaybe
     Entry
     entLang
     entComb
@@ -67,21 +59,13 @@
     scope0
     Scopes
     scopes
-    OScopes.Maybe
-    OScopes.nothing
-    OScopes.just
     childCtxs
     Binder
     binderCtx
     binderNum
     binder0
-    BinderL.atOr
-    BinderL.length
     Binders
     bindersOf
-    OBinders.Maybe
-    OBinders.nothing
-    OBinders.just
     childBinders
     weakenBy
     rootStep
@@ -100,9 +84,6 @@
     entries
     DevState
     devState
-    ODevState.Maybe
-    ODevState.nothing
-    ODevState.just
     push
     declStep
     checkDev)
@@ -112,10 +93,7 @@
   (import Theory)
   (import Infer)
   (import Language)
-  (import (Seq Eqn) as Eqns)
-  (import (Seq OpSig) as OpSigs)
-  (import (Seq Primitive) as Prims)
-  (import (Seq Definition) as Defs)
+
   (defn copairIn ((X T) (A T) (B T) (C T) (F T) (G T)) T
     (comp (ev X C)
       (cPair
@@ -144,7 +122,7 @@
     (primitive 3 (caseArr (x 0) (x 1) (x 2)) (prod (exp (x 0) (x 2)) (exp (x 1) (x 2)))
       (exp (coprod (x 0) (x 1)) (x 2))))
   (defn primIs ((G Globals) (k T) (p Primitive)) T
-    (equal (rep (OPrimitive.nthOf (gPrims G) k)) (rep (OPrimitive.just p))))
+    (equal (rep (Option.nthOf Primitive (gPrims G) k)) (rep (Option.just Primitive p))))
   (defn objVars ((n T)) Ts (mapT x (range n)))
 
   ; the recognition of a coequalizer's projection, and of a quotient's by a relation
@@ -199,25 +177,25 @@
     (mEq (roseMapAt kl kc omega phi) (roseMapAt kl kc omega (mEq mStar mStar))))
 
   ; the image of an optional pair of trees, as the base maps optional trees
-  (defn mapPT ((f (Arrow TPair T)) (m OTPair.Maybe)) T
-    (case m ((OTPair.just p) (some (f p))) ((OTPair.nothing) none)))
+  (defn mapPT ((f (Arrow TPair T)) (m (Option.Maybe TPair))) T
+    (case m ((Option.just TPair p) (some (f p))) ((Option.nothing TPair) none)))
 
   ; the sides of an equation, the instance of a theorem's term, and the type of a term in a context
   (def pr0 (pr 0 0))
-  (defn eqParts ((phi T)) OTPair.Maybe
-    (if (mIs 12 2 phi) (OTPair.just (pr (mArg phi 0) (mArg phi 1))) OTPair.nothing))
+  (defn eqParts ((phi T)) (Option.Maybe TPair)
+    (if (mIs 12 2 phi) (Option.just TPair (pr (mArg phi 0) (mArg phi 1))) (Option.nothing TPair)))
   (defn instTerm ((th Ts) (sg Ts) (s T)) T (subst (osubst th s) (substList sg)))
   (defn typeIn ((G Globals) (n T) (g Ts) (t T)) T ((typeOf G n t) g))
   (defn isFormula ((G Globals) (n T) (g Ts) (t T)) T (equal (typeIn G n g t) (some omega)))
 
   ; hypotheses that do not mention the innermost variable, in the context without it
   (data Terms (terms & T))
-  (import (Option Terms) as OTerms)
-  (defn allSomeTerms ((ms Ts)) OTerms.Maybe
-    (if (allT isSome ms) (OTerms.just (terms (mapT get ms))) OTerms.nothing))
-  (defn termsOr ((m OTerms.Maybe)) Ts
-    (case m ((OTerms.just h) (case h ((terms & xs) xs))) ((OTerms.nothing) (nil T))))
-  (defn lowerHyps ((G Globals) (n T) (g Ts) (hs Ts)) OTerms.Maybe
+
+  (defn allSomeTerms ((ms Ts)) (Option.Maybe Terms)
+    (if (allT isSome ms) (Option.just Terms (terms (mapT get ms))) (Option.nothing Terms)))
+  (defn termsOr ((m (Option.Maybe Terms))) Ts
+    (case m ((Option.just Terms h) (case h ((terms & xs) xs))) ((Option.nothing Terms) (nil T))))
+  (defn lowerHyps ((G Globals) (n T) (g Ts) (hs Ts)) (Option.Maybe Terms)
     (allSomeTerms
       (mapT
         (lam ((h T))
@@ -230,7 +208,7 @@
   (defn thCtx ((a Thm)) Ts (case a ((mkThm m c h q) (case c ((objs & xs) xs)))))
   (defn thHyps ((a Thm)) Ts (case a ((mkThm m c h q) (case h ((terms & xs) xs)))))
   (defn thConcl ((a Thm)) T (case a ((mkThm m c h q) q)))
-  (import (Option Thm) as OThm)
+
   (def thm0 (mkThm 0 (objs (nil T)) (terms (nil T)) 0))
 
   ; whether objects and terms instantiate a theorem in a context
@@ -256,23 +234,23 @@
     (if (isEmpty (thHyps a)) f
       (comp f (p2 (truthSub (ctxObj (thCtx a)) (mapT (thmArrow G a) (thHyps a)))))))
   (defn thmSeq ((G Globals) (a Thm)) Sequent
-    (let ep OTPair.Maybe (eqParts (thConcl a))
+    (let ep (Option.Maybe TPair) (eqParts (thConcl a))
       (mkSeq (replicate (thArity a) Sorts.obj) (nil Eqn)
-        (if (OTPair.isJust ep)
-          (eqn (thmSide G a (thmArrow G a (p1 (OTPair.fromMaybe pr0 ep))))
-            (thmSide G a (thmArrow G a (p2 (OTPair.fromMaybe pr0 ep)))))
+        (if (Option.isJust TPair ep)
+          (eqn (thmSide G a (thmArrow G a (p1 (Option.fromMaybe TPair pr0 ep))))
+            (thmSide G a (thmArrow G a (p2 (Option.fromMaybe TPair pr0 ep)))))
           (eqn (thmSide G a (thmArrow G a (thConcl a)))
             (thmSide G a (comp tru (bang (ctxObj (thCtx a))))))))))
 
   ; the entries of a development: theorems of the language and sequents of the combinators
   (data Entry (entLang Thm) (entComb Sequent))
-  (import (Option Entry) as OEntry)
-  (import (Seq Entry) as Entries)
-  (defn entryLanguage ((e Entry)) OThm.Maybe
-    (case e ((entLang a) (OThm.just a)) ((entComb s) OThm.nothing)))
-  (defn bindEH ((m OEntry.Maybe) (f (Arrow Entry OThm.Maybe))) OThm.Maybe
-    (case m ((OEntry.just e) (f e)) ((OEntry.nothing) OThm.nothing)))
-  (defn thmAt ((E (List Entry)) (i T)) OThm.Maybe (bindEH (OEntry.nthOf E i) entryLanguage))
+
+  (defn entryLanguage ((e Entry)) (Option.Maybe Thm)
+    (case e ((entLang a) (Option.just Thm a)) ((entComb s) (Option.nothing Thm))))
+  (defn bindEH ((m (Option.Maybe Entry)) (f (Arrow Entry (Option.Maybe Thm)))) (Option.Maybe Thm)
+    (case m ((Option.just Entry e) (f e)) ((Option.nothing Entry) (Option.nothing Thm))))
+  (defn thmAt ((E (List Entry)) (i T)) (Option.Maybe Thm)
+    (bindEH (Option.nthOf Entry E i) entryLanguage))
   (defn entrySeq ((G Globals) (e Entry)) Sequent
     (case e ((entLang a) (thmSeq G a)) ((entComb s) s)))
 
@@ -281,15 +259,17 @@
   (def pdl0 (pdefns (nil PDefn)))
   (defn pdefnsOf ((l PDefnList)) (List PDefn) (case l ((pdefns & xs) xs)))
   (defn anyDefs ((G Globals) (f (Arrow (List PDefn) T))) T
-    (let cd OPDefnList.Maybe (compileDefs G)
-      (if (OPDefnList.isJust cd) (f (pdefnsOf (OPDefnList.fromMaybe pdl0 cd))) 0)))
-  (import (Map Entry Sequent) as SeqOf)
+    (let cd (Option.Maybe PDefnList) (compileDefs G)
+      (if (Option.isJust PDefnList cd) (f (pdefnsOf (Option.fromMaybe PDefnList pdl0 cd))) 0)))
+
   (defn certifies ((G Globals) (E (List Entry)) (c T) (s Sequent)) T
     (anyDefs G
       (lam ((cds (List PDefn)))
-        (if (eq (gBase G) (OpSigs.length sig))
-          (equal (rep ((pcheck (ext cds) (SeqOf.map (entrySeq G) E) c) (seqCtx s) (seqHyps s)))
-            (rep (OEqn.just (seqConcl s))))
+        (if (eq (gBase G) (Seq.length OpSig sig))
+          (equal
+            (rep
+              ((pcheck (ext cds) (Map.map Entry Sequent (entrySeq G) E) c) (seqCtx s) (seqHyps s)))
+            (rep (Option.just Eqn (seqConcl s))))
           0))))
 
   ; the contexts and hypotheses of a node's children
@@ -297,95 +277,93 @@
   (defn scopeCtx ((c Scope)) Ts (case c ((scope g hs) (case g ((objs & xs) xs)))))
   (defn scopeHyps ((c Scope)) Ts (case c ((scope g hs) (case hs ((terms & xs) xs)))))
   (defn ctxPair ((g Ts) (hs Ts)) Scope (scope (objs g) (terms hs)))
-  (import (Seq Scope) as ScopeL)
-  (import (Few Scope) as ScopeF)
-  (import (Map T Scope) as ScopeAt)
+
   (data Scopes (scopes & Scope))
   (defn scopesOf ((c Scopes)) (List Scope) (case c ((scopes & xs) xs)))
-  (import (Option Scopes) as OScopes)
+
   (def scope0 (ctxPair (nil T) (nil T)))
   ; a child's context with the number of variables by which it extends its node's
   (data Binder (binder Objs T))
   (defn binderCtx ((b Binder)) Ts (case b ((binder g m) (case g ((objs & xs) xs)))))
   (defn binderNum ((b Binder)) T (case b ((binder g m) m)))
   (defn ctxNum ((g Ts) (m T)) Binder (binder (objs g) m))
-  (import (Seq Binder) as BinderL)
-  (import (Few Binder) as BinderF)
-  (import (Map T Binder) as BinderAt)
+
   (data Binders (binders & Binder))
   (defn bindersOf ((c Binders)) (List Binder) (case c ((binders & xs) xs)))
-  (import (Option Binders) as OBinders)
+
   (def binder0 (ctxNum (nil T) 0))
-  (defn bindTB ((m T) (f (Arrow T OBinders.Maybe))) OBinders.Maybe
-    (if (isSome m) (f (get m)) OBinders.nothing))
-  (defn bindBT ((m OBinders.Maybe) (f (Arrow Binders T))) T
-    (case m ((OBinders.just c) (f c)) ((OBinders.nothing) none)))
-  (defn bindTS ((m T) (f (Arrow T OScopes.Maybe))) OScopes.Maybe
-    (if (isSome m) (f (get m)) OScopes.nothing))
-  (defn bindST ((m OScopes.Maybe) (f (Arrow Scopes T))) T
-    (case m ((OScopes.just c) (f c)) ((OScopes.nothing) none)))
-  (defn childCtxs ((G Globals) (n T) (t T) (g Ts) (hs Ts)) OScopes.Maybe
+  (defn bindTB ((m T) (f (Arrow T (Option.Maybe Binders)))) (Option.Maybe Binders)
+    (if (isSome m) (f (get m)) (Option.nothing Binders)))
+  (defn bindBT ((m (Option.Maybe Binders)) (f (Arrow Binders T))) T
+    (case m ((Option.just Binders c) (f c)) ((Option.nothing Binders) none)))
+  (defn bindTS ((m T) (f (Arrow T (Option.Maybe Scopes)))) (Option.Maybe Scopes)
+    (if (isSome m) (f (get m)) (Option.nothing Scopes)))
+  (defn bindST ((m (Option.Maybe Scopes)) (f (Arrow Scopes T))) T
+    (case m ((Option.just Scopes c) (f c)) ((Option.nothing Scopes) none)))
+  (defn childCtxs ((G Globals) (n T) (t T) (g Ts) (hs Ts)) (Option.Maybe Scopes)
     (let* ((l T (label t)) (ts Ts (mArgs t)) (k T (length ts)))
       (cond
         ((and (eq l 5) (eq k 1))
-         (OScopes.just (scopes (ScopeL.single (ctxPair (cons (mD t 0) g) (mapT weaken1 hs))))))
+         (Option.just Scopes
+           (scopes (Seq.single Scope (ctxPair (cons (mD t 0) g) (mapT weaken1 hs))))))
         ((and (eq l 8) (eq k 3))
          (bindTS (typeIn G n g (at ts 0))
            (lam ((c T))
-             (OScopes.just
+             (Option.just Scopes
                (scopes
-                 (ScopeF.l3 (ctxPair g hs) (ctxPair (cons c g) (mapT weaken1 hs))
+                 (Few.l3 Scope (ctxPair g hs) (ctxPair (cons c g) (mapT weaken1 hs))
                    (ctxPair g hs)))))))
         ((and (eq l 9) (eq k 3))
          (bindTS (typeIn G n g (at ts 0))
            (lam ((c T))
              (bindTS (bindO (typeIn G n g (at ts 2)) listPart)
                (lam ((a T))
-                 (OScopes.just
+                 (Option.just Scopes
                    (scopes
-                     (ScopeF.l3 (ctxPair g hs) (ctxPair (cons c (cons a g)) (mapT weaken2 hs))
+                     (Few.l3 Scope (ctxPair g hs) (ctxPair (cons c (cons a g)) (mapT weaken2 hs))
                        (ctxPair g hs)))))))))
         ((and (eq l 10) (eq k 2))
          (bindTS (bindO (typeIn G n g (at ts 1)) roseLabel)
            (lam ((a T))
-             (OScopes.just
+             (Option.just Scopes
                (scopes
-                 (ScopeF.l2 (ctxPair (cons (prod a (list (mD t 0))) g) (mapT weaken1 hs))
+                 (Few.l2 Scope (ctxPair (cons (prod a (list (mD t 0))) g) (mapT weaken1 hs))
                    (ctxPair g hs)))))))
-        (else (OScopes.just (scopes (ScopeAt.map (lam ((u T)) (ctxPair g hs)) ts)))))))
+        (else (Option.just Scopes (scopes (Map.map T Scope (lam ((u T)) (ctxPair g hs)) ts)))))))
   (defn sameCtx ((l T) (i T)) T
     (cond ((eq l 5) 0) ((or (eq l 8) (eq l 9)) (not (eq i 1))) ((eq l 10) (eq i 1)) (else 1)))
   ; the contexts of a node's children, each with the number of variables by which it extends the
   ; node's, as childCtxs computes them
-  (defn childBinders ((G Globals) (n T) (t T) (g Ts)) OBinders.Maybe
+  (defn childBinders ((G Globals) (n T) (t T) (g Ts)) (Option.Maybe Binders)
     (let* ((l T (label t)) (ts Ts (mArgs t)) (k T (length ts)))
       (cond
         ((and (eq l 5) (eq k 1))
-         (OBinders.just (binders (BinderL.single (ctxNum (cons (mD t 0) g) 1)))))
+         (Option.just Binders (binders (Seq.single Binder (ctxNum (cons (mD t 0) g) 1)))))
         ((and (eq l 8) (eq k 3))
          (bindTB (typeIn G n g (at ts 0))
            (lam ((c T))
-             (OBinders.just
-               (binders (BinderF.l3 (ctxNum g 0) (ctxNum (cons c g) 1) (ctxNum g 0)))))))
+             (Option.just Binders
+               (binders (Few.l3 Binder (ctxNum g 0) (ctxNum (cons c g) 1) (ctxNum g 0)))))))
         ((and (eq l 9) (eq k 3))
          (bindTB (typeIn G n g (at ts 0))
            (lam ((c T))
              (bindTB (bindO (typeIn G n g (at ts 2)) listPart)
                (lam ((a T))
-                 (OBinders.just
+                 (Option.just Binders
                    (binders
-                     (BinderF.l3 (ctxNum g 0) (ctxNum (cons c (cons a g)) 2) (ctxNum g 0)))))))))
+                     (Few.l3 Binder (ctxNum g 0) (ctxNum (cons c (cons a g)) 2) (ctxNum g 0)))))))))
         ((and (eq l 10) (eq k 2))
          (bindTB (bindO (typeIn G n g (at ts 1)) roseLabel)
            (lam ((a T))
-             (OBinders.just
-               (binders (BinderF.l2 (ctxNum (cons (prod a (list (mD t 0))) g) 1) (ctxNum g 0)))))))
-        (else (OBinders.just (binders (BinderAt.map (lam ((u T)) (ctxNum g 0)) ts)))))))
+             (Option.just Binders
+               (binders
+                 (Few.l2 Binder (ctxNum (cons (prod a (list (mD t 0))) g) 1) (ctxNum g 0)))))))
+        (else (Option.just Binders (binders (Map.map T Binder (lam ((u T)) (ctxNum g 0)) ts)))))))
   ; the contexts in which a congruence rewrites a node's children by the derivations ds, each with
   ; the number of variables by which it extends the node's
-  (defn congBinders ((G Globals) (n T) (t T) (g Ts) (ds Ts)) OBinders.Maybe
+  (defn congBinders ((G Globals) (n T) (t T) (g Ts) (ds Ts)) (Option.Maybe Binders)
     (if (allT (lam ((i T)) (or (sameCtx (label t) i) (eq (label (at ds i)) 0))) (range (length ds)))
-      (OBinders.just (binders (BinderAt.map (lam ((u T)) (ctxNum g 0)) (mArgs t))))
+      (Option.just Binders (binders (Map.map T Binder (lam ((u T)) (ctxNum g 0)) (mArgs t))))
       (childBinders G n t g)))
 
   ; the rewritings of a term at its root by the rules of the language's equations, each by one
@@ -405,19 +383,19 @@
         (if (equal (mArg a0 0) (mArg a1 0)) (some (mArg a0 0)) none)
         none)))
   ; the images and bindings of optional values, as the base maps and binds optional trees
-  (defn mapLT ((f (Arrow LDefn T)) (m OLDefn.Maybe)) T
-    (case m ((OLDefn.just d) (some (f d))) ((OLDefn.nothing) none)))
-  (defn bindPT ((m OTPair.Maybe) (f (Arrow TPair T))) T
-    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) none)))
-  (defn bindHT ((m OThm.Maybe) (f (Arrow Thm T))) T
-    (case m ((OThm.just a) (f a)) ((OThm.nothing) none)))
+  (defn mapLT ((f (Arrow LDefn T)) (m (Option.Maybe LDefn))) T
+    (case m ((Option.just LDefn d) (some (f d))) ((Option.nothing LDefn) none)))
+  (defn bindPT ((m (Option.Maybe TPair)) (f (Arrow TPair T))) T
+    (case m ((Option.just TPair p) (f p)) ((Option.nothing TPair) none)))
+  (defn bindHT ((m (Option.Maybe Thm)) (f (Arrow Thm T))) T
+    (case m ((Option.just Thm a) (f a)) ((Option.nothing Thm) none)))
   (defn rootUnitEta ((G Globals) (n T) (g Ts) (t T)) T
     (if (equal (typeIn G n g t) (some one)) (some mStar) none))
   (defn rootDelta ((G Globals) (t T)) T
     (if (eq (label t) 11)
       (mapLT
         (lam ((df LDefn)) (subst (osubst (children (mD t 1)) (ldBody df)) (substList (mArgs t))))
-        (bindDL (ODefinition.nthOf (gDefs G) (mD t 0)) defLanguage))
+        (bindDL (Option.nthOf Definition (gDefs G) (mD t 0)) defLanguage))
       none))
   (defn rootNat ((G Globals) (rl T) (rd Ts) (t T)) T
     (let* ((a0 T (mArg t 0)) (a1 T (mArg t 1)) (a2 T (mArg t 2)))
@@ -480,9 +458,9 @@
         none)))
   (defn rootThm ((G Globals) (E (List Entry)) (n T) (g Ts) (rd Ts) (t T)) T
     (let* ((th Ts (children (at rd 1))) (sg Ts (children (at rd 2))) (fl T (at rd 3)))
-      (bindHT (bindEH (OEntry.nthOf E (at rd 0)) entryLanguage)
+      (bindHT (bindEH (Option.nthOf Entry E (at rd 0)) entryLanguage)
         (lam ((a Thm))
-          (bindPT (if (isEmpty (thHyps a)) (eqParts (thConcl a)) OTPair.nothing)
+          (bindPT (if (isEmpty (thHyps a)) (eqParts (thConcl a)) (Option.nothing TPair))
             (lam ((lr TPair))
               (if (and (instOk G n g a th sg) (equal t (instTerm th sg (if fl (p2 lr) (p1 lr)))))
                 (some (instTerm th sg (if fl (p1 lr) (p2 lr))))
@@ -564,7 +542,7 @@
     (bindBT (congBinders G n t g ds)
       (lam ((bxN Binders))
         (let* ((bx (List Binder) (bindersOf bxN)) (ta Ts (mArgs t)))
-          (if (and (eq (length ds) (length ta)) (eq (BinderL.length bx) (length ta)))
+          (if (and (eq (length ds) (length ta)) (eq (Seq.length Binder bx) (length ta)))
             (let s (Prod T Ts) (f bx k hs ta)
               (if (fst s) (some (node (label t) (cons (child t 0) (snd s)))) none))
             none)))))
@@ -584,22 +562,22 @@
      (phi T))
     T
     (let*
-      ((k T m) (ep OTPair.Maybe (eqParts phi)) (tt T (p1 (OTPair.fromMaybe pr0 ep)))
-       (uu T (p2 (OTPair.fromMaybe pr0 ep)))
+      ((k T m) (ep (Option.Maybe TPair) (eqParts phi)) (tt T (p1 (Option.fromMaybe TPair pr0 ep)))
+       (uu T (p2 (Option.fromMaybe TPair pr0 ep)))
        (d0 T (at rd 0))
        (d1 T (at rd 1)))
       (cond
         ((and (eq rl 18) (eq k 2))
-         (if (OTPair.isJust ep)
+         (if (Option.isJust TPair ep)
            (let* ((v T (c0 0 g 0 hs tt)) (w T (c1 0 g 0 hs uu)))
              (and (isSome v) (and (isSome w) (equal (get v) (get w)))))
            0))
         ((and (eq rl 19) (eq k 3))
-         (if (and (OTPair.isJust ep) (not (isEmpty g)))
+         (if (and (Option.isJust TPair ep) (not (isEmpty g)))
            (let*
              ((c T (at g 0)) (g1 Ts (tail g)) (s T (at rd 2)) (mC T (typeIn G n g tt))
-              (mH OTerms.Maybe (lowerHyps G n g1 hs)))
-             (if (and (isSome mC) (OTerms.isJust mH))
+              (mH (Option.Maybe Terms) (lowerHyps G n g1 hs)))
+             (if (and (isSome mC) (Option.isJust Terms mH))
                (let* ((C T (get mC)) (z T (mArr d0 (nil T) mStar)))
                  (if
                    (and (equal c nat)
@@ -616,12 +594,12 @@
                0))
            0))
         ((and (eq rl 20) (eq k 3))
-         (if (and (OTPair.isJust ep) (not (isEmpty g)))
+         (if (and (Option.isJust TPair ep) (not (isEmpty g)))
            (let*
              ((c T (at g 0)) (g1 Ts (tail g)) (s T (at rd 2)) (mC T (typeIn G n g tt))
               (ma T (listPart c))
-              (mH OTerms.Maybe (lowerHyps G n g1 hs)))
-             (if (and (isSome mC) (and (isSome ma) (OTerms.isJust mH)))
+              (mH (Option.Maybe Terms) (lowerHyps G n g1 hs)))
+             (if (and (isSome mC) (and (isSome ma) (Option.isJust Terms mH)))
                (let*
                  ((C T (get mC)) (a T (get ma)) (g2 Ts (cons c (cons a g1)))
                   (h2 Ts (mapT weaken2 (termsOr mH)))
@@ -648,25 +626,26 @@
         ((and (eq rl 24) (eq k 2))
          (if (and (isFormula G n g d0) (equal (c0 0 g 0 hs d0) (some phi))) (c1 1 g 0 hs d0) 0))
         ((and (eq rl 25) (eq k 2))
-         (if (OTPair.isJust ep)
+         (if (Option.isJust TPair ep)
            (if (and (isFormula G n g tt) (isFormula G n g uu))
              (if (c0 1 g 0 (append hs (single tt)) uu) (c1 1 g 0 (append hs (single uu)) tt) 0)
              0)
            0))
         ((and (eq rl 26) (eq k 1))
-         (if (OTPair.isJust ep)
-           (let mab OTPair.Maybe
-             (let ty T (typeIn G n g tt) (if (isSome ty) (expParts (get ty)) OTPair.nothing))
-             (if (OTPair.isJust mab)
-               (c0 1 (cons (p1 (OTPair.fromMaybe pr0 mab)) g) 0 (mapT weaken1 hs)
+         (if (Option.isJust TPair ep)
+           (let mab (Option.Maybe TPair)
+             (let ty T (typeIn G n g tt)
+               (if (isSome ty) (expParts (get ty)) (Option.nothing TPair)))
+             (if (Option.isJust TPair mab)
+               (c0 1 (cons (p1 (Option.fromMaybe TPair pr0 mab)) g) 0 (mapT weaken1 hs)
                  (mEq (app (weaken1 tt) (var 0)) (app (weaken1 uu) (var 0))))
                0))
            0))
         ((eq rl 27) 0)
         ((and (eq rl 28) (eq k 2))
          (if (not (isEmpty g))
-           (let* ((c T (at g 0)) (g1 Ts (tail g)) (mH OTerms.Maybe (lowerHyps G n g1 hs)))
-             (if (OTerms.isJust mH)
+           (let* ((c T (at g 0)) (g1 Ts (tail g)) (mH (Option.Maybe Terms) (lowerHyps G n g1 hs)))
+             (if (Option.isJust Terms mH)
                (if
                  (and (equal c nat)
                    (and (primIs G d0 zeroPrim) (and (primIs G d1 succPrim) (isFormula G n g phi))))
@@ -680,8 +659,8 @@
          (if (not (isEmpty g))
            (let*
              ((c T (at g 0)) (g1 Ts (tail g)) (ma T (listPart c))
-              (mH OTerms.Maybe (lowerHyps G n g1 hs)))
-             (if (and (isSome ma) (OTerms.isJust mH))
+              (mH (Option.Maybe Terms) (lowerHyps G n g1 hs)))
+             (if (and (isSome ma) (Option.isJust Terms mH))
                (let a T (get ma)
                  (if (and (primIs G d0 nilPrim) (and (primIs G d1 consPrim) (isFormula G n g phi)))
                    (if (c0 1 g1 0 (termsOr mH) (subst phi (instVar (mArr d0 (single a) mStar))))
@@ -695,10 +674,12 @@
         ((and (eq rl 34) (eq k 2))
          (if (not (isEmpty g))
            (let*
-             ((c T (at g 0)) (g1 Ts (tail g)) (mab OTPair.Maybe (coprodParts c))
-              (mH OTerms.Maybe (lowerHyps G n g1 hs)))
-             (if (and (OTPair.isJust mab) (OTerms.isJust mH))
-               (let* ((a T (p1 (OTPair.fromMaybe pr0 mab))) (b T (p2 (OTPair.fromMaybe pr0 mab))))
+             ((c T (at g 0)) (g1 Ts (tail g)) (mab (Option.Maybe TPair) (coprodParts c))
+              (mH (Option.Maybe Terms) (lowerHyps G n g1 hs)))
+             (if (and (Option.isJust TPair mab) (Option.isJust Terms mH))
+               (let*
+                 ((a T (p1 (Option.fromMaybe TPair pr0 mab)))
+                  (b T (p2 (Option.fromMaybe TPair pr0 mab))))
                  (if (and (primIs G d0 inlPrim) (and (primIs G d1 inrPrim) (isFormula G n g phi)))
                    (if (c0 1 (cons a g1) 0 hs (subst phi (atVar0 (mArr d0 (l2 a b) (var 0)))))
                      (c1 1 (cons b g1) 0 hs (subst phi (atVar0 (mArr d1 (l2 a b) (var 0)))))
@@ -708,10 +689,13 @@
            0))
         ((and (eq rl 35) (eq k 0)) (and (equal (nth g d0) (some cZero)) (isFormula G n g phi)))
         ((and (eq rl 36) (eq k 1))
-         (let* ((th Ts (children d1)) (mp OPrimitive.Maybe (OPrimitive.nthOf (gPrims G) d0)))
-           (if (and (not (isEmpty g)) (OPrimitive.isJust mp))
-             (let* ((c T (at g 0)) (g1 Ts (tail g)) (p Primitive (OPrimitive.fromMaybe prim0 mp)))
-               (if (and (isCoeqProj p) (OTerms.isJust (lowerHyps G n g1 hs)))
+         (let*
+           ((th Ts (children d1))
+            (mp (Option.Maybe Primitive) (Option.nthOf Primitive (gPrims G) d0)))
+           (if (and (not (isEmpty g)) (Option.isJust Primitive mp))
+             (let*
+               ((c T (at g 0)) (g1 Ts (tail g)) (p Primitive (Option.fromMaybe Primitive prim0 mp)))
+               (if (and (isCoeqProj p) (Option.isJust Terms (lowerHyps G n g1 hs)))
                  (if
                    (and (eq (length th) (prArity p))
                      (and (allT (isTy G n) th)
@@ -722,16 +706,17 @@
                  0))
              0)))
         ((and (eq rl 30) (eq k 0))
-         (if (OTPair.isJust ep)
-           (let mq OSequent.Maybe (compileEq G n g tt uu)
-             (if (OSequent.isJust mq) (certifies G E d0 (OSequent.fromMaybe seq0 mq)) 0))
+         (if (Option.isJust TPair ep)
+           (let mq (Option.Maybe Sequent) (compileEq G n g tt uu)
+             (if (Option.isJust Sequent mq) (certifies G E d0 (Option.fromMaybe Sequent seq0 mq))
+               0))
            0))
         ((and (eq rl 31) (eq k 0))
          (if (and (allT (isFormula G n g) hs) (isFormula G n g phi))
            (certifies G E d0 (thmSeq G (mkThm n (objs g) (terms hs) phi)))
            0))
         ((and (eq rl 32) (eq k 2))
-         (if (and (OTPair.isJust ep) (eq (length g) 1))
+         (if (and (Option.isJust TPair ep) (eq (length g) 1))
            (let* ((r T (at g 0)) (mC T (typeIn G n g tt)) (ma T (roseLabel r)))
              (if (and (isSome mC) (isSome ma))
                (let*
@@ -754,8 +739,8 @@
          (if (not (isEmpty g))
            (let*
              ((r T (at g 0)) (g1 Ts (tail g)) (ma T (roseLabel r))
-              (mH OTerms.Maybe (lowerHyps G n g1 hs)))
-             (if (and (isSome ma) (OTerms.isJust mH))
+              (mH (Option.Maybe Terms) (lowerHyps G n g1 hs)))
+             (if (and (isSome ma) (Option.isJust Terms mH))
                (let* ((a T (get ma)) (kc T (at rd 2)))
                  (if (and (rosePrimsOk G d0 d1 kc r a) (isFormula G n g phi))
                    (c0 1 (cons (list r) (cons a g1)) 0
@@ -779,9 +764,9 @@
     T
     (let*
       ((th Ts (children (at rd 1))) (sg Ts (children (at rd 2)))
-       (ma OThm.Maybe (thmAt E (at rd 0))))
-      (if (OThm.isJust ma)
-        (let a Thm (OThm.fromMaybe thm0 ma)
+       (ma (Option.Maybe Thm) (thmAt E (at rd 0))))
+      (if (Option.isJust Thm ma)
+        (let a Thm (Option.fromMaybe Thm thm0 ma)
           (if
             (and (instOk G n g a th sg)
               (and (equal phi (instTerm th sg (thConcl a))) (eq k (length (thHyps a)))))
@@ -838,7 +823,7 @@
         0)
       (anyDefs G
         (lam ((cds (List PDefn)))
-          (if (eq (gBase G) (OpSigs.length sig)) (primOk G (envOfDefs cds) p) 0)))))
+          (if (eq (gBase G) (Seq.length OpSig sig)) (primOk G (envOfDefs cds) p) 0)))))
   (defn objConfirms ((G Globals) (E (List Entry)) (m T) (b T) (c T)) T
     (if (isSome c)
       (if
@@ -849,9 +834,9 @@
         0)
       (anyDefs G
         (lam ((cds (List PDefn)))
-          (if (eq (gBase G) (OpSigs.length sig)) (objOk (envOfDefs cds) m b) 0)))))
+          (if (eq (gBase G) (Seq.length OpSig sig)) (objOk (envOfDefs cds) m b) 0)))))
   (defn ldChecks ((G Globals) (d LDefn)) T
-    (and (OPDefn.isJust (ldCompile G d)) (isTy G (ldArity d) (ldType d))))
+    (and (Option.isJust PDefn (ldCompile G d)) (isTy G (ldArity d) (ldType d))))
 
   ; declarations, and the state of a development
   (data Decl (declLang Thm T) (declComb Sequent T) (declDef LDefn) (declConst Primitive T)
@@ -860,39 +845,44 @@
     (declDesc T T T T))
   (data EntryList (entries & Entry))
   (data DevState (devState Globals EntryList))
-  (import (Option DevState) as ODevState)
+
   (defn stateOf ((G Globals) (E (List Entry))) DevState (devState G (entries E)))
   (defn withPrims ((G Globals) (ps (List Primitive))) Globals
     (globals (prims ps) (defs (gDefs G)) (gBase G)))
   (defn withDefs ((G Globals) (ds (List Definition))) Globals
     (globals (prims (gPrims G)) (defs ds) (gBase G)))
-  (defn push ((E (List Entry)) (e Entry)) (List Entry) (Entries.append E (Entries.single e)))
+  (defn push ((E (List Entry)) (e Entry)) (List Entry) (Seq.append Entry E (Seq.single Entry e)))
   (defn pushPrim ((ps (List Primitive)) (p Primitive)) (List Primitive)
-    (Prims.append ps (Prims.single p)))
+    (Seq.append Primitive ps (Seq.single Primitive p)))
   (defn pushDef ((ds (List Definition)) (d Definition)) (List Definition)
-    (Defs.append ds (Defs.single d)))
+    (Seq.append Definition ds (Seq.single Definition d)))
   (defn sortsArr ((G Globals) (m T) (f T)) T
     (anyDefs G
       (lam ((cds (List PDefn)))
         (equal (sortOf (thySig (ext cds)) (replicate m Sorts.obj) f) (some Sorts.arr)))))
 
   ; the bindings of optional values into optional states, as the base binds optional trees
-  (defn bindPD ((m OTPair.Maybe) (f (Arrow TPair ODevState.Maybe))) ODevState.Maybe
-    (case m ((OTPair.just p) (f p)) ((OTPair.nothing) ODevState.nothing)))
-  (defn bindRD ((m OPrimitive.Maybe) (f (Arrow Primitive ODevState.Maybe))) ODevState.Maybe
-    (case m ((OPrimitive.just p) (f p)) ((OPrimitive.nothing) ODevState.nothing)))
-  (defn bindHD ((m OThm.Maybe) (f (Arrow Thm ODevState.Maybe))) ODevState.Maybe
-    (case m ((OThm.just a) (f a)) ((OThm.nothing) ODevState.nothing)))
-  (defn bindTD ((m T) (f (Arrow T ODevState.Maybe))) ODevState.Maybe
-    (if (isSome m) (f (get m)) ODevState.nothing))
-  (defn bindSD ((m ODevState.Maybe) (f (Arrow DevState ODevState.Maybe))) ODevState.Maybe
-    (case m ((ODevState.just a) (f a)) ((ODevState.nothing) ODevState.nothing)))
+  (defn bindPD ((m (Option.Maybe TPair)) (f (Arrow TPair (Option.Maybe DevState))))
+    (Option.Maybe DevState)
+    (case m ((Option.just TPair p) (f p)) ((Option.nothing TPair) (Option.nothing DevState))))
+  (defn bindRD ((m (Option.Maybe Primitive)) (f (Arrow Primitive (Option.Maybe DevState))))
+    (Option.Maybe DevState)
+    (case m ((Option.just Primitive p) (f p))
+      ((Option.nothing Primitive) (Option.nothing DevState))))
+  (defn bindHD ((m (Option.Maybe Thm)) (f (Arrow Thm (Option.Maybe DevState))))
+    (Option.Maybe DevState)
+    (case m ((Option.just Thm a) (f a)) ((Option.nothing Thm) (Option.nothing DevState))))
+  (defn bindTD ((m T) (f (Arrow T (Option.Maybe DevState)))) (Option.Maybe DevState)
+    (if (isSome m) (f (get m)) (Option.nothing DevState)))
+  (defn bindSD ((m (Option.Maybe DevState)) (f (Arrow DevState (Option.Maybe DevState))))
+    (Option.Maybe DevState)
+    (case m ((Option.just DevState a) (f a)) ((Option.nothing DevState) (Option.nothing DevState))))
   (defn stConsts ((st DevState)) Globals (case st ((devState G E) G)))
   (defn stEntries ((st DevState)) (List Entry)
     (case st ((devState G E) (case E ((entries & xs) xs)))))
 
   ; the quotient of a type by a relation
-  (defn quotStep ((G Globals) (E (List Entry)) (n T) (A T) (R T)) ODevState.Maybe
+  (defn quotStep ((G Globals) (E (List Entry)) (n T) (A T) (R T)) (Option.Maybe DevState)
     (let AA Ts (l2 A A)
       (bindPD ((compile G n R) (ctxObj AA) (stdEnv AA))
         (lam ((rt TPair))
@@ -900,30 +890,30 @@
             ((f T (relL A (p1 rt))) (g T (relR A (p1 rt)))
              (q Primitive
                (primitive n (coeqProj f g) A
-                 (phOp (add (gBase G) (Defs.length (gDefs G))) (objVars n))))
+                 (phOp (add (gBase G) (Seq.length Definition (gDefs G))) (objVars n))))
              (G2 Globals
                (globals (prims (pushPrim (gPrims G) q))
                  (defs (pushDef (gDefs G) (defObj n (coeqz f g))))
                  (gBase G)))
-             (k T (Prims.length (gPrims G)))
+             (k T (Seq.length Primitive (gPrims G)))
              (rel Thm
                (mkThm n (objs AA) (terms (single R))
                  (mEq (mArr k (objVars n) (var 1)) (mArr k (objVars n) (var 0))))))
             (if
-              (and (eq (gBase G) (OpSigs.length sig))
+              (and (eq (gBase G) (Seq.length OpSig sig))
                 (and (isTy G n A)
                   (and (equal (p2 rt) omega)
                     (and (scoped n (prArrow q))
                       (and (isTy G2 n (prCod q))
                         (and (sortsArr G n (prArrow q)) (isFormula G2 n AA (thConcl rel))))))))
-              (ODevState.just (stateOf G2 (push E (entLang rel))))
-              ODevState.nothing))))))
+              (Option.just DevState (stateOf G2 (push E (entLang rel))))
+              (Option.nothing DevState)))))))
 
   ; the descent of a function through a quotient
-  (defn descStep ((G Globals) (E (List Entry)) (kq T) (C T) (h T) (jr T)) ODevState.Maybe
-    (bindRD (OPrimitive.nthOf (gPrims G) kq)
+  (defn descStep ((G Globals) (E (List Entry)) (kq T) (C T) (h T) (jr T)) (Option.Maybe DevState)
+    (bindRD (Option.nthOf Primitive (gPrims G) kq)
       (lam ((p Primitive))
-        (bindHD (bindEH (OEntry.nthOf E jr) entryLanguage)
+        (bindHD (bindEH (Option.nthOf Entry E jr) entryLanguage)
           (lam ((Th Thm))
             (bindTD (primRel p)
               (lam ((r T))
@@ -939,11 +929,11 @@
                                C))
                            (G2 Globals (withPrims G (pushPrim (gPrims G) dp)))
                            (dq T
-                             (mArr (Prims.length (gPrims G)) (objVars m)
+                             (mArr (Seq.length Primitive (gPrims G)) (objVars m)
                                (mArr kq (objVars m) (var 0))))
                            (cmp Thm (mkThm m (objs D) (terms (nil T)) (mEq dq h))))
                           (if
-                            (and (eq (gBase G) (OpSigs.length sig))
+                            (and (eq (gBase G) (Seq.length OpSig sig))
                               (and (equal (p2 HC) C)
                                 (and (isTy G m C)
                                   (and (eq (thArity Th) m)
@@ -951,42 +941,44 @@
                                       (and (equal (thConcl Th) (mEq (weaken1 h) h))
                                         (and
                                           (equal (rep ((compile G m R2) (ctxObj DD) (stdEnv DD)))
-                                            (rep (OTPair.just (pr r omega))))
+                                            (rep (Option.just TPair (pr r omega))))
                                           (and (scoped m (prArrow dp))
                                             (and (sortsArr G m (prArrow dp))
                                               (isFormula G2 m D (thConcl cmp)))))))))))
-                            (ODevState.just (stateOf G2 (push E (entLang cmp))))
-                            ODevState.nothing))
-                        ODevState.nothing)))))))))))
+                            (Option.just DevState (stateOf G2 (push E (entLang cmp))))
+                            (Option.nothing DevState)))
+                        (Option.nothing DevState))))))))))))
 
   ; the state after a declaration, where its proof proves it with the constants and the entries
   ; before it
-  (defn declStep ((G Globals) (E (List Entry)) (d Decl)) ODevState.Maybe
+  (defn declStep ((G Globals) (E (List Entry)) (d Decl)) (Option.Maybe DevState)
     (case d
       ((declLang a dv)
-       (if (thmChecks G E a dv) (ODevState.just (stateOf G (push E (entLang a))))
-         ODevState.nothing))
+       (if (thmChecks G E a dv) (Option.just DevState (stateOf G (push E (entLang a))))
+         (Option.nothing DevState)))
       ((declComb s c)
-       (if (certifies G E c s) (ODevState.just (stateOf G (push E (entComb s)))) ODevState.nothing))
+       (if (certifies G E c s) (Option.just DevState (stateOf G (push E (entComb s))))
+         (Option.nothing DevState)))
       ((declDef df)
        (if (ldChecks G df)
-         (ODevState.just (stateOf (withDefs G (pushDef (gDefs G) (defLang df))) E))
-         ODevState.nothing))
+         (Option.just DevState (stateOf (withDefs G (pushDef (gDefs G) (defLang df))) E))
+         (Option.nothing DevState)))
       ((declConst p c)
-       (if (primConfirms G E p c) (ODevState.just (stateOf (withPrims G (pushPrim (gPrims G) p)) E))
-         ODevState.nothing))
+       (if (primConfirms G E p c)
+         (Option.just DevState (stateOf (withPrims G (pushPrim (gPrims G) p)) E))
+         (Option.nothing DevState)))
       ((declObj m b c)
        (if (objConfirms G E m b c)
-         (ODevState.just (stateOf (withDefs G (pushDef (gDefs G) (defObj m b))) E))
-         ODevState.nothing))
+         (Option.just DevState (stateOf (withDefs G (pushDef (gDefs G) (defObj m b))) E))
+         (Option.nothing DevState)))
       ((declQuot m A R) (quotStep G E m A R))
       ((declDesc kq C h jr) (descStep G E kq C h jr))))
 
   ; the state after a development, each declaration proved with those before it
-  (import (Seq Decl) as Decls)
-  (defn checkDev ((G Globals) (E (List Entry)) (ds (List Decl))) ODevState.Maybe
-    (foldr Decl ODevState.Maybe
-      (lam ((d Decl) (st ODevState.Maybe))
+
+  (defn checkDev ((G Globals) (E (List Entry)) (ds (List Decl))) (Option.Maybe DevState)
+    (foldr Decl (Option.Maybe DevState)
+      (lam ((d Decl) (st (Option.Maybe DevState)))
         (bindSD st (lam ((s DevState)) (declStep (stConsts s) (stEntries s) d))))
-      (ODevState.just (stateOf G E))
-      (Decls.reverse ds))))
+      (Option.just DevState (stateOf G E))
+      (Seq.reverse Decl ds))))

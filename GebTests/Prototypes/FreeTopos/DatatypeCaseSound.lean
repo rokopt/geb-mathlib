@@ -510,8 +510,8 @@ def lensEqual (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let Γ := [list treeTy, T.envTy]
     let fm ← forcedMapOf K Γ (v 0)
     let srs ← typingMapOf K T Γ (v 1) (v 0)
-    let lenB (xs : Term) : Term := pc P "Datatype/Txs.length" [xs]
-    let lenS (xs : Term) : Term := pc P "Typing/SRs.length" [xs]
+    let lenB (xs : Term) : Term := pc P "(Seq.length Typing.Tx)" [xs]
+    let lenS (xs : Term) : Term := pc P (srSeq "length") [xs]
     let notLt (a b : Term) : Term := notTest o (ltL a b)
     let φ := Internal.Logic.conj o (notLt (lenB fm) (lenS srs)) (notLt (lenS srs) (lenB fm))
     -- a false comparison's negation
@@ -600,7 +600,7 @@ def sameAllHead (P : Prog) (S : Defs) : Step :=
     let Γ := [list treeTy, treeTy]
     let sameD := Internal.NormRule.delta (P.idx "Typing.sameAll")
     let φ := Internal.Logic.imp o (truth o (pc P "Prelude.isSome" [pc P "Typing.sameAll"
-      [consT treeTy (pc P "Typing/OTy.just" [v 1]) (v 0)]]))
+      [consT treeTy (pc P "(Option.just Typing.Ty)" [v 1]) (v 0)]]))
       (presentAt P S (v 1) (v 0))
     -- the hypothesis with the agreement unfolded, the type equal to itself
     let unfolded (k : ℕ → Deducer) : Deducer := fun Γ Φ ψ ↦
@@ -696,8 +696,8 @@ def clauseTools (W : KwKit) (synDef : String) (specs metas srs t : List Tree →
   let byLast : Deducer := fun Γ Φ ψ ↦ K.byHyp (Φ.length - 1) Γ Φ ψ
   let rebSR : List Internal.NormRule :=
     [.thm (ix "rebT") [srTy], .thm (ix "rebL") [srTy, list srTy]]
-  let lenT (xs : Term) : Term := pc P "Typing/Txs.length" [xs]
-  let lenS (xs : Term) : Term := pc P "Typing/SRs.length" [xs]
+  let lenT (xs : Term) : Term := pc P "(Seq.length Typing.Tx)" [xs]
+  let lenS (xs : Term) : Term := pc P (srSeq "length") [xs]
   let labT' (Γ : List Tree) : Term := labT (t Γ)
   let ms (Γ : List Tree) : Term := pc P "Typing.envMs" [W.qv 4 Γ]
   let coveredT (Γ : List Tree) : Term :=
@@ -958,7 +958,7 @@ def caseCore (P : Prog) (S : Defs) (T : Defs3) : Step :=
       let specs (Γ : List Tree) : Term := Term.snd (pc P "Typing.markerCtors"
         [pc P "Typing.envMs" [W.qv 4 Γ], atPos 0 Γ])
       let bodies (Γ : List Tree) : Term := (forcedMapOf K Γ (atPos 3 Γ)).getD Term.star
-      let srs (Γ : List Tree) : Term := pc P "Typing/SRs.drop" [leafT (numeral 3), rs Γ]
+      let srs (Γ : List Tree) : Term := pc P (srSeq "drop") [leafT (numeral 3), rs Γ]
       let quoteT (Γ : List Tree) : Term := pc P "Eval.valQuote" [t Γ]
       -- the member's quotation related at the tree type, the scrutinee's entry's type
       let relQ : Deducer := linkK K "caseCore: the quotation related" <|
@@ -1273,7 +1273,7 @@ def metasShapedAt (shape : Prog → Term) (P : Prog) (S : Defs) : Term :=
   let M := mtxTy P
   let ms := foldrT treeTy (list M) (Term.lam treeTy (Term.lam (list M)
     (consT M (Term.app (v 3) (v 1)) (v 0)))) (nilT M) (v 0)
-  let aj := pc P "Datatype/OTx.allJust" [ms]
+  let aj := pc P "(Option.allJust Typing.Tx)" [ms]
   Internal.Logic.imp o (metaEachAt P (shape P) (v 1)) (Internal.Logic.imp o (truth o (Term.fst aj))
     (Internal.Logic.conj o (S.allL (Term.lam treeTy (len2 P)) (v 0))
       (S.allL (shape P) (Term.snd aj))))
@@ -1428,7 +1428,7 @@ def metaStepOk (P : Prog) (S : Defs) (T : Defs3) : Step :=
 application to the empty list. -/
 def revFun (K : Kit) : Option Term := do
   let (nf, _) ← evalRw K.G K.E (K.rules []) .full [list treeTy] []
-    (pc K.P "Datatype/Txs.reverse" [v 0])
+    (pc K.P "(Seq.reverse Typing.Tx)" [v 0])
   match nf.label, nf.children with
   | .app, [g, n] => if n == nilT treeTy then some g else none
   | _, _ => none
@@ -1455,13 +1455,13 @@ def lastRevφ (P : Prog) (g : Term) : Term :=
   let z := leafT (numeral 0)
   Internal.Logic.all P.o (list treeTy) (Term.lam (list treeTy) (Term.eq
     (nthT P (revT g (v 1) (v 0)) z)
-    (nthT P (consT treeTy (nthT P (v 0) z) (v 1)) (pc P "Datatype/Txs.length" [v 1]))))
+    (nthT P (consT treeTy (nthT P (v 0) z) (v 1)) (pc P "(Seq.length Typing.Tx)" [v 1]))))
 
 /-- The statement of a property p of trees holding at each element of a list v0, given that it
 holds at each element but the last ({lit}`dropLast`) and at the last. -/
 def dropLastAllThm (P : Prog) (S : Defs) (p : Term) : Internal.Thm :=
   let last := nthT P (v 0) (apps ((primT Kernel.Prim.sub).getD Term.star)
-    [pc P "Datatype/Txs.length" [v 0], leafT (numeral 1)])
+    [pc P "(Seq.length Typing.Tx)" [v 0], leafT (numeral 1)])
   ⟨0, [list treeTy], [S.allL p (pc P "Datatype.dropLast" [v 0]),
     Internal.instTerm [] [last] (Term.app p (v 0))], S.allL p (v 0)⟩
 
@@ -1518,7 +1518,7 @@ def dropLastDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
   -- the kit with lists' lengths kept folded
   let kitL (ix : String → ℕ) (E : Array Internal.Entry) : Kit :=
     let K := kit ix E
-    { K with P := { K.P with folded := K.P.folded ++ ["Datatype/Txs.length"] } }
+    { K with P := { K.P with folded := K.P.folded ++ ["(Seq.length Typing.Tx)"] } }
   let anyHyp (K : Kit) : Deducer := fun Γ Φ ψ ↦
     (List.range Φ.length).reverse.findSome? fun h ↦ K.byHyp h Γ Φ ψ
   let conjs (K : Kit) : ℕ → Deducer := fun n ↦ n.rec (anyHyp K) fun _ rec Γ Φ ψ ↦
@@ -1573,7 +1573,7 @@ def dropLastDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
       -- a list's length the leaf of its label, in the normal form of the numerals' regime: by
       -- induction, each case by normalization
       let rs := arithR P ++ [.thm (ix "addOneB") []]
-      let ln := pc P "Datatype/Txs.length" [v 0]
+      let ln := pc P "(Seq.length Typing.Tx)" [v 0]
       let nfE (t : Term) : Term :=
         ((Internal.evalC P.G E 0 rs 4096 .full [list treeTy] [] t).map fun (z, _, _) ↦ z).getD t
       let a : Internal.Thm := ⟨0, [list treeTy], [], Term.eq (nfE (leafT (call D.lab [] [ln])))
@@ -1615,7 +1615,7 @@ def dropLastDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
         dAllI L (fun Γ Φ ψ ↦
           dCut (Φ.getD 0 Term.star) (nd (.hyp 0)) (K.allEΓ (fun Γ ↦ consT treeTy (atPos 0 Γ)
             (atPos 2 Γ)) <| fun Γ Φ ψ ↦
-              let rs := K.rules Φ ++ ["Datatype.nthTx", "Datatype/Txs.length"].map
+              let rs := K.rules Φ ++ ["Datatype.nthTx", "(Seq.length Typing.Tx)"].map
                 fun nm ↦ Internal.NormRule.delta (K.P.idx nm)
               dRwHyp (evalRw K.G K.E rs .full) (Φ.length - 1) (dRwBy (evalRw K.G K.E rs .full)
                 dHyp) Γ Φ ψ) Γ Φ ψ)
@@ -1674,7 +1674,7 @@ def dropLastDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
         (linkK K "dropLastAll: the reversal empty" (conjsR 2))
         (normVarEqs (conjsR 3)) Γ Φ ψ
       let cons₀ : Deducer :=
-        K.cutThm "revAll" (fun Γ ↦ [pc K.P "Datatype/Txs.tail" [Y Γ]]) <|
+        K.cutThm "revAll" (fun Γ ↦ [pc K.P "(Seq.tail Typing.Tx)" [Y Γ]]) <|
           K.allEΓ (fun _ ↦ nilT treeTy) <| K.impE (linkK K "dropLastAll: the first reversal"
             (byHypR 0)) <| K.conjE <|
           K.cutThm "lastRev" (fun Γ ↦ [atPos 2 Γ]) <| K.allEΓ one <| fun Γ Φ ψ ↦ do
@@ -1683,7 +1683,7 @@ def dropLastDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
             dCut φY dY finish Γ Φ ψ
       -- the last element's index, the predecessor of the list's length, the rest's length,
       -- in the folded program without lemmas, the rest's length's label generalized
-      let ln (x : Term) : Term := pc K.P "Datatype/Txs.length" [x]
+      let ln (x : Term) : Term := pc K.P "(Seq.length Typing.Tx)" [x]
       -- the last element's index, the predecessor of the list's length, the rest's length, as
       -- bitstrings, by rewriting in the numerals' regime
       let lastIx : Deducer := fun Γ Φ ψ ↦ do
@@ -1768,7 +1768,7 @@ def partsOkWith (name stepLemma shapedLemma : String) (entry : Prog → Term) (c
     let M := mtxTy P
     -- the metadata of the clauses xs, all present ({lit}`OTx.allJust`), as metasShaped states it
     let ajOf (xs : List Tree → Term) (Γ : List Tree) : Term :=
-      pc P "Datatype/OTx.allJust" [foldrT treeTy (list M) (Term.lam treeTy (Term.lam (list M)
+      pc P "(Option.allJust Typing.Tx)" [foldrT treeTy (list M) (Term.lam treeTy (Term.lam (list M)
         (consT M (Term.app (sh 2 (fAt Γ)) (v 1)) (v 0)))) (nilT M) (xs Γ)]
     -- the metadata over the clauses xs: present, decided; their function's hypothesis, the
     -- hypothesis iEach; k at the clauses' lengths' and the shapes' hypotheses
@@ -1789,7 +1789,7 @@ def partsOkWith (name stepLemma shapedLemma : String) (entry : Prog → Term) (c
           (linkK K "partsOk: the bodies" K.byNorm)
     -- the clauses' tests as the parts read them: the last clause, whether it is an else
     -- clause, of a list, two elements and the keyword else at its head
-    let lenT (x : Term) : Term := pc P "Datatype/Txs.length" [x]
+    let lenT (x : Term) : Term := pc P "(Seq.length Typing.Tx)" [x]
     let lastC (Γ : List Tree) : Term := pc P "Datatype.nthTx" [atPos 2 Γ,
       apps ((primT Kernel.Prim.sub).getD Term.star) [lenT (atPos 2 Γ), leafT (numeral 1)]]
     let isList (Γ : List Tree) : Term := pc P "Datatype.isListTx" [lastC Γ]
@@ -1843,7 +1843,9 @@ def rebXR (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let some elemTy := Internal.typeIn K.G 0 [treeTy]
       (Term.app (Term.snd (T.foldAt 0 [] (v 0))) Term.star) | none
     let lt := list elemTy
-    let (tl, _) ← evalRw K.G K.E (K.rules []) .full [lt] [] (pc K.P "Datatype/XRs.tail" [v 0])
+    let tail :=
+      "(Seq.tail (Prod Typing.Tx (Arrow (List Datatype.Decl) 24:(Option.Maybe Typing.Tx))))"
+    let (tl, _) ← evalRw K.G K.E (K.rules []) .full [lt] [] (pc K.P tail [v 0])
     let some f := (match tl.label, tl.children with
         | .snd, [f] => some f
         | _, _ => none) | none

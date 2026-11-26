@@ -267,7 +267,7 @@ def checkStepAt (P : Prog) (E r f : Term) : Term :=
   pc P "Typing.checkStep" [Term.pair E r, f]
 
 /-- The typing's state of an environment without a rejection. -/
-def checkOk (P : Prog) (E : Term) : Term := Term.pair E (pc P "Typing/OName.nothing" [])
+def checkOk (P : Prog) (E : Term) : Term := Term.pair E (pc P "(Option.nothing Typing.Name)" [])
 
 /-- The typing's run from a state with a rejection leaves the state, at any rejection: by
 induction on the forms; at a construction the rejection's test decided and the head a template's
@@ -312,8 +312,8 @@ def checkDef (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let step := checkStepAt P Ev r (defForm P n x)
     let isSome (t : Term) : Term := pc P "Prelude.isSome" [t]
     let syn := pc P "Typing.synIn" [Ev, nilT treeTy, x]
-    let after := checkOk P (pc P "Typing.withDefs" [Ev, pc P "Typing/Abbrs.append"
-      [pc P "Typing.envDefs" [Ev], pc P "Typing/Abbrs.single"
+    let after := checkOk P (pc P "Typing.withDefs" [Ev, pc P "(Seq.append Typing.Abbr)"
+      [pc P "Typing.envDefs" [Ev], pc P "(Seq.single Typing.Abbr)"
         [pc P "Typing.abbr" [pc P "Typing.atomName" [n], pc P "Prelude.get" [syn]]]]])
     let a : Internal.Thm := ⟨0, Γ, [notTest P.o (isSome r), notTest P.o (isSome (Term.snd step))],
       Internal.Logic.conj P.o (truth P.o (isSome syn)) (Term.eq step after)⟩
@@ -375,8 +375,8 @@ def checkDefnum (P : Prog) (S : Defs) (T : Defs3) : Step :=
   let nm (n : Term) : Term := pc P "Typing.atomName" [n]
   checkAbbrev P S T "checkDefnum" "Reader.kwDefnum" ["Reader.kwDef", "Reader.kwDeftype"]
     (fun _ n _ ↦ pc P "Prelude.isSome" [pc P "Reader.numeral" [call D.children [] [nm n]]]) false
-    (fun Ev n _ ↦ pc P "Typing.withNums" [Ev, pc P "Typing/Names.append"
-      [pc P "Typing.envNums" [Ev], pc P "Typing/Names.single" [nm n]]])
+    (fun Ev n _ ↦ pc P "Typing.withNums" [Ev, pc P "(Seq.append Typing.Name)"
+      [pc P "Typing.envNums" [Ev], pc P "(Seq.single Typing.Name)" [nm n]]])
 
 /-- The development of the typing's steps at a program's forms. -/
 def programCheckDev (P : Prog) (S : Defs) (T : Defs3) : List Step :=
@@ -457,7 +457,8 @@ name's abbreviation of the body, its abbreviations expanded, after the declarati
 before the forms written. -/
 def xpDeftype (P : Prog) (S : Defs) : Step :=
   xpThree P S "xpDeftype" "Reader.kwDeftype" (xpData ++ ["Reader.kwDef"]) none
-    (fun dv out h n x ↦ xpState (pc P "Datatype/Decls.append" [dv, pc P "Datatype/Decls.single"
+    (fun dv out h n x ↦ xpState (pc P "(Seq.append Datatype.Decl)" [dv,
+      pc P "(Seq.single Datatype.Decl)"
         [pc P "Datatype.aliasD" [pc P "Datatype.atomName" [n],
           pc P "Datatype.expandAliases" [dv, x]]]])
       (consT treeTy (listNode [h, n, x]) out))
@@ -671,7 +672,7 @@ def revRunAppend (P : Prog) (S : Defs) : Step :=
     pure (⟨0, [Ls], [], φ⟩, nd (.listIndHyp 0 1) [d₀, d₁]))
 
 /-- The reversal of a list of forms. -/
-def reverseT (P : Prog) (xs : Term) : Term := pc P "Datatype/Txs.reverse" [xs]
+def reverseT (P : Prog) (xs : Term) : Term := pc P "(Seq.reverse Typing.Tx)" [xs]
 
 /-- The reversal of a list with a form after it is the form before the list's reversal
 ({name}`revRunAppend`). In the context of the list and the form. -/
@@ -955,7 +956,7 @@ def lookupT (P : Prog) (x ds : Term) : Term := pc P "Typing.lookupName" [x, ds]
 
 /-- The definitions' types with a name's type after them. -/
 def declareT (P : Prog) (ds x A : Term) : Term :=
-  pc P "Typing/Abbrs.append" [ds, pc P "Typing/Abbrs.single" [pc P "Typing.abbr" [x, A]]]
+  pc P "(Seq.append Typing.Abbr)" [ds, pc P "(Seq.single Typing.Abbr)" [pc P "Typing.abbr" [x, A]]]
 
 /-- A name with no type among definitions' types has, among them with its type after them, that
 type: by induction on the types; at a construction the head is not the name's, which would give
@@ -972,7 +973,7 @@ def lookupAppendNew (P : Prog) (S : Defs) : Step :=
     let φ := Internal.Logic.all o treeTy (Term.lam treeTy (Internal.Logic.all o treeTy
       (Term.lam treeTy (Internal.Logic.imp o (notTest o (isSome (lookupT P (v 1) (v 2))))
         (Term.eq (lookupT P (v 1) (declareT P (v 2) (v 1) (v 0)))
-          (pc P "Typing/OTy.just" [v 0]))))))
+          (pc P "(Option.just Typing.Ty)" [v 0]))))))
     let at_ (j : ℕ) (Γ : List Tree) : Term := v (Γ.length - 1 - j)
     let base : Deducer := dAllI L <| dAllI L <| dImpI L <|
       K.cutThm "equalRefl" (fun Γ ↦ [at_ 0 Γ]) <|
@@ -1639,11 +1640,11 @@ def xpDataDecl (P : Prog) (S : Defs) : Step :=
     let step := pc P "Datatype.xpStep" [xpState dv out, e]
     let dd := pc P "Datatype.dataDecl" [e]
     let (ds, forms) := (Term.fst (Term.snd dd), Term.snd (Term.snd dd))
-    let written := pc P "Datatype/Txs.append"
-      [consT treeTy (pc P "Typing.tData" [nth 1]) (pc P "Datatype/Txs.tail" [forms]),
-        pc P "Datatype/Txs.single" [pc P "Datatype.marker" [dv, nth 1, ds]]]
-    let after := xpState (pc P "Datatype/Decls.append" [dv, ds])
-      (pc P "Datatype/Txs.append" [pc P "Datatype/Txs.reverse" [written], out])
+    let written := pc P "(Seq.append Typing.Tx)"
+      [consT treeTy (pc P "Typing.tData" [nth 1]) (pc P "(Seq.tail Typing.Tx)" [forms]),
+        pc P "(Seq.single Typing.Tx)" [pc P "Datatype.marker" [dv, nth 1, ds]]]
+    let after := xpState (pc P "(Seq.append Datatype.Decl)" [dv, ds])
+      (pc P "(Seq.append Typing.Tx)" [pc P "(Seq.reverse Typing.Tx)" [written], out])
     let a : Internal.Thm := ⟨0, Γ,
       [truth P.o (named "Datatype.kwData"), truth P.o (Term.fst step)],
       Internal.Logic.conj P.o (truth P.o (Term.fst dd)) (Term.eq step after)⟩
@@ -1663,8 +1664,8 @@ def checkData (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let Γ := [treeTy, treeTy, T.envTy]
     let (d, r, Ev) := (v 0, v 1, v 2)
     let step := checkStepAt P Ev r (pc P "Typing.tData" [d])
-    let after := checkOk P (pc P "Typing.withNoms" [Ev, pc P "Typing/Names.append"
-      [pc P "Typing.envNoms" [Ev], pc P "Typing/Names.single" [pc P "Typing.atomName" [d]]]])
+    let after := checkOk P (pc P "Typing.withNoms" [Ev, pc P "(Seq.append Typing.Name)"
+      [pc P "Typing.envNoms" [Ev], pc P "(Seq.single Typing.Name)" [pc P "Typing.atomName" [d]]]])
     let a : Internal.Thm := ⟨0, Γ, [notTest P.o (pc P "Prelude.isSome" [r])],
       Term.eq step after⟩
     let some d := decideEach K Γ.length

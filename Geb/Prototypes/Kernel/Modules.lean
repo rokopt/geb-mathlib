@@ -901,11 +901,15 @@ def diagnose (text : List Char) : Option String :=
     | .error msg => some msg
     | .ok fs => diagnoseForms (dropGeneric fs)
 
-/-- Apply the last definition of a program, of type {lit}`T → T`, to an input tree. -/
-def runMain (text : List Char) (input : Tree) : Option Tree := do
+/-- Load the last definition of a source program for application to trees. -/
+def loadMain (text : List Char) : Option (Tree → Option Tree) := do
   let ds ← readProgram text
   let G ← load (ds.map Prod.snd)
-  (← G.getLast?).apply input
+  return (← G.getLast?).apply
+
+/-- Apply the last definition of a program, of type {lit}`T → T`, to an input tree. -/
+def runMain (text : List Char) (input : Tree) : Option Tree :=
+  (loadMain text).bind (· input)
 
 end Geb.Kernel
 

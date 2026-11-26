@@ -85,12 +85,16 @@ def unbundle (t : Tree) : Option (List (List Char × Tree)) :=
     else none
   | _, _ => none
 
-/-- Apply a bundle's named definition, of type {lit}`T → T`, to an input tree. -/
-def runEntry (t : Tree) (name : List Char) (input : Tree) : Option Tree := do
+/-- Look up definitions by name in a checked bundle, sharing the loaded environment. -/
+def loadEntries (t : Tree) : Option (List Char → Option Glob) := do
   let ds ← unbundle t
   let G ← load (ds.map Prod.snd)
-  let i ← (ds.map Prod.fst).idxOf? name
-  (← G[i]?).apply input
+  let names := ds.map Prod.fst
+  return fun name ↦ (names.idxOf? name).bind (G[·]?)
+
+/-- Apply a bundle's named definition, of type {lit}`T → T`, to an input tree. -/
+def runEntry (t : Tree) (name : List Char) (input : Tree) : Option Tree := do
+  (← (← loadEntries t) name).apply input
 
 /-- The version of the image's framing and payload codec, independently of the kernel profile. -/
 def imageVersion : UInt8 := 2

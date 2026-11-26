@@ -34,8 +34,8 @@
   ; An equation proved, used as a rewriting of its left side to truth.
   (defn prove ((o T) (p Pv)) Deducer
     (lam ((g Ts) (hs Ts) (phi T))
-      (case (eqParts phi) ((OTPair.just lr) (p g hs (p1 lr) (p2 lr)))
-        ((OTPair.nothing)
+      (case (eqParts phi) ((Option.just TPair lr) (p g hs (p1 lr) (p2 lr)))
+        ((Option.nothing TPair)
          (mapO
            (lam ((d T))
              (dNode 22 (single (mEq phi (ttL o)))
@@ -204,12 +204,12 @@
             (mapO (lam ((d T)) (cut psi (from (at hs i) (dNode 8 (nil T) (nil T)) (hyp i)) d))
               (p g (append hs (single psi)) phi))))
         none)))
-  (import (Seq Deducer) as Deducers)
+
   (def noProof (lam ((g Ts) (hs Ts) (phi T)) none))
   (defn applyTheorem ((E (List Entry)) (j T) (th Ts) (sg Ts) (ps (List Deducer))) Deducer
     (lam ((g Ts) (hs Ts) (phi T))
-      (case (thmAt E j) ((OThm.nothing) none)
-        ((OThm.just a)
+      (case (thmAt E j) ((Option.nothing Thm) none)
+        ((Option.just Thm a)
          (case a
            ((mkThm n ctx hyps result)
             (case hyps
@@ -218,11 +218,11 @@
                  (and (eq n (length th))
                    (and (eq (length (case ctx ((objs & xs) xs))) (length sg))
                      (and (equal phi (instTerm th sg result))
-                       (eq (length fs) (Deducers.length ps)))))
+                       (eq (length fs) (Seq.length Deducer ps)))))
                  (mapO (lam ((ds T)) (rule j th sg (children ds)))
                    (allSomeT
                      (mapT
-                       (lam ((i T)) (Deducers.atOr noProof ps i g hs (instTerm th sg (at fs i))))
+                       (lam ((i T)) (Seq.atOr Deducer noProof ps i g hs (instTerm th sg (at fs i))))
                        (range (length fs)))))
                  none)))))))))
   ; The goal reduced to a depth by rules, and its normal form proved.
@@ -254,8 +254,8 @@
   (defn obtainTheorem ((E (List Entry)) (j T) (th Ts) (sg Ts) (ps (List Deducer)) (p Deducer))
     Deducer
     (lam ((g Ts) (hs Ts) (phi T))
-      (case (thmAt E j) ((OThm.nothing) none)
-        ((OThm.just a)
+      (case (thmAt E j) ((Option.nothing Thm) none)
+        ((Option.just Thm a)
          (case a
            ((mkThm n ctx hyps result)
             (let chi T (instTerm th sg result)

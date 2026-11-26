@@ -59,13 +59,6 @@
   (import Logic)
   (import Formula as F)
   (import Reader as Source)
-  (import (Seq LDefn) as LD)
-  (import (Seq OpSig) as OS)
-  (import (Few Primitive) as PF)
-  (import (Seq Primitive) as PrimL)
-  (import (Map LDefn Definition) as DL)
-  (import (Seq Decl) as Decls)
-  (import (Seq NormRule) as Rules)
 
   ; Exact form and atom tests: malformed input is rejected before any field is read.
   (defn word ((e T) (s T)) T (and (Source.isAtom e) (equal (Source.nameOf e) s)))
@@ -120,24 +113,29 @@
   (def kZero 6)
   (def kSucc 7)
   (defn primsFor ((v T)) (List Primitive)
-    (let six (List Primitive) (PF.l6 nilPrim consPrim lnodePrim inlPrim inrPrim casePrim)
-      (if (lt 3 v) (PrimL.append six (PF.l2 (primitive 0 zeroN one nat) (primitive 0 succ nat nat)))
+    (let six (List Primitive) (Few.l6 Primitive nilPrim consPrim lnodePrim inlPrim inrPrim casePrim)
+      (if (lt 3 v)
+        (Seq.append Primitive six
+          (Few.l2 Primitive (primitive 0 zeroN one nat) (primitive 0 succ nat nat)))
         six)))
   (defn globalsOf ((v T) (ds (List LDefn))) Globals
-    (globals (prims (primsFor v)) (defs (DL.map defLang (LD.append lib ds))) (OS.length sig)))
-  (defn connectivesAt ((defs Ts)) T (add (LD.length lib) (length defs)))
+    (globals (prims (primsFor v))
+      (defs (Map.map LDefn Definition defLang (Seq.append LDefn lib ds)))
+      (Seq.length OpSig sig)))
+  (defn connectivesAt ((defs Ts)) T (add (Seq.length LDefn lib) (length defs)))
   (defn connectivesOf ((v T) (o T)) (List LDefn)
     (cond ((lt 3 v) (connectivesAll o)) ((lt 2 v) (connectives o)) (else (nil LDefn))))
   (defn rulesFor ((v T) (o T) (j T)) (List Decl)
     (cond ((lt 3 v) (connectiveRulesAll o j)) ((lt 2 v) (connectiveRules o j)) (else (nil Decl))))
   (defn globalsFor ((v T) (ds (List LDefn))) Globals
-    (globalsOf v (LD.append ds (connectivesOf v (add (LD.length lib) (LD.length ds))))))
-  (def ruleCount (Decls.length (connectiveRules 0 0)))
-  (def ruleCountAll (Decls.length (connectiveRulesAll 0 0)))
+    (globalsOf v
+      (Seq.append LDefn ds (connectivesOf v (add (Seq.length LDefn lib) (Seq.length LDefn ds))))))
+  (def ruleCount (Seq.length Decl (connectiveRules 0 0)))
+  (def ruleCountAll (Seq.length Decl (connectiveRulesAll 0 0)))
   (defn entryBase ((v T)) T (cond ((lt 3 v) ruleCountAll) ((lt 2 v) ruleCount) (else 0)))
   ; The index of the first definition a development declares, after the connectives': a
   ; development that declares one is of version 4, whose connectives are all of them.
-  (defn declaredAt ((defs Ts)) T (add (connectivesAt defs) (LD.length (connectivesAll 0))))
+  (defn declaredAt ((defs Ts)) T (add (connectivesAt defs) (Seq.length LDefn (connectivesAll 0))))
   ; The rules of the reductions, unfolding the definitions below an index: in version 0, β and the
   ; components of pairs; in the later versions, also the folds of lists and rose trees at their
   ; constructions, the case analysis of a coproduct at its injections and the element of the
@@ -147,7 +145,8 @@
     (let unfold NRs
       (cons (nrBelow n (terms (nil T)))
         (if (lt 3 v)
-          (cons (nrRule 9 (terms (single kZero))) (Rules.single (nrRule 10 (terms (single kSucc)))))
+          (cons (nrRule 9 (terms (single kZero)))
+            (Seq.single NormRule (nrRule 10 (terms (single kSucc)))))
           (nil NormRule)))
       (cons (nrRule 3 (terms (nil T)))
         (cons (nrRule 4 (terms (nil T)))
@@ -233,8 +232,9 @@
         (range (length scope)))
       (bindO (Source.resolve (nil T) defs e (mapT (at scope) idxs))
         (lam ((kt T))
-          (case (term gt (mapT (lam ((i T)) (get (at kts i))) idxs) kt) ((OTPair.nothing) none)
-            ((OTPair.just p)
+          (case (term gt (mapT (lam ((i T)) (get (at kts i))) idxs) kt)
+            ((Option.nothing TPair) none)
+            ((Option.just TPair p)
              (some
                (if (eq (length idxs) (length scope)) (p2 p)
                  (rename (p2 p) (lam ((j T)) (at idxs j)))))))))))
@@ -276,8 +276,8 @@
     (bindO
       (if (Source.isAtom (at es 1)) (Source.lookupAbbrev (Source.nameOf (at es 1)) libTable) none)
       (lam ((j T))
-        (case (OLDefn.nthOf lib j) ((OLDefn.nothing) none)
-          ((OLDefn.just d)
+        (case (Option.nthOf LDefn lib j) ((Option.nothing LDefn) none)
+          ((Option.just LDefn d)
            (case d
              ((ldefn m ps a b)
               (case ps
@@ -290,7 +290,7 @@
                            (mapT (lam ((i T)) (arg (add (add 2 m) i))) (range (length xs)))))))
                    none))))))))))
   (deftype IR (Arrow Ts (Arrow Ts T)))
-  (import (Seq IR) as IRs)
+
   (def failIR (lam ((scope Ts) (kts Ts)) none))
   (defn map2 ((f (Arrow T (Arrow T T))) (a T) (b T)) T (bindO a (lam ((x T)) (mapO (f x) b))))
   ; A binder (x A) of an abstraction.
@@ -316,7 +316,7 @@
         ((and (lt 3 v) (equal n (quote (0 zero)))) (some (mArr kZero (nil T) mStar)))
         ((and (lt 4 v) (equal n (quote (0 false)))) (some (ffL (connectivesAt defs))))
         (else
-          (mapO (lam ((j T)) (call (add (LD.length lib) j) (nil T) (nil T)))
+          (mapO (lam ((j T)) (call (add (Seq.length LDefn lib) j) (nil T) (nil T)))
             (Source.indexOf n defs))))))
   ; The forms of the primitive arrows, each at its objects: the empty list, a head before a list,
   ; the node of a label and children, the injections and the case analysis of a coproduct.
@@ -397,7 +397,7 @@
     (let* ((es Ts (children nd)) (k T (length es)) (h T (at es 0)))
       (lam ((scope Ts) (kts Ts))
         (let*
-          ((kid (Arrow T IR) (lam ((i T)) (IRs.atOr failIR rs i)))
+          ((kid (Arrow T IR) (lam ((i T)) (Seq.atOr IR failIR rs i)))
            (arg (Arrow T T) (lam ((i T)) (kid i scope kts)))
            (ns Ts (mapT Source.nameOf (children (at es 2)))))
           (cond ((Source.isAtom nd) (iatom v defs (Source.nameOf nd) scope))
@@ -472,7 +472,7 @@
     (if (and (lt 4 v) internal)
       (bindO (rd e) (lam ((p T)) (if (equal (typeIn G n ctx p) (some omega)) (some p) none)))
       (readEqn G n ctx rd e)))
-  (import (Option Statement) as OSt)
+
   (defn binderOk ((v T) (defs Ts) (ovars Ts) (internal T) (b T)) T
     (and (Source.isList b)
       (and (eq (length (children b)) 2)
@@ -484,7 +484,7 @@
         (if internal (bindable v (child h 0)) (declared (child h 0))))))
   (defn readQuantified
     ((v T) (G Globals) (gt Ts) (defs Ts) (taken Ts) (ovars Ts) (internal T) (e T))
-    OSt.Maybe
+    (Option.Maybe Statement)
     (let*
       ((quant T (form e (quote (0 forall)) 3)) (bs Ts (if quant (children (child e 1)) (nil T)))
        (body T (if quant (child e 2) e))
@@ -511,19 +511,20 @@
              (allSomeT (mapT (lam ((h T)) (readFormula v internal G n ctx rd (child h 1))) hs)))
            (f T (readFormula v internal G n ctx rd concl)))
           (if (and (isSome hfs) (isSome f))
-            (OSt.just
+            (Option.just Statement
               (statement (node 0 ovars) (node 0 vars) (node 0 kts) (node 0 hnames)
                 (mkThm n (objs ctx) (terms (children (get hfs))) (get f))))
-            OSt.nothing))
-        OSt.nothing)))
-  (defn readStatement ((v T) (G Globals) (gt Ts) (defs Ts) (taken Ts) (e T)) OSt.Maybe
+            (Option.nothing Statement)))
+        (Option.nothing Statement))))
+  (defn readStatement ((v T) (G Globals) (gt Ts) (defs Ts) (taken Ts) (e T))
+    (Option.Maybe Statement)
     (if (and (lt 1 v) (form e (quote (0 internal)) 3))
       (let ovars Ts (mapT Source.nameOf (children (child e 1)))
         (if
           (and (Source.isList (child e 1))
             (and (allT (bindable v) (children (child e 1))) (distinctFrom taken ovars)))
           (readQuantified v G gt defs (append taken ovars) ovars 1 (child e 2))
-          OSt.nothing))
+          (Option.nothing Statement)))
       (readQuantified v G gt defs taken (nil T) 0 e)))
 
   ; Scripts. A script is read in the names of its goal's variables, with the kernel type of each
@@ -533,7 +534,7 @@
   ; the rules that unfold the definitions.
   (deftype Tac (Arrow Globals (Arrow (List Entry) (Arrow NRs Pv))))
   (deftype SR (Arrow Ts (Arrow Ts (Arrow Ts (Prod T Tac)))))
-  (import (Seq SR) as SRs)
+
   (def failTac (lam ((G Globals) (E (List Entry)) (base NRs) (g Ts) (hs Ts) (t T) (u T)) none))
   (def failSR (lam ((vars Ts) (kts Ts) (hyps Ts)) (pair 0 failTac)))
   ; A rule names a hypothesis, rewriting by it, or an earlier theorem, rewriting by the instances of
@@ -546,7 +547,7 @@
   (defn foldedId ((defs Ts) (a T)) T
     (cond
       ((Source.isAtom a)
-       (mapO (lam ((j T)) (add (LD.length lib) j)) (Source.indexOf (Source.nameOf a) defs)))
+       (mapO (lam ((j T)) (add (Seq.length LDefn lib) j)) (Source.indexOf (Source.nameOf a) defs)))
       ((isDeclaredRef a) (some (add (declaredAt defs) (child a 0))))
       ((and (form a (quote (0 lib)) 2) (Source.isAtom (child a 1)))
        (Source.lookupAbbrev (Source.nameOf (child a 1)) libTable))
@@ -592,11 +593,11 @@
   ; A rule (folded NAME ...) among them names the definitions kept folded, in place of those the
   ; rules given keep: the rule of the unfolding of the definitions below an index then unfolds
   ; every other.
-  (defn foldedOf ((named NRs)) OTerms.Maybe
-    (foldr NormRule OTerms.Maybe
-      (lam ((r NormRule) (acc OTerms.Maybe))
-        (case r ((nrBelow m exc) (if (eq m 0) (OTerms.just exc) acc)) (else acc)))
-      OTerms.nothing
+  (defn foldedOf ((named NRs)) (Option.Maybe Terms)
+    (foldr NormRule (Option.Maybe Terms)
+      (lam ((r NormRule) (acc (Option.Maybe Terms)))
+        (case r ((nrBelow m exc) (if (eq m 0) (Option.just Terms exc) acc)) (else acc)))
+      (Option.nothing Terms)
       named))
   (defn refold ((exc Terms) (r NormRule)) NormRule
     (case r ((nrBelow m old) (if (lt 0 m) (nrBelow m exc) r)) (else r)))
@@ -611,9 +612,9 @@
       (nil NormRule)
       given))
   (defn rulesIn ((E (List Entry)) (named NRs) (given NRs)) NRs
-    (Rules.append (prepareRules E named)
-      (case (foldedOf named) ((OTerms.nothing) given)
-        ((OTerms.just exc)
+    (Seq.append NormRule (prepareRules E named)
+      (case (foldedOf named) ((Option.nothing Terms) given)
+        ((Option.just Terms exc)
          (foldr NormRule NRs (lam ((r NormRule) (acc NRs)) (cons (refold exc r) acc)) (nil NormRule)
            given)))))
   (defn depthOf ((e T)) T
@@ -633,8 +634,8 @@
   (defn byInstance ((G Globals) (E (List Entry)) (n T) (j T) (th Ts) (sg Ts) (al Ts) (rs NRs) (m T))
     Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
-      (case (thmAt E j) ((OThm.nothing) none)
-        ((OThm.just b)
+      (case (thmAt E j) ((Option.nothing Thm) none)
+        ((Option.just Thm b)
          (bindPT (eqParts (thConcl b))
            (lam ((FH TPair))
              (let*
@@ -673,8 +674,8 @@
   ; objects and variables, applied to the goal's innermost variable.
   (defn byPointwise ((G Globals) (E (List Entry)) (n T) (j T) (rs NRs) (m T)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
-      (case (thmAt E j) ((OThm.nothing) none)
-        ((OThm.just b)
+      (case (thmAt E j) ((Option.nothing Thm) none)
+        ((Option.just Thm b)
          (byInstance G E n j (mapT x (range n))
            (mapT (lam ((i T)) (var (add i 1))) (range (length (thCtx b))))
            (single (var 0))
@@ -762,7 +763,7 @@
   ; The instances a script takes of a hypothesis that equates functions, ((NAME TERM ...) ...):
   ; each names the hypothesis's instance at its terms, one for each argument of the functions.
   (deftype Tss (List Ts))
-  (import (Seq Tss) as Kids)
+
   (def unnamed (node 0 (nil T)))
   (defn instancesOk ((rd (Arrow T T)) (e T)) T
     (and (Source.isList e)
@@ -784,8 +785,8 @@
   ; objects and at terms for its variables, applied to arguments.
   (defn withInstance ((E (List Entry)) (j T) (th Ts) (sg Ts) (al Ts) (p Pv)) Pv
     (lam ((g Ts) (hs Ts) (t T) (u T))
-      (case (thmAt E j) ((OThm.nothing) none)
-        ((OThm.just b)
+      (case (thmAt E j) ((Option.nothing Thm) none)
+        ((Option.just Thm b)
          (bindPT (eqParts (thConcl b))
            (lam ((FH TPair))
              (let chi T (mEq (apps (instTerm th sg (p1 FH)) al) (apps (instTerm th sg (p2 FH)) al))
@@ -924,7 +925,7 @@
     (let*
       ((es Ts (children nd)) (k T (length es)) (n T (length ovars)) (at1 T (at es 1))
        (at2 T (at es 2))
-       (childR (Arrow T SR) (lam ((i T)) (SRs.atOr failSR rs i)))
+       (childR (Arrow T SR) (lam ((i T)) (Seq.atOr SR failSR rs i)))
        (rd (Arrow T T) (lam ((e T)) (iterm v gt defs ovars e vars kts)))
        (fresh (Arrow Ts T) (lam ((xs Ts)) (distinctFrom (append vars (append hyps thms)) xs)))
        (hypAt (Arrow T T)
@@ -1017,7 +1018,7 @@
                            (allT (lam ((j T)) (fst (restAt j)))
                              (range (add (getD rounds 0) 1))))))))))
              (lam ((G Globals) (E (List Entry)) (base NRs))
-               (byTests G E n (add (LD.length lib) (getD fnI 0)) specs (getD lk 0) base
+               (byTests G E n (add (Seq.length LDefn lib) (getD fnI 0)) specs (getD lk 0) base
                  (lam ((j T)) ((snd (trueAt j)) G E base))
                  (lam ((j T)) ((snd (restAt j)) G E base))
                  (getD rounds 0))))))
@@ -1034,7 +1035,8 @@
              (lam ((G Globals) (E (List Entry)) (base NRs))
                (byMaskSubs G E (getD ab 0) (getD cs 0) base (getD rounds 0)
                  (lam ((extra NRs))
-                   ((snd (level (Rules.length extra))) G E (Rules.append extra base))))))))
+                   ((snd (level (Seq.length NormRule extra))) G E
+                    (Seq.append NormRule extra base))))))))
         ((headed nd (quote (0 auto-conditions)))
          (let lk T (lemmaOf eb thms at2)
            (pair
@@ -1072,7 +1074,7 @@
     (let*
       ((es Ts (children nd)) (k T (length es)) (n T (length ovars)) (at1 T (at es 1))
        (ns Ts (mapT Source.nameOf (children (at es 2))))
-       (childR (Arrow T SR) (lam ((i T)) (SRs.atOr failSR rs i)))
+       (childR (Arrow T SR) (lam ((i T)) (Seq.atOr SR failSR rs i)))
        (rd (Arrow T T) (lam ((e T)) (iterm v gt defs ovars e vars kts)))
        (rest Ts (drop 1 vars)))
       (cond
@@ -1232,7 +1234,7 @@
       ((es Ts (children nd)) (n T (length ovars)) (o T (connectivesAt defs)) (at1 T (at es 1))
        (at2 T (at es 2))
        (at3 T (at es 3))
-       (childR (Arrow T SR) (lam ((i T)) (SRs.atOr failSR rs i)))
+       (childR (Arrow T SR) (lam ((i T)) (Seq.atOr SR failSR rs i)))
        (rd (Arrow T T) (lam ((e T)) (iterm v gt defs ovars e vars kts)))
        (fresh (Arrow Ts T) (lam ((xs Ts)) (distinctFrom (append vars (append hyps thms)) xs)))
        (hypAt (Arrow T T)
@@ -1276,7 +1278,7 @@
                      (and (allT (instancesOk rd) kids) (and (fresh names) (fst r)))))))
              (lam ((G Globals) (E (List Entry)) (base NRs))
                (withChildHyps G E n base (getD (hypAt at2) 0) (range (length kids))
-                 (lam ((p T)) (Kids.atOr (nil Ts) args p))
+                 (lam ((p T)) (Seq.atOr Tss (nil Ts) args p))
                  (lam ((insts Ts))
                    (withWeakHyps G E n base insts (lam ((extra NRs)) ((snd r) G E base))
                      (getD (depthOf at1) 0))))))))
@@ -1357,7 +1359,7 @@
     (let*
       ((es Ts (children nd)) (k T (length es)) (n T (length ovars)) (at1 T (at es 1))
        (ns Ts (mapT Source.nameOf (children (at es 2))))
-       (childR (Arrow T SR) (lam ((i T)) (SRs.atOr failSR rs i)))
+       (childR (Arrow T SR) (lam ((i T)) (Seq.atOr SR failSR rs i)))
        (rulesAt (Arrow T NRs) (lam ((i T)) (rulesFrom eb defs ovars hyps thms (drop i es))))
        (rulesOkAt (Arrow T T) (lam ((i T)) (allT (ruleOk 2 defs ovars hyps thms) (drop i es))))
        (fresh (Arrow Ts (Arrow Ts T))
@@ -1468,7 +1470,7 @@
          (a T (at es 1))
          (b T (at es 2))
          (c T (at es 3))
-         (childR (Arrow T SR) (lam ((i T)) (SRs.atOr failSR rs i)))
+         (childR (Arrow T SR) (lam ((i T)) (Seq.atOr SR failSR rs i)))
          (atR (Arrow T (Prod T Tac)) (lam ((i T)) (childR i vars kts hs)))
          (rd (Arrow T T) (lam ((e T)) (iterm v gt defs ovars e vars kts)))
          (fresh (Arrow Ts T)
@@ -1639,7 +1641,7 @@
     SR
     (let*
       ((es Ts (children nd)) (k T (length es)) (n T (length ovars)) (at1 T (at es 1))
-       (childR (Arrow T SR) (lam ((i T)) (SRs.atOr failSR rs i))))
+       (childR (Arrow T SR) (lam ((i T)) (Seq.atOr SR failSR rs i))))
       (lam ((vars Ts) (kts Ts) (hyps Ts))
         (let*
           ((rulesAt (Arrow T NRs) (lam ((i T)) (rulesFrom eb defs ovars hyps thms (drop i es))))
@@ -1758,19 +1760,19 @@
   ; but this evaluation fails, a job reached the fuel boundary. No proof uses this result.
   (defn boundedEval
     ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T) (dp T) (g Ts) (hs Ts) (t T))
-    ONFR.Maybe
+    (Option.Maybe NFR)
     (firstR
       ((iter EVB (evalStepB G n (rootRewriteK G E n (indexRules E rs) (prepareHyps hs)))
          (lam ((js (List Job)))
-           (foldr Job (List ONFR.Maybe)
-             (lam ((j Job) (acc (List ONFR.Maybe))) (cons ONFR.nothing acc))
-             (nil ONFR.Maybe)
+           (foldr Job (List (Option.Maybe NFR))
+             (lam ((j Job) (acc (List (Option.Maybe NFR)))) (cons (Option.nothing NFR) acc))
+             (nil (Option.Maybe NFR))
              js))
-         fuel) (JobL.single (job dp (objs g) 0 (terms hs) t)))))
+         fuel) (Seq.single Job (job dp (objs g) 0 (terms hs) t)))))
   (defn exhausted ((G Globals) (E (List Entry)) (n T) (rs NRs) (fuel T) (dp T) (g Ts) (hs Ts) (t T))
     T
-    (and (ONFR.isJust (eval G E n rs fuel dp g hs t))
-      (not (ONFR.isJust (boundedEval G E n rs fuel dp g hs t)))))
+    (and (Option.isJust NFR (eval G E n rs fuel dp g hs t))
+      (not (Option.isJust NFR (boundedEval G E n rs fuel dp g hs t)))))
   ; A failed normalization or reduction reports an observed cutoff separately from unequal
   ; completed normal forms. Other steps keep their ordinary failure; exhaustion refutes no goal.
   (defn failureKind
@@ -1901,7 +1903,7 @@
             (else (opaqueOf (label nd) rs)))))
       a))
   (deftype Show (Arrow Ts T))
-  (import (Seq Show) as Shows)
+
   (def showNothing (lam ((scope Ts)) (opaqueOf 0 (nil T))))
   (defn libName ((j T)) T
     (foldr T T (lam ((p T) (acc T)) (if (eq (child p 1) j) (some (child p 0)) acc)) none libTable))
@@ -1927,7 +1929,7 @@
   ; the connectives, truth or an implication.
   (defn showCall ((defs Ts) (dn Ts) (o T) (j T) (tys Ts) (args Ts)) T
     (let*
-      ((nl T (LD.length lib)) (bare T (and (isEmpty tys) (isEmpty args)))
+      ((nl T (Seq.length LDefn lib)) (bare T (and (isEmpty tys) (isEmpty args)))
        (conn Ts
          (children
            (quote
@@ -1953,7 +1955,7 @@
     (lam ((scope Ts))
       (let*
         ((l T (label nd)) (k T (length (mArgs nd)))
-         (part (Arrow T Show) (lam ((i T)) (Shows.atOr showNothing rs (add i 1))))
+         (part (Arrow T Show) (lam ((i T)) (Seq.atOr Show showNothing rs (add i 1))))
          (sh (Arrow T T) (lam ((i T)) (part i scope)))
          (ty (Arrow T T) (showType ovars))
          (kw (Arrow T T) atomOf)
@@ -1998,7 +2000,7 @@
   ; proved with.
   (def displayRules
     (cons (nrRule 3 (terms (nil T)))
-      (cons (nrRule 4 (terms (nil T))) (Rules.single (nrRule 5 (terms (nil T)))))))
+      (cons (nrRule 4 (terms (nil T))) (Seq.single NormRule (nrRule 5 (terms (nil T)))))))
   (defn showGoal ((v T) (G Globals) (E (List Entry)) (defs Ts) (dn Ts) (ovars Ts) (ob T)) T
     (let*
       ((g Ts (children (mD ob 5))) (hs Ts (children (mD ob 6))) (n T (length g))
@@ -2008,8 +2010,8 @@
        (sh (Arrow T T)
          (lam ((w T))
            (showTerm defs dn ovars
-             (case (eval G E (length ovars) displayRules 4096 3 g hs w) ((ONFR.nothing) w)
-               ((ONFR.just r) (nfTerm r)))
+             (case (eval G E (length ovars) displayRules 4096 3 g hs w) ((Option.nothing NFR) w)
+               ((Option.just NFR r) (nfTerm r)))
              scope)))
        (concl T
          (if (and (lt 4 v) (equal (mD ob 8) (ttL (connectivesAt defs)))) (sh (mD ob 7))
@@ -2108,8 +2110,8 @@
           (and (not (isEmpty (children (child e 1))))
             (and (form (child e 3) (quote (0 by)) 2) (or (lt 0 v) (version0 defs e))))))
       (case (readStatement v G gt defs (append defs names) (child e 2))
-        ((OSt.nothing) (requestBad 2))
-        ((OSt.just st)
+        ((Option.nothing Statement) (requestBad 2))
+        ((Option.just Statement st)
          (case st
            ((statement os vs ks hs a)
             (let*
@@ -2166,8 +2168,8 @@
   ; A proof document's version and the forms of its theorems. From version 2 the forms
   ; (import PATH) and (program NAME), which the host resolves, are left out.
   (data Document (document T & T))
-  (import (Option Document) as ODoc)
-  (defn readDocument ((source T)) ODoc.Maybe
+
+  (defn readDocument ((source T)) (Option.Maybe Document)
     (let*
       ((parsed T (Source.readSExps (children source))) (root T (child (get parsed) 0))
        (v T (number (child root 1))))
@@ -2187,45 +2189,43 @@
                   (cons f acc)))
               (nil T)
               (drop 2 (children root))))
-          (if (isEmpty fs) ODoc.nothing (ODoc.just (document (get v) fs))))
-        ODoc.nothing)))
+          (if (isEmpty fs) (Option.nothing Document) (Option.just Document (document (get v) fs))))
+        (Option.nothing Document))))
   ; The theorems of a development's documents in order, each with the version of its document, and
   ; the version of the last document: every document reads, and where there are several, none is
   ; of version 0, which saves no companion to cite, or of a version after the last document's.
   (data Forms (formList T & TPair))
-  (import (Option Forms) as OForms)
-  (import (Seq TPair) as Items)
-  (import (Map T TPair) as ItemsOf)
-  (import (Map TPair T) as ItemOut)
-  (defn readDocuments ((sources Ts)) OForms.Maybe
-    (foldr T OForms.Maybe
-      (lam ((source T) (acc OForms.Maybe))
-        (case acc ((OForms.nothing) OForms.nothing)
-          ((OForms.just fs)
+
+  (defn readDocuments ((sources Ts)) (Option.Maybe Forms)
+    (foldr T (Option.Maybe Forms)
+      (lam ((source T) (acc (Option.Maybe Forms)))
+        (case acc ((Option.nothing Forms) (Option.nothing Forms))
+          ((Option.just Forms fs)
            (case fs
              ((formList last & items)
-              (case (readDocument source) ((ODoc.nothing) OForms.nothing)
-                ((ODoc.just d)
+              (case (readDocument source) ((Option.nothing Document) (Option.nothing Forms))
+                ((Option.just Document d)
                  (case d
                    ((document v & xs)
                     (if
                       (or (and (eq v 0) (lt 1 (length sources)))
-                        (and (lt 0 (Items.length items)) (lt last v)))
-                      OForms.nothing
-                      (OForms.just
-                        (formList (if (eq (Items.length items) 0) v last)
-                          (Items.append (ItemsOf.map (lam ((f T)) (pr v f)) xs) items)))))))))))))
-      (if (isEmpty sources) OForms.nothing (OForms.just (formList 0 (nil TPair))))
+                        (and (lt 0 (Seq.length TPair items)) (lt last v)))
+                      (Option.nothing Forms)
+                      (Option.just Forms
+                        (formList (if (eq (Seq.length TPair items) 0) v last)
+                          (Seq.append TPair (Map.map T TPair (lam ((f T)) (pr v f)) xs)
+                            items)))))))))))))
+      (if (isEmpty sources) (Option.nothing Forms) (Option.just Forms (formList 0 (nil TPair))))
       sources))
 
   ; Requests are read before proving, with distinct names and the version of the development's
   ; last document, which fixes the globals its statements are read in and the layout of its
   ; certificate, and which the list of requests keeps; the first form that does not read rejects
   ; the development.
-  (import (Seq Request) as Requests)
+
   ; A saved development contains the checked declarations and their source names.
   (data Results (results T & Decl))
-  (import (Each Decl) as EachDecl)
+
   (def noResults (results (node 0 (nil T)) (nil Decl)))
   ; Definitions. A document of version 4 declares definitions of the internal language by forms
   ; (definition NAME ((x TYPE) ...) TYPE TERM): the definition of the name, in parameters of the
@@ -2237,7 +2237,7 @@
   ; document and of the documents after it, its name stands for it
   ; ({geb}`Authoring.withNames`): a term applies it to a term for each of its parameters, and
   ; the reductions keep it folded unless a rule (unfold NAME) names it.
-  (defn readDefinition ((v T) (gt Ts) (defs Ts) (e T)) OLDefn.Maybe
+  (defn readDefinition ((v T) (gt Ts) (defs Ts) (e T)) (Option.Maybe LDefn)
     (let* ((bs Ts (children (child e 2))) (a T (itype (nil T) (child e 3))))
       (if
         (and (Source.isList (child e 2))
@@ -2247,13 +2247,13 @@
           (iterm v gt defs (nil T) (child e 4) (reverse (mapT binderName bs))
             (reverse (mapT (lam ((y T)) (kernelType defs (child y 1))) bs)))
           (if (isSome body)
-            (OLDefn.just
+            (Option.just LDefn
               (ldefn 0
                 (objs (reverse (mapT (lam ((y T)) (getD (itype (nil T) (child y 1)) one)) bs)))
                 (get a)
                 (get body)))
-            OLDefn.nothing))
-        OLDefn.nothing)))
+            (Option.nothing LDefn)))
+        (Option.nothing LDefn))))
   ; The forms of a development read in order: the constants with the definitions declared so
   ; far, those definitions under their names, the names of version 4 that stand in the forms
   ; after them, the forms of the theorems, each with the names in it read, and the name of the
@@ -2276,16 +2276,17 @@
                     (if
                       (and (form f (quote (0 definition)) 5)
                         (and (bindable v name) (not (has (Source.nameOf name) defs))))
-                      (case (readDefinition v gt defs f) ((OLDefn.nothing) fail)
-                        ((OLDefn.just d)
-                         (case (Conv.certStep G (nil Entry) (declDef d)) ((ODevState.nothing) fail)
-                           ((ODevState.just s)
+                      (case (readDefinition v gt defs f) ((Option.nothing LDefn) fail)
+                        ((Option.just LDefn d)
+                         (case (Conv.certStep G (nil Entry) (declDef d))
+                           ((Option.nothing DevState) fail)
+                           ((Option.just DevState s)
                             (case s
                               ((devState G2 el)
                                (reading G2
                                  (results
                                    (node 0 (append (children dn) (single (Source.nameOf name))))
-                                   (Decls.append dds (Decls.single (declDef d))))
+                                   (Seq.append Decl dds (Seq.single Decl (declDef d))))
                                  (node 0
                                    (cons
                                      (node 0
@@ -2297,7 +2298,8 @@
                                  bad)))))))
                       fail)))
                  (else
-                   (reading G dd table (formList w (Items.append items (Items.single (pr v f))))
+                   (reading G dd table
+                     (formList w (Seq.append TPair items (Seq.single TPair (pr v f))))
                      bad)))))))))))
   (data RequestList (requests T Results & Request))
   (data Read (readOk RequestList) (readBad T T))
@@ -2312,10 +2314,10 @@
   ; declared before it; and the theorems are then read with the constants of all the
   ; definitions.
   (defn readTheorems ((v T) (G Globals) (gt Ts) (defs Ts) (dd Results) (items (List TPair))) Read
-    (let names Ts (ItemOut.map (lam ((p TPair)) (theoremName (p2 p))) items)
+    (let names Ts (Map.map TPair T (lam ((p TPair)) (theoremName (p2 p))) items)
       (foldr T Read
         (lam ((i T) (acc Read))
-          (let p TPair (Items.atOr (pr 0 0) items i)
+          (let p TPair (Seq.atOr TPair (pr 0 0) items i)
             (case (readRequest (p1 p) G gt defs names (take i names) (p2 p))
               ((requestBad why) (readBad why (at names i)))
               ((requestOk q)
@@ -2325,12 +2327,12 @@
         (readOk (requests v dd (nil Request)))
         (range (length names)))))
   (defn readSources ((gt Ts) (defs Ts) (ds (List LDefn)) (sources Ts)) Read
-    (case (readDocuments sources) ((OForms.nothing) (readBad 0 (node 0 (nil T))))
-      ((OForms.just fs)
+    (case (readDocuments sources) ((Option.nothing Forms) (readBad 0 (node 0 (nil T))))
+      ((Option.just Forms fs)
        (case fs
          ((formList v & items)
           (let*
-            ((names Ts (ItemOut.map (lam ((p TPair)) (theoremName (p2 p))) items))
+            ((names Ts (Map.map TPair T (lam ((p TPair)) (theoremName (p2 p))) items))
              (twice T (firstRepeated (if (lt 3 v) (cons (quote (0 Nat)) names) names))))
             (if (isSome twice) (readBad 1 (get twice))
               (case
@@ -2345,7 +2347,7 @@
                  (if (isSome bad) (readBad 8 (get bad))
                    (case out
                      ((formList w & theorems)
-                      (if (eq (Items.length theorems) 0) (readBad 0 (node 0 (nil T)))
+                      (if (eq (Seq.length TPair theorems) 0) (readBad 0 (node 0 (nil T)))
                         (readTheorems v G gt defs dd theorems))))))))))))))
 
   ; A saved development begins, in version 3, with the connectives' rules, under no name, and in
@@ -2367,11 +2369,11 @@
   ; their entries; the definitions' declarations, which add no entry, are placed among them when
   ; the certificate is written ({geb}`Authoring.certified`).
   (data Progress (proving Results EntryList T T T T) (stuck T T T T T))
-  (import (Option EntryList) as OEntries)
+
   ; The entries after a declaration, where the checker of developments admits it.
-  (defn admit ((G Globals) (E (List Entry)) (d Decl)) OEntries.Maybe
-    (case (Conv.certStep G E d) ((ODevState.nothing) OEntries.nothing)
-      ((ODevState.just st) (case st ((devState G2 es) (OEntries.just es))))))
+  (defn admit ((G Globals) (E (List Entry)) (d Decl)) (Option.Maybe EntryList)
+    (case (Conv.certStep G E d) ((Option.nothing DevState) (Option.nothing EntryList))
+      ((Option.just DevState st) (case st ((devState G2 es) (Option.just EntryList es))))))
   (defn derive
     ((manner T) (G Globals) (E (List Entry)) (rs NRs) (eb T) (gt Ts) (defs Ts) (thms Ts)
      (q Request))
@@ -2406,15 +2408,15 @@
             ((terms & hyps)
              (let*
                ((lr TPair
-                  (case (eqParts f) ((OTPair.just lr) lr) ((OTPair.nothing) (pr f (ttL o)))))
-                (source T (mEq (p1 lr) (p2 lr)))
+                  (case (eqParts f) ((Option.just TPair lr) lr)
+                    ((Option.nothing TPair) (pr f (ttL o))))) (source T (mEq (p1 lr) (p2 lr)))
                 (apply T
                   (dNode 27
                     (l3 j (node 0 (mapT x (range ar))) (node 0 (mapT var (range (length g)))))
                     (mapT (lam ((i T)) (dNode 21 (single i) (nil T))) (range (length hyps)))))
                 (d T
-                  (case (eqParts f) ((OTPair.just lr) apply)
-                    ((OTPair.nothing) (dNode 25 (nil T) (l2 trueI apply))))))
+                  (case (eqParts f) ((Option.just TPair lr) apply)
+                    ((Option.nothing TPair) (dNode 25 (nil T) (l2 trueI apply))))))
                (bindNT (eval G E ar rs 4096 m g hyps (p1 lr))
                  (lam ((nl NFR))
                    (bindNT (eval G E ar rs 4096 m g hyps (p2 lr))
@@ -2449,8 +2451,8 @@
   (defn declaredGlobals ((G Globals) (dd Results)) Globals
     (case dd
       ((results dn & dds)
-       (case (Conv.checkCertDev G (nil Entry) dds) ((ODevState.nothing) G)
-         ((ODevState.just st) (case st ((devState G2 el) G2)))))))
+       (case (Conv.checkCertDev G (nil Entry) dds) ((Option.nothing DevState) G)
+         ((Option.just DevState st) (case st ((devState G2 el) G2)))))))
   ; The certificate of a development: its results with the declarations of its definitions, under
   ; their names, after the connectives' rules and before the theorems' declarations.
   (defn certified ((v T) (dd Results) (a Results)) Results
@@ -2463,7 +2465,8 @@
               (results
                 (node 0
                   (append (take eb (children ns)) (append (children dn) (drop eb (children ns)))))
-                (Decls.append (EachDecl.take eb ds) (Decls.append dds (Decls.drop eb ds)))))))))))
+                (Seq.append Decl (Each.take Decl eb ds)
+                  (Seq.append Decl dds (Seq.drop Decl eb ds)))))))))))
   (defn withItem ((items T) (it T)) T (node 0 (append (children items) (single it))))
   ; Whether an item is of a request, with its name, statement, script, normal form and version,
   ; and whether its theorem is proved.
@@ -2530,7 +2533,7 @@
   ; it, and no statement read from a source is one that does. The places are computed once for a
   ; cache or a saved development, the place of a constant at each definition a term names.
   (defn placesOf ((oldNames Ts) (names Ts)) T
-    (let past T (add (length names) (LD.length (connectives 0)))
+    (let past T (add (length names) (Seq.length LDefn (connectives 0)))
       (node 0 (mapT (lam ((n T)) (getD (Source.indexOf n names) past)) oldNames))))
   (defn placeOf ((n0 T) (places T) (count T) (j T)) T
     (if (lt j n0) j
@@ -2622,8 +2625,8 @@
     (let l T (label r)
       (cond ((eq l 1) (some (node 0 (single (child r 0)))))
         ((eq l 4)
-         (case (thmAt E (child r 0)) ((OThm.nothing) none)
-           ((OThm.just a) (some (thmRefs (rep a))))))
+         (case (thmAt E (child r 0)) ((Option.nothing Thm) none)
+           ((Option.just Thm a) (some (thmRefs (rep a))))))
         ((eq l 0) (if (lt (label (child r 0)) 16) (some noNode) none))
         (else (some noNode)))))
   (defn rulesRefs ((E (List Entry)) (rs T)) T
@@ -2639,8 +2642,8 @@
                (let local T
                  (cond
                    ((or (eq l 16) (eq l 27))
-                    (case (thmAt E (at data 0)) ((OThm.nothing) none)
-                      ((OThm.just a)
+                    (case (thmAt E (at data 0)) ((Option.nothing Thm) none)
+                      ((Option.just Thm a)
                        (some
                          (joinRefs
                            (cons (thmRefs (rep a)) (mapT termRefs (children (at data 2)))))))))
@@ -2729,7 +2732,7 @@
   (defn itemsFor ((G Globals) (v T) (cache T) (oldNames Ts) (names Ts) (same T)) Ts
     (let*
       ((items Ts (cacheItems v cache))
-       (f (Arrow T T) (placeOf (LD.length lib) (placesOf oldNames names) (length names)))
+       (f (Arrow T T) (placeOf (Seq.length LDefn lib) (placesOf oldNames names) (length names)))
        (before T (child cache 2))
        (stable T (if (and same (equal before (rep G))) noNode (unchangedDefs f before G)))
        (signature T
@@ -2750,11 +2753,12 @@
   (defn begin ((G Globals) (v T) (o T) (same T)) Progress
     (let ds (List Decl) (rulesFor v o 0)
       (case (Conv.checkCertDev G (nil Entry) ds)
-        ((ODevState.nothing) (stuck 6 unnamed noNode noNode noNode))
-        ((ODevState.just st)
+        ((Option.nothing DevState) (stuck 6 unnamed noNode noNode noNode))
+        ((Option.just DevState st)
          (case st
            ((devState G2 el)
-            (proving (results (node 0 (mapT (lam ((i T)) unnamed) (range (Decls.length ds)))) ds) el
+            (proving (results (node 0 (mapT (lam ((i T)) unnamed) (range (Seq.length Decl ds)))) ds)
+              el
               noNode
               same
               noNode
@@ -2778,7 +2782,7 @@
       ((entries & E1)
        (let*
          ((ok T (lt how 3))
-          (ds1 (List Decl) (Decls.append ds (Decls.single (declLang (requestThm q) d1))))
+          (ds1 (List Decl) (Seq.append Decl ds (Seq.single Decl (declLang (requestThm q) d1))))
           (uses1 T (withItem uses how)))
          (if (eq v 0)
            (proving (results (node 0 (append (children ns) (single (requestName q)))) ds1) el1 fs
@@ -2789,18 +2793,18 @@
              (companion G E1 (rulesIn E1 (normalRules (entryBase v) defs thms q) rs)
                (connectivesAt defs)
                (normalDepth q)
-               (Decls.length ds)
+               (Seq.length Decl ds)
                (requestThm q))
              (if (isSome w)
                (let*
                  ((cs Ts (children (get w))) (sides T (node 0 (l2 (at cs 0) (at cs 1))))
                   (decl2 Decl (declLang (withSides (requestThm q) (at cs 0) (at cs 1)) (at cs 2))))
                  (case (admit G E1 decl2)
-                   ((OEntries.nothing) (stuck 6 (requestName q) fs items uses))
-                   ((OEntries.just el2)
+                   ((Option.nothing EntryList) (stuck 6 (requestName q) fs items uses))
+                   ((Option.just EntryList el2)
                     (proving
                       (results (node 0 (append (children ns) (l2 (requestName q) (requestName q))))
-                        (Decls.append ds1 (Decls.single decl2)))
+                        (Seq.append Decl ds1 (Seq.single Decl decl2)))
                       el2
                       fs
                       (keptAligned aligned here q sides)
@@ -2814,7 +2818,8 @@
     ((v T) (q Request) (ns T) (ds (List Decl)) (E (List Entry)) (fs T) (here T) (items T) (uses T))
     Progress
     (let*
-      ((ds1 (List Decl) (Decls.append ds (Decls.single (declLang (requestThm q) (child here 7)))))
+      ((ds1 (List Decl)
+         (Seq.append Decl ds (Seq.single Decl (declLang (requestThm q) (child here 7)))))
        (E1 (List Entry) (push E (entLang (requestThm q)))))
       (if (eq v 0)
         (proving (results (node 0 (append (children ns) (single (requestName q)))) ds1) (entries E1)
@@ -2825,7 +2830,7 @@
         (let thm2 Thm (withSides (requestThm q) (child (child here 5) 0) (child (child here 5) 1))
           (proving
             (results (node 0 (append (children ns) (l2 (requestName q) (requestName q))))
-              (Decls.append ds1 (Decls.single (declLang thm2 (child here 8)))))
+              (Seq.append Decl ds1 (Seq.single Decl (declLang thm2 (child here 8)))))
             (entries (push E1 (entLang thm2)))
             fs
             1
@@ -2856,8 +2861,8 @@
        (obs Ts (if (and (isSome d) (holed (requestScript q))) (obligationsOf (get d)) (nil T))))
       (if (and (isSome d) (isEmpty obs))
         (case (admit G E (declLang (requestThm q) (get d)))
-          ((OEntries.nothing) (stuck 6 (requestName q) fs items uses))
-          ((OEntries.just el1)
+          ((Option.nothing EntryList) (stuck 6 (requestName q) fs items uses))
+          ((Option.just EntryList el1)
            (accompany G rs defs v q thms ns ds (get d) el1 fs 0 here aligned items uses)))
         (accompany G rs defs v q thms ns ds none (entries (push E (entLang (requestThm q))))
           (node 0
@@ -2895,10 +2900,11 @@
                           (child (get known) 7))
                         none)))
                    (case
-                     (if (isSome known) (admit G E (declLang (requestThm q) d0)) OEntries.nothing)
-                     ((OEntries.just el1)
+                     (if (isSome known) (admit G E (declLang (requestThm q) d0))
+                       (Option.nothing EntryList))
+                     ((Option.just EntryList el1)
                       (accompany G rs defs v q thms ns ds d0 el1 fs 1 here aligned items uses))
-                     ((OEntries.nothing)
+                     ((Option.nothing EntryList)
                       (search G rs gt defs dn v q thms ns ds E fs here aligned items
                         uses)))))))))))))
   ; A development resumed from a cache: the node of its certificate, the present tree, or of its
@@ -2917,7 +2923,7 @@
          ((requests v dd & xs)
           (let*
             ((G Globals (declaredGlobals (globalsFor v ds) dd))
-             (o T (add (LD.length lib) (LD.length ds)))
+             (o T (add (Seq.length LDefn lib) (Seq.length LDefn ds)))
              (rs NRs (rulesOf v o))
              (old Ts (itemsFor G v cache oldNames names same))
              (dn Ts (declaredNames dd)))
@@ -2946,8 +2952,9 @@
   ; name at their places in the present one ({geb}`Authoring.itemsFor`), by the definitions'
   ; names. One proved from no cache is its certificate or its failures alone.
   (defn resume ((bundle T) (sources T) (cache T) (old T)) T
-    (case (program (children (child bundle 0))) ((OTrState.nothing) (node 0 (l3 none cache noNode)))
-      ((OTrState.just st)
+    (case (program (children (child bundle 0)))
+      ((Option.nothing TrState) (node 0 (l3 none cache noNode)))
+      ((Option.just TrState st)
        (case st
          ((trState gt ds)
           (case gt
@@ -2966,7 +2973,7 @@
   (defn transport ((bundle T) (old T) (saved T)) T
     (let*
       ((names Ts (children (child bundle 1))) (places T (placesOf (children (child old 1)) names))
-       (f (Arrow T T) (placeOf (LD.length lib) places (length names))))
+       (f (Arrow T T) (placeOf (Seq.length LDefn lib) places (length names))))
       (node (label saved)
         (cons (child saved 0)
           (mapT
@@ -2988,8 +2995,8 @@
   ; that the sources declare, under its name.
   (defn stated ((d Decl)) T (case d ((declLang a dv) (some (rep a))) (else none)))
   (defn matches ((v T) (xs (List Request)) (ds (List Decl)) (ns Ts)) T
-    (and (eq (mul (if (eq v 0) 1 2) (Requests.length xs)) (Decls.length ds))
-      (and (eq (Decls.length ds) (length ns))
+    (and (eq (mul (if (eq v 0) 1 2) (Seq.length Request xs)) (Seq.length Decl ds))
+      (and (eq (Seq.length Decl ds) (length ns))
         ((foldr Request (Arrow (List Decl) (Arrow Ts T))
            (lam ((q Request) (k (Arrow (List Decl) (Arrow Ts T))) (rest (List Decl)) (names Ts))
              (lcase Decl T rest 0
@@ -3019,16 +3026,16 @@
                        (and
                          (equalTs (take d (drop (add eb 1) (children saved)))
                            (tail (children (rep dd))))
-                         (matches v xs (Decls.drop (add eb d) decls)
+                         (matches v xs (Seq.drop Decl (add eb d) decls)
                            (drop (add eb d) (children ns)))))
                      (case (Conv.checkCertDev (globalsFor v ds) (nil Entry) decls)
-                       ((ODevState.nothing) 0)
-                       ((ODevState.just st) 1))
+                       ((Option.nothing DevState) 0)
+                       ((Option.just DevState st) 1))
                      0)))))
             0))))))
   (defn replay ((bundle T) (sources T) (saved T)) T
-    (case (program (children (child bundle 0))) ((OTrState.nothing) 0)
-      ((OTrState.just st)
+    (case (program (children (child bundle 0))) ((Option.nothing TrState) 0)
+      ((Option.just TrState st)
        (case st
          ((trState gt ds)
           (case gt
@@ -3040,8 +3047,8 @@
   ; The version of the last document of a development that the program's statements read, which
   ; fixes the layout of its certificate, the present tree, or the failure of its reading.
   (defn version ((bundle T) (sources T)) T
-    (case (program (children (child bundle 0))) ((OTrState.nothing) none)
-      ((OTrState.just st)
+    (case (program (children (child bundle 0))) ((Option.nothing TrState) none)
+      ((Option.just TrState st)
        (case st
          ((trState gt ds)
           (case gt

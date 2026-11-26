@@ -32,18 +32,6 @@
   ; step at the label and at the children's folds applied to it.
   (abbreviation tr-fold-step
     (lam ((f TRStep)) (f (node Bits (pair (fst n) (nil T))) (lib mapApp TRStep TR (snd n) f))))
-  ; The traversal's step at the function v at a variable, as bootstrap/subst.geb writes it, where no
-  ; definition names it.
-  (abbreviation trav-step
-    (lam ((l T) (rs (List TR)))
-      (let cs (List T) (Subst.trTrees rs)
-        (let n T (Prelude.length cs)
-          (pair (node l cs)
-            (lam ((k T))
-              (if (Prelude.and (eq l 8) (eq n 1)) (v k (label (Prelude.at cs 0)))
-                (if (Prelude.and (eq l 9) (eq n 2))
-                  (Reader.node2 9 (Prelude.at cs 0) (Prelude.at (Subst.trAll rs (add k 1)) 1))
-                  (if (Subst.termNode l) (node l (Subst.trAll rs k)) (node l cs))))))))))
   ; The traversal's folds at the children cs.
   (abbreviation tr-children
     (list-rec (nil TRFold) (c r) (cons TRFold (rose-rec TRFold (n) tr-fold-step c) r) cs))
@@ -51,18 +39,6 @@
   ; at the label and at the children's folds applied to it.
   (abbreviation rr-fold-step
     (lam ((f RRStep)) (f (node Bits (pair (fst n) (nil T))) (lib mapApp RRStep RR (snd n) f))))
-  ; The type checker's step in the environment G, as bootstrap/check.geb writes it, where no
-  ; definition names it.
-  (abbreviation check-step
-    (lam ((l T) (rs (List RR)))
-      (let raw T (node l (Reader.rrTrees rs))
-        (pair raw (lam ((ctx (List T))) (Check.checkNode G raw rs ctx))))))
-  ; The type checker's step in the environment G, as the internal language's term that the step
-  ; translates to.
-  (abbreviation check-step-reduced
-    (lam ((l T) (rs (List RR)))
-      ((lam ((raw T)) (pair raw (lam ((ctx (List T))) (Check.checkNode G raw rs ctx))))
-       ((lam ((x T) (y (List T))) (node Bits (pair (lib lab x) y))) l (Reader.rrTrees rs)))))
   ; The type checker's folds at the children cs.
   (abbreviation rr-children
     (list-rec (nil RRFold) (c r) (cons RRFold (rose-rec RRFold (n) rr-fold-step c) r) cs))
@@ -205,11 +181,12 @@
   (theorem trav-children-fn
     (internal ()
       (forall ((v Var) (cs (List T)))
-        (equal (Subst.trTrees (lib mapApp TRStep TR tr-children (kernel trav-step)))
+        (equal (Subst.trTrees (lib mapApp TRStep TR tr-children (kernel (Subst.travStep v))))
           (lib mapApp Var T
             (list-rec (nil (Arrow Var T)) (c r)
               (cons (Arrow Var T)
-                (lam ((v Var)) (fst ((rose-rec TRFold (n) tr-fold-step c) (kernel trav-step))))
+                (lam ((v Var))
+                  (fst ((rose-rec TRFold (n) tr-fold-step c) (kernel (Subst.travStep v)))))
                 r)
               cs)
             v))))
@@ -229,7 +206,8 @@
   (theorem trav-first-fn
     (internal ()
       (forall ((t T))
-        (equal (lam ((v Var)) (fst ((rose-rec TRFold (n) tr-fold-step t) (kernel trav-step))))
+        (equal
+          (lam ((v Var)) (fst ((rose-rec TRFold (n) tr-fold-step t) (kernel (Subst.travStep v)))))
           (lam ((v Var)) t))))
     (by
       (tree-fold-uniqueness t (l cs rs) (lam ((w Var)) (node Bits (pair l (lib mapApp Var T rs w))))
@@ -237,13 +215,13 @@
   ; The first component of the traversal's fold at a tree is the tree, at every function at a
   ; variable.
   (theorem trav-first
-    (internal () (forall ((t T) (v Var)) (equal (fst (kernel (fold TR trav-step t))) t)))
+    (internal () (forall ((t T) (v Var)) (equal (fst (kernel (fold TR (Subst.travStep v) t))) t)))
     (by (pointwise trav-first-fn weak)))
   ; The trees of the results of the traversal's fold at the children of a node are the children.
   (theorem trav-children
     (internal ()
       (forall ((v Var) (cs (List T)))
-        (equal (Subst.trTrees (lib mapApp TRStep TR tr-children (kernel trav-step))) cs)))
+        (equal (Subst.trTrees (lib mapApp TRStep TR tr-children (kernel (Subst.travStep v)))) cs)))
     (by
       (fold-uniqueness cs (y ys r) (cons T y r) (reduce weak trav-first) (reduce weak trav-first))))
   ; The trees of the results of the type checker's fold at the children of a node are as many as the
@@ -252,14 +230,17 @@
     (internal ()
       (forall ((G (List T)) (cs (List T)))
         (equal
-          (lib length T (Reader.rrTrees (lib mapApp RRStep RR rr-children (kernel check-step))))
+          (lib length T
+            (Reader.rrTrees (lib mapApp RRStep RR rr-children (kernel (Check.typeInStep G)))))
           (lib length T cs))))
     (by (fold-uniqueness cs (y ys r) (lib succ r) (reduce weak) (reduce weak))))
   ; The children the traversal computes under a number of binders are as many as the children.
   (theorem trav-all-length
     (internal ()
       (forall ((v Var) (k T) (cs (List T)))
-        (equal (lib length T (Subst.trAll (lib mapApp TRStep TR tr-children (kernel trav-step)) k))
+        (equal
+          (lib length T
+            (Subst.trAll (lib mapApp TRStep TR tr-children (kernel (Subst.travStep v))) k))
           (lib length T cs))))
     (by (fold-uniqueness cs (y ys r) (lib succ r) (reduce weak) (reduce weak))))
   ; The label of the first component of the type checker's fold at a tree is the tree's, as
@@ -267,7 +248,7 @@
   (theorem check-label-fn
     (internal ()
       (forall ((t T))
-        (equal (lam ((G (List T))) (kernel (label (fst (fold RR check-step t)))))
+        (equal (lam ((G (List T))) (kernel (label (fst (fold RR (Check.typeInStep G) t)))))
           (lam ((G (List T))) (kernel (label t))))))
     (by
       (tree-fold-uniqueness t (l cs rs)
@@ -279,7 +260,7 @@
   (theorem check-label
     (internal ()
       (forall ((G (List T)) (t T))
-        (equal (kernel (label (fst (fold RR check-step t)))) (kernel (label t)))))
+        (equal (kernel (label (fst (fold RR (Check.typeInStep G) t)))) (kernel (label t)))))
     (by (instance check-label-fn (t) (G) weak)))
   ; The first component of the successor's fold is the bitstring.
   (theorem rebuild-succ (internal () (forall ((n Bits)) (equal succ-fold n)))

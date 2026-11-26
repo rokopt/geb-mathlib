@@ -6,7 +6,8 @@
 ; Geb.Kernel.Subst defines them in Lean: a variable is the node of its label over the leaf of its
 ; de Bruijn index.
 
-(module Subst (export mk1 var trAll termNode trav wkVar wk wkAt substVar subst) (import Prelude)
+(module Subst (export mk1 var trAll termNode travStep trav wkVar wk wkAt substVar subst)
+  (import Prelude)
   (import Reader)
   ; kernel terms
   (defn mk1 ((l T) (a T)) T (node l (single a)))
@@ -25,19 +26,17 @@
       (or (eq l Label.unit)
         (or (eq l Label.pair)
           (or (eq l Label.fst) (or (eq l Label.snd) (or (eq l Label.cond) (eq l Label.cons))))))))
-  (defn trav ((v (Arrow T (Arrow T T))) (t T) (k0 T)) T
-    ((snd
-       (fold TR
-         (lam ((l T) (rs TRs))
-           (let* ((cs Ts (trTrees rs)) (n T (length cs)))
-             (pair (node l cs)
-               (lam ((k T))
-                 (cond ((and (eq l Label.var) (eq n 1)) (v k (label (at cs 0))))
-                   ((and (eq l Label.lam) (eq n 2))
-                    (node2 Label.lam (at cs 0) (at (trAll rs (add k 1)) 1)))
-                   ((termNode l) (node l (trAll rs k)))
-                   (else (node l cs)))))))
-         t)) k0))
+  (def travStep
+    (lam ((v (Arrow T (Arrow T T))) (l T) (rs TRs))
+      (let* ((cs Ts (trTrees rs)) (n T (length cs)))
+        (pair (node l cs)
+          (lam ((k T))
+            (cond ((and (eq l Label.var) (eq n 1)) (v k (label (at cs 0))))
+              ((and (eq l Label.lam) (eq n 2))
+               (node2 Label.lam (at cs 0) (at (trAll rs (add k 1)) 1)))
+              ((termNode l) (node l (trAll rs k)))
+              (else (node l cs))))))))
+  (defn trav ((v (Arrow T (Arrow T T))) (t T) (k0 T)) T ((snd (fold TR (travStep v) t)) k0))
 
   ; weakening by n variables below k bound ones, and substitution for the innermost variable
   (defn wkVar ((n T) (k T) (i T)) T (var (if (lt i k) i (add i n))))

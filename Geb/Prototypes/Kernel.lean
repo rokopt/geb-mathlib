@@ -18,6 +18,7 @@ public import Geb.Prototypes.Kernel.Durable
 public import Geb.Prototypes.Kernel.Eval
 public import Geb.Prototypes.Kernel.Image
 public import Geb.Prototypes.Kernel.LoadCommand
+public import Geb.Prototypes.Kernel.MirrorName
 public import Geb.Prototypes.Kernel.Manifest
 public import Geb.Prototypes.Kernel.Markup
 public import Geb.Prototypes.Kernel.MarkupVerso

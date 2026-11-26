@@ -1510,7 +1510,7 @@ theorem kidsAt_eq {β : Type} (e : β → Tree) (l : Internal.Label) (v : Tree �
     ∀ xs : List (Term × (Tree → Tree) × (ℕ → β)), (∀ x ∈ xs, ∀ d, x.2.1 (leaf d) = e (x.2.2 d)) →
       ∀ i : ℕ, «Tactics.kidsAt» (leaf (labelData l).1) (v :: xs.map fun x ↦ x.2.1) (leaf d)
         (leaf i) = ((xs.zipIdx i).map fun p ↦ p.1.2.2 (d + anyB l p.2)).map e := by
-  simp only [«Tactics.kidsAt», foldr_eq, ufTail_eq, List.tail_cons]
+  simp only [«Tactics.kidsAt», foldr_eq, ofTail_eq, List.tail_cons]
   exact List.rec (fun _ _ ↦ rfl) fun x xs ih hx i ↦ by
     simp only [List.map_cons, List.foldr_cons, anyBound_eq, add_leaf, List.zipIdx_cons]
     rw [ih (fun y hy ↦ hx y (List.mem_cons_of_mem x hy)) (i + 1), hx x List.mem_cons_self]

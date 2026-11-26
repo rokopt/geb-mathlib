@@ -14,12 +14,6 @@
   ; at the label and at the children's folds applied to it.
   (abbreviation rr-fold-step
     (lam ((f RRStep)) (f (node Bits (pair (fst n) (nil T))) (lib mapApp RRStep RR (snd n) f))))
-  ; The type checker's step in the environment G, as the internal language's term that the step
-  ; translates to.
-  (abbreviation check-step-reduced
-    (lam ((l T) (rs (List RR)))
-      ((lam ((raw T)) (pair raw (lam ((ctx (List T))) (Check.checkNode G raw rs ctx))))
-       ((lam ((x T) (y (List T))) (node Bits (pair (lib lab x) y))) l (Reader.rrTrees rs)))))
   ; The rules of the proofs at a label: the first components and the lengths of the folds, the
   ; arithmetic of labels and the conditionals moved through projections, applications and folds.
   (abbreviation typing-rules trav-children trav-first check-label unfold-rebuild lambek
@@ -78,7 +72,7 @@
                            ((h1 G c1 c0 c2)
                             (h1x G
                               (cons T
-                                (fst ((rose-rec RRFold (n) rr-fold-step a) check-step-reduced))
+                                (fst ((rose-rec RRFold (n) rr-fold-step a) (Check.typeInStep G)))
                                 c1)
                               c0
                               c2)))
@@ -96,7 +90,7 @@
                              ((h1 G c1 c0 c2)
                               (h1x G
                                 (cons T
-                                  (fst ((rose-rec RRFold (n) rr-fold-step a) check-step-reduced))
+                                  (fst ((rose-rec RRFold (n) rr-fold-step a) (Check.typeInStep G)))
                                   c1)
                                 c0
                                 c2))

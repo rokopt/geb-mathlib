@@ -40,10 +40,10 @@
     Typing.memberOf
     Typing.decimalChars
     Typing.markerCtors
-    Typing/OName.nothing
+    "(Option.nothing Typing.Name)"
     Typing.checkAll
-    Datatype/Txs.reverse
-    Datatype/Txs.drop
+    "(Seq.reverse Typing.Tx)"
+    "(Seq.drop Typing.Tx)"
     Datatype.isListTx
     Datatype.namedTx
     Datatype.elems

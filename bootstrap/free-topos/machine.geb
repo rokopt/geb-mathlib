@@ -164,12 +164,14 @@
     (let*
       ((j T (mD t 0)) (th Ts (children (mD t 1)))
        (stuck T (msDone (some (mNode 12 (children (child t 0)) us)))))
-      (case (if (unf j) (bindDL (ODefinition.nthOf (gDefs G) j) defLanguage) OLDefn.nothing)
-        ((OLDefn.just d)
+      (case
+        (if (unf j) (bindDL (Option.nthOf Definition (gDefs G) j) defLanguage)
+          (Option.nothing LDefn))
+        ((Option.just LDefn d)
          (if (eq (length us) (length (ldParams d)))
            (msTail (jobE (if (isEmpty th) (ldBody d) (osubst th (ldBody d))) us k))
            stuck))
-        ((OLDefn.nothing) stuck))))
+        ((Option.nothing LDefn) stuck))))
   ; the delayed values built, the state of a term's node: a component, an application and a fold
   ; waiting for the weak head normal form of the node over the value r of the subterm it reduces
   ; by; a definition; and a pair, a primitive arrow's application and an equality, the node over

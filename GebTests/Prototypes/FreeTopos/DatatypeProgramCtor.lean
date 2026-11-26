@@ -733,7 +733,7 @@ def ctorSoundAt (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let (fsA, csA, jA, rtyA, dvA, GA) := (at_ 0, at_ 1, at_ 2, at_ 3, at_ 4, at_ 5)
     let (numsA, namesA, tysA, EA, RA) := (at_ 6, at_ 7, at_ 8, at_ 9, at_ 10)
     let z := pc P "Datatype.sx2" [pc P "Datatype.aNil" [], pc P "Datatype.aT" []]
-    let nrA (Γ : List Tree) : Term := pc P "Datatype/Txs.length" [fsA Γ]
+    let nrA (Γ : List Tree) : Term := pc P "(Seq.length Typing.Tx)" [fsA Γ]
     let bodyA (Γ : List Tree) : Term := ctorBody P (csA Γ) (jA Γ) (nrA Γ) z (fsA Γ)
     let XA (Γ : List Tree) : Term := nestT P (binderFold P (nrA Γ) (fsA Γ)) (bodyA Γ)
     -- the terms of the context of the constructors' soundness
@@ -877,7 +877,7 @@ def varFieldsT (P : Prog) (rest : Term) : Term :=
 def varTypeT (P : Prog) (rest : Term) : Term :=
   let subT := (primT Kernel.Prim.sub).getD Term.star
   pc P "Datatype.nthTx" [rest,
-    apps subT [pc P "Datatype/Txs.length" [rest], leafT (numeral 1)]]
+    apps subT [pc P "(Seq.length Typing.Tx)" [rest], leafT (numeral 1)]]
 
 /-- The body of the definition of a constructor with a variable field, of the characters of the
 datatype's atom, the constructor's position and its elements after its atom: the abstractions
@@ -886,7 +886,7 @@ coercion to the datatype of the node of the position over the fields' values and
 field's. -/
 def ctorVarDefT (P : Prog) (csd j rest : Term) : Term :=
   let fs := varFieldsT P rest
-  let nf := pc P "Datatype/Txs.length" [fs]
+  let nf := pc P "(Seq.length Typing.Tx)" [fs]
   let aRest := pc P "Datatype.aRest" []
   let F := pc P "Datatype.sList" [varTypeT P rest]
   nestT P (pc P "Prelude.append" [binderFold P nf fs,
@@ -1032,7 +1032,7 @@ def ctorSoundVarAt (P : Prog) (S : Defs) (T : Defs3) : Step :=
     let fsA (Γ : List Tree) : Term := varFieldsT P (restA Γ)
     let vtA (Γ : List Tree) : Term := varTypeT P (restA Γ)
     let FA (Γ : List Tree) : Term := pc P "Datatype.sList" [vtA Γ]
-    let nfA (Γ : List Tree) : Term := pc P "Datatype/Txs.length" [fsA Γ]
+    let nfA (Γ : List Tree) : Term := pc P "(Seq.length Typing.Tx)" [fsA Γ]
     let rtyA (Γ : List Tree) : Term := pc P "Datatype.expandAliases" [dvA Γ, vtA Γ]
     let zA (Γ : List Tree) : Term := pc P "Typing.tOf" [FA Γ, aRest]
     let bodyA (Γ : List Tree) : Term := ctorBody P (csA Γ) (jA Γ) (nfA Γ) (zA Γ) (fsA Γ)

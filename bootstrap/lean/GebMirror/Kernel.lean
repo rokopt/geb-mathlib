@@ -48,6 +48,25 @@ def «Prelude.reverse» :=
       x0
       ([] : _root_.List _root_.Geb.Kernel.Tree)
 
+def «Prelude.reverseIter» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    (_root_.Geb.Kernel.Const.iter
+      (α := _root_.List _root_.Geb.Kernel.Tree ×
+        _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree ×
+           _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.lcase
+          (α := _root_.Geb.Kernel.Tree)
+          (β := _root_.List _root_.Geb.Kernel.Tree ×
+            _root_.List _root_.Geb.Kernel.Tree)
+          (x1).1
+          x1
+          (fun (x2 : _root_.Geb.Kernel.Tree)
+             (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+            (x3, (x2 :: (x1).2))))
+      (x0, ([] : _root_.List _root_.Geb.Kernel.Tree))
+      (_root_.GebMirror.Kernel.«Prelude.length» x0)).2
+
 def «Prelude.replicate» :=
   fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.iter
@@ -341,7 +360,7 @@ def «Reader.atomTok» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 3)
-      (_root_.GebMirror.Kernel.«Prelude.reverse» x0)
+      (_root_.GebMirror.Kernel.«Prelude.reverseIter» x0)
 
 def «Reader.kwHole» :=
   _root_.Geb.Kernel.mk 0 [_root_.Geb.Kernel.leaf 104,
@@ -470,7 +489,7 @@ def «Reader.strStep» :=
       _root_.GebMirror.Kernel.«Reader.endAtom»
         x0
         x2
-        (_root_.GebMirror.Kernel.«Prelude.reverse» x1)
+        (_root_.GebMirror.Kernel.«Prelude.reverseIter» x1)
     else
       if (_root_.Geb.Kernel.Const.eq
         x3
@@ -726,38 +745,21 @@ def «Reader.decodeBase64» :=
           (_root_.Geb.Kernel.Tree ×
             _root_.Geb.Kernel.Tree))) := _root_.Geb.Kernel.Const.foldr
       (α := _root_.Geb.Kernel.Tree)
-      (β := (_root_.Geb.Kernel.Tree ×
+      (β := _root_.Geb.Kernel.Tree ×
         (_root_.List _root_.Geb.Kernel.Tree ×
           (_root_.Geb.Kernel.Tree ×
-            (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))) →
-        _root_.Geb.Kernel.Tree ×
-          (_root_.List _root_.Geb.Kernel.Tree ×
-            (_root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))
+            (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))
       (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : (_root_.Geb.Kernel.Tree ×
-           (_root_.List _root_.Geb.Kernel.Tree ×
-             (_root_.Geb.Kernel.Tree ×
-               (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))) →
-           _root_.Geb.Kernel.Tree ×
-             (_root_.List _root_.Geb.Kernel.Tree ×
-               (_root_.Geb.Kernel.Tree ×
-                 (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))))
-         (x3 : _root_.Geb.Kernel.Tree ×
+         (x2 : _root_.Geb.Kernel.Tree ×
            (_root_.List _root_.Geb.Kernel.Tree ×
              (_root_.Geb.Kernel.Tree ×
                (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))) =>
-        x2 (_root_.GebMirror.Kernel.«Reader.base64Step» x3 x1))
-      (fun (x1 : _root_.Geb.Kernel.Tree ×
-           (_root_.List _root_.Geb.Kernel.Tree ×
-             (_root_.Geb.Kernel.Tree ×
-               (_root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)))) =>
-        x1)
-      x0
+        _root_.GebMirror.Kernel.«Reader.base64Step» x2 x1)
       (_root_.Geb.Kernel.leaf 1,
         (([] : _root_.List _root_.Geb.Kernel.Tree),
           (_root_.Geb.Kernel.leaf 0,
-            (_root_.Geb.Kernel.leaf 0, _root_.Geb.Kernel.leaf 0))));
+            (_root_.Geb.Kernel.leaf 0, _root_.Geb.Kernel.leaf 0))))
+      (_root_.GebMirror.Kernel.«Prelude.reverseIter» x0);
     if (if ((x1).1).label ≠ 0 then
       _root_.Geb.Kernel.Const.lt
         ((((x1).2).2).2).1
@@ -767,7 +769,7 @@ def «Reader.decodeBase64» :=
       _root_.GebMirror.Kernel.«Prelude.some»
         (_root_.Geb.Kernel.Const.node
           (_root_.Geb.Kernel.leaf 0)
-          (_root_.GebMirror.Kernel.«Prelude.reverse» ((x1).2).1))
+          (_root_.GebMirror.Kernel.«Prelude.reverseIter» ((x1).2).1))
     else
       _root_.GebMirror.Kernel.«Prelude.none»
 
@@ -776,7 +778,7 @@ def «Reader.lengthStep» :=
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree) =>
     let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.GebMirror.Kernel.«Prelude.reverse» x1;
+      _root_.Geb.Kernel.Tree := _root_.GebMirror.Kernel.«Prelude.reverseIter» x1;
     if (if (_root_.Geb.Kernel.Const.lt
       (_root_.Geb.Kernel.leaf 1)
       (_root_.GebMirror.Kernel.«Prelude.length» x3)).label ≠ 0 then
@@ -1130,7 +1132,7 @@ def «Reader.lexStep» :=
                                       x1
                                       (_root_.Geb.Kernel.leaf 35)).label ≠ 0 then
                                       let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Kernel.«Reader.decodeHex»
-                                        (_root_.GebMirror.Kernel.«Prelude.reverse» x3);
+                                        (_root_.GebMirror.Kernel.«Prelude.reverseIter» x3);
                                       if (_root_.GebMirror.Kernel.«Prelude.isSome» x7).label ≠ 0 then
                                         _root_.GebMirror.Kernel.«Reader.endAtom»
                                           x2
@@ -1158,7 +1160,7 @@ def «Reader.lexStep» :=
                                       x1
                                       (_root_.Geb.Kernel.leaf 124)).label ≠ 0 then
                                       let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Kernel.«Reader.decodeBase64»
-                                        (_root_.GebMirror.Kernel.«Prelude.reverse» x3);
+                                        (_root_.GebMirror.Kernel.«Prelude.reverseIter» x3);
                                       if (_root_.GebMirror.Kernel.«Prelude.isSome» x7).label ≠ 0 then
                                         _root_.GebMirror.Kernel.«Reader.endAtom»
                                           x2
@@ -1188,7 +1190,7 @@ def «Reader.lexEnd» :=
       _root_.GebMirror.Kernel.«Prelude.some»
         (_root_.Geb.Kernel.Const.node
           (_root_.Geb.Kernel.leaf 0)
-          (_root_.GebMirror.Kernel.«Prelude.reverse» x1))
+          (_root_.GebMirror.Kernel.«Prelude.reverseIter» x1))
     else
       if (if (_root_.Geb.Kernel.Const.eq
         x3
@@ -1201,7 +1203,7 @@ def «Reader.lexEnd» :=
         _root_.GebMirror.Kernel.«Prelude.some»
           (_root_.Geb.Kernel.Const.node
             (_root_.Geb.Kernel.leaf 0)
-            (_root_.GebMirror.Kernel.«Prelude.reverse»
+            (_root_.GebMirror.Kernel.«Prelude.reverseIter»
               ((_root_.GebMirror.Kernel.«Reader.atomTok» x2) :: x1)))
       else
         if (_root_.Geb.Kernel.Const.eq
@@ -1211,7 +1213,7 @@ def «Reader.lexEnd» :=
             _root_.GebMirror.Kernel.«Prelude.some»
               (_root_.Geb.Kernel.Const.node
                 (_root_.Geb.Kernel.leaf 0)
-                (_root_.GebMirror.Kernel.«Prelude.reverse»
+                (_root_.GebMirror.Kernel.«Prelude.reverseIter»
                   (_root_.GebMirror.Kernel.«Reader.holeToks» x2 x1)))
           else
             _root_.GebMirror.Kernel.«Prelude.none»
@@ -1235,24 +1237,15 @@ def «Reader.tokenize» :=
       _root_.GebMirror.Kernel.«Reader.lexEnd»
         (_root_.Geb.Kernel.Const.foldr
           (α := _root_.Geb.Kernel.Tree)
-          (β := (_root_.List _root_.Geb.Kernel.Tree ×
-            (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)) →
-            _root_.List _root_.Geb.Kernel.Tree ×
-              (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))
+          (β := _root_.List _root_.Geb.Kernel.Tree ×
+            (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))
           (fun (x1 : _root_.Geb.Kernel.Tree)
-             (x2 : (_root_.List _root_.Geb.Kernel.Tree ×
-               (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)) →
-               _root_.List _root_.Geb.Kernel.Tree ×
-                 (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree))
-             (x3 : _root_.List _root_.Geb.Kernel.Tree ×
+             (x2 : _root_.List _root_.Geb.Kernel.Tree ×
                (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)) =>
-            x2 (_root_.GebMirror.Kernel.«Reader.lexStep» x3 x1))
-          (fun (x1 : _root_.List _root_.Geb.Kernel.Tree ×
-               (_root_.List _root_.Geb.Kernel.Tree × _root_.Geb.Kernel.Tree)) =>
-            x1)
-          x0
+            _root_.GebMirror.Kernel.«Reader.lexStep» x2 x1)
           (_root_.GebMirror.Kernel.«Reader.lexIdle»
-            ([] : _root_.List _root_.Geb.Kernel.Tree)))
+            ([] : _root_.List _root_.Geb.Kernel.Tree))
+          (_root_.GebMirror.Kernel.«Prelude.reverseIter» x0))
     else
       _root_.GebMirror.Kernel.«Prelude.none»
 
@@ -1300,7 +1293,7 @@ def «Reader.parseStep» :=
                   (_root_.Geb.Kernel.leaf 1,
                     (((_root_.Geb.Kernel.Const.node
                       (_root_.Geb.Kernel.leaf 2)
-                      (_root_.GebMirror.Kernel.«Prelude.reverse» x2)) ::
+                      (_root_.GebMirror.Kernel.«Prelude.reverseIter» x2)) ::
                       x4) ::
                       x5))))
     else
@@ -1316,25 +1309,17 @@ def «Reader.readSExps» :=
           (_root_.List
             _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.foldr
         (α := _root_.Geb.Kernel.Tree)
-        (β := (_root_.Geb.Kernel.Tree ×
-          _root_.List (_root_.List _root_.Geb.Kernel.Tree)) →
-          _root_.Geb.Kernel.Tree ×
-            _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+        (β := _root_.Geb.Kernel.Tree ×
+          _root_.List (_root_.List _root_.Geb.Kernel.Tree))
         (fun (x2 : _root_.Geb.Kernel.Tree)
-           (x3 : (_root_.Geb.Kernel.Tree ×
-             _root_.List (_root_.List _root_.Geb.Kernel.Tree)) →
-             _root_.Geb.Kernel.Tree ×
-               _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-           (x4 : _root_.Geb.Kernel.Tree ×
+           (x3 : _root_.Geb.Kernel.Tree ×
              _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
-          x3 (_root_.GebMirror.Kernel.«Reader.parseStep» x4 x2))
-        (fun (x2 : _root_.Geb.Kernel.Tree ×
-             _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
-          x2)
-        (_root_.Geb.Kernel.Const.children (_root_.GebMirror.Kernel.«Prelude.get» x1))
+          _root_.GebMirror.Kernel.«Reader.parseStep» x3 x2)
         (_root_.Geb.Kernel.leaf 1,
           (([] : _root_.List _root_.Geb.Kernel.Tree) ::
-            ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree))));
+            ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree))))
+        (_root_.GebMirror.Kernel.«Prelude.reverseIter»
+          (_root_.Geb.Kernel.Const.children (_root_.GebMirror.Kernel.«Prelude.get» x1)));
       if ((x2).1).label ≠ 0 then
         _root_.Geb.Kernel.Const.lcase
           (α := _root_.List _root_.Geb.Kernel.Tree)
@@ -1350,7 +1335,7 @@ def «Reader.readSExps» :=
               (_root_.GebMirror.Kernel.«Prelude.some»
                 (_root_.Geb.Kernel.Const.node
                   (_root_.Geb.Kernel.leaf 0)
-                  (_root_.GebMirror.Kernel.«Prelude.reverse» x3)))
+                  (_root_.GebMirror.Kernel.«Prelude.reverseIter» x3)))
               (fun (_ : _root_.List _root_.Geb.Kernel.Tree)
                  (_ : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
                 _root_.GebMirror.Kernel.«Prelude.none»))
@@ -1937,7 +1922,7 @@ def «Reader.rrApply» :=
       ([] : _root_.List _root_.Geb.Kernel.Tree)
       x0
 
-def «$5265616465722f5252732e7461696c» :=
+def «$284c697374732e7461696c202850726f64205420284172726f7720284c6973742054292054292929» :=
   fun (x0 : _root_.List
       (_root_.Geb.Kernel.Tree ×
         (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
@@ -1971,7 +1956,7 @@ def «Reader.rrAt» :=
         (α := _root_.List
           (_root_.Geb.Kernel.Tree ×
             (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-        _root_.GebMirror.Kernel.«$5265616465722f5252732e7461696c»
+        _root_.GebMirror.Kernel.«$284c697374732e7461696c202850726f64205420284172726f7720284c6973742054292054292929»
         x0
         x1)
       (fun (_ : _root_.List _root_.Geb.Kernel.Tree) =>
@@ -2021,7 +2006,7 @@ def «Reader.argsOf» :=
           (α := _root_.List
             (_root_.Geb.Kernel.Tree ×
               (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-          _root_.GebMirror.Kernel.«$5265616465722f5252732e7461696c»
+          _root_.GebMirror.Kernel.«$284c697374732e7461696c202850726f64205420284172726f7720284c6973742054292054292929»
           x0
           x1)
         x2)
@@ -3220,6 +3205,19 @@ def «Check.checkNode» :=
                                       else
                                         _root_.GebMirror.Kernel.«Prelude.none»
 
+def «Check.typeInStep» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.List
+      (_root_.Geb.Kernel.Tree ×
+        (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
+    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.node
+      x1
+      (_root_.GebMirror.Kernel.«Reader.rrTrees» x2);
+    (x3,
+      fun (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
+        _root_.GebMirror.Kernel.«Check.checkNode» x0 x3 x2 x4)
+
 def «Check.typeIn» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -3227,16 +3225,7 @@ def «Check.typeIn» :=
     (_root_.Geb.Kernel.Const.fold
       (α := _root_.Geb.Kernel.Tree ×
         (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (x4 : _root_.List
-           (_root_.Geb.Kernel.Tree ×
-             (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-        let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.node
-          x3
-          (_root_.GebMirror.Kernel.«Reader.rrTrees» x4);
-        (x5,
-          fun (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-            _root_.GebMirror.Kernel.«Check.checkNode» x0 x5 x4 x6))
+      (_root_.GebMirror.Kernel.«Check.typeInStep» x0)
       x2).2
       x1
 

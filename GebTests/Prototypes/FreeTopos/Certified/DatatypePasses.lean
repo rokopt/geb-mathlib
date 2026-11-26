@@ -99,7 +99,7 @@ structure Loaded (f : PassFns) (Gk : List Kernel.Glob) (idx : String → ℕ) : 
   expandTyped : DatatypeTranslated.Loaded Gk idx "Datatype.expandTyped"
     (tArrow (tList tT) (tProd tT (tList tT))) f.expandTyped
   /-- The absent name's. -/
-  nothing : DatatypeTranslated.Loaded Gk idx "Typing/OName.nothing" tT f.nothing
+  nothing : DatatypeTranslated.Loaded Gk idx "(Option.nothing Typing.Name)" tT f.nothing
   /-- The typing's. -/
   checkAll : DatatypeTranslated.Loaded Gk idx "Typing.checkAll"
     (tArrow (tProd envTy tT) (tArrow (tList tT) (tProd envTy tT))) f.checkAll
@@ -163,7 +163,7 @@ def passHyps (P : Prog) : Option (List Term) := do
   let ch (t : Term) (i : ℕ) : Term := apps childT [t, leafT (numeral i)]
   let x := pc P "Datatype.expandTyped" [v 0]
   let ts := Term.snd x
-  let nothing := pc P "Typing/OName.nothing" []
+  let nothing := pc P "(Option.nothing Typing.Name)" []
   let run := pc P "Typing.checkAll" [Term.pair (pc P "Typing.env0" []) nothing,
     pc P "Datatype.markersFirst" [ts]]
   let r := pc P "Recognize.insertRecognizers" [pc P "Datatype.kernelForms" [ts]]

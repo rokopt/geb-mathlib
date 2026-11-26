@@ -355,8 +355,8 @@ together.
    with the bytes a read succeeds with. Each is a source of the library's
    own, named after its module, and none is a source of a program under
    `bootstrap/`, so that a change to a library module regenerates no
-   artifact there; `bootstrap/seq.geb`, whose templates the compilers
-   import, is converted to these forms at step 12. A declaration's note
+   artifact there. Step 12 applies these forms to the compiler sources,
+   including `bootstrap/seq.geb`. A declaration's note
    holds examples, which a compile of the library or of a client checks.
    The library's theorem is stated of a function of lists of trees,
    `Bytes.firstLine`: statements are not yet written over datatypes
@@ -415,22 +415,16 @@ together.
     Symbol use the declaration resolver across open buffers, and the
     grammar scopes the names of forms at list heads
     (`editors/vscode/test/`, {ref "editing"}[Editing]).
-12. Change the sources that developments are about, one change after
-    another. The reader in constant depth changes `bootstrap/reader.geb`;
-    the definitions of the steps of the folds of `typeIn`, `trav` and
-    `expandExpr` change `bootstrap/check.geb`, `bootstrap/subst.geb` and
-    the sources of the expansion ({ref "improvements"}[Improvements]);
-    and the conversion of the sources under `bootstrap/` to the forms of
-    step 4 changes `bootstrap/seq.geb` and the sources that import its
-    modules ({ref "polymorphic-definitions"}[Polymorphic definitions]).
-    Each is a source of the program of the datatype language's soundness
-    or of the metalogic's, so that each is followed by the regeneration
-    of the mirrors, by `scripts/certificates.sh regen` and by
-    `scripts/proofs.sh`. A change that holds several of them is followed
-    by one regeneration, and each made alone by its own. The
-    further changes of step 7 shorten their checks. Convert the
-    bootstrap sources after step 8 has exercised the generic forms in
-    the library. The reader has no dependency on those forms.
+12. Complete. The reader's tokenizer and parser fold over bytes and tokens in constant call depth.
+    The proof documents use the same fold steps as the kernel checker, term traversal and
+    expression expansion, `Check.typeInStep`, `Subst.travStep` and `Datatype.expandExprStep`.
+    The bootstrap sources use generic definitions of lists, optional values and computations.
+    In particular, `Combinator.Comp.bind` composes computations at any two value types.
+    These programs determine the compiler image, the mirrors and the statements checked by
+    the soundness developments. Regenerate a combined change once with
+    `scripts/bootstrap.sh regen`, `scripts/authoring.sh regen` and
+    `scripts/certificates.sh regen`. Their checks and `scripts/proofs.sh` verify the results
+    ({ref "improvements"}[Improvements]).
 13. Complete. Compile, run and interact reuse the workspace's kept
     manifest layers. Compile, prove and replay evaluate each example
     from the same checked program state. When a client or example first
@@ -446,8 +440,8 @@ together.
 tag := "downstream-order"
 %%%
 
-Steps 1 through 9, 11 and 13 are complete. The table gives when each
-remaining step starts and the artifacts that check it.
+Steps 1 through 9 and 11 through 13 are complete. The first published
+release is the remaining step.
 
 :::table +header
 *
@@ -458,19 +452,12 @@ remaining step starts and the artifacts that check it.
   * 10, the first published release
   * Now, the language guide and its checked examples are in place
   * Release archives, editor packages and the manual
-*
-  * 12, the sources that developments are about
-  * Now, 8 having exercised the generic forms the sources are converted to
-  * The compiler's image, the mirrors and the certificates
 :::
 
-Load each compiler once per stage-test comparison before the next change
-to a compiler's source.
+Each stage-test comparison shares a loaded compiler across its inputs.
 The stage-0 example comparison took 3.0 seconds with repeated loading
 and 0.5 seconds with one load ({ref "improvements"}[Improvements]).
 Exercise host-tool changes in the client with the editor's reports.
-The constant-depth reader can move forward
-if the reader's stack limits the client or the compiler.
 
 The proof work in {ref "the-next-phase"}[The next phase] proceeds alongside
 the client. Expose datatype-level statements before writing library
@@ -482,8 +469,9 @@ replay ({ref "searches-remaining"}[The searches' remaining time]).
 The Geb transcription of the proof-hole checker proceeds independently
 of the editor's display of datatype holes. Integrate changes to each
 committed artifact one at a time. A structured rejection from the
-compiler regenerates its image, as step 4 did. The proof-hole checker and step 12
-regenerate metalogic mirrors. Changes to the proof runner for datatype
+compiler regenerates its image, as step 4 did. The proof-hole checker
+regenerates metalogic mirrors, as the bootstrap source changes of step 12 did.
+Changes to the proof runner for datatype
 statements or tactics needed by a proof script regenerate its emitted Lean
 (`scripts/authoring.sh regen`).
 
@@ -550,8 +538,8 @@ Computation:
 * Complete. The Geb serializer's list processing in constant depth:
   data accumulators for digits, preorder traversal and byte packing;
   the fold counting the nodes still follows the tree's depth.
-* Ready. The Geb reader in constant depth, and the stage tests reading
-  each compiler once, the section on improvements.
+* Complete. The Geb reader scans bytes and parses tokens in constant call depth. The stage
+  tests load each compiler once per comparison ({ref "improvements"}[Improvements]).
 * Complete. The compiler's time, the section on improvements: its
   division among the compiler's stages, each stage's time linear in the
   program, and the compilation of a program a layer at a time from the
@@ -3555,15 +3543,11 @@ typing, the three forms, the recognizers, the opaque check of templates,
 and the stage-1 compiler's own sources retyped, its typing, expansion and
 Lean backend declaring their forms,
 types, documents and terms by `data` with the representations they had,
-and its lists and optional values instances of the templates `Seq` and
-`Option` of `bootstrap/seq.geb`; a template's instances are distinct
-types, so modules share an instance by exporting it. Complete also: the
-metalogic's sources retyped, their records declared by `data`, their
-lists and optional values instances of the templates, and the combinator
-prover's computations instances of a template `Comp` at each type of
-values, composed by a copy of the composition for each pair of types it
-composes; its mirror regenerated, and the agreement proofs repaired by
-equations of each copy with one Lean function. In progress: the
+and its lists and optional values using `Seq` and `Option` of `bootstrap/seq.geb`.
+The metalogic likewise declares its records by `data`. Its combinator prover uses
+`Combinator.Comp` at the result types of computations and composes them with one
+generic `bind`. Equations relate the emitted instances at equal erased types to
+their common Lean functions. In progress: the
 soundness of the typing, stated in the internal language of the stage-1
 compiler composed with the reader and the evaluator written in Geb, by a
 relation extending the fundamental lemma's at the datatypes, and proved
@@ -5279,9 +5263,8 @@ language's, refers to the reader and the checker qualified, as
 one scope stays, as `mNatRec` beside the theory's `natRec` and `phVar`
 beside the language's `var`, as does a prefix that names a role, such as
 `kw` for keywords and `is` for tests. A list function used at several
-element types is an instance of one module, `Lists`, whose parameter is
-the element type, imported as `(import (Lists RR) as RRs)` and used as
-`RRs.tail`.
+element types takes its element type as an argument. For example, the
+reader takes the tail of a list of child results with `(Lists.tail RR)`.
 
 A whole module written as one block is one form, so an unbalanced
 parenthesis inside it leaves the block unreadable to the compiler.
@@ -5390,18 +5373,11 @@ tag := "polymorphic-definitions"
 
 State: complete, in the form whose uses write their type arguments.
 
-Polymorphic definitions precede the library's modules (the decision on
-polymorphic definitions). A module's parameters are supplied at an
-import, so a function used at several types is imported once for each,
-as `bootstrap/stage1/typing.geb` imports `(Seq Tx)` and `(Seq Ty)` under
-names of their own. A template's instances are distinct types, so
-modules share a datatype such as `Option`'s by the export of one
-instance. And a definition relating two types has no module whose
-parameters are those of both: the combinator prover holds a copy of the
-composition of computations for each pair of types it composes
-({ref "improvements"}[Improvements]). A library of lists, optional
-values and maps written in those forms consists of such imports, exports
-and copies, as do its callers.
+The library and the bootstrap both use polymorphic definitions. The stage-1 typing
+uses `Seq` at `Tx` and `Ty` in the same scope. Two uses of `(Option.Maybe A)` at
+the same type denote the same datatype across modules. The combinator prover
+supplies both the intermediate type and the result type to `Comp.bind` at each use
+({ref "improvements"}[Improvements]).
 
 A definition with type parameters of its own is used at several types in
 one scope, its type arguments supplied where it is used, as those of the
@@ -5543,13 +5519,12 @@ stage-0 compiler on such programs and its rejection of those that
 inspect a parameter (`GebTests/Prototypes/Stage1.lean`); the stage-0
 compiler and the committed image reproduce themselves
 (`scripts/bootstrap.sh check`). The library's modules are written in
-these forms from the first. The sources under `bootstrap/` are converted
-to them afterwards, in a change of their own (the decision on
-conversion). That change renames and reorders the instances of the
-programs that the mirrors, the agreement proofs and the developments are
-about, sources of the program whose typing's soundness is proved among
-them, so it is followed by the regeneration of the mirrors and by
-`scripts/certificates.sh regen`.
+these forms from the first. The bootstrap sources now use them as well
+(the decision on conversion). The name of an emitted instance includes its
+type arguments, and the first use determines its position. The agreement proofs
+and the soundness developments refer to those instances in the regenerated mirrors
+and program images ({ref "downstream-authoring"}[A Geb library and its
+downstream application], step 12).
 
 ### Documentation
 %%%
@@ -9265,10 +9240,12 @@ the change that removes it.
   bootstrap, whose end point requires no such typing
   ({ref "interaction-net-affine-certificates"}[Elementary-affine
   certificates]).
-* Depth of the Geb reader. The reader's tokenizer is a right fold whose
-  continuations nest one call per character, so running it in Lean's
-  interpreter needs stack in proportion to a program's length. A fold
-  that threads its state in constant depth removes the limit.
+* Depth of the Geb reader. The tokenizer, the Base64 decoder and the parser keep
+  their state as data. Each folds over its input in reverse, so neither scanning a
+  byte nor consuming a token adds a pending call. The parser keeps open lists in
+  its explicit stack. `Prelude.reverseIter`, shared with the serializer, iterates
+  over the unread suffix and the reversed prefix. The stage-0 regressions compare
+  compilation after a long comment with the seed and count 65,536 consecutive forms.
   The serializer's list processing uses data accumulators: digit
   reversal iterates over an unread suffix, preorder traversal iterates
   over a work list of trees, and packing folds from the last bit to the
@@ -9288,14 +9265,11 @@ the change that removes it.
   machine the stage-0 compiler compiles its own source in about six
   seconds in a test and by `geb-kernel run` alike, and a program of a
   few definitions in 0.18 seconds against 0.32, the executable starting
-  a process for each. Each comparison reads and checks its compiler
-  anew, 0.13 of those 0.18 seconds: the comparison of the stage-0
-  compiler with the seed on the kernel's examples takes 3.0 seconds, and
-  0.5 with the compiler read once. A definition of a program's entry,
-  read once and applied to each input of a comparison, removes the
-  repetition; the modules of the stage tests hold the sources that most
-  of the tests read, so it is made with a change that rebuilds those
-  tests. A change to a Geb source rebuilds the test modules that read it
+  a process for each. Reading and checking the compiler took 0.13 of those
+  0.18 seconds. The stage tests now load the compiler's entries once and apply
+  them to each input. On the kernel's examples the stage-0 comparison took
+  0.5 seconds with one load and 3.0 seconds with repeated loading.
+  A change to a Geb source rebuilds the test modules that read it
   at elaboration and their importers, each group of sources being a
   dependency of a library of the modules that read it (`lakefile.toml`);
   a change to a source of the stage-0 compiler rebuilds the stage tests
@@ -9317,16 +9291,11 @@ the change that removes it.
   the certificates does not import it, so its searches do not run. The
   test of a keyword declared apart from the elaboration removes the
   dependency.
-* Monomorphic compositions. A template's instances are distinct types,
-  so in the sources written before polymorphic definitions a composition
-  of computations at two types of values is a definition of its own: the
-  combinator prover holds one for each pair of types it composes
-  ({ref "datatype-completion"}[The datatype language's completion]). A
-  definition with type parameters of its own is one definition at every
-  pair ({ref "polymorphic-definitions"}[Polymorphic definitions]), and
-  the conversion of the sources under `bootstrap/` to that form removes
-  the copies ({ref "downstream-authoring"}[A Geb library and its
-  downstream application], step 12).
+* Compositions of prover computations. `Combinator.Comp.bind A B` passes
+  the value of type `A` and the resulting state to a continuation whose
+  computation returns a `B`. The compiler emits an instance for each pair
+  of types used. The agreement proofs identify their common Lean denotation
+  after erasure ({ref "polymorphic-definitions"}[Polymorphic definitions]).
 * A bundle keeps definition names. The separate kernel annotation record
   relates binders and comments in the durable source to core vertices.
   Extend that correspondence through module and datatype elaboration
@@ -9343,15 +9312,11 @@ the change that removes it.
   two equal; and a stored derivation would leave the check alone, and
   spare the substitution test, which proves weakening again as a lemma
   before its own theorem.
-* The steps of the folds of `typeIn`, `trav` and `expandExpr` are named by
-  no definition of their sources, so a proof document that states a lemma
-  about one of those folds writes its step out, once, in an abbreviation
-  ({ref "development-scripts"}[Abbreviations, folds and searches]), and
-  the development of the fundamental lemma declares the folds of `typeIn`
-  and of the evaluator as definitions of its own. A
-  definition of each step removes the copies; `check.geb` and `subst.geb`
-  are sources of the program whose typing's soundness is proved, so the
-  definitions follow the datatype language's completion.
+* The checker, the term traversal and the expression expansion export
+  `Check.typeInStep`, `Subst.travStep` and `Datatype.expandExprStep`.
+  Weakening, substitution, normalization and the expansion's identity use these
+  names in their proof documents wherever a lemma refers to the corresponding fold
+  ({ref "development-scripts"}[Abbreviations, folds and searches]).
 * The time of the developments stated in Geb. The prover written in Geb,
   compiled, finds the developments of weakening and substitution together
   in about fifty minutes and that of the expansion's identity in about ten
@@ -9372,18 +9337,14 @@ the change that removes it.
 tag := "the-next-phase"
 %%%
 
-Begin on the Lean host with {ref "downstream-authoring"}[A Geb library and
-its downstream application], in
-{ref "downstream-order"}[the order of its remaining steps], whose first
-confines the checks that a change to a compiler runs. Client development
-in the editor now uses the proof cache and navigation index. Loading the compiler once per
-stage-test comparison shortens the feedback cycle for changes to the
-compiler itself. The
-constant-depth reader removes a stack limit as the sources grow
-({ref "improvements"}[Improvements]). Polymorphic definitions are
-constructed, by a change to the compilers' sources that regenerated the
-committed image and the Lean the compiler emits, and the library's
-modules are written in them
+The Lean host, library and downstream client are the subjects of
+{ref "downstream-authoring"}[A Geb library and its downstream application].
+The {ref "downstream-order"}[remaining release step] checks the packaged
+tools against that client. Its editor uses the proof cache and navigation
+index. The stage tests load each compiler once per comparison, and the Geb
+reader scans and parses source text in constant call depth
+({ref "improvements"}[Improvements]). The compilers, metalogic and library
+use definitions with explicit type parameters
 ({ref "polymorphic-definitions"}[Polymorphic definitions]).
 
 The proofs about the compiler's components are complete: the type

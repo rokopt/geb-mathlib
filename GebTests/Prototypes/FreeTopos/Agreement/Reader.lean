@@ -800,9 +800,10 @@ theorem rrApply_eq (rs : List (Tree × (List Tree → Tree))) (s : List Tree) :
 
 /-- The results after the first ones. -/
 theorem iter_tail (n : ℕ) : ∀ rs : List (Tree × (List Tree → Tree)),
-    Const.iter «$5265616465722f5252732e7461696c» rs (leaf n) = rs.drop n := by
+    Const.iter gebMirror% "(Lists.tail (Prod T (Arrow (List T) T)))" rs (leaf n) = rs.drop n := by
   refine Nat.rec (fun _ ↦ rfl) (fun n ih rs ↦ ?_) n
-  change Nat.repeat «$5265616465722f5252732e7461696c» (n + 1) rs = rs.drop (n + 1)
+  change Nat.repeat
+      gebMirror% "(Lists.tail (Prod T (Arrow (List T) T)))" (n + 1) rs = rs.drop (n + 1)
   rw [repeat_succ']
   cases rs with
   | nil => exact (ih []).trans (List.drop_nil)

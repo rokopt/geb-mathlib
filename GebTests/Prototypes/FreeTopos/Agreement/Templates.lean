@@ -5,30 +5,29 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.Kernel.MirrorName
 public import GebMirror.Metalogic
 public import Mathlib.CategoryTheory.Category.Init
 
 set_option doc.verso true in
 /-!
-# The instances of the datatype language's templates in the mirror
+# Instances of generic Geb definitions in the mirror
 
-A module with parameters of the datatype language ({lit}`bootstrap/seq.geb`,
-{lit}`bootstrap/free-topos/base.geb`) is instantiated at each import, each instance a copy of the
-template's definitions, which the bootstrap compiler emits in Lean under the instance's name. At a
-datatype, which erases to the trees, the copies of a definition are one Lean function. This module
-states each such function once; the command {lit}`template_equations`
+Generic definitions from {lit}`bootstrap/seq.geb` and the metalogic are instantiated at
+their type arguments. When types erase to trees, instances have the same Lean denotation.
+This module states each such function once. The command {lit}`template_equations`
 ({lit}`GebTests.Prototypes.FreeTopos.Agreement.TemplateEquations`) equates every copy with it.
 
 ## Main definitions
 
 * {lit}`single`, {lit}`length`, {lit}`append`, {lit}`reverse`, {lit}`tail`, {lit}`drop`,
-  {lit}`atOr` — the template {lit}`Seq`.
+  {lit}`atOr` — the generic list functions of {lit}`Seq`.
 * {lit}`nothing`, {lit}`just`, {lit}`isJust`, {lit}`fromMaybe`, {lit}`nthOf`, {lit}`allJust` — the
-  template {lit}`Option`.
+  generic functions of {lit}`Option`.
 * {lit}`all`, {lit}`any`, {lit}`isEmpty`, {lit}`take`, {lit}`map`, {lit}`l2` to {lit}`l6` — the
-  templates {lit}`Each`, {lit}`Map` and {lit}`Few`.
-* {lit}`res`, {lit}`bad`, {lit}`ok`, {lit}`pure`, {lit}`fail`, {lit}`orElse` — the template
-  {lit}`Comp` of {lit}`bootstrap/free-topos/combinator.geb`.
+  list functions of {lit}`Each`, {lit}`Map` and {lit}`Few`.
+* {lit}`res`, {lit}`bad`, {lit}`ok`, {lit}`pure`, {lit}`fail`, {lit}`orElse`, {lit}`bind` — the
+  computations of {lit}`Comp` in {lit}`bootstrap/free-topos/combinator.geb`.
 
 ## Tags
 
@@ -150,6 +149,9 @@ def fail (_ _ : Tree) : Tree := bad
 /-- The first of two computations that succeeds. -/
 def orElse (a b : Tree → Tree → Tree) : Tree → Tree → Tree := fun sc st ↦
   if (Const.eq (Const.label (a sc st)) (leaf 1)).label ≠ 0 then a sc st else b sc st
+
+/-- The composition of two prover computations at erased value types. -/
+def bind := gebMirror% "(Combinator.Comp.bind T T)"
 
 end GebTests.Prototypes.FreeTopos.Agreement.Templates
 

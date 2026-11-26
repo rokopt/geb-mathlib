@@ -7,26 +7,13 @@
 ; by rules from the axioms and the development's theorems, normalization, the proofs by
 ; normalization and induction, and the library's development. The prover runs in a scope and a
 ; state: a computation is a function from a scope and a state to the optional pair of its
-; value and the state after it, an instance of the module Comp at the type of its values. A
+; value and the state after it. Its result and composition are generic in the value types. A
 ; scope holds its variables' sorts and its hypotheses; a state the development's entries, each a
 ; sequent with its certificate, the terms typed so far with their typings and the terms
 ; normalized so far with their normal forms, each table the latest first, the definitions in
 ; force, the extended signature, and whether the typing is certified by the checker's oracle
 ; rules; a typing a term, its sort, its definedness certificate, its lower bound with its
 ; certificate and its upper bound with its certificate.
-
-; the computations at a type of values V, from a scope of type Sc and a state of type St to the
-; optional pair of a value and the state after it: a value, failure, and the first of two
-; computations that succeeds
-(module Comp (parameter V) (parameter Sc) (parameter St)
-  (export Res res Out bad ok M pure fail orElse)
-  (data Res (res V St))
-  (data Out (bad) (ok Res))
-  (deftype M (Arrow Sc (Arrow St Out)))
-  (defn pure ((v V)) M (lam ((sc Sc) (st St)) (ok (res v st))))
-  (defn fail ((sc Sc) (st St)) Out bad)
-  (defn orElse ((a M) (b M)) M
-    (lam ((sc Sc) (st St)) (let r Out (a sc st) (case r ((ok q) r) ((bad) (b sc st)))))))
 
 (module Combinator
   (export cRefl cTrans scope lookup MF matchKids matchPat bridge applyRule pByNorm proveSeq
@@ -43,12 +30,7 @@
   (import Infer)
   (import Language)
   (import Prover)
-  (import (Seq Sequent) as Seqs)
-  (import (Seq OpSig) as OpSigs)
-  (import (Seq Eqn) as Eqns)
-  (import (Few Eqn) as EqnL)
-  (import (Option ODfd.Maybe) as OODfd)
-  (import (Map TPair T) as PairT)
+
   ; certificates, as Geb.PartialHorn.Cert builds them
   (defn cHyp ((i T)) T (node PRule.hyp (single (node i (nil T)))))
   (defn cRefl ((i T)) T (node PRule.refl (single (node i (nil T)))))
@@ -73,13 +55,11 @@
   (defn scCite ((sc PhScope) (j T)) T
     (let n T (length (scCtx sc))
       (cThm j (mapT phVar (range n)) (mapT cRefl (range n))
-        (mapT cHyp (range (Eqns.length (scHyps sc)))))))
+        (mapT cHyp (range (Seq.length Eqn (scHyps sc)))))))
 
   ; typings
   (data PTy (pty T T T T T T T))
-  (import (Option PTy) as OPTy)
-  (import (Seq PTy) as TyL)
-  (import (Map PTy T) as YT)
+
   (data PTys (ptys & PTy))
   (defn ptysOf ((ys PTys)) (List PTy) (case ys ((ptys & xs) xs)))
   (defn tyT ((y PTy)) T (case y ((pty t s d l lc h hc) t)))
@@ -94,8 +74,7 @@
   ; states: the development's entries, the tables of typings and of normal forms, the latest
   ; first, the definitions in force, the extended signature, and whether the typing is inferred
   (data DevEntry (devEntry Sequent T))
-  (import (Seq DevEntry) as DevL)
-  (import (Option DevEntry) as ODev)
+
   (defn devSeq ((e DevEntry)) Sequent (case e ((devEntry a c) a)))
   (data DevList (devs & DevEntry))
   (data MemoEntry (memoEntry T PTy))
@@ -118,17 +97,17 @@
   (defn withNfs ((st PSt) (f (List NfEntry))) PSt
     (case st ((pst v m f0 d s i) (pst v m (nfList f) d s i))))
   ; the value of a key in a table, the latest first
-  (defn memoFind ((tb (List MemoEntry)) (k T)) OPTy.Maybe
-    (foldr MemoEntry OPTy.Maybe
-      (lam ((e MemoEntry) (acc OPTy.Maybe))
-        (case e ((memoEntry k1 v) (if (equal k1 k) (OPTy.just v) acc))))
-      OPTy.nothing
+  (defn memoFind ((tb (List MemoEntry)) (k T)) (Option.Maybe PTy)
+    (foldr MemoEntry (Option.Maybe PTy)
+      (lam ((e MemoEntry) (acc (Option.Maybe PTy)))
+        (case e ((memoEntry k1 v) (if (equal k1 k) (Option.just PTy v) acc))))
+      (Option.nothing PTy)
       tb))
-  (defn nfFind ((tb (List NfEntry)) (k T)) OTPair.Maybe
-    (foldr NfEntry OTPair.Maybe
-      (lam ((e NfEntry) (acc OTPair.Maybe))
-        (case e ((nfEntry k1 v) (if (equal k1 k) (OTPair.just v) acc))))
-      OTPair.nothing
+  (defn nfFind ((tb (List NfEntry)) (k T)) (Option.Maybe TPair)
+    (foldr NfEntry (Option.Maybe TPair)
+      (lam ((e NfEntry) (acc (Option.Maybe TPair)))
+        (case e ((nfEntry k1 v) (if (equal k1 k) (Option.just TPair v) acc))))
+      (Option.nothing TPair)
       tb))
 
   ; the prover's computations at each type of values, and their compositions: a computation
@@ -138,162 +117,80 @@
   (defn ecEqn ((q EqnCert)) Eqn (case q ((eqnCert e c) e)))
   (defn ecCert ((q EqnCert)) T (case q ((eqnCert e c) c)))
   (data Assoc (assoc T T T T))
-  (import (Comp T PhScope PSt) as CT)
-  (import (Comp PTy PhScope PSt) as CY)
-  (import (Comp Sequent PhScope PSt) as CQ)
-  (import (Comp PSt PhScope PSt) as CS)
-  (import (Comp TPair PhScope PSt) as CP)
-  (import (Comp EqnCert PhScope PSt) as CE)
-  (import (Comp Certs PhScope PSt) as CC)
-  (import (Comp PTys PhScope PSt) as CYs)
-  (import (Comp Pairs PhScope PSt) as CPs)
-  (import (Comp OPTy.Maybe PhScope PSt) as COY)
-  (import (Comp OTPair.Maybe PhScope PSt) as COP)
-  (import (Comp Assoc PhScope PSt) as CA)
-  (defn bindTToT ((m CT.M) (k (Arrow T CT.M))) CT.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CT.ok r) (case r ((CT.res v s) (k v sc s)))) ((CT.bad) CT.bad))))
-  (defn bindTToY ((m CT.M) (k (Arrow T CY.M))) CY.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CT.ok r) (case r ((CT.res v s) (k v sc s)))) ((CT.bad) CY.bad))))
-  (defn bindTToP ((m CT.M) (k (Arrow T CP.M))) CP.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CT.ok r) (case r ((CT.res v s) (k v sc s)))) ((CT.bad) CP.bad))))
-  (defn bindTToC ((m CT.M) (k (Arrow T CC.M))) CC.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CT.ok r) (case r ((CT.res v s) (k v sc s)))) ((CT.bad) CC.bad))))
-  (defn bindYToT ((m CY.M) (k (Arrow PTy CT.M))) CT.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CY.ok r) (case r ((CY.res v s) (k v sc s)))) ((CY.bad) CT.bad))))
-  (defn bindYToY ((m CY.M) (k (Arrow PTy CY.M))) CY.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CY.ok r) (case r ((CY.res v s) (k v sc s)))) ((CY.bad) CY.bad))))
-  (defn bindYToP ((m CY.M) (k (Arrow PTy CP.M))) CP.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CY.ok r) (case r ((CY.res v s) (k v sc s)))) ((CY.bad) CP.bad))))
-  (defn bindYToYs ((m CY.M) (k (Arrow PTy CYs.M))) CYs.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CY.ok r) (case r ((CY.res v s) (k v sc s)))) ((CY.bad) CYs.bad))))
-  (defn bindYToA ((m CY.M) (k (Arrow PTy CA.M))) CA.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CY.ok r) (case r ((CY.res v s) (k v sc s)))) ((CY.bad) CA.bad))))
-  (defn bindQToT ((m CQ.M) (k (Arrow Sequent CT.M))) CT.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CQ.ok r) (case r ((CQ.res v s) (k v sc s)))) ((CQ.bad) CT.bad))))
-  (defn bindQToP ((m CQ.M) (k (Arrow Sequent CP.M))) CP.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CQ.ok r) (case r ((CQ.res v s) (k v sc s)))) ((CQ.bad) CP.bad))))
-  (defn bindQToE ((m CQ.M) (k (Arrow Sequent CE.M))) CE.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CQ.ok r) (case r ((CQ.res v s) (k v sc s)))) ((CQ.bad) CE.bad))))
-  (defn bindSToY ((m CS.M) (k (Arrow PSt CY.M))) CY.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CS.ok r) (case r ((CS.res v s) (k v sc s)))) ((CS.bad) CY.bad))))
-  (defn bindSToQ ((m CS.M) (k (Arrow PSt CQ.M))) CQ.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CS.ok r) (case r ((CS.res v s) (k v sc s)))) ((CS.bad) CQ.bad))))
-  (defn bindSToP ((m CS.M) (k (Arrow PSt CP.M))) CP.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CS.ok r) (case r ((CS.res v s) (k v sc s)))) ((CS.bad) CP.bad))))
-  (defn bindPToT ((m CP.M) (k (Arrow TPair CT.M))) CT.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CP.ok r) (case r ((CP.res v s) (k v sc s)))) ((CP.bad) CT.bad))))
-  (defn bindPToY ((m CP.M) (k (Arrow TPair CY.M))) CY.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CP.ok r) (case r ((CP.res v s) (k v sc s)))) ((CP.bad) CY.bad))))
-  (defn bindPToP ((m CP.M) (k (Arrow TPair CP.M))) CP.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CP.ok r) (case r ((CP.res v s) (k v sc s)))) ((CP.bad) CP.bad))))
-  (defn bindPToPs ((m CP.M) (k (Arrow TPair CPs.M))) CPs.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CP.ok r) (case r ((CP.res v s) (k v sc s)))) ((CP.bad) CPs.bad))))
-  (defn bindPToOP ((m CP.M) (k (Arrow TPair COP.M))) COP.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CP.ok r) (case r ((CP.res v s) (k v sc s)))) ((CP.bad) COP.bad))))
-  (defn bindEToT ((m CE.M) (k (Arrow EqnCert CT.M))) CT.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CE.ok r) (case r ((CE.res v s) (k v sc s)))) ((CE.bad) CT.bad))))
-  (defn bindEToP ((m CE.M) (k (Arrow EqnCert CP.M))) CP.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CE.ok r) (case r ((CE.res v s) (k v sc s)))) ((CE.bad) CP.bad))))
-  (defn bindCToT ((m CC.M) (k (Arrow Certs CT.M))) CT.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CC.ok r) (case r ((CC.res v s) (k v sc s)))) ((CC.bad) CT.bad))))
-  (defn bindCToP ((m CC.M) (k (Arrow Certs CP.M))) CP.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CC.ok r) (case r ((CC.res v s) (k v sc s)))) ((CC.bad) CP.bad))))
-  (defn bindCToE ((m CC.M) (k (Arrow Certs CE.M))) CE.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CC.ok r) (case r ((CC.res v s) (k v sc s)))) ((CC.bad) CE.bad))))
-  (defn bindCToC ((m CC.M) (k (Arrow Certs CC.M))) CC.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CC.ok r) (case r ((CC.res v s) (k v sc s)))) ((CC.bad) CC.bad))))
-  (defn bindYsToY ((m CYs.M) (k (Arrow PTys CY.M))) CY.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CYs.ok r) (case r ((CYs.res v s) (k v sc s)))) ((CYs.bad) CY.bad))))
-  (defn bindYsToP ((m CYs.M) (k (Arrow PTys CP.M))) CP.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CYs.ok r) (case r ((CYs.res v s) (k v sc s)))) ((CYs.bad) CP.bad))))
-  (defn bindYsToE ((m CYs.M) (k (Arrow PTys CE.M))) CE.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CYs.ok r) (case r ((CYs.res v s) (k v sc s)))) ((CYs.bad) CE.bad))))
-  (defn bindYsToYs ((m CYs.M) (k (Arrow PTys CYs.M))) CYs.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CYs.ok r) (case r ((CYs.res v s) (k v sc s)))) ((CYs.bad) CYs.bad))))
-  (defn bindPsToP ((m CPs.M) (k (Arrow Pairs CP.M))) CP.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CPs.ok r) (case r ((CPs.res v s) (k v sc s)))) ((CPs.bad) CP.bad))))
-  (defn bindPsToPs ((m CPs.M) (k (Arrow Pairs CPs.M))) CPs.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CPs.ok r) (case r ((CPs.res v s) (k v sc s)))) ((CPs.bad) CPs.bad))))
-  (defn bindOYToY ((m COY.M) (k (Arrow OPTy.Maybe CY.M))) CY.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((COY.ok r) (case r ((COY.res v s) (k v sc s)))) ((COY.bad) CY.bad))))
-  (defn bindOPToP ((m COP.M) (k (Arrow OTPair.Maybe CP.M))) CP.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((COP.ok r) (case r ((COP.res v s) (k v sc s)))) ((COP.bad) CP.bad))))
-  (defn bindAToP ((m CA.M) (k (Arrow Assoc CP.M))) CP.M
-    (lam ((sc PhScope) (st PSt))
-      (case (m sc st) ((CA.ok r) (case r ((CA.res v s) (k v sc s)))) ((CA.bad) CP.bad))))
-  (defn pmGet ((sc PhScope) (st PSt)) CS.Out (CS.ok (CS.res st st)))
-  (defn pmGuard ((b T)) CT.M (lam ((sc PhScope) (st PSt)) (if b (CT.ok (CT.res 0 st)) CT.bad)))
-  (defn mapMEqC ((f (Arrow Eqn CT.M)) (xs (List Eqn))) CC.M
-    (foldr Eqn CC.M
-      (lam ((x Eqn) (acc CC.M))
-        (bindTToC (f x)
-          (lam ((y T)) (bindCToC acc (lam ((ys Certs)) (CC.pure (certs (cons y (certsOf ys)))))))))
-      (CC.pure (certs (nil T)))
+  (module Comp (export Res res Out bad ok pure fail orElse bind) (data (Res V) (res V PSt))
+    (data (Out V) (bad) (ok (Res V)))
+    (defn (pure V) ((v V) (sc PhScope) (st PSt)) (Out V) (ok V (res V v st)))
+    (defn (fail V) ((sc PhScope) (st PSt)) (Out V) (bad V))
+    (defn (orElse V)
+      ((a (Arrow PhScope (Arrow PSt (Out V)))) (b (Arrow PhScope (Arrow PSt (Out V)))) (sc PhScope)
+       (st PSt))
+      (Out V)
+      (let r (Out V) (a sc st) (case r ((ok V q) r) ((bad V) (b sc st)))))
+    (defn (bind A B)
+      ((m (Arrow PhScope (Arrow PSt (Out A)))) (k (Arrow A (Arrow PhScope (Arrow PSt (Out B)))))
+       (sc PhScope)
+       (st PSt))
+      (Out B)
+      (case (m sc st) ((ok A r) (case r ((res A v s) (k v sc s)))) ((bad A) (bad B)))))
+  (deftype TreeM (Arrow PhScope (Arrow PSt (Comp.Out T))))
+  (deftype TypingM (Arrow PhScope (Arrow PSt (Comp.Out PTy))))
+  (deftype SequentM (Arrow PhScope (Arrow PSt (Comp.Out Sequent))))
+  (deftype PairM (Arrow PhScope (Arrow PSt (Comp.Out TPair))))
+  (deftype EqnCertM (Arrow PhScope (Arrow PSt (Comp.Out EqnCert))))
+  (deftype CertsM (Arrow PhScope (Arrow PSt (Comp.Out Certs))))
+  (deftype TypingsM (Arrow PhScope (Arrow PSt (Comp.Out PTys))))
+  (deftype PairsM (Arrow PhScope (Arrow PSt (Comp.Out Pairs))))
+  (deftype MaybeTypingM (Arrow PhScope (Arrow PSt (Comp.Out (Option.Maybe PTy)))))
+  (deftype MaybePairM (Arrow PhScope (Arrow PSt (Comp.Out (Option.Maybe TPair)))))
+  (deftype AssocM (Arrow PhScope (Arrow PSt (Comp.Out Assoc))))
+
+  (defn pmGet ((sc PhScope) (st PSt)) (Comp.Out PSt) (Comp.ok PSt (Comp.res PSt st st)))
+  (defn pmGuard ((b T)) TreeM
+    (lam ((sc PhScope) (st PSt)) (if b (Comp.ok T (Comp.res T 0 st)) (Comp.bad T))))
+  (defn mapMEqC ((f (Arrow Eqn TreeM)) (xs (List Eqn))) CertsM
+    (foldr Eqn CertsM
+      (lam ((x Eqn) (acc CertsM))
+        (Comp.bind T Certs (f x)
+          (lam ((y T))
+            (Comp.bind Certs Certs acc
+              (lam ((ys Certs)) (Comp.pure Certs (certs (cons y (certsOf ys)))))))))
+      (Comp.pure Certs (certs (nil T)))
       xs))
-  (defn mapMPairC ((f (Arrow TPair CT.M)) (xs (List TPair))) CC.M
-    (foldr TPair CC.M
-      (lam ((x TPair) (acc CC.M))
-        (bindTToC (f x)
-          (lam ((y T)) (bindCToC acc (lam ((ys Certs)) (CC.pure (certs (cons y (certsOf ys)))))))))
-      (CC.pure (certs (nil T)))
+  (defn mapMPairC ((f (Arrow TPair TreeM)) (xs (List TPair))) CertsM
+    (foldr TPair CertsM
+      (lam ((x TPair) (acc CertsM))
+        (Comp.bind T Certs (f x)
+          (lam ((y T))
+            (Comp.bind Certs Certs acc
+              (lam ((ys Certs)) (Comp.pure Certs (certs (cons y (certsOf ys)))))))))
+      (Comp.pure Certs (certs (nil T)))
       xs))
-  (defn mapMTY ((f (Arrow T CY.M)) (xs Ts)) CYs.M
-    (foldr T CYs.M
-      (lam ((x T) (acc CYs.M))
-        (bindYToYs (f x)
+  (defn mapMTY ((f (Arrow T TypingM)) (xs Ts)) TypingsM
+    (foldr T TypingsM
+      (lam ((x T) (acc TypingsM))
+        (Comp.bind PTy PTys (f x)
           (lam ((y PTy))
-            (bindYsToYs acc (lam ((ys PTys)) (CYs.pure (ptys (cons y (ptysOf ys)))))))))
-      (CYs.pure (ptys (nil PTy)))
+            (Comp.bind PTys PTys acc
+              (lam ((ys PTys)) (Comp.pure PTys (ptys (cons y (ptysOf ys)))))))))
+      (Comp.pure PTys (ptys (nil PTy)))
       xs))
-  (defn seqY ((ms (List CY.M))) CYs.M
-    (foldr CY.M CYs.M
-      (lam ((m CY.M) (acc CYs.M))
-        (bindYToYs m
+  (defn seqY ((ms (List TypingM))) TypingsM
+    (foldr TypingM TypingsM
+      (lam ((m TypingM) (acc TypingsM))
+        (Comp.bind PTy PTys m
           (lam ((y PTy))
-            (bindYsToYs acc (lam ((ys PTys)) (CYs.pure (ptys (cons y (ptysOf ys)))))))))
-      (CYs.pure (ptys (nil PTy)))
+            (Comp.bind PTys PTys acc
+              (lam ((ys PTys)) (Comp.pure PTys (ptys (cons y (ptysOf ys)))))))))
+      (Comp.pure PTys (ptys (nil PTy)))
       ms))
-  (defn seqP ((ms (List CP.M))) CPs.M
-    (foldr CP.M CPs.M
-      (lam ((m CP.M) (acc CPs.M))
-        (bindPToPs m
+  (defn seqP ((ms (List PairM))) PairsM
+    (foldr PairM PairsM
+      (lam ((m PairM) (acc PairsM))
+        (Comp.bind TPair Pairs m
           (lam ((y TPair))
-            (bindPsToPs acc (lam ((ys Pairs)) (CPs.pure (pairs (cons y (pairsOf ys)))))))))
-      (CPs.pure (pairs (nil TPair)))
+            (Comp.bind Pairs Pairs acc
+              (lam ((ys Pairs)) (Comp.pure Pairs (pairs (cons y (pairsOf ys)))))))))
+      (Comp.pure Pairs (pairs (nil TPair)))
       ms))
   ; the index of the first hypothesis passing a test, or nothing
   (defn findIdx ((f (Arrow Eqn T)) (xs (List Eqn))) T
@@ -301,87 +198,92 @@
       (foldr Eqn (Prod T T)
         (lam ((x Eqn) (s (Prod T T)))
           (pair (sub (fst s) 1) (if (f x) (some (sub (fst s) 1)) (snd s))))
-        (pair (Eqns.length xs) none)
+        (pair (Seq.length Eqn xs) none)
         xs)))
 
   ; typing: the axioms of the extension by the definitions in force, lemmas, the table of typings,
   ; and the certificates of definedness and of equations between objects
   (def seq0 (mkSeq (nil T) (nil Eqn) (eqn 0 0)))
   (def pdefn0 (pdefn (sorts (nil T)) 0 0))
-  (defn axiomAt ((j T)) CQ.M
-    (if (lt j (Seqs.length axioms)) (CQ.pure (Seqs.atOr seq0 axioms j))
-      (bindSToQ pmGet
+  (defn axiomAt ((j T)) SequentM
+    (if (lt j (Seq.length Sequent axioms)) (Comp.pure Sequent (Seq.atOr Sequent seq0 axioms j))
+      (Comp.bind PSt Sequent pmGet
         (lam ((st PSt))
           (let*
-            ((r T (sub j (Seqs.length axioms)))
-             (md OPDefn.Maybe (OPDefn.nthOf (stDefs st) (div r 2))))
-            (if (OPDefn.isJust md)
-              (let ma OSequent.Maybe
-                (OSequent.nthOf
-                  (pdAxioms (add (OpSigs.length sig) (div r 2)) (OPDefn.fromMaybe pdefn0 md))
+            ((r T (sub j (Seq.length Sequent axioms)))
+             (md (Option.Maybe PDefn) (Option.nthOf PDefn (stDefs st) (div r 2))))
+            (if (Option.isJust PDefn md)
+              (let ma (Option.Maybe Sequent)
+                (Option.nthOf Sequent
+                  (pdAxioms (add (Seq.length OpSig sig) (div r 2))
+                    (Option.fromMaybe PDefn pdefn0 md))
                   (mod r 2))
-                (if (OSequent.isJust ma) (CQ.pure (OSequent.fromMaybe seq0 ma)) CQ.fail))
-              CQ.fail))))))
-  (defn addLemma ((q Eqn) (c T)) CT.M
+                (if (Option.isJust Sequent ma)
+                  (Comp.pure Sequent (Option.fromMaybe Sequent seq0 ma))
+                  (Comp.fail Sequent)))
+              (Comp.fail Sequent)))))))
+  (defn addLemma ((q Eqn) (c T)) TreeM
     (lam ((sc PhScope) (st PSt))
-      (CT.ok
-        (CT.res (scCite sc (DevL.length (stDev st)))
-          (withDev st (DevL.append (stDev st) (DevL.single (devEntry (scSeq sc q) c))))))))
-  (defn lookup ((t T)) COY.M
-    (lam ((sc PhScope) (st PSt)) (COY.ok (COY.res (memoFind (stMemo st) t) st))))
-  (defn memoize ((y PTy)) CT.M
+      (Comp.ok T
+        (Comp.res T (scCite sc (Seq.length DevEntry (stDev st)))
+          (withDev st
+            (Seq.append DevEntry (stDev st) (Seq.single DevEntry (devEntry (scSeq sc q) c))))))))
+  (defn lookup ((t T)) MaybeTypingM
     (lam ((sc PhScope) (st PSt))
-      (CT.ok (CT.res 0 (withMemo st (cons (memoEntry (tyT y) y) (stMemo st)))))))
-  (defn memoRet ((y PTy)) CY.M (bindTToY (memoize y) (lam ((u T)) (CY.pure y))))
-  (defn dfdCert ((t T) (c T)) CT.M
+      (Comp.ok (Option.Maybe PTy) (Comp.res (Option.Maybe PTy) (memoFind (stMemo st) t) st))))
+  (defn memoize ((y PTy)) TreeM
     (lam ((sc PhScope) (st PSt))
-      (if (stInfer st) (CT.ok (CT.res (node PRule.typed (single t)) st))
+      (Comp.ok T (Comp.res T 0 (withMemo st (cons (memoEntry (tyT y) y) (stMemo st)))))))
+  (defn memoRet ((y PTy)) TypingM (Comp.bind T PTy (memoize y) (lam ((u T)) (Comp.pure PTy y))))
+  (defn dfdCert ((t T) (c T)) TreeM
+    (lam ((sc PhScope) (st PSt))
+      (if (stInfer st) (Comp.ok T (Comp.res T (node PRule.typed (single t)) st))
         (addLemma (dfd t) c sc st))))
-  (defn eqCert ((q Eqn) (c T)) CT.M
+  (defn eqCert ((q Eqn) (c T)) TreeM
     (lam ((sc PhScope) (st PSt))
-      (if (stInfer st) (CT.ok (CT.res (node PRule.objEq (l2 (eqLhs q) (eqRhs q))) st))
+      (if (stInfer st) (Comp.ok T (Comp.res T (node PRule.objEq (l2 (eqLhs q) (eqRhs q))) st))
         (addLemma q c sc st))))
-  (defn objEq ((l PTy) (r PTy)) CT.M
+  (defn objEq ((l PTy) (r PTy)) TreeM
     (lam ((sc PhScope) (st PSt))
       (if (and (eq (tySort l) Sorts.obj) (and (eq (tySort r) Sorts.obj) (equal (tyLo l) (tyLo r))))
-        (CT.ok
-          (CT.res
+        (Comp.ok T
+          (Comp.res T
             (if (stInfer st) (node PRule.objEq (l2 (tyT l) (tyT r)))
               (cTrans (tyLoC l) (cSymm (tyLoC r))))
             st))
-        CT.bad)))
+        (Comp.bad T))))
 
   ; the typing of an axiom's side instantiated at typed arguments
-  (deftype PatTy (Arrow (List PTy) (Arrow T CY.M)))
-  (defn proveHyp ((pt PatTy) (tys (List PTy)) (h Eqn)) CT.M
-    (bindYToT (pt tys (eqLhs h))
+  (deftype PatTy (Arrow (List PTy) (Arrow T TypingM)))
+  (defn proveHyp ((pt PatTy) (tys (List PTy)) (h Eqn)) TreeM
+    (Comp.bind PTy T (pt tys (eqLhs h))
       (lam ((l PTy))
-        (if (equal (eqLhs h) (eqRhs h)) (CT.pure (tyDfd l))
-          (bindYToT (pt tys (eqRhs h)) (lam ((r PTy)) (objEq l r)))))))
+        (if (equal (eqLhs h) (eqRhs h)) (Comp.pure T (tyDfd l))
+          (Comp.bind PTy T (pt tys (eqRhs h)) (lam ((r PTy)) (objEq l r)))))))
   ; the canonical bound of an application of operation k by the axiom j, with its certificate
-  (defn pBound ((pt PatTy) (tys (List PTy)) (k T) (j T) (d T)) CP.M
-    (bindQToP (axiomAt j)
+  (defn pBound ((pt PatTy) (tys (List PTy)) (k T) (j T) (d T)) PairM
+    (Comp.bind Sequent TPair (axiomAt j)
       (lam ((a Sequent))
-        (bindCToP
+        (Comp.bind Certs TPair
           (mapMEqC
             (lam ((h Eqn))
-              (if (equal (rep h) (rep (dfd (opVars k (TyL.length tys))))) (CT.pure d)
+              (if (equal (rep h) (rep (dfd (opVars k (Seq.length PTy tys))))) (Comp.pure T d)
                 (proveHyp pt tys h)))
             (seqHyps a))
           (lam ((hs Certs))
-            (let q T (cAx j (YT.map tyT tys) (YT.map tyDfd tys) (certsOf hs))
-              (bindYToP (pt tys (eqRhs (seqConcl a)))
-                (lam ((r PTy)) (CP.pure (pr (tyLo r) (cTrans q (tyLoC r))))))))))))
+            (let q T (cAx j (Map.map PTy T tyT tys) (Map.map PTy T tyDfd tys) (certsOf hs))
+              (Comp.bind PTy TPair (pt tys (eqRhs (seqConcl a)))
+                (lam ((r PTy)) (Comp.pure TPair (pr (tyLo r) (cTrans q (tyLoC r))))))))))))
   ; the typing of an application of the definition at position i, of sort s
-  (defn typeDefined ((pt PatTy) (i T) (s T) (tys (List PTy))) CY.M
-    (bindSToY pmGet
+  (defn typeDefined ((pt PatTy) (i T) (s T) (tys (List PTy))) TypingM
+    (Comp.bind PSt PTy pmGet
       (lam ((st PSt))
-        (let md OPDefn.Maybe (OPDefn.nthOf (stDefs st) i)
-          (if (OPDefn.isJust md)
-            (let* ((ts Ts (YT.map tyT tys)) (t T (phOp (add (OpSigs.length sig) i) ts)))
-              (bindYToY (pt tys (pdBody (OPDefn.fromMaybe pdefn0 md)))
+        (let md (Option.Maybe PDefn) (Option.nthOf PDefn (stDefs st) i)
+          (if (Option.isJust PDefn md)
+            (let* ((ts Ts (Map.map PTy T tyT tys)) (t T (phOp (add (Seq.length OpSig sig) i) ts)))
+              (Comp.bind PTy PTy (pt tys (pdBody (Option.fromMaybe PDefn pdefn0 md)))
                 (lam ((b PTy))
-                  (bindSToY pmGet
+                  (Comp.bind PSt PTy pmGet
                     (lam ((st1 PSt))
                       (if (stInfer st1)
                         (let d T (node PRule.typed (single t))
@@ -393,23 +295,23 @@
                               (pty t Sorts.arr d (tyLo b) (node PRule.objEq (l2 (dom t) (tyLo b)))
                                 (tyHi b)
                                 (node PRule.objEq (l2 (cod t) (tyHi b)))))))
-                        (bindTToY
+                        (Comp.bind T PTy
                           (addLemma (eqn t (tyT b))
-                            (cAx (defAxIdx i) ts (YT.map tyDfd tys) (single (tyDfd b))))
+                            (cAx (defAxIdx i) ts (Map.map PTy T tyDfd tys) (single (tyDfd b))))
                           (lam ((e T))
-                            (bindTToY (addLemma (dfd t) (cTrans e (cSymm e)))
+                            (Comp.bind T PTy (addLemma (dfd t) (cTrans e (cSymm e)))
                               (lam ((d T))
                                 (if (eq s Sorts.obj)
-                                  (bindTToY (addLemma (eqn t (tyLo b)) (cTrans e (tyLoC b)))
+                                  (Comp.bind T PTy (addLemma (eqn t (tyLo b)) (cTrans e (tyLoC b)))
                                     (lam ((c T))
                                       (memoRet (pty t Sorts.obj d (tyLo b) c (tyLo b) c))))
-                                  (bindTToY
+                                  (Comp.bind T PTy
                                     (addLemma (eqn (dom t) (tyLo b))
                                       (cTrans
                                         (cCong (cAx 0 (single t) (single d) (nil T)) (single e))
                                         (tyLoC b)))
                                     (lam ((dc T))
-                                      (bindTToY
+                                      (Comp.bind T PTy
                                         (addLemma (eqn (cod t) (tyHi b))
                                           (cTrans
                                             (cCong (cAx 1 (single t) (single d) (nil T)) (single e))
@@ -418,155 +320,168 @@
                                           (memoRet
                                             (pty t Sorts.arr d (tyLo b) dc (tyHi b)
                                               cc)))))))))))))))))
-            CY.fail)))))
+            (Comp.fail PTy))))))
   ; the certificate of an application's definedness by the rule the table names for operation k
-  (defn typeOpDfd ((pt PatTy) (k T) (tys (List PTy))) CT.M
-    (let ts Ts (YT.map tyT tys)
-      (case (OODfd.nthOf dfdRules k)
-        ((OODfd.just m)
+  (defn typeOpDfd ((pt PatTy) (k T) (tys (List PTy))) TreeM
+    (let ts Ts (Map.map PTy T tyT tys)
+      (case (Option.nthOf (Option.Maybe DfdRule) dfdRules k)
+        ((Option.just (Option.Maybe DfdRule) m)
          (case m
-           ((ODfd.just rule)
+           ((Option.just DfdRule rule)
             (case rule
               ((direct j)
-               (bindQToT (axiomAt j)
+               (Comp.bind Sequent T (axiomAt j)
                  (lam ((a Sequent))
-                   (bindCToT (mapMEqC (proveHyp pt tys) (seqHyps a))
-                     (lam ((hs Certs)) (CT.pure (cAx j ts (YT.map tyDfd tys) (certsOf hs))))))))
-              ((strict j) (CT.pure (cStrict 0 (cAx j ts (YT.map tyDfd tys) (nil T)))))
+                   (Comp.bind Certs T (mapMEqC (proveHyp pt tys) (seqHyps a))
+                     (lam ((hs Certs))
+                       (Comp.pure T (cAx j ts (Map.map PTy T tyDfd tys) (certsOf hs))))))))
+              ((strict j) (Comp.pure T (cStrict 0 (cAx j ts (Map.map PTy T tyDfd tys) (nil T)))))
               ((rhsRule j)
-               (let q T (cAx j (nil T) (nil T) (nil T)) (CT.pure (cTrans (cSymm q) q))))))
-           ((ODfd.nothing) CT.fail)))
-        ((OODfd.nothing) CT.fail))))
+               (let q T (cAx j (nil T) (nil T) (nil T)) (Comp.pure T (cTrans (cSymm q) q))))))
+           ((Option.nothing DfdRule) (Comp.fail T))))
+        ((Option.nothing (Option.Maybe DfdRule)) (Comp.fail T)))))
   ; the typing of an object t, an application of operation k defined by d, whose canonical form is
   ; the operation applied to its arguments' canonical forms
-  (defn typeOpObj ((k T) (t T) (d T) (tys (List PTy))) CY.M
-    (let c T (phOp k (YT.map (lam ((y PTy)) (if (eq (tySort y) Sorts.obj) (tyLo y) (tyT y))) tys))
-      (if (equal c t) (CY.pure (pty t Sorts.obj d t d t d))
-        (bindTToY
+  (defn typeOpObj ((k T) (t T) (d T) (tys (List PTy))) TypingM
+    (let c T
+      (phOp k (Map.map PTy T (lam ((y PTy)) (if (eq (tySort y) Sorts.obj) (tyLo y) (tyT y))) tys))
+      (if (equal c t) (Comp.pure PTy (pty t Sorts.obj d t d t d))
+        (Comp.bind T PTy
           (eqCert (eqn t c)
             (cCong d
-              (YT.map (lam ((y PTy)) (if (eq (tySort y) Sorts.obj) (tyLoC y) (tyDfd y))) tys)))
-          (lam ((e T)) (CY.pure (pty t Sorts.obj d c e c e)))))))
+              (Map.map PTy T (lam ((y PTy)) (if (eq (tySort y) Sorts.obj) (tyLoC y) (tyDfd y)))
+                tys)))
+          (lam ((e T)) (Comp.pure PTy (pty t Sorts.obj d c e c e)))))))
   ; the typing of an application of operation k of sort s, defined by d
-  (defn typeOpTy ((pt PatTy) (k T) (s T) (t T) (d T) (tys (List PTy))) CY.M
+  (defn typeOpTy ((pt PatTy) (k T) (s T) (t T) (d T) (tys (List PTy))) TypingM
     (if (eq s Sorts.obj)
       (cond
-        ((and (eq k 0) (eq (TyL.length tys) 1))
-         (let f PTy (TyL.atOr pty0 tys 0)
-           (CY.pure (pty t Sorts.obj d (tyLo f) (tyLoC f) (tyLo f) (tyLoC f)))))
-        ((and (eq k 1) (eq (TyL.length tys) 1))
-         (let f PTy (TyL.atOr pty0 tys 0)
-           (CY.pure (pty t Sorts.obj d (tyHi f) (tyHiC f) (tyHi f) (tyHiC f)))))
+        ((and (eq k 0) (eq (Seq.length PTy tys) 1))
+         (let f PTy (Seq.atOr PTy pty0 tys 0)
+           (Comp.pure PTy (pty t Sorts.obj d (tyLo f) (tyLoC f) (tyLo f) (tyLoC f)))))
+        ((and (eq k 1) (eq (Seq.length PTy tys) 1))
+         (let f PTy (Seq.atOr PTy pty0 tys 0)
+           (Comp.pure PTy (pty t Sorts.obj d (tyHi f) (tyHiC f) (tyHi f) (tyHiC f)))))
         (else (typeOpObj k t d tys)))
       (let* ((jd T (nth domRules k)) (jc T (nth codRules k)))
         (if (and (and (isSome jd) (isSome (get jd))) (and (isSome jc) (isSome (get jc))))
-          (bindPToY (pBound pt tys k (get (get jd)) d)
+          (Comp.bind TPair PTy (pBound pt tys k (get (get jd)) d)
             (lam ((dp TPair))
-              (bindPToY (pBound pt tys k (get (get jc)) d)
+              (Comp.bind TPair PTy (pBound pt tys k (get (get jc)) d)
                 (lam ((cp TPair))
-                  (bindTToY (eqCert (eqn (dom t) (p1 dp)) (p2 dp))
+                  (Comp.bind T PTy (eqCert (eqn (dom t) (p1 dp)) (p2 dp))
                     (lam ((de T))
-                      (bindTToY (eqCert (eqn (cod t) (p1 cp)) (p2 cp))
-                        (lam ((ce T)) (CY.pure (pty t Sorts.arr d (p1 dp) de (p1 cp) ce))))))))))
-          CY.fail))))
+                      (Comp.bind T PTy (eqCert (eqn (cod t) (p1 cp)) (p2 cp))
+                        (lam ((ce T))
+                          (Comp.pure PTy (pty t Sorts.arr d (p1 dp) de (p1 cp) ce))))))))))
+          (Comp.fail PTy)))))
   ; the typing of an application of operation k to terms of the given typings
   (def opSig0 (opSig (sorts (nil T)) 0))
-  (defn typeOp ((pt PatTy) (k T) (tys (List PTy))) CY.M
-    (bindSToY pmGet
+  (defn typeOp ((pt PatTy) (k T) (tys (List PTy))) TypingM
+    (Comp.bind PSt PTy pmGet
       (lam ((st PSt))
-        (let mo OOpSig.Maybe (OOpSig.nthOf (stSig st) k)
-          (if (OOpSig.isJust mo)
-            (let o OpSig (OOpSig.fromMaybe opSig0 mo)
-              (if (equalTs (YT.map tySort tys) (opArgs o))
-                (if (lt k (OpSigs.length sig))
-                  (let t T (phOp k (YT.map tyT tys))
-                    (bindTToY (typeOpDfd pt k tys)
+        (let mo (Option.Maybe OpSig) (Option.nthOf OpSig (stSig st) k)
+          (if (Option.isJust OpSig mo)
+            (let o OpSig (Option.fromMaybe OpSig opSig0 mo)
+              (if (equalTs (Map.map PTy T tySort tys) (opArgs o))
+                (if (lt k (Seq.length OpSig sig))
+                  (let t T (phOp k (Map.map PTy T tyT tys))
+                    (Comp.bind T PTy (typeOpDfd pt k tys)
                       (lam ((dc T))
-                        (bindTToY (dfdCert t dc)
-                          (lam ((d T)) (bindYToY (typeOpTy pt k (opSort o) t d tys) memoRet))))))
-                  (typeDefined pt (sub k (OpSigs.length sig)) (opSort o) tys))
-                CY.fail))
-            CY.fail)))))
+                        (Comp.bind T PTy (dfdCert t dc)
+                          (lam ((d T))
+                            (Comp.bind PTy PTy (typeOpTy pt k (opSort o) t d tys) memoRet))))))
+                  (typeDefined pt (sub k (Seq.length OpSig sig)) (opSort o) tys))
+                (Comp.fail PTy)))
+            (Comp.fail PTy))))))
   ; one step of typing: a variable's node by lf, an application by typeOp unless its term, which
   ; term computes from the node, has been typed
-  (defn typeStep ((pt PatTy) (lf (Arrow T CY.M)) (term (Arrow T T)) (nd T) (rs (List CY.M))) CY.M
+  (defn typeStep ((pt PatTy) (lf (Arrow T TypingM)) (term (Arrow T T)) (nd T) (rs (List TypingM)))
+    TypingM
     (let l T (label nd)
-      (if (eq l 0) (if (eq (length (children nd)) 1) (lf (label (at (children nd) 0))) CY.fail)
-        (bindOYToY (lookup (term nd))
-          (lam ((mt OPTy.Maybe))
-            (if (OPTy.isJust mt) (CY.pure (OPTy.fromMaybe pty0 mt))
-              (bindYsToY (seqY rs) (lam ((ys PTys)) (typeOp pt (sub l 1) (ptysOf ys))))))))))
+      (if (eq l 0)
+        (if (eq (length (children nd)) 1) (lf (label (at (children nd) 0))) (Comp.fail PTy))
+        (Comp.bind (Option.Maybe PTy) PTy (lookup (term nd))
+          (lam ((mt (Option.Maybe PTy)))
+            (if (Option.isJust PTy mt) (Comp.pure PTy (Option.fromMaybe PTy pty0 mt))
+              (Comp.bind PTys PTy (seqY rs)
+                (lam ((ys PTys)) (typeOp pt (sub l 1) (ptysOf ys))))))))))
   ; the canonical bound of a variable's domain or codomain: that of the object a hypothesis
   ; equates it with, typed by tt, certified by the oracle's rule when inf holds, or itself
   (def eqn0 (eqn 0 0))
-  (defn varSide ((tt (Arrow T CY.M)) (i T) (inf T) (o T) (j T)) CP.M
+  (defn varSide ((tt (Arrow T TypingM)) (i T) (inf T) (o T) (j T)) PairM
     (lam ((sc PhScope) (st PSt))
       (let*
         ((v T (phOp o (single (phVar i))))
          (mh T (findIdx (lam ((q Eqn)) (equal (eqLhs q) v)) (scHyps sc))))
         (if (isSome mh)
-          (let* ((h T (get mh)) (mq OEqn.Maybe (OEqn.nthOf (scHyps sc) h)))
-            (if (OEqn.isJust mq)
-              ((bindYToP (tt (eqRhs (OEqn.fromMaybe eqn0 mq)))
+          (let* ((h T (get mh)) (mq (Option.Maybe Eqn) (Option.nthOf Eqn (scHyps sc) h)))
+            (if (Option.isJust Eqn mq)
+              ((Comp.bind PTy TPair (tt (eqRhs (Option.fromMaybe Eqn eqn0 mq)))
                  (lam ((r PTy))
-                   (CP.pure
+                   (Comp.pure TPair
                      (pr (tyLo r)
                        (if inf (node PRule.objEq (l2 v (tyLo r))) (cTrans (cHyp h) (tyLoC r)))))))
                sc
                st)
-              CP.bad))
-          (CP.ok (CP.res (pr v (cAx j (single (phVar i)) (single (cRefl i)) (nil T))) st))))))
+              (Comp.bad TPair)))
+          (Comp.ok TPair
+            (Comp.res TPair (pr v (cAx j (single (phVar i)) (single (cRefl i)) (nil T))) st))))))
   ; the typing of a variable of the scope
-  (defn typeVar ((tt (Arrow T CY.M)) (i T)) CY.M
+  (defn typeVar ((tt (Arrow T TypingM)) (i T)) TypingM
     (lam ((sc PhScope) (st PSt))
       (let ms T (nth (scCtx sc) i)
         (if (isSome ms)
           (let s T (get ms)
             (cond
               ((eq s Sorts.obj)
-               (CY.ok
-                 (CY.res (pty (phVar i) Sorts.obj (cRefl i) (phVar i) (cRefl i) (phVar i) (cRefl i))
+               (Comp.ok PTy
+                 (Comp.res PTy
+                   (pty (phVar i) Sorts.obj (cRefl i) (phVar i) (cRefl i) (phVar i) (cRefl i))
                    st)))
               ((eq s Sorts.arr)
                (let inf T (stInfer st)
-                 ((bindPToY (varSide tt i inf 0 0)
+                 ((Comp.bind TPair PTy (varSide tt i inf 0 0)
                     (lam ((dp TPair))
-                      (bindPToY (varSide tt i inf 1 1)
+                      (Comp.bind TPair PTy (varSide tt i inf 1 1)
                         (lam ((cp TPair))
-                          (CY.pure
+                          (Comp.pure PTy
                             (pty (phVar i) Sorts.arr (cRefl i) (p1 dp) (p2 dp) (p1 cp) (p2 cp)))))))
                   sc
                   st)))
-              (else CY.bad)))
-          CY.bad))))
+              (else (Comp.bad PTy))))
+          (Comp.bad PTy)))))
   ; the typers: of an axiom's side instantiated at typed arguments, and of a term of the scope, each
   ; typing the instances of axioms' sides it meets by the typers one level below, to eight levels: a
   ; fixed composition of the step, whose uses each have their own decoration
-  (deftype Typers (Prod PatTy (Arrow T CY.M)))
+  (deftype Typers (Prod PatTy (Arrow T TypingM)))
   (defn typerStep ((rec Typers)) Typers
     (pair
       (lam ((env (List PTy)) (p T))
-        (para CY.M
+        (para TypingM
           (typeStep (fst rec)
             (lam ((i T))
-              (let my OPTy.Maybe (OPTy.nthOf env i)
-                (if (OPTy.isJust my) (CY.pure (OPTy.fromMaybe pty0 my)) CY.fail)))
-            (phSubst (YT.map tyT env)))
+              (let my (Option.Maybe PTy) (Option.nthOf PTy env i)
+                (if (Option.isJust PTy my) (Comp.pure PTy (Option.fromMaybe PTy pty0 my))
+                  (Comp.fail PTy))))
+            (phSubst (Map.map PTy T tyT env)))
           p))
-      (lam ((t T)) (para CY.M (typeStep (fst rec) (typeVar (snd rec)) (lam ((u T)) u)) t))))
+      (lam ((t T)) (para TypingM (typeStep (fst rec) (typeVar (snd rec)) (lam ((u T)) u)) t))))
   (defn typerStep2 ((rec Typers)) Typers (typerStep (typerStep rec)))
   (defn typerStep4 ((rec Typers)) Typers (typerStep2 (typerStep2 rec)))
   (def typers
-    (typerStep4 (typerStep4 (pair (lam ((env (List PTy)) (p T)) CY.fail) (lam ((t T)) CY.fail)))))
-  (defn typeTerm ((t T)) CY.M ((snd typers) t))
-  (defn typePattern ((env (List PTy)) (p T)) CY.M ((fst typers) env p))
+    (typerStep4
+      (typerStep4
+        (pair (lam ((env (List PTy)) (p T)) (Comp.fail PTy)) (lam ((t T)) (Comp.fail PTy))))))
+  (defn typeTerm ((t T)) TypingM ((snd typers) t))
+  (defn typePattern ((env (List PTy)) (p T)) TypingM ((fst typers) env p))
   ; the state in which a computation starts from a development, with definitions in force
-  (import (Map PDefn OpSig) as DefSig)
+
   (defn pmStart ((dev (List DevEntry)) (defs (List PDefn)) (infer T)) PSt
     (pst (devs dev) (memos (nil MemoEntry)) (nfList (nil NfEntry)) (pdefns defs)
       (opSigs
-        (OpSigs.append sig
-          (DefSig.map (lam ((d PDefn)) (opSig (sorts (pdCtx d)) (pdSort d))) defs)))
+        (Seq.append OpSig sig
+          (Map.map PDefn OpSig (lam ((d PDefn)) (opSig (sorts (pdCtx d)) (pdSort d))) defs)))
       infer))
 
   ; rewriting: the sources of rules, a rule as its source, whether it is read from right to left
@@ -574,39 +489,41 @@
   ; the assignment's optional terms and the pairs of objects deferred to their canonical forms
   (data Src (srcAx T) (srcThm T))
   (def dev0 (devEntry seq0 0))
-  (defn srcSeq ((s Src)) CQ.M
+  (defn srcSeq ((s Src)) SequentM
     (case s ((srcAx j) (axiomAt j))
       ((srcThm j)
-       (bindSToQ pmGet
+       (Comp.bind PSt Sequent pmGet
          (lam ((st PSt))
-           (let me ODev.Maybe (ODev.nthOf (stDev st) j)
-             (if (ODev.isJust me) (CQ.pure (devSeq (ODev.fromMaybe dev0 me))) CQ.fail)))))))
+           (let me (Option.Maybe DevEntry) (Option.nthOf DevEntry (stDev st) j)
+             (if (Option.isJust DevEntry me)
+               (Comp.pure Sequent (devSeq (Option.fromMaybe DevEntry dev0 me)))
+               (Comp.fail Sequent))))))))
   (defn srcCert ((s Src) (ts Ts) (ds Ts) (hs Ts)) T
     (case s ((srcAx j) (cAx j ts ds hs)) ((srcThm j) (cThm j ts ds hs))))
   (data Labels (labels & T))
   (data RwRule (rwRule Src T Labels))
-  (import (Seq RwRule) as RwRules)
-  (import (Few RwRule) as RwL)
+
   (defn rwSrc ((r RwRule)) Src (case r ((rwRule s f a) s)))
   (defn rwFlip ((r RwRule)) T (case r ((rwRule s f a) f)))
   (defn rwAvoid ((r RwRule)) Ts (case r ((rwRule s f a) (case a ((labels & xs) xs)))))
   (data Opts (opts & T))
   (data MatchSt (matchSt Opts Pairs))
-  (import (Option MatchSt) as OMatch)
+
   (defn msSigma ((m MatchSt)) Ts (case m ((matchSt s o) (case s ((opts & xs) xs)))))
   (defn msObjs ((m MatchSt)) (List TPair) (case m ((matchSt s o) (pairsOf o))))
   (defn msDefer ((m MatchSt) (p T) (t T)) MatchSt
     (matchSt (opts (msSigma m)) (pairs (cons (pr p t) (msObjs m)))))
-  (defn bindM ((m OMatch.Maybe) (f (Arrow MatchSt OMatch.Maybe))) OMatch.Maybe
-    (case m ((OMatch.just x) (f x)) ((OMatch.nothing) OMatch.nothing)))
-  (deftype MF (Arrow T (Arrow MatchSt OMatch.Maybe)))
+  (defn bindM ((m (Option.Maybe MatchSt)) (f (Arrow MatchSt (Option.Maybe MatchSt))))
+    (Option.Maybe MatchSt)
+    (case m ((Option.just MatchSt x) (f x)) ((Option.nothing MatchSt) (Option.nothing MatchSt))))
+  (deftype MF (Arrow T (Arrow MatchSt (Option.Maybe MatchSt))))
   ; the match of the children's matches against a term's children, in turn
-  (defn matchKids ((rs (List MF)) (us Ts) (m MatchSt)) OMatch.Maybe
-    ((foldr MF (Arrow Ts (Arrow MatchSt OMatch.Maybe))
-       (lam ((r MF) (k (Arrow Ts (Arrow MatchSt OMatch.Maybe))) (vs Ts) (m1 MatchSt))
-         (lcase T OMatch.Maybe vs (OMatch.just m1)
+  (defn matchKids ((rs (List MF)) (us Ts) (m MatchSt)) (Option.Maybe MatchSt)
+    ((foldr MF (Arrow Ts (Arrow MatchSt (Option.Maybe MatchSt)))
+       (lam ((r MF) (k (Arrow Ts (Arrow MatchSt (Option.Maybe MatchSt)))) (vs Ts) (m1 MatchSt))
+         (lcase T (Option.Maybe MatchSt) vs (Option.just MatchSt m1)
            (lam ((u T) (rest Ts)) (bindM (r u m1) (lam ((m2 MatchSt)) (k rest m2))))))
-       (lam ((vs Ts) (m1 MatchSt)) (OMatch.just m1))
+       (lam ((vs Ts) (m1 MatchSt)) (Option.just MatchSt m1))
        rs) us m))
   (defn matchStepP ((S (List OpSig)) (ctx Ts) (nd T) (rs (List MF))) MF
     (lam ((t T) (m MatchSt))
@@ -617,304 +534,320 @@
              (let* ((i T (label (at (children nd) 0))) (mv T (nth (msSigma m) i)))
                (if (isSome mv)
                  (if (isSome (get mv))
-                   (cond ((equal (get (get mv)) t) (OMatch.just m))
-                     ((equal (nth ctx i) (some Sorts.obj)) (OMatch.just (msDefer m nd t)))
-                     (else OMatch.nothing))
-                   (OMatch.just (matchSt (opts (setAt (msSigma m) i (some t))) (pairs (msObjs m)))))
-                 OMatch.nothing))
-             OMatch.nothing))
-          ((equal (sortOf S ctx nd) (some Sorts.obj)) (OMatch.just (msDefer m nd t)))
+                   (cond ((equal (get (get mv)) t) (Option.just MatchSt m))
+                     ((equal (nth ctx i) (some Sorts.obj)) (Option.just MatchSt (msDefer m nd t)))
+                     (else (Option.nothing MatchSt)))
+                   (Option.just MatchSt
+                     (matchSt (opts (setAt (msSigma m) i (some t))) (pairs (msObjs m)))))
+                 (Option.nothing MatchSt)))
+             (Option.nothing MatchSt)))
+          ((equal (sortOf S ctx nd) (some Sorts.obj)) (Option.just MatchSt (msDefer m nd t)))
           ((and (eq (label t) l) (eq (length (children t)) (length (children nd))))
            (matchKids rs (children t) m))
-          (else OMatch.nothing)))))
-  (defn matchPat ((S (List OpSig)) (ctx Ts) (p T) (t T) (m MatchSt)) OMatch.Maybe
+          (else (Option.nothing MatchSt))))))
+  (defn matchPat ((S (List OpSig)) (ctx Ts) (p T) (t T) (m MatchSt)) (Option.Maybe MatchSt)
     (para MF (matchStepP S ctx) p t m))
   ; the certificate that a term equals the instance of a rule's side at the typed assignment tys
-  (deftype BF (Arrow T CT.M))
-  (defn bridgeKids ((rs (List BF)) (us Ts)) CC.M
-    ((foldr BF (Arrow Ts CC.M)
-       (lam ((r BF) (k (Arrow Ts CC.M)) (vs Ts))
-         (lcase T CC.M vs (CC.pure (certs (nil T)))
+  (deftype BF (Arrow T TreeM))
+  (defn bridgeKids ((rs (List BF)) (us Ts)) CertsM
+    ((foldr BF (Arrow Ts CertsM)
+       (lam ((r BF) (k (Arrow Ts CertsM)) (vs Ts))
+         (lcase T CertsM vs (Comp.pure Certs (certs (nil T)))
            (lam ((u T) (rest Ts))
-             (bindTToC (r u)
+             (Comp.bind T Certs (r u)
                (lam ((y T))
-                 (bindCToC (k rest) (lam ((ys Certs)) (CC.pure (certs (cons y (certsOf ys)))))))))))
-       (lam ((vs Ts)) (CC.pure (certs (nil T))))
+                 (Comp.bind Certs Certs (k rest)
+                   (lam ((ys Certs)) (Comp.pure Certs (certs (cons y (certsOf ys)))))))))))
+       (lam ((vs Ts)) (Comp.pure Certs (certs (nil T))))
        rs) us))
   (defn bridgeStep ((tys (List PTy)) (nd T) (rs (List BF))) BF
     (lam ((t T))
-      (bindYToT (typeTerm t)
+      (Comp.bind PTy T (typeTerm t)
         (lam ((ty PTy))
-          (cond ((equal (phSubst (YT.map tyT tys) nd) t) (CT.pure (tyDfd ty)))
+          (cond ((equal (phSubst (Map.map PTy T tyT tys) nd) t) (Comp.pure T (tyDfd ty)))
             ((eq (tySort ty) Sorts.obj)
-             (bindYToT (typePattern tys nd) (lam ((py PTy)) (objEq ty py))))
-            ((or (eq (label nd) 0) (not (eq (length (children t)) (length (children nd))))) CT.fail)
+             (Comp.bind PTy T (typePattern tys nd) (lam ((py PTy)) (objEq ty py))))
+            ((or (eq (label nd) 0) (not (eq (length (children t)) (length (children nd)))))
+             (Comp.fail T))
             (else
-              (bindCToT (bridgeKids rs (children t))
-                (lam ((cs Certs)) (CT.pure (cCong (tyDfd ty) (certsOf cs)))))))))))
-  (defn bridge ((tys (List PTy)) (p T) (t T)) CT.M (para BF (bridgeStep tys) p t))
+              (Comp.bind Certs T (bridgeKids rs (children t))
+                (lam ((cs Certs)) (Comp.pure T (cCong (tyDfd ty) (certsOf cs)))))))))))
+  (defn bridge ((tys (List PTy)) (p T) (t T)) TreeM (para BF (bridgeStep tys) p t))
   ; one rewriting step at a term's root by a rule: the instance of the rule's other side, with the
   ; certificate of the term's equation with it
   (def ms0 (matchSt (opts (nil T)) (pairs (nil TPair))))
-  (defn applyRule ((r RwRule) (t T)) CP.M
-    (bindTToP (pmGuard (not (anyT (lam ((a T)) (eq (label t) a)) (rwAvoid r))))
+  (defn applyRule ((r RwRule) (t T)) PairM
+    (Comp.bind T TPair (pmGuard (not (anyT (lam ((a T)) (eq (label t) a)) (rwAvoid r))))
       (lam ((u0 T))
-        (bindQToP (srcSeq (rwSrc r))
+        (Comp.bind Sequent TPair (srcSeq (rwSrc r))
           (lam ((a Sequent))
             (let*
               ((p T (if (rwFlip r) (eqRhs (seqConcl a)) (eqLhs (seqConcl a))))
                (q T (if (rwFlip r) (eqLhs (seqConcl a)) (eqRhs (seqConcl a)))))
-              (bindSToP pmGet
+              (Comp.bind PSt TPair pmGet
                 (lam ((st PSt))
-                  (let mm OMatch.Maybe
+                  (let mm (Option.Maybe MatchSt)
                     (matchPat (stSig st) (seqCtx a) p t
                       (matchSt (opts (mapT (lam ((c T)) none) (seqCtx a))) (pairs (nil TPair))))
-                    (if (OMatch.isJust mm)
+                    (if (Option.isJust MatchSt mm)
                       (let*
-                        ((ms MatchSt (OMatch.fromMaybe ms0 mm)) (mSigma T (allSomeT (msSigma ms))))
+                        ((ms MatchSt (Option.fromMaybe MatchSt ms0 mm))
+                         (mSigma T (allSomeT (msSigma ms))))
                         (if (isSome mSigma)
                           (let sigma Ts (children (get mSigma))
-                            (bindYsToP (mapMTY typeTerm sigma)
+                            (Comp.bind PTys TPair (mapMTY typeTerm sigma)
                               (lam ((tysN PTys))
                                 (let tys (List PTy) (ptysOf tysN)
-                                  (bindCToP
+                                  (Comp.bind Certs TPair
                                     (mapMPairC
                                       (lam ((e TPair))
-                                        (bindYToT (typePattern tys (p1 e))
+                                        (Comp.bind PTy T (typePattern tys (p1 e))
                                           (lam ((lo PTy))
-                                            (bindYToT (typeTerm (p2 e))
+                                            (Comp.bind PTy T (typeTerm (p2 e))
                                               (lam ((lu PTy)) (objEq lo lu))))))
                                       (msObjs ms))
                                     (lam ((u1 Certs))
-                                      (bindTToP (bridge tys p t)
+                                      (Comp.bind T TPair (bridge tys p t)
                                         (lam ((b T))
-                                          (bindCToP (mapMEqC (proveHyp typePattern tys) (seqHyps a))
+                                          (Comp.bind Certs TPair
+                                            (mapMEqC (proveHyp typePattern tys) (seqHyps a))
                                             (lam ((hs Certs))
                                               (let i T
-                                                (srcCert (rwSrc r) sigma (YT.map tyDfd tys)
+                                                (srcCert (rwSrc r) sigma (Map.map PTy T tyDfd tys)
                                                   (certsOf hs))
-                                                (CP.pure
+                                                (Comp.pure TPair
                                                   (pr (phSubst sigma q)
                                                     (cTrans b
                                                       (if (rwFlip r) (cSymm i) i)))))))))))))))
-                          CP.fail))
-                      CP.fail))))))))))
-  (defn firstRule ((rules (List RwRule)) (t T)) CP.M
-    (foldr RwRule CP.M (lam ((r RwRule) (k CP.M)) (CP.orElse (applyRule r t) k)) CP.fail rules))
+                          (Comp.fail TPair)))
+                      (Comp.fail TPair)))))))))))
+  (defn firstRule ((rules (List RwRule)) (t T)) PairM
+    (foldr RwRule PairM (lam ((r RwRule) (k PairM)) (Comp.orElse TPair (applyRule r t) k))
+      (Comp.fail TPair)
+      rules))
   ; the instance of associativity at a term comp a (comp b x)
-  (defn assocLeft ((t T)) CA.M
+  (defn assocLeft ((t T)) AssocM
     (if (and (eq (label t) 4) (eq (length (children t)) 2))
       (let* ((a T (at (children t) 0)) (bx T (at (children t) 1)))
         (if (and (eq (label bx) 4) (eq (length (children bx)) 2))
           (let* ((b T (at (children bx) 0)) (x T (at (children bx) 1)))
-            (bindYToA (typeTerm t)
+            (Comp.bind PTy Assoc (typeTerm t)
               (lam ((d PTy))
-                (bindYToA (typeTerm a)
+                (Comp.bind PTy Assoc (typeTerm a)
                   (lam ((ya PTy))
-                    (bindYToA (typeTerm b)
+                    (Comp.bind PTy Assoc (typeTerm b)
                       (lam ((yb PTy))
-                        (bindYToA (typeTerm x)
+                        (Comp.bind PTy Assoc (typeTerm x)
                           (lam ((yx PTy))
-                            (CA.pure
+                            (Comp.pure Assoc
                               (assoc a b x
                                 (cAx 7 (l3 a b x) (l3 (tyDfd ya) (tyDfd yb) (tyDfd yx))
                                   (single (tyDfd d))))))))))))))
-          CA.fail))
-      CA.fail))
-  (defn rewriteRoot ((rules (List RwRule)) (t T)) CP.M
-    (CP.orElse (firstRule rules t)
-      (bindAToP (assocLeft t)
+          (Comp.fail Assoc)))
+      (Comp.fail Assoc)))
+  (defn rewriteRoot ((rules (List RwRule)) (t T)) PairM
+    (Comp.orElse TPair (firstRule rules t)
+      (Comp.bind Assoc TPair (assocLeft t)
         (lam ((q Assoc))
           (case q
             ((assoc a b x c)
-             (bindPToP (firstRule rules (comp a b))
+             (Comp.bind TPair TPair (firstRule rules (comp a b))
                (lam ((uc TPair))
-                 (bindYToP (typeTerm (comp (comp a b) x))
+                 (Comp.bind PTy TPair (typeTerm (comp (comp a b) x))
                    (lam ((ab PTy))
-                     (bindYToP (typeTerm x)
+                     (Comp.bind PTy TPair (typeTerm x)
                        (lam ((yx PTy))
-                         (CP.pure
+                         (Comp.pure TPair
                            (pr (comp (p1 uc) x)
                              (cTrans c (cCong (tyDfd ab) (l2 (p2 uc) (tyDfd yx))))))))))))))))))
   ; normal forms: the table of the terms normalized so far
-  (defn lookupNf ((t T)) COP.M
-    (lam ((sc PhScope) (st PSt)) (COP.ok (COP.res (nfFind (stNfs st) t) st))))
-  (defn memoizeNf ((t T) (n T) (c T)) CP.M
-    (bindTToP (if (equal t n) (CT.pure c) (addLemma (eqn t n) c))
+  (defn lookupNf ((t T)) MaybePairM
+    (lam ((sc PhScope) (st PSt))
+      (Comp.ok (Option.Maybe TPair) (Comp.res (Option.Maybe TPair) (nfFind (stNfs st) t) st))))
+  (defn memoizeNf ((t T) (n T) (c T)) PairM
+    (Comp.bind T TPair (if (equal t n) (Comp.pure T c) (addLemma (eqn t n) c))
       (lam ((c1 T))
         (lam ((sc PhScope) (st PSt))
-          (CP.ok (CP.res (pr n c1) (withNfs st (cons (nfEntry t (pr n c1)) (stNfs st)))))))))
-  (deftype NB (Arrow T CP.M))
+          (Comp.ok TPair
+            (Comp.res TPair (pr n c1) (withNfs st (cons (nfEntry t (pr n c1)) (stNfs st)))))))))
+  (deftype NB (Arrow T PairM))
   (def pr0 (pr 0 0))
-  (defn normStepP ((rules (List RwRule)) (rec NB) (nd T) (rs (List CP.M))) CP.M
-    (bindOPToP (lookupNf nd)
-      (lam ((mr OTPair.Maybe))
-        (if (OTPair.isJust mr) (CP.pure (OTPair.fromMaybe pr0 mr))
-          (bindYToP (typeTerm nd)
+  (defn normStepP ((rules (List RwRule)) (rec NB) (nd T) (rs (List PairM))) PairM
+    (Comp.bind (Option.Maybe TPair) TPair (lookupNf nd)
+      (lam ((mr (Option.Maybe TPair)))
+        (if (Option.isJust TPair mr) (Comp.pure TPair (Option.fromMaybe TPair pr0 mr))
+          (Comp.bind PTy TPair (typeTerm nd)
             (lam ((ty PTy))
-              (cond ((eq (tySort ty) Sorts.obj) (CP.pure (pr (tyLo ty) (tyLoC ty))))
-                ((eq (label nd) 0) (CP.pure (pr nd (tyDfd ty))))
+              (cond ((eq (tySort ty) Sorts.obj) (Comp.pure TPair (pr (tyLo ty) (tyLoC ty))))
+                ((eq (label nd) 0) (Comp.pure TPair (pr nd (tyDfd ty))))
                 (else
-                  (bindPsToP (seqP rs)
+                  (Comp.bind Pairs TPair (seqP rs)
                     (lam ((rsN Pairs))
                       (let*
-                        ((ps (List TPair) (pairsOf rsN)) (t1 T (node (label nd) (PairT.map p1 ps)))
-                         (c1 T (if (equal t1 nd) (tyDfd ty) (cCong (tyDfd ty) (PairT.map p2 ps)))))
-                        (bindOPToP
-                          (COP.orElse
-                            (bindPToOP (rewriteRoot rules t1)
-                              (lam ((r TPair)) (COP.pure (OTPair.just r))))
-                            (COP.pure OTPair.nothing))
-                          (lam ((mr2 OTPair.Maybe))
-                            (if (OTPair.isJust mr2)
-                              (let r2 TPair (OTPair.fromMaybe pr0 mr2)
-                                (bindPToP (rec (p1 r2))
+                        ((ps (List TPair) (pairsOf rsN))
+                         (t1 T (node (label nd) (Map.map TPair T p1 ps)))
+                         (c1 T
+                           (if (equal t1 nd) (tyDfd ty)
+                             (cCong (tyDfd ty) (Map.map TPair T p2 ps)))))
+                        (Comp.bind (Option.Maybe TPair) TPair
+                          (Comp.orElse (Option.Maybe TPair)
+                            (Comp.bind TPair (Option.Maybe TPair) (rewriteRoot rules t1)
+                              (lam ((r TPair))
+                                (Comp.pure (Option.Maybe TPair) (Option.just TPair r))))
+                            (Comp.pure (Option.Maybe TPair) (Option.nothing TPair)))
+                          (lam ((mr2 (Option.Maybe TPair)))
+                            (if (Option.isJust TPair mr2)
+                              (let r2 TPair (Option.fromMaybe TPair pr0 mr2)
+                                (Comp.bind TPair TPair (rec (p1 r2))
                                   (lam ((r3 TPair))
                                     (memoizeNf nd (p1 r3) (cTrans c1 (cTrans (p2 r2) (p2 r3)))))))
                               (memoizeNf nd t1 c1)))))))))))))))
   ; the normalizers, each normalizing the term its root rewrites to by the normalizer one level
   ; below, to 64 levels: a fixed composition of the step, whose uses each have their own decoration
-  (defn normP ((rules (List RwRule)) (rec NB)) NB (lam ((t T)) (para CP.M (normStepP rules rec) t)))
+  (defn normP ((rules (List RwRule)) (rec NB)) NB
+    (lam ((t T)) (para PairM (normStepP rules rec) t)))
   (defn normP2 ((rules (List RwRule)) (rec NB)) NB (normP rules (normP rules rec)))
   (defn normP4 ((rules (List RwRule)) (rec NB)) NB (normP2 rules (normP2 rules rec)))
   (defn normP8 ((rules (List RwRule)) (rec NB)) NB (normP4 rules (normP4 rules rec)))
   (defn normP16 ((rules (List RwRule)) (rec NB)) NB (normP8 rules (normP8 rules rec)))
   (defn normP32 ((rules (List RwRule)) (rec NB)) NB (normP16 rules (normP16 rules rec)))
   (defn normalizers ((rules (List RwRule))) NB
-    (normP32 rules (normP32 rules (lam ((t T)) CP.fail))))
-  (defn pNormalize ((rules (List RwRule)) (t T)) CP.M (normalizers rules t))
+    (normP32 rules (normP32 rules (lam ((t T)) (Comp.fail TPair)))))
+  (defn pNormalize ((rules (List RwRule)) (t T)) PairM (normalizers rules t))
 
   ; tactics: the axioms' indices by block, the instance of a source's sequent, the expansion of an
   ; arrow into a product, the unfolding of a definition, the proof by normalization, and the proof
   ; of a sequent, or the normalization of a theorem's left side, added to a development, with
   ; the index of its entry
-  (def beforeTerminal (Seqs.length categoryAxioms))
-  (def beforeProduct (add beforeTerminal (Seqs.length terminalAxioms)))
+  (def beforeTerminal (Seq.length Sequent categoryAxioms))
+  (def beforeProduct (add beforeTerminal (Seq.length Sequent terminalAxioms)))
   (def beforeExponential
     (add beforeProduct
-      (add (Seqs.length productAxioms)
-        (add (Seqs.length equalizerAxioms)
-          (add (Seqs.length initialAxioms)
-            (add (Seqs.length coproductAxioms) (Seqs.length coequalizerAxioms)))))))
+      (add (Seq.length Sequent productAxioms)
+        (add (Seq.length Sequent equalizerAxioms)
+          (add (Seq.length Sequent initialAxioms)
+            (add (Seq.length Sequent coproductAxioms) (Seq.length Sequent coequalizerAxioms)))))))
   (def beforeNat
-    (add beforeExponential (add (Seqs.length exponentialAxioms) (Seqs.length classifierAxioms))))
-  (def beforeList (add beforeNat (Seqs.length natAxioms)))
-  (defn pInst ((s Src) (sigma Ts)) CE.M
-    (bindQToE (srcSeq s)
+    (add beforeExponential
+      (add (Seq.length Sequent exponentialAxioms) (Seq.length Sequent classifierAxioms))))
+  (def beforeList (add beforeNat (Seq.length Sequent natAxioms)))
+  (defn pInst ((s Src) (sigma Ts)) EqnCertM
+    (Comp.bind Sequent EqnCert (srcSeq s)
       (lam ((a Sequent))
-        (bindYsToE (mapMTY typeTerm sigma)
+        (Comp.bind PTys EqnCert (mapMTY typeTerm sigma)
           (lam ((tysN PTys))
             (let tys (List PTy) (ptysOf tysN)
-              (bindCToE (mapMEqC (proveHyp typePattern tys) (seqHyps a))
+              (Comp.bind Certs EqnCert (mapMEqC (proveHyp typePattern tys) (seqHyps a))
                 (lam ((hs Certs))
-                  (CE.pure
+                  (Comp.pure EqnCert
                     (eqnCert (eqSubst sigma (seqConcl a))
-                      (srcCert s sigma (YT.map tyDfd tys) (certsOf hs))))))))))))
-  (defn etaExpand ((f T)) CP.M
-    (bindYToP (typeTerm f)
+                      (srcCert s sigma (Map.map PTy T tyDfd tys) (certsOf hs))))))))))))
+  (defn etaExpand ((f T)) PairM
+    (Comp.bind PTy TPair (typeTerm f)
       (lam ((ty PTy))
         (let h T (tyHi ty)
           (if (and (eq (label h) 7) (eq (length (children h)) 2))
-            (bindEToP
+            (Comp.bind EqnCert TPair
               (pInst (srcAx (add beforeProduct 11)) (l3 f (at (children h) 0) (at (children h) 1)))
-              (lam ((qc EqnCert)) (CP.pure (pr (eqLhs (ecEqn qc)) (cSymm (ecCert qc))))))
-            CP.fail)))))
+              (lam ((qc EqnCert)) (Comp.pure TPair (pr (eqLhs (ecEqn qc)) (cSymm (ecCert qc))))))
+            (Comp.fail TPair))))))
   (defn rwAx ((j T)) RwRule (rwRule (srcAx j) 0 (labels (nil T))))
   (defn rwThm ((j T)) RwRule (rwRule (srcThm j) 0 (labels (nil T))))
   (defn deltaRule ((i T)) RwRule (rwAx (defAxIdx i)))
-  (defn pByNorm ((rules (List RwRule)) (q Eqn)) CT.M
-    (bindPToT (pNormalize rules (eqLhs q))
+  (defn pByNorm ((rules (List RwRule)) (q Eqn)) TreeM
+    (Comp.bind TPair T (pNormalize rules (eqLhs q))
       (lam ((l TPair))
-        (bindPToT (pNormalize rules (eqRhs q))
+        (Comp.bind TPair T (pNormalize rules (eqRhs q))
           (lam ((r TPair))
-            (bindTToT (pmGuard (equal (p1 l) (p1 r)))
-              (lam ((u T)) (CT.pure (cTrans (p2 l) (cSymm (p2 r)))))))))))
+            (Comp.bind T T (pmGuard (equal (p1 l) (p1 r)))
+              (lam ((u T)) (Comp.pure T (cTrans (p2 l) (cSymm (p2 r)))))))))))
   (data Proved (proved T DevList))
-  (import (Option Proved) as OProved)
+
   (defn provedIdx ((p Proved)) T (case p ((proved i d) i)))
   (defn provedDev ((p Proved)) (List DevEntry) (case p ((proved i d) (case d ((devs & xs) xs)))))
-  (defn proveSeq ((a Sequent) (m CT.M) (defs (List PDefn)) (infer T) (dev (List DevEntry)))
-    OProved.Maybe
+  (defn proveSeq ((a Sequent) (m TreeM) (defs (List PDefn)) (infer T) (dev (List DevEntry)))
+    (Option.Maybe Proved)
     (case (m (scope (sorts (seqCtx a)) (eqns (seqHyps a))) (pmStart dev defs infer))
-      ((CT.ok r)
+      ((Comp.ok T r)
        (case r
-         ((CT.res c st)
+         ((Comp.res T c st)
           (let dev1 (List DevEntry) (stDev st)
-            (OProved.just
-              (proved (DevL.length dev1)
-                (devs (DevL.append dev1 (DevL.single (devEntry a c))))))))))
-      ((CT.bad) OProved.nothing)))
+            (Option.just Proved
+              (proved (Seq.length DevEntry dev1)
+                (devs (Seq.append DevEntry dev1 (Seq.single DevEntry (devEntry a c))))))))))
+      ((Comp.bad T) (Option.nothing Proved))))
   (defn normalizeThm
     ((rules (List RwRule)) (j T) (defs (List PDefn)) (infer T) (dev (List DevEntry)))
-    OProved.Maybe
-    (case (ODev.nthOf dev j)
-      ((ODev.just e)
+    (Option.Maybe Proved)
+    (case (Option.nthOf DevEntry dev j)
+      ((Option.just DevEntry e)
        (let* ((a Sequent (devSeq e)) (sc PhScope (scope (sorts (seqCtx a)) (eqns (seqHyps a)))))
          (case ((pNormalize rules (eqLhs (seqConcl a))) sc (pmStart dev defs infer))
-           ((CP.ok r)
+           ((Comp.ok TPair r)
             (case r
-              ((CP.res nc st)
+              ((Comp.res TPair nc st)
                (let dev1 (List DevEntry) (stDev st)
-                 (OProved.just
-                   (proved (DevL.length dev1)
+                 (Option.just Proved
+                   (proved (Seq.length DevEntry dev1)
                      (devs
-                       (DevL.append dev1
-                         (DevL.single
+                       (Seq.append DevEntry dev1
+                         (Seq.single DevEntry
                            (devEntry (scSeq sc (eqn (p1 nc) (eqRhs (seqConcl a))))
                              (cTrans (cSymm (p2 nc)) (scCite sc j))))))))))))
-           ((CP.bad) OProved.nothing))))
-      ((ODev.nothing) OProved.nothing)))
+           ((Comp.bad TPair) (Option.nothing Proved)))))
+      ((Option.nothing DevEntry) (Option.nothing Proved))))
 
   ; induction: the instance of a source's sequent whose equations between arrows are proved by
   ; normalization, the certificate of an equation's rewriting inside a term, and the proofs of
   ; equations between arrows from the natural numbers object and from list objects
-  (defn instBy ((rules (List RwRule)) (s Src) (sigma Ts)) CE.M
-    (bindQToE (srcSeq s)
+  (defn instBy ((rules (List RwRule)) (s Src) (sigma Ts)) EqnCertM
+    (Comp.bind Sequent EqnCert (srcSeq s)
       (lam ((a Sequent))
-        (bindYsToE (mapMTY typeTerm sigma)
+        (Comp.bind PTys EqnCert (mapMTY typeTerm sigma)
           (lam ((tysN PTys))
             (let tys (List PTy) (ptysOf tysN)
-              (bindCToE
+              (Comp.bind Certs EqnCert
                 (mapMEqC
                   (lam ((h Eqn))
-                    (CT.orElse (proveHyp typePattern tys h) (pByNorm rules (eqSubst sigma h))))
+                    (Comp.orElse T (proveHyp typePattern tys h) (pByNorm rules (eqSubst sigma h))))
                   (seqHyps a))
                 (lam ((hs Certs))
-                  (CE.pure
+                  (Comp.pure EqnCert
                     (eqnCert (eqSubst sigma (seqConcl a))
-                      (srcCert s sigma (YT.map tyDfd tys) (certsOf hs))))))))))))
+                      (srcCert s sigma (Map.map PTy T tyDfd tys) (certsOf hs))))))))))))
   (defn congStep ((e Eqn) (ce T) (nd T) (rs (List BF))) BF
     (lam ((t T))
-      (bindYToT (typeTerm nd)
+      (Comp.bind PTy T (typeTerm nd)
         (lam ((ty PTy))
-          (cond ((equal nd t) (CT.pure (tyDfd ty)))
-            ((and (equal nd (eqLhs e)) (equal t (eqRhs e))) (CT.pure ce))
-            ((eq (tySort ty) Sorts.obj) (bindYToT (typeTerm t) (lam ((yt PTy)) (objEq ty yt))))
+          (cond ((equal nd t) (Comp.pure T (tyDfd ty)))
+            ((and (equal nd (eqLhs e)) (equal t (eqRhs e))) (Comp.pure T ce))
+            ((eq (tySort ty) Sorts.obj)
+             (Comp.bind PTy T (typeTerm t) (lam ((yt PTy)) (objEq ty yt))))
             ((or (eq (label nd) 0)
                (or (not (eq (label t) (label nd)))
-                 (not (eq (length (children t)) (length (children nd)))))) CT.fail)
+                 (not (eq (length (children t)) (length (children nd)))))) (Comp.fail T))
             (else
-              (bindCToT (bridgeKids rs (children t))
-                (lam ((cs Certs)) (CT.pure (cCong (tyDfd ty) (certsOf cs)))))))))))
-  (defn congBy ((e Eqn) (ce T) (s T) (t T)) CT.M (para BF (congStep e ce) s t))
-  (defn natRecUniq ((rules (List RwRule)) (z T) (s T) (f T)) CT.M
-    (bindEToT (instBy rules (srcAx (add beforeNat 12)) (l3 z s f))
-      (lam ((qc EqnCert)) (CT.pure (ecCert qc)))))
-  (defn listRecUniq ((rules (List RwRule)) (a T) (z T) (s T) (f T)) CT.M
-    (bindEToT (instBy rules (srcAx (add beforeList 13)) (l4 a z s f))
-      (lam ((qc EqnCert)) (CT.pure (ecCert qc)))))
-  (defn byNatInduction ((rules (List RwRule)) (z T) (s T) (q Eqn)) CT.M
-    (bindTToT (natRecUniq rules z s (eqLhs q))
+              (Comp.bind Certs T (bridgeKids rs (children t))
+                (lam ((cs Certs)) (Comp.pure T (cCong (tyDfd ty) (certsOf cs)))))))))))
+  (defn congBy ((e Eqn) (ce T) (s T) (t T)) TreeM (para BF (congStep e ce) s t))
+  (defn natRecUniq ((rules (List RwRule)) (z T) (s T) (f T)) TreeM
+    (Comp.bind EqnCert T (instBy rules (srcAx (add beforeNat 12)) (l3 z s f))
+      (lam ((qc EqnCert)) (Comp.pure T (ecCert qc)))))
+  (defn listRecUniq ((rules (List RwRule)) (a T) (z T) (s T) (f T)) TreeM
+    (Comp.bind EqnCert T (instBy rules (srcAx (add beforeList 13)) (l4 a z s f))
+      (lam ((qc EqnCert)) (Comp.pure T (ecCert qc)))))
+  (defn byNatInduction ((rules (List RwRule)) (z T) (s T) (q Eqn)) TreeM
+    (Comp.bind T T (natRecUniq rules z s (eqLhs q))
       (lam ((cl T))
-        (bindTToT (natRecUniq rules z s (eqRhs q))
-          (lam ((cr T)) (CT.pure (cTrans cl (cSymm cr))))))))
-  (defn byListInduction ((rules (List RwRule)) (a T) (z T) (s T) (q Eqn)) CT.M
-    (bindTToT (listRecUniq rules a z s (eqLhs q))
+        (Comp.bind T T (natRecUniq rules z s (eqRhs q))
+          (lam ((cr T)) (Comp.pure T (cTrans cl (cSymm cr))))))))
+  (defn byListInduction ((rules (List RwRule)) (a T) (z T) (s T) (q Eqn)) TreeM
+    (Comp.bind T T (listRecUniq rules a z s (eqLhs q))
       (lam ((cl T))
-        (bindTToT (listRecUniq rules a z s (eqRhs q))
-          (lam ((cr T)) (CT.pure (cTrans cl (cSymm cr))))))))
-  (defn byListParamInduction ((rules (List RwRule)) (a T) (z T) (s T) (q Eqn)) CT.M
-    (bindYToT (typeTerm (eqLhs q))
+        (Comp.bind T T (listRecUniq rules a z s (eqRhs q))
+          (lam ((cr T)) (Comp.pure T (cTrans cl (cSymm cr))))))))
+  (defn byListParamInduction ((rules (List RwRule)) (a T) (z T) (s T) (q Eqn)) TreeM
+    (Comp.bind PTy T (typeTerm (eqLhs q))
       (lam ((ty PTy))
         (let lo T (tyLo ty)
           (if (and (eq (label lo) 7) (eq (length (children lo)) 2))
@@ -931,17 +864,19 @@
                        (cSnd ae p)))))
                (cf T (curry l p (eqLhs q)))
                (cg T (curry l p (eqRhs q))))
-              (bindTToT (byListInduction rules a z1 s1 (eqn cf cg))
+              (Comp.bind T T (byListInduction rules a z1 s1 (eqn cf cg))
                 (lam ((cc T))
-                  (bindEToT (pInst (srcAx (add beforeExponential 7)) (l3 l p (eqLhs q)))
+                  (Comp.bind EqnCert T (pInst (srcAx (add beforeExponential 7)) (l3 l p (eqLhs q)))
                     (lam ((bfp EqnCert))
-                      (bindEToT (pInst (srcAx (add beforeExponential 7)) (l3 l p (eqRhs q)))
+                      (Comp.bind EqnCert T
+                        (pInst (srcAx (add beforeExponential 7)) (l3 l p (eqRhs q)))
                         (lam ((bgp EqnCert))
-                          (bindTToT (congBy (eqn cf cg) cc (eqLhs (ecEqn bfp)) (eqLhs (ecEqn bgp)))
+                          (Comp.bind T T
+                            (congBy (eqn cf cg) cc (eqLhs (ecEqn bfp)) (eqLhs (ecEqn bgp)))
                             (lam ((mid T))
-                              (CT.pure
+                              (Comp.pure T
                                 (cTrans (cSymm (ecCert bfp)) (cTrans mid (ecCert bgp)))))))))))))
-            CT.fail)))))
+            (Comp.fail T))))))
 
   ; the library: the rules from the axioms, the derived equations with their proofs, and its
   ; development, with the indices of the derived equations
@@ -955,103 +890,108 @@
                 (cons (rwRule (srcAx (add beforeTerminal 3)) 0 (labels (l2 3 6)))
                   (cons (rwAx (add beforeNat 10))
                     (cons (rwAx (add beforeNat 11))
-                      (RwL.l2 (rwAx (add beforeList 11)) (rwAx (add beforeList 12)))))))))))))
+                      (Few.l2 RwRule (rwAx (add beforeList 11))
+                        (rwAx (add beforeList 12)))))))))))))
   (def compPairSeq
     (mkSeq (l3 Sorts.arr Sorts.arr Sorts.arr)
-      (EqnL.l2 (eqn (dom (x 1)) (dom (x 0))) (eqn (cod (x 2)) (dom (x 0))))
+      (Few.l2 Eqn (eqn (dom (x 1)) (dom (x 0))) (eqn (cod (x 2)) (dom (x 0))))
       (eqn (comp (cPair (x 0) (x 1)) (x 2)) (cPair (comp (x 0) (x 2)) (comp (x 1) (x 2))))))
   (def pairFstSndSeq
     (mkSeq (l2 Sorts.obj Sorts.obj) (nil Eqn)
       (eqn (cPair (cFst (x 0) (x 1)) (cSnd (x 0) (x 1))) (idt (prod (x 0) (x 1))))))
   (def evCurrySeq
     (mkSeq (l5 Sorts.obj Sorts.obj Sorts.arr Sorts.arr Sorts.arr)
-      (EqnL.l4 (eqn (dom (x 2)) (prod (x 0) (x 1))) (eqn (cod (x 3)) (x 0)) (eqn (cod (x 4)) (x 1))
+      (Few.l4 Eqn (eqn (dom (x 2)) (prod (x 0) (x 1))) (eqn (cod (x 3)) (x 0))
+        (eqn (cod (x 4)) (x 1))
         (eqn (dom (x 4)) (dom (x 3))))
       (eqn (comp (ev (x 1) (cod (x 2))) (cPair (comp (curry (x 0) (x 1) (x 2)) (x 3)) (x 4)))
         (comp (x 2) (cPair (x 3) (x 4))))))
   (def evCurry0Seq
     (mkSeq (l4 Sorts.obj Sorts.obj Sorts.arr Sorts.arr)
-      (EqnL.l3 (eqn (dom (x 2)) (prod (x 0) (x 1))) (eqn (cod (x 3)) (x 1)) (eqn (dom (x 3)) (x 0)))
+      (Few.l3 Eqn (eqn (dom (x 2)) (prod (x 0) (x 1))) (eqn (cod (x 3)) (x 1))
+        (eqn (dom (x 3)) (x 0)))
       (eqn (comp (ev (x 1) (cod (x 2))) (cPair (curry (x 0) (x 1) (x 2)) (x 3)))
         (comp (x 2) (cPair (idt (x 0)) (x 3))))))
   (def curryNatSeq
     (mkSeq (l4 Sorts.obj Sorts.obj Sorts.arr Sorts.arr)
-      (EqnL.l2 (eqn (dom (x 2)) (prod (x 0) (x 1))) (eqn (cod (x 3)) (x 0)))
+      (Few.l2 Eqn (eqn (dom (x 2)) (prod (x 0) (x 1))) (eqn (cod (x 3)) (x 0)))
       (eqn (comp (curry (x 0) (x 1) (x 2)) (x 3))
         (curry (dom (x 3)) (x 1) (comp (x 2) (prodMapLeft (x 3) (x 1)))))))
   (def bangOneSeq (mkSeq (nil T) (nil Eqn) (eqn (bang one) (idt one))))
   (defn seqLhs ((a Sequent)) T (eqLhs (seqConcl a)))
   (defn seqRhs ((a Sequent)) T (eqRhs (seqConcl a)))
   (def compPairProof
-    (bindPToT (etaExpand (seqLhs compPairSeq))
+    (Comp.bind TPair T (etaExpand (seqLhs compPairSeq))
       (lam ((ec TPair))
-        (bindPToT (pNormalize baseRules (p1 ec))
+        (Comp.bind TPair T (pNormalize baseRules (p1 ec))
           (lam ((nc TPair))
-            (bindTToT (pmGuard (equal (p1 nc) (seqRhs compPairSeq)))
-              (lam ((u T)) (CT.pure (cTrans (p2 ec) (p2 nc))))))))))
+            (Comp.bind T T (pmGuard (equal (p1 nc) (seqRhs compPairSeq)))
+              (lam ((u T)) (Comp.pure T (cTrans (p2 ec) (p2 nc))))))))))
   (def pairFstSndProof
     (let p T (prod (x 0) (x 1))
-      (bindEToT (pInst (srcAx (add beforeProduct 11)) (l3 (idt p) (x 0) (x 1)))
+      (Comp.bind EqnCert T (pInst (srcAx (add beforeProduct 11)) (l3 (idt p) (x 0) (x 1)))
         (lam ((qc EqnCert))
-          (bindPToT (pNormalize baseRules (eqLhs (ecEqn qc)))
+          (Comp.bind TPair T (pNormalize baseRules (eqLhs (ecEqn qc)))
             (lam ((nc TPair))
-              (bindTToT (pmGuard (equal (p1 nc) (seqLhs pairFstSndSeq)))
-                (lam ((u T)) (CT.pure (cTrans (cSymm (p2 nc)) (ecCert qc)))))))))))
-  (defn evCurryProof ((cp T)) CT.M
-    (let rs (List RwRule) (RwRules.append baseRules (RwRules.single (rwThm cp)))
-      (bindEToT (pInst (srcAx (add beforeExponential 7)) (l3 (x 0) (x 1) (x 2)))
+              (Comp.bind T T (pmGuard (equal (p1 nc) (seqLhs pairFstSndSeq)))
+                (lam ((u T)) (Comp.pure T (cTrans (cSymm (p2 nc)) (ecCert qc)))))))))))
+  (defn evCurryProof ((cp T)) TreeM
+    (let rs (List RwRule) (Seq.append RwRule baseRules (Seq.single RwRule (rwThm cp)))
+      (Comp.bind EqnCert T (pInst (srcAx (add beforeExponential 7)) (l3 (x 0) (x 1) (x 2)))
         (lam ((qc EqnCert))
           (let* ((gh T (cPair (x 3) (x 4))) (u T (comp (eqLhs (ecEqn qc)) gh)))
-            (bindPToT (pNormalize rs u)
+            (Comp.bind TPair T (pNormalize rs u)
               (lam ((nu TPair))
-                (bindPToT (pNormalize rs (seqLhs evCurrySeq))
+                (Comp.bind TPair T (pNormalize rs (seqLhs evCurrySeq))
                   (lam ((ng TPair))
-                    (bindTToT (pmGuard (equal (p1 nu) (p1 ng)))
+                    (Comp.bind T T (pmGuard (equal (p1 nu) (p1 ng)))
                       (lam ((u0 T))
-                        (bindYToT (typeTerm u)
+                        (Comp.bind PTy T (typeTerm u)
                           (lam ((du PTy))
-                            (bindYToT (typeTerm gh)
+                            (Comp.bind PTy T (typeTerm gh)
                               (lam ((dg PTy))
-                                (CT.pure
+                                (Comp.pure T
                                   (cTrans (cTrans (p2 ng) (cSymm (p2 nu)))
                                     (cCong (tyDfd du) (l2 (ecCert qc) (tyDfd dg))))))))))))))))))))
-  (defn evCurry0Proof ((ec T)) CT.M
-    (bindEToT (pInst (srcThm ec) (l5 (x 0) (x 1) (x 2) (idt (x 0)) (x 3)))
+  (defn evCurry0Proof ((ec T)) TreeM
+    (Comp.bind EqnCert T (pInst (srcThm ec) (l5 (x 0) (x 1) (x 2) (idt (x 0)) (x 3)))
       (lam ((qc EqnCert))
         (let q Eqn (ecEqn qc)
-          (bindPToT (pNormalize baseRules (eqLhs q))
+          (Comp.bind TPair T (pNormalize baseRules (eqLhs q))
             (lam ((nc TPair))
-              (bindTToT
+              (Comp.bind T T
                 (pmGuard
                   (and (equal (p1 nc) (seqLhs evCurry0Seq)) (equal (eqRhs q) (seqRhs evCurry0Seq))))
-                (lam ((u T)) (CT.pure (cTrans (cSymm (p2 nc)) (ecCert qc)))))))))))
-  (defn curryNatProof ((cp T) (ec T)) CT.M
+                (lam ((u T)) (Comp.pure T (cTrans (cSymm (p2 nc)) (ecCert qc)))))))))))
+  (defn curryNatProof ((cp T) (ec T)) TreeM
     (let*
-      ((rs (List RwRule) (RwRules.append baseRules (RwL.l2 (rwThm cp) (rwThm ec))))
+      ((rs (List RwRule) (Seq.append RwRule baseRules (Few.l2 RwRule (rwThm cp) (rwThm ec))))
        (k T (seqLhs curryNatSeq)))
-      (bindEToT (pInst (srcAx (add beforeExponential 8)) (l4 (dom (x 3)) (x 1) (cod (x 2)) k))
+      (Comp.bind EqnCert T
+        (pInst (srcAx (add beforeExponential 8)) (l4 (dom (x 3)) (x 1) (cod (x 2)) k))
         (lam ((qc EqnCert))
-          (bindPToT (pNormalize rs (eqLhs (ecEqn qc)))
+          (Comp.bind TPair T (pNormalize rs (eqLhs (ecEqn qc)))
             (lam ((nc TPair))
-              (bindPToT (pNormalize rs (seqRhs curryNatSeq))
+              (Comp.bind TPair T (pNormalize rs (seqRhs curryNatSeq))
                 (lam ((rc TPair))
-                  (bindTToT (pmGuard (equal (p1 nc) (p1 rc)))
+                  (Comp.bind T T (pmGuard (equal (p1 nc) (p1 rc)))
                     (lam ((u T))
-                      (CT.pure
+                      (Comp.pure T
                         (cTrans (cSymm (ecCert qc)) (cTrans (p2 nc) (cSymm (p2 rc)))))))))))))))
   (def bangOneProof
-    (bindEToT (pInst (srcAx (add beforeTerminal 3)) (single (idt one)))
+    (Comp.bind EqnCert T (pInst (srcAx (add beforeTerminal 3)) (single (idt one)))
       (lam ((qc EqnCert))
-        (bindPToT (pNormalize baseRules (eqRhs (ecEqn qc)))
+        (Comp.bind TPair T (pNormalize baseRules (eqRhs (ecEqn qc)))
           (lam ((nc TPair))
-            (bindTToT (pmGuard (equal (p1 nc) (bang one)))
-              (lam ((u T)) (CT.pure (cSymm (cTrans (ecCert qc) (p2 nc)))))))))))
+            (Comp.bind T T (pmGuard (equal (p1 nc) (bang one)))
+              (lam ((u T)) (Comp.pure T (cSymm (cTrans (ecCert qc) (p2 nc)))))))))))
   (data Indices (indices & T))
   (data Library (library Indices DevList))
-  (import (Option Library) as OLibrary)
-  (defn bindPr ((m OProved.Maybe) (f (Arrow Proved OLibrary.Maybe))) OLibrary.Maybe
-    (case m ((OProved.just p) (f p)) ((OProved.nothing) OLibrary.nothing)))
-  (defn libraryWith ((infer T)) OLibrary.Maybe
+
+  (defn bindPr ((m (Option.Maybe Proved)) (f (Arrow Proved (Option.Maybe Library))))
+    (Option.Maybe Library)
+    (case m ((Option.just Proved p) (f p)) ((Option.nothing Proved) (Option.nothing Library))))
+  (defn libraryWith ((infer T)) (Option.Maybe Library)
     (bindPr (proveSeq compPairSeq compPairProof (nil PDefn) infer (nil DevEntry))
       (lam ((r1 Proved))
         (let cp T (provedIdx r1)
@@ -1074,11 +1014,11 @@
                                     (proveSeq bangOneSeq bangOneProof (nil PDefn) infer
                                       (provedDev r5))
                                     (lam ((r6 Proved))
-                                      (OLibrary.just
+                                      (Option.just Library
                                         (library (indices (l6 cp pf ec e0 cn (provedIdx r6)))
                                           (devs (provedDev r6))))))))))))))))))))))
   (defn libRules ((i Indices)) (List RwRule)
     (let is Ts (case i ((indices & xs) xs))
-      (RwRules.append baseRules
-        (RwL.l5 (rwThm (at is 0)) (rwThm (at is 1)) (rwThm (at is 4)) (rwThm (at is 3))
+      (Seq.append RwRule baseRules
+        (Few.l5 RwRule (rwThm (at is 0)) (rwThm (at is 1)) (rwThm (at is 4)) (rwThm (at is 3))
           (rwThm (at is 5)))))))

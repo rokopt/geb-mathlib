@@ -11,278 +11,6 @@ open Geb.Kernel renaming Tree → T
 
 namespace GebMirror.Metalogic
 
-def «$4c6f6769632f4c462e6c32» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
-    x2
-
-def «$4c6f6769632f4c462e6c33» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$4c6f6769632f4c462e6c32» x1 x2));
-    x3
-
-def «$4c6f6769632f4c462e6c34» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree) =>
-    let x4 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$4c6f6769632f4c462e6c33» x1 x2 x3));
-    x4
-
-def «$4c6f6769632f4c462e6c35» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree) =>
-    let x5 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$4c6f6769632f4c462e6c34» x1 x2 x3 x4));
-    x5
-
-def «$4c6f6769632f4c462e6c36» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree)
-    (x5 : _root_.Geb.Kernel.Tree) =>
-    let x6 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$4c6f6769632f4c462e6c35» x1 x2 x3 x4 x5));
-    x6
-
-def «$4c6f6769632f44462e6c32» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
-    x2
-
-def «$4c6f6769632f44462e6c33» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$4c6f6769632f44462e6c32» x1 x2));
-    x3
-
-def «$4c6f6769632f44462e6c34» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree) =>
-    let x4 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$4c6f6769632f44462e6c33» x1 x2 x3));
-    x4
-
-def «$4c6f6769632f44462e6c35» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree) =>
-    let x5 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$4c6f6769632f44462e6c34» x1 x2 x3 x4));
-    x5
-
-def «$4c6f6769632f44462e6c36» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree)
-    (x5 : _root_.Geb.Kernel.Tree) =>
-    let x6 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$4c6f6769632f44462e6c35» x1 x2 x3 x4 x5));
-    x6
-
-def «$4c6f6769632f4c442e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$4c6f6769632f4c442e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$4c6f6769632f4c442e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$4c6f6769632f4c442e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$4c6f6769632f4c442e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$4c6f6769632f4c442e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$4c6f6769632f4c442e7461696c»
-      x1
-      x0;
-    x2
-
-def «$4c6f6769632f4c442e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$4c6f6769632f4c442e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$4c6f6769632f4465636c732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$4c6f6769632f4465636c732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$4c6f6769632f4465636c732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$4c6f6769632f4465636c732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$4c6f6769632f4465636c732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$4c6f6769632f4465636c732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$4c6f6769632f4465636c732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$4c6f6769632f4465636c732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$4c6f6769632f4465636c732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
 def «Logic.conjL» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -293,6 +21,24 @@ def «Logic.conjL» :=
       (_root_.GebMirror.Metalogic.«Theory.l2» x2 x1);
     x3
 
+def «$284665772e6c32204c616e67756167652e4c4465666e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
+    x2
+
+def «$284665772e6c33204c616e67756167652e4c4465666e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c32204c616e67756167652e4c4465666e29»
+        x1
+        x2));
+    x3
+
 def «Logic.connectives» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
@@ -300,7 +46,7 @@ def «Logic.connectives» :=
                                    (_root_.GebMirror.Metalogic.«Theory.l2»
                                      _root_.GebMirror.Metalogic.«Theory.omega»
                                      _root_.GebMirror.Metalogic.«Theory.omega»);
-                                 _root_.GebMirror.Metalogic.«$4c6f6769632f4c462e6c33»
+                                 _root_.GebMirror.Metalogic.«$284665772e6c33204c616e67756167652e4c4465666e29»
                                    (_root_.GebMirror.Metalogic.«Language.ldefn»
                                      (_root_.Geb.Kernel.leaf 0)
                                      (_root_.GebMirror.Metalogic.«Language.objs»
@@ -439,6 +185,52 @@ def «Logic.conjE» :=
                                                       _root_.GebMirror.Metalogic.«Tactics.trueI»)))))));
     x4
 
+def «$284665772e6c322044657269766174696f6e2e4465636c29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
+    x2
+
+def «$284665772e6c332044657269766174696f6e2e4465636c29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c322044657269766174696f6e2e4465636c29»
+        x1
+        x2));
+    x3
+
+def «$284665772e6c342044657269766174696f6e2e4465636c29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c332044657269766174696f6e2e4465636c29»
+        x1
+        x2
+        x3));
+    x4
+
+def «$284665772e6c352044657269766174696f6e2e4465636c29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c342044657269766174696f6e2e4465636c29»
+        x1
+        x2
+        x3
+        x4));
+    x5
+
 def «Logic.connectiveRules» :=
   fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -455,7 +247,7 @@ def «Logic.connectiveRules» :=
                                    (_root_.Geb.Kernel.leaf 0)
                                    ([] : _root_.List _root_.Geb.Kernel.Tree)
                                    ([] : _root_.List _root_.Geb.Kernel.Tree);
-                                 _root_.GebMirror.Metalogic.«$4c6f6769632f44462e6c35»
+                                 _root_.GebMirror.Metalogic.«$284665772e6c352044657269766174696f6e2e4465636c29»
                                    (_root_.GebMirror.Metalogic.«Derivation.declLang»
                                      (_root_.GebMirror.Metalogic.«Derivation.mkThm»
                                        (_root_.Geb.Kernel.leaf 0)
@@ -656,6 +448,51 @@ def «Logic.exuL» :=
       (_root_.GebMirror.Metalogic.«Prelude.single» x2);
     x3
 
+def «$284665772e6c34204c616e67756167652e4c4465666e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree) =>
+    let x4 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c33204c616e67756167652e4c4465666e29»
+        x1
+        x2
+        x3));
+    x4
+
+def «$284665772e6c35204c616e67756167652e4c4465666e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree) =>
+    let x5 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c34204c616e67756167652e4c4465666e29»
+        x1
+        x2
+        x3
+        x4));
+    x5
+
+def «$284665772e6c36204c616e67756167652e4c4465666e29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.Geb.Kernel.Tree) =>
+    let x6 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      (_root_.GebMirror.Metalogic.«$284665772e6c35204c616e67756167652e4c4465666e29»
+        x1
+        x2
+        x3
+        x4
+        x5));
+    x6
+
 def «Logic.connectivesAll» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
@@ -671,9 +508,9 @@ def «Logic.connectivesAll» :=
                                  let x3 : _root_.Geb.Kernel.Tree →
                                    _root_.Geb.Kernel.Tree →
                                      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.impL» x0;
-                                 _root_.GebMirror.Metalogic.«$4c6f6769632f4c442e617070656e64»
+                                 _root_.GebMirror.Metalogic.«$285365712e617070656e64204c616e67756167652e4c4465666e29»
                                    (_root_.GebMirror.Metalogic.«Logic.connectives» x0)
-                                   (_root_.GebMirror.Metalogic.«$4c6f6769632f4c462e6c36»
+                                   (_root_.GebMirror.Metalogic.«$284665772e6c36204c616e67756167652e4c4465666e29»
                                      (_root_.GebMirror.Metalogic.«Language.ldefn»
                                        (_root_.Geb.Kernel.leaf 1)
                                        x2
@@ -905,6 +742,20 @@ def «Logic.allI» :=
               (_root_.GebMirror.Metalogic.«Theory.l2» _root_.GebMirror.Metalogic.«Tactics.trueI» x0)))));
     x1
 
+def «$285365712e617070656e642044657269766174696f6e2e4465636c29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        (x2 :: x3))
+      x1
+      x0;
+    x2
+
 def «Logic.connectiveRulesAll» :=
   fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -1013,10 +864,10 @@ def «Logic.connectiveRulesAll» :=
                                                    (_root_.Geb.Kernel.leaf 2))))
                                              (_root_.GebMirror.Metalogic.«Logic.dHyp»
                                                (_root_.Geb.Kernel.leaf 0)))))));
-                                 _root_.GebMirror.Metalogic.«$4c6f6769632f4465636c732e617070656e64»
+                                 _root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                    (_root_.GebMirror.Metalogic.«Logic.connectiveRules» x0 x1)
-                                   (_root_.GebMirror.Metalogic.«$4c6f6769632f4465636c732e617070656e64»
-                                     (_root_.GebMirror.Metalogic.«$4c6f6769632f44462e6c34»
+                                   (_root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
+                                     (_root_.GebMirror.Metalogic.«$284665772e6c342044657269766174696f6e2e4465636c29»
                                        (_root_.GebMirror.Metalogic.«Derivation.declLang»
                                          (_root_.GebMirror.Metalogic.«Derivation.mkThm»
                                            (_root_.Geb.Kernel.leaf 1)
@@ -1144,7 +995,7 @@ def «Logic.connectiveRulesAll» :=
                                            (_root_.GebMirror.Metalogic.«Language.var»
                                              (_root_.Geb.Kernel.leaf 1))
                                            (_root_.Geb.Kernel.leaf 3))))
-                                     (_root_.GebMirror.Metalogic.«$4c6f6769632f44462e6c33»
+                                     (_root_.GebMirror.Metalogic.«$284665772e6c332044657269766174696f6e2e4465636c29»
                                        (_root_.GebMirror.Metalogic.«Derivation.declLang»
                                          (_root_.GebMirror.Metalogic.«Derivation.mkThm»
                                            (_root_.Geb.Kernel.leaf 0)
@@ -2337,21 +2188,13 @@ def «Formula.unfoldHypothesis» :=
         _root_.GebMirror.Metalogic.«Prelude.none»);
     x5
 
-def «$466f726d756c612f44656475636572732e73696e676c65» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
-      _root_.List _root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree) := (x0 ::
-      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)));
-    x1
+def «Formula.noProof» :=
+  fun (_ : _root_.List _root_.Geb.Kernel.Tree)
+    (_ : _root_.List _root_.Geb.Kernel.Tree)
+    (_ : _root_.Geb.Kernel.Tree) =>
+    _root_.GebMirror.Metalogic.«Prelude.none»
 
-def «$466f726d756c612f44656475636572732e6c656e677468» :=
+def «$285365712e6c656e67746820284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929» :=
   fun (x0 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree →
@@ -2370,88 +2213,7 @@ def «$466f726d756c612f44656475636572732e6c656e677468» :=
       x0;
     x1
 
-def «$466f726d756c612f44656475636572732e617070656e64» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-    (x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x2 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree →
-             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$466f726d756c612f44656475636572732e72657665727365» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) →
-        _root_.List
-          (_root_.List _root_.Geb.Kernel.Tree →
-            _root_.List _root_.Geb.Kernel.Tree →
-              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree →
-             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) →
-           _root_.List
-             (_root_.List _root_.Geb.Kernel.Tree →
-               _root_.List _root_.Geb.Kernel.Tree →
-                 _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-         (x3 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x1)
-      x0
-      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree));
-    x1
-
-def «$466f726d756c612f44656475636572732e7461696c» :=
+def «$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929» :=
   fun (x0 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree →
@@ -2482,7 +2244,7 @@ def «$466f726d756c612f44656475636572732e7461696c» :=
         x2);
     x1
 
-def «$466f726d756c612f44656475636572732e64726f70» :=
+def «$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree →
@@ -2497,12 +2259,12 @@ def «$466f726d756c612f44656475636572732e64726f70» :=
         (_root_.List _root_.Geb.Kernel.Tree →
           _root_.List _root_.Geb.Kernel.Tree →
             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      _root_.GebMirror.Metalogic.«$466f726d756c612f44656475636572732e7461696c»
+      _root_.GebMirror.Metalogic.«$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929»
       x1
       x0;
     x2
 
-def «$466f726d756c612f44656475636572732e61744f72» :=
+def «$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
       _root_.List _root_.Geb.Kernel.Tree →
         _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
@@ -2521,7 +2283,9 @@ def «$466f726d756c612f44656475636572732e61744f72» :=
       (β := _root_.List _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree →
           _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$466f726d756c612f44656475636572732e64726f70» x2 x1)
+      (_root_.GebMirror.Metalogic.«$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929»
+        x2
+        x1)
       x0
       (fun (x3 : _root_.List _root_.Geb.Kernel.Tree →
            _root_.List _root_.Geb.Kernel.Tree →
@@ -2532,12 +2296,6 @@ def «$466f726d756c612f44656475636572732e61744f72» :=
                _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
         x3);
     x3
-
-def «Formula.noProof» :=
-  fun (_ : _root_.List _root_.Geb.Kernel.Tree)
-    (_ : _root_.List _root_.Geb.Kernel.Tree)
-    (_ : _root_.Geb.Kernel.Tree) =>
-    _root_.GebMirror.Metalogic.«Prelude.none»
 
 def «Formula.applyTheorem» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
@@ -2674,7 +2432,7 @@ def «Formula.applyTheorem» :=
                 (_root_.GebMirror.Metalogic.«Derivation.instTerm» x2 x3 x20))
               (_root_.Geb.Kernel.Const.eq
                 (_root_.GebMirror.Metalogic.«Prelude.length» x24)
-                (_root_.GebMirror.Metalogic.«$466f726d756c612f44656475636572732e6c656e677468»
+                (_root_.GebMirror.Metalogic.«$285365712e6c656e67746820284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929»
                   x4))))).label ≠ 0 then
           _root_.GebMirror.Metalogic.«Base.mapO»
             (fun (x25 : _root_.Geb.Kernel.Tree) =>
@@ -2686,7 +2444,7 @@ def «Formula.applyTheorem» :=
             (_root_.GebMirror.Metalogic.«Base.allSomeT»
               (_root_.GebMirror.Metalogic.«Base.mapT»
                 (fun (x25 : _root_.Geb.Kernel.Tree) =>
-                  _root_.GebMirror.Metalogic.«$466f726d756c612f44656475636572732e61744f72»
+                  _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929»
                     _root_.GebMirror.Metalogic.«Formula.noProof»
                     x4
                     x25
@@ -2990,504 +2748,6 @@ def «Formula.obtainTheorem» :=
                 x8)));
     x6
 
-def «$417574686f72696e672f4c442e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$417574686f72696e672f4c442e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$417574686f72696e672f4c442e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f4c442e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$417574686f72696e672f4c442e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$417574686f72696e672f4c442e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e7461696c»
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f4c442e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$417574686f72696e672f4f532e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$417574686f72696e672f4f532e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$417574686f72696e672f4f532e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f4f532e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$417574686f72696e672f4f532e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$417574686f72696e672f4f532e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f4f532e7461696c»
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f4f532e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f4f532e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$417574686f72696e672f50462e6c32» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
-    x2
-
-def «$417574686f72696e672f50462e6c33» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f50462e6c32» x1 x2));
-    x3
-
-def «$417574686f72696e672f50462e6c34» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree) =>
-    let x4 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f50462e6c33» x1 x2 x3));
-    x4
-
-def «$417574686f72696e672f50462e6c35» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree) =>
-    let x5 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f50462e6c34» x1 x2 x3 x4));
-    x5
-
-def «$417574686f72696e672f50462e6c36» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree)
-    (x3 : _root_.Geb.Kernel.Tree)
-    (x4 : _root_.Geb.Kernel.Tree)
-    (x5 : _root_.Geb.Kernel.Tree) =>
-    let x6 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f50462e6c35» x1 x2 x3 x4 x5));
-    x6
-
-def «$417574686f72696e672f5072696d4c2e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$417574686f72696e672f5072696d4c2e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$417574686f72696e672f5072696d4c2e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f5072696d4c2e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$417574686f72696e672f5072696d4c2e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$417574686f72696e672f5072696d4c2e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f5072696d4c2e7461696c»
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f5072696d4c2e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f5072696d4c2e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$417574686f72696e672f444c2e6d6170» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        ((x0 x2) :: x3))
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      x1;
-    x2
-
-def «$417574686f72696e672f4465636c732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$417574686f72696e672f4465636c732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$417574686f72696e672f4465636c732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f4465636c732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$417574686f72696e672f4465636c732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$417574686f72696e672f4465636c732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f4465636c732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$417574686f72696e672f52756c65732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$417574686f72696e672f52756c65732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$417574686f72696e672f52756c65732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f52756c65732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$417574686f72696e672f52756c65732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$417574686f72696e672f52756c65732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f52756c65732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f52756c65732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f52756c65732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
 def «Authoring.word» :=
   fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.and»
@@ -3749,7 +3009,7 @@ def «Authoring.primsFor» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
       _root_.Geb.Kernel.Tree := (let x1 : _root_.List
-                                   _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$417574686f72696e672f50462e6c36»
+                                   _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284665772e6c36204c616e67756167652e5072696d697469766529»
                                    _root_.GebMirror.Metalogic.«Derivation.nilPrim»
                                    _root_.GebMirror.Metalogic.«Derivation.consPrim»
                                    _root_.GebMirror.Metalogic.«Derivation.lnodePrim»
@@ -3759,9 +3019,9 @@ def «Authoring.primsFor» :=
                                  if (_root_.Geb.Kernel.Const.lt
                                    (_root_.Geb.Kernel.leaf 3)
                                    x0).label ≠ 0 then
-                                   _root_.GebMirror.Metalogic.«$417574686f72696e672f5072696d4c2e617070656e64»
+                                   _root_.GebMirror.Metalogic.«$285365712e617070656e64204c616e67756167652e5072696d697469766529»
                                      x1
-                                     (_root_.GebMirror.Metalogic.«$417574686f72696e672f50462e6c32»
+                                     (_root_.GebMirror.Metalogic.«$284665772e6c32204c616e67756167652e5072696d697469766529»
                                        (_root_.GebMirror.Metalogic.«Language.primitive»
                                          (_root_.Geb.Kernel.leaf 0)
                                          _root_.GebMirror.Metalogic.«Theory.zeroN»
@@ -3783,19 +3043,19 @@ def «Authoring.globalsOf» :=
       (_root_.GebMirror.Metalogic.«Language.prims»
         (_root_.GebMirror.Metalogic.«Authoring.primsFor» x0))
       (_root_.GebMirror.Metalogic.«Language.defs»
-        (_root_.GebMirror.Metalogic.«$417574686f72696e672f444c2e6d6170»
+        (_root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e4c4465666e204c616e67756167652e446566696e6974696f6e29»
           _root_.GebMirror.Metalogic.«Language.defLang»
-          (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e617070656e64»
+          (_root_.GebMirror.Metalogic.«$285365712e617070656e64204c616e67756167652e4c4465666e29»
             _root_.GebMirror.Metalogic.«Translation.lib»
             x1)))
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f4f532e6c656e677468»
+      (_root_.GebMirror.Metalogic.«$285365712e6c656e677468205061727469616c486f726e2e4f7053696729»
         _root_.GebMirror.Metalogic.«Theory.sig»);
     x2
 
 def «Authoring.connectivesAt» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.add
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468»
+      (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
         _root_.GebMirror.Metalogic.«Translation.lib»)
       (_root_.GebMirror.Metalogic.«Prelude.length» x0);
     x1
@@ -3839,24 +3099,36 @@ def «Authoring.globalsFor» :=
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Authoring.globalsOf»
       x0
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e617070656e64»
+      (_root_.GebMirror.Metalogic.«$285365712e617070656e64204c616e67756167652e4c4465666e29»
         x1
         (_root_.GebMirror.Metalogic.«Authoring.connectivesOf»
           x0
           (_root_.Geb.Kernel.Const.add
-            (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468»
+            (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
               _root_.GebMirror.Metalogic.«Translation.lib»)
-            (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468» x1))));
+            (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
+              x1))));
     x2
 
+def «$285365712e6c656e6774682044657269766174696f6e2e4465636c29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+      (_root_.Geb.Kernel.leaf 0)
+      x0;
+    x1
+
 def «Authoring.ruleCount» :=
-  _root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e6c656e677468»
+  _root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
     (_root_.GebMirror.Metalogic.«Logic.connectiveRules»
       (_root_.Geb.Kernel.leaf 0)
       (_root_.Geb.Kernel.leaf 0))
 
 def «Authoring.ruleCountAll» :=
-  _root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e6c656e677468»
+  _root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
     (_root_.GebMirror.Metalogic.«Logic.connectiveRulesAll»
       (_root_.Geb.Kernel.leaf 0)
       (_root_.Geb.Kernel.leaf 0))
@@ -3880,8 +3152,15 @@ def «Authoring.declaredAt» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.add
       (_root_.GebMirror.Metalogic.«Authoring.connectivesAt» x0)
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468»
+      (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
         (_root_.GebMirror.Metalogic.«Logic.connectivesAll» (_root_.Geb.Kernel.leaf 0)));
+    x1
+
+def «$285365712e73696e676c652050726f7665722e4e6f726d52756c6529» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      ([] : _root_.List _root_.Geb.Kernel.Tree));
     x1
 
 def «Authoring.rulesOf» :=
@@ -3900,7 +3179,7 @@ def «Authoring.rulesOf» :=
                                        (_root_.GebMirror.Metalogic.«Derivation.terms»
                                          (_root_.GebMirror.Metalogic.«Prelude.single»
                                            _root_.GebMirror.Metalogic.«Authoring.kZero»))) ::
-                                       (_root_.GebMirror.Metalogic.«$417574686f72696e672f52756c65732e73696e676c65»
+                                       (_root_.GebMirror.Metalogic.«$285365712e73696e676c652050726f7665722e4e6f726d52756c6529»
                                          (_root_.GebMirror.Metalogic.«Prover.nrRule»
                                            (_root_.Geb.Kernel.leaf 10)
                                            (_root_.GebMirror.Metalogic.«Derivation.terms»
@@ -4467,7 +3746,7 @@ def «Authoring.ilib» :=
       else
         _root_.GebMirror.Metalogic.«Prelude.none»)
       (fun (x3 : _root_.Geb.Kernel.Tree) =>
-        let x4 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$4c616e67756167652f4f4c4465666e2e6e74684f66»
+        let x4 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e74684f66204c616e67756167652e4c4465666e29»
           _root_.GebMirror.Metalogic.«Translation.lib»
           x3;
         if (_root_.Geb.Kernel.Const.eq
@@ -4605,161 +3884,6 @@ def «Authoring.ilib» :=
                       (_root_.GebMirror.Metalogic.«Base.range» (_root_.GebMirror.Metalogic.«Prelude.length» x20)))))
           else
             _root_.GebMirror.Metalogic.«Prelude.none»);
-    x3
-
-def «$417574686f72696e672f4952732e73696e676c65» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
-      _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree) := (x0 ::
-      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)));
-    x1
-
-def «$417574686f72696e672f4952732e6c656e677468» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$417574686f72696e672f4952732e617070656e64» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-    (x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x2 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f4952732e72657665727365» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) →
-        _root_.List
-          (_root_.List _root_.Geb.Kernel.Tree →
-            _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) →
-           _root_.List
-             (_root_.List _root_.Geb.Kernel.Tree →
-               _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-         (x3 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x1)
-      x0
-      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree));
-    x1
-
-def «$417574686f72696e672f4952732e7461696c» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      x0
-      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (_ : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x2);
-    x1
-
-def «$417574686f72696e672f4952732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x2 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f4952732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f4952732e61744f72» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
-      _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List _root_.Geb.Kernel.Tree →
-      _root_.List _root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f4952732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (_ : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x3);
     x3
 
 def «Authoring.failIR» :=
@@ -4920,7 +4044,7 @@ def «Authoring.iatom» :=
                                                     (fun (x5 : _root_.Geb.Kernel.Tree) =>
                                                       _root_.GebMirror.Metalogic.«Translation.call»
                                                         (_root_.Geb.Kernel.Const.add
-                                                          (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468»
+                                                          (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
                                                             _root_.GebMirror.Metalogic.«Translation.lib»)
                                                           x5)
                                                         ([] : _root_.List _root_.Geb.Kernel.Tree)
@@ -5320,6 +4444,73 @@ def «Authoring.ilogic» :=
                                               _root_.GebMirror.Metalogic.«Prelude.none»);
     x4
 
+def «$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c6973742054292054292929» :=
+  fun (x0 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    let x1 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (β := _root_.List
+        (_root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      x0
+      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      (fun (_ : _root_.List _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List
+           (_root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+        x2);
+    x1
+
+def «$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c6973742054292054292929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    let x2 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List
+        (_root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      _root_.GebMirror.Metalogic.«$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c6973742054292054292929»
+      x1
+      x0;
+    x2
+
+def «$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c6973742054292054292929» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c6973742054292054292929»
+        x2
+        x1)
+      x0
+      (fun (x3 : _root_.List _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (_ : _root_.List
+           (_root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+        x3);
+    x3
+
 def «Authoring.itermStep» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -5344,7 +4535,7 @@ def «Authoring.itermStep» :=
                                        _root_.List _root_.Geb.Kernel.Tree →
                                          _root_.List _root_.Geb.Kernel.Tree →
                                            _root_.Geb.Kernel.Tree := (fun (x11 : _root_.Geb.Kernel.Tree) =>
-                                       _root_.GebMirror.Metalogic.«$417574686f72696e672f4952732e61744f72»
+                                       _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c6973742054292054292929»
                                          _root_.GebMirror.Metalogic.«Authoring.failIR»
                                          x5
                                          x11);
@@ -5760,151 +4951,6 @@ def «Authoring.readFormula» :=
       _root_.GebMirror.Metalogic.«Authoring.readEqn» x2 x3 x4 x5 x6);
     x7
 
-def «$417574686f72696e672f4f53742e6e6f7468696e67» :=
-  _root_.Geb.Kernel.Const.node
-    (_root_.Geb.Kernel.leaf 0)
-    ([] : _root_.List _root_.Geb.Kernel.Tree)
-
-def «$417574686f72696e672f4f53742e6a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    _root_.Geb.Kernel.Const.node
-      (_root_.Geb.Kernel.leaf 1)
-      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$417574686f72696e672f4f53742e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$417574686f72696e672f4f53742e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$417574686f72696e672f4f53742e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f4f53742e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$417574686f72696e672f4f53742e6a757374» x2);
-    x2
-
-def «$417574686f72696e672f4f53742e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
 def «Authoring.binderOk» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -5956,6 +5002,17 @@ def «Authoring.hypOk» :=
           _root_.GebMirror.Metalogic.«Authoring.declared»
             (_root_.Geb.Kernel.Const.child x2 (_root_.Geb.Kernel.leaf 0))));
     x3
+
+def «$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e53746174656d656e7429» :=
+  _root_.Geb.Kernel.Const.node
+    (_root_.Geb.Kernel.leaf 0)
+    ([] : _root_.List _root_.Geb.Kernel.Tree)
+
+def «$284f7074696f6e2e6a75737420417574686f72696e672e53746174656d656e7429» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    _root_.Geb.Kernel.Const.node
+      (_root_.Geb.Kernel.leaf 1)
+      (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
 def «Authoring.readQuantified» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -6131,7 +5188,7 @@ def «Authoring.readQuantified» :=
                                           if (_root_.GebMirror.Metalogic.«Prelude.and»
                                             (_root_.GebMirror.Metalogic.«Prelude.isSome» x21)
                                             (_root_.GebMirror.Metalogic.«Prelude.isSome» x22)).label ≠ 0 then
-                                            _root_.GebMirror.Metalogic.«$417574686f72696e672f4f53742e6a757374»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420417574686f72696e672e53746174656d656e7429»
                                               (_root_.GebMirror.Metalogic.«Authoring.statement»
                                                 (_root_.Geb.Kernel.Const.node
                                                   (_root_.Geb.Kernel.leaf 0)
@@ -6153,9 +5210,9 @@ def «Authoring.readQuantified» :=
                                                       (_root_.GebMirror.Metalogic.«Prelude.get» x21)))
                                                   (_root_.GebMirror.Metalogic.«Prelude.get» x22)))
                                           else
-                                            _root_.GebMirror.Metalogic.«$417574686f72696e672f4f53742e6e6f7468696e67»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e53746174656d656e7429»
                                         else
-                                          _root_.GebMirror.Metalogic.«$417574686f72696e672f4f53742e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e53746174656d656e7429»);
     x8
 
 def «Authoring.readStatement» :=
@@ -6202,7 +5259,7 @@ def «Authoring.readStatement» :=
           (_root_.Geb.Kernel.leaf 1)
           (_root_.Geb.Kernel.Const.child x5 (_root_.Geb.Kernel.leaf 2))
       else
-        _root_.GebMirror.Metalogic.«$417574686f72696e672f4f53742e6e6f7468696e67»
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e53746174656d656e7429»
     else
       _root_.GebMirror.Metalogic.«Authoring.readQuantified»
         x0
@@ -6214,530 +5271,6 @@ def «Authoring.readStatement» :=
         (_root_.Geb.Kernel.leaf 0)
         x5);
     x6
-
-def «$417574686f72696e672f5352732e73696e676c65» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
-      _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree ×
-            (_root_.Geb.Kernel.Tree →
-              _root_.List _root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree →
-                            _root_.Geb.Kernel.Tree)) := (x0 ::
-      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))));
-    x1
-
-def «$417574686f72696e672f5352732e6c656e677468» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.Geb.Kernel.Tree ×
-                 (_root_.Geb.Kernel.Tree →
-                   _root_.List _root_.Geb.Kernel.Tree →
-                     _root_.List _root_.Geb.Kernel.Tree →
-                       _root_.List _root_.Geb.Kernel.Tree →
-                         _root_.List _root_.Geb.Kernel.Tree →
-                           _root_.Geb.Kernel.Tree →
-                             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-         (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$417574686f72696e672f5352732e617070656e64» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-    (x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-    let x2 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree →
-                            _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (β := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.List _root_.Geb.Kernel.Tree →
-              _root_.Geb.Kernel.Tree ×
-                (_root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.List _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree →
-                            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-      (fun (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.Geb.Kernel.Tree ×
-                 (_root_.Geb.Kernel.Tree →
-                   _root_.List _root_.Geb.Kernel.Tree →
-                     _root_.List _root_.Geb.Kernel.Tree →
-                       _root_.List _root_.Geb.Kernel.Tree →
-                         _root_.List _root_.Geb.Kernel.Tree →
-                           _root_.Geb.Kernel.Tree →
-                             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-         (x3 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.List _root_.Geb.Kernel.Tree →
-                 _root_.Geb.Kernel.Tree ×
-                   (_root_.Geb.Kernel.Tree →
-                     _root_.List _root_.Geb.Kernel.Tree →
-                       _root_.List _root_.Geb.Kernel.Tree →
-                         _root_.List _root_.Geb.Kernel.Tree →
-                           _root_.List _root_.Geb.Kernel.Tree →
-                             _root_.Geb.Kernel.Tree →
-                               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f5352732e72657665727365» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-    let x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree →
-                            _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (β := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.List _root_.Geb.Kernel.Tree →
-              _root_.Geb.Kernel.Tree ×
-                (_root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.List _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree →
-                            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) →
-        _root_.List
-          (_root_.List _root_.Geb.Kernel.Tree →
-            _root_.List _root_.Geb.Kernel.Tree →
-              _root_.List _root_.Geb.Kernel.Tree →
-                _root_.Geb.Kernel.Tree ×
-                  (_root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.List _root_.Geb.Kernel.Tree →
-                          _root_.List _root_.Geb.Kernel.Tree →
-                            _root_.Geb.Kernel.Tree →
-                              _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.Geb.Kernel.Tree ×
-                 (_root_.Geb.Kernel.Tree →
-                   _root_.List _root_.Geb.Kernel.Tree →
-                     _root_.List _root_.Geb.Kernel.Tree →
-                       _root_.List _root_.Geb.Kernel.Tree →
-                         _root_.List _root_.Geb.Kernel.Tree →
-                           _root_.Geb.Kernel.Tree →
-                             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-         (x2 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.List _root_.Geb.Kernel.Tree →
-                 _root_.Geb.Kernel.Tree ×
-                   (_root_.Geb.Kernel.Tree →
-                     _root_.List _root_.Geb.Kernel.Tree →
-                       _root_.List _root_.Geb.Kernel.Tree →
-                         _root_.List _root_.Geb.Kernel.Tree →
-                           _root_.List _root_.Geb.Kernel.Tree →
-                             _root_.Geb.Kernel.Tree →
-                               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) →
-           _root_.List
-             (_root_.List _root_.Geb.Kernel.Tree →
-               _root_.List _root_.Geb.Kernel.Tree →
-                 _root_.List _root_.Geb.Kernel.Tree →
-                   _root_.Geb.Kernel.Tree ×
-                     (_root_.Geb.Kernel.Tree →
-                       _root_.List _root_.Geb.Kernel.Tree →
-                         _root_.List _root_.Geb.Kernel.Tree →
-                           _root_.List _root_.Geb.Kernel.Tree →
-                             _root_.List _root_.Geb.Kernel.Tree →
-                               _root_.Geb.Kernel.Tree →
-                                 _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-         (x3 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.List _root_.Geb.Kernel.Tree →
-                 _root_.Geb.Kernel.Tree ×
-                   (_root_.Geb.Kernel.Tree →
-                     _root_.List _root_.Geb.Kernel.Tree →
-                       _root_.List _root_.Geb.Kernel.Tree →
-                         _root_.List _root_.Geb.Kernel.Tree →
-                           _root_.List _root_.Geb.Kernel.Tree →
-                             _root_.Geb.Kernel.Tree →
-                               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.List _root_.Geb.Kernel.Tree →
-                 _root_.Geb.Kernel.Tree ×
-                   (_root_.Geb.Kernel.Tree →
-                     _root_.List _root_.Geb.Kernel.Tree →
-                       _root_.List _root_.Geb.Kernel.Tree →
-                         _root_.List _root_.Geb.Kernel.Tree →
-                           _root_.List _root_.Geb.Kernel.Tree →
-                             _root_.Geb.Kernel.Tree →
-                               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-        x1)
-      x0
-      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)));
-    x1
-
-def «$417574686f72696e672f5352732e7461696c» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-    let x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree →
-                            _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (β := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.List _root_.Geb.Kernel.Tree →
-              _root_.Geb.Kernel.Tree ×
-                (_root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.List _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree →
-                            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-      x0
-      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-      (fun (_ : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.Geb.Kernel.Tree ×
-                 (_root_.Geb.Kernel.Tree →
-                   _root_.List _root_.Geb.Kernel.Tree →
-                     _root_.List _root_.Geb.Kernel.Tree →
-                       _root_.List _root_.Geb.Kernel.Tree →
-                         _root_.List _root_.Geb.Kernel.Tree →
-                           _root_.Geb.Kernel.Tree →
-                             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-         (x2 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.List _root_.Geb.Kernel.Tree →
-                 _root_.Geb.Kernel.Tree ×
-                   (_root_.Geb.Kernel.Tree →
-                     _root_.List _root_.Geb.Kernel.Tree →
-                       _root_.List _root_.Geb.Kernel.Tree →
-                         _root_.List _root_.Geb.Kernel.Tree →
-                           _root_.List _root_.Geb.Kernel.Tree →
-                             _root_.Geb.Kernel.Tree →
-                               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-        x2);
-    x1
-
-def «$417574686f72696e672f5352732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-    let x2 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree →
-                            _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.List _root_.Geb.Kernel.Tree →
-              _root_.Geb.Kernel.Tree ×
-                (_root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.List _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree →
-                            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f5352732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f5352732e61744f72» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
-      _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree ×
-            (_root_.Geb.Kernel.Tree →
-              _root_.List _root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-    (x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List _root_.Geb.Kernel.Tree →
-      _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.Geb.Kernel.Tree ×
-            (_root_.Geb.Kernel.Tree →
-              _root_.List _root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree →
-          _root_.List _root_.Geb.Kernel.Tree →
-            _root_.Geb.Kernel.Tree ×
-              (_root_.Geb.Kernel.Tree →
-                _root_.List _root_.Geb.Kernel.Tree →
-                  _root_.List _root_.Geb.Kernel.Tree →
-                    _root_.List _root_.Geb.Kernel.Tree →
-                      _root_.List _root_.Geb.Kernel.Tree →
-                        _root_.Geb.Kernel.Tree →
-                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f5352732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.Geb.Kernel.Tree ×
-                 (_root_.Geb.Kernel.Tree →
-                   _root_.List _root_.Geb.Kernel.Tree →
-                     _root_.List _root_.Geb.Kernel.Tree →
-                       _root_.List _root_.Geb.Kernel.Tree →
-                         _root_.List _root_.Geb.Kernel.Tree →
-                           _root_.Geb.Kernel.Tree →
-                             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-         (_ : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree →
-             _root_.List _root_.Geb.Kernel.Tree →
-               _root_.List _root_.Geb.Kernel.Tree →
-                 _root_.Geb.Kernel.Tree ×
-                   (_root_.Geb.Kernel.Tree →
-                     _root_.List _root_.Geb.Kernel.Tree →
-                       _root_.List _root_.Geb.Kernel.Tree →
-                         _root_.List _root_.Geb.Kernel.Tree →
-                           _root_.List _root_.Geb.Kernel.Tree →
-                             _root_.Geb.Kernel.Tree →
-                               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
-        x3);
-    x3
 
 def «Authoring.failTac» :=
   fun (_ : _root_.Geb.Kernel.Tree)
@@ -6763,7 +5296,7 @@ def «Authoring.foldedId» :=
       _root_.GebMirror.Metalogic.«Base.mapO»
         (fun (x2 : _root_.Geb.Kernel.Tree) =>
           _root_.Geb.Kernel.Const.add
-            (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468»
+            (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
               _root_.GebMirror.Metalogic.«Translation.lib»)
             x2)
         (_root_.GebMirror.Metalogic.«Reader.indexOf»
@@ -7025,12 +5558,13 @@ def «Authoring.foldedOf» :=
           if (_root_.Geb.Kernel.Const.eq
             x5
             (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
-            _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e6a757374» x7
+            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e5465726d7329»
+              x7
           else
             x2
         else
           x2)
-      _root_.GebMirror.Metalogic.«$44657269766174696f6e2f4f5465726d732e6e6f7468696e67»
+      _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e5465726d7329»
       x0;
     x1
 
@@ -7291,12 +5825,26 @@ def «Authoring.languageRules» :=
       x0;
     x1
 
+def «$285365712e617070656e642050726f7665722e4e6f726d52756c6529» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      (fun (x2 : _root_.Geb.Kernel.Tree)
+         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
+        (x2 :: x3))
+      x1
+      x0;
+    x2
+
 def «Authoring.rulesIn» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
     (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$417574686f72696e672f52756c65732e617070656e64»
+      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e617070656e642050726f7665722e4e6f726d52756c6529»
       (_root_.GebMirror.Metalogic.«Prover.prepareRules» x0 x1)
       (let x3 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Authoring.foldedOf»
          x1;
@@ -7985,119 +6533,6 @@ def «Authoring.script3» :=
                                                       _root_.GebMirror.Metalogic.«Authoring.failTac»));
     x10
 
-def «$417574686f72696e672f4b6964732e73696e676c65» :=
-  fun (x0 : _root_.List (_root_.List _root_.Geb.Kernel.Tree)) =>
-    let x1 : _root_.List
-      (_root_.List
-        (_root_.List
-          _root_.Geb.Kernel.Tree)) := (x0 ::
-      ([] : _root_.List (_root_.List
-        (_root_.List _root_.Geb.Kernel.Tree))));
-    x1
-
-def «$417574686f72696e672f4b6964732e6c656e677468» :=
-  fun (x0 : _root_.List
-      (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-         (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$417574686f72696e672f4b6964732e617070656e64» :=
-  fun (x0 : _root_.List
-      (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
-    (x1 : _root_.List
-      (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
-    let x2 : _root_.List
-      (_root_.List
-        (_root_.List
-          _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-      (β := _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
-      (fun (x2 : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-         (x3 : _root_.List
-           (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f4b6964732e72657665727365» :=
-  fun (x0 : _root_.List
-      (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
-    let x1 : _root_.List
-      (_root_.List
-        (_root_.List
-          _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-      (β := _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)) →
-        _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
-      (fun (x1 : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-         (x2 : _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)) →
-           _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
-         (x3 : _root_.List
-           (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List
-           (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
-        x1)
-      x0
-      ([] : _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)));
-    x1
-
-def «$417574686f72696e672f4b6964732e7461696c» :=
-  fun (x0 : _root_.List
-      (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
-    let x1 : _root_.List
-      (_root_.List
-        (_root_.List
-          _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-      (β := _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
-      x0
-      ([] : _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
-      (fun (_ : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-         (x2 : _root_.List
-           (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
-        x2);
-    x1
-
-def «$417574686f72696e672f4b6964732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List
-      (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
-    let x2 : _root_.List
-      (_root_.List
-        (_root_.List
-          _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f4b6964732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f4b6964732e61744f72» :=
-  fun (x0 : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-    (x1 : _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List
-      (_root_.List
-        _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-      (β := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f4b6964732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-         (_ : _root_.List
-           (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
-        x3);
-    x3
-
 def «Authoring.unnamed» :=
   _root_.Geb.Kernel.Const.node
     (_root_.Geb.Kernel.leaf 0)
@@ -8586,6 +7021,237 @@ def «Authoring.byTests» :=
       (_root_.Geb.Kernel.leaf 0);
     x10
 
+def «$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929» :=
+  fun (x0 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree →
+                _root_.List _root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
+    let x1 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree →
+                _root_.List _root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree →
+                            _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree →
+                _root_.List _root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      (β := _root_.List
+        (_root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.List _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree ×
+                (_root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.List _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree →
+                            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
+      x0
+      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree →
+                _root_.List _root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
+      (fun (_ : _root_.List _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.Geb.Kernel.Tree ×
+                 (_root_.Geb.Kernel.Tree →
+                   _root_.List _root_.Geb.Kernel.Tree →
+                     _root_.List _root_.Geb.Kernel.Tree →
+                       _root_.List _root_.Geb.Kernel.Tree →
+                         _root_.List _root_.Geb.Kernel.Tree →
+                           _root_.Geb.Kernel.Tree →
+                             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+         (x2 : _root_.List
+           (_root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.List _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree ×
+                   (_root_.Geb.Kernel.Tree →
+                     _root_.List _root_.Geb.Kernel.Tree →
+                       _root_.List _root_.Geb.Kernel.Tree →
+                         _root_.List _root_.Geb.Kernel.Tree →
+                           _root_.List _root_.Geb.Kernel.Tree →
+                             _root_.Geb.Kernel.Tree →
+                               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
+        x2);
+    x1
+
+def «$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree →
+                _root_.List _root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
+    let x2 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree →
+                _root_.List _root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree →
+                            _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List
+        (_root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.List _root_.Geb.Kernel.Tree →
+              _root_.Geb.Kernel.Tree ×
+                (_root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.List _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree →
+                            _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
+      _root_.GebMirror.Metalogic.«$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
+      x1
+      x0;
+    x2
+
+def «$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree →
+              _root_.List _root_.Geb.Kernel.Tree →
+                _root_.List _root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.Geb.Kernel.Tree →
+                        _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+    (x1 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree →
+                _root_.List _root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree ×
+            (_root_.Geb.Kernel.Tree →
+              _root_.List _root_.Geb.Kernel.Tree →
+                _root_.List _root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.Geb.Kernel.Tree →
+                        _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree →
+                _root_.List _root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      (β := _root_.List _root_.Geb.Kernel.Tree →
+        _root_.List _root_.Geb.Kernel.Tree →
+          _root_.List _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree ×
+              (_root_.Geb.Kernel.Tree →
+                _root_.List _root_.Geb.Kernel.Tree →
+                  _root_.List _root_.Geb.Kernel.Tree →
+                    _root_.List _root_.Geb.Kernel.Tree →
+                      _root_.List _root_.Geb.Kernel.Tree →
+                        _root_.Geb.Kernel.Tree →
+                          _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      (_root_.GebMirror.Metalogic.«$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
+        x2
+        x1)
+      x0
+      (fun (x3 : _root_.List _root_.Geb.Kernel.Tree →
+           _root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.Geb.Kernel.Tree ×
+                 (_root_.Geb.Kernel.Tree →
+                   _root_.List _root_.Geb.Kernel.Tree →
+                     _root_.List _root_.Geb.Kernel.Tree →
+                       _root_.List _root_.Geb.Kernel.Tree →
+                         _root_.List _root_.Geb.Kernel.Tree →
+                           _root_.Geb.Kernel.Tree →
+                             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+         (_ : _root_.List
+           (_root_.List _root_.Geb.Kernel.Tree →
+             _root_.List _root_.Geb.Kernel.Tree →
+               _root_.List _root_.Geb.Kernel.Tree →
+                 _root_.Geb.Kernel.Tree ×
+                   (_root_.Geb.Kernel.Tree →
+                     _root_.List _root_.Geb.Kernel.Tree →
+                       _root_.List _root_.Geb.Kernel.Tree →
+                         _root_.List _root_.Geb.Kernel.Tree →
+                           _root_.List _root_.Geb.Kernel.Tree →
+                             _root_.Geb.Kernel.Tree →
+                               _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))) =>
+        x3);
+    x3
+
+def «$285365712e6c656e6774682050726f7665722e4e6f726d52756c6529» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+      (_root_.Geb.Kernel.leaf 0)
+      x0;
+    x1
+
 def «Authoring.script6» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -8644,7 +7310,7 @@ def «Authoring.script6» :=
                                                                     _root_.Geb.Kernel.Tree →
                                                                       _root_.Geb.Kernel.Tree →
                                                                         _root_.Geb.Kernel.Tree) := (fun (x16 : _root_.Geb.Kernel.Tree) =>
-                                                  _root_.GebMirror.Metalogic.«$417574686f72696e672f5352732e61744f72»
+                                                  _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
                                                     _root_.GebMirror.Metalogic.«Authoring.failSR»
                                                     x7
                                                     x16);
@@ -9185,7 +7851,7 @@ def «Authoring.script6» :=
                                                                 x30
                                                                 x13
                                                                 (_root_.Geb.Kernel.Const.add
-                                                                  (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468»
+                                                                  (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
                                                                     _root_.GebMirror.Metalogic.«Translation.lib»)
                                                                   (_root_.GebMirror.Metalogic.«Base.getD»
                                                                     x23
@@ -9292,11 +7958,11 @@ def «Authoring.script6» :=
                                                                   (fun (x29 : _root_.List
                                                                        _root_.Geb.Kernel.Tree) =>
                                                                     (x25
-                                                                      (_root_.GebMirror.Metalogic.«$417574686f72696e672f52756c65732e6c656e677468»
+                                                                      (_root_.GebMirror.Metalogic.«$285365712e6c656e6774682050726f7665722e4e6f726d52756c6529»
                                                                         x29)).2
                                                                       x26
                                                                       x27
-                                                                      (_root_.GebMirror.Metalogic.«$417574686f72696e672f52756c65732e617070656e64»
+                                                                      (_root_.GebMirror.Metalogic.«$285365712e617070656e642050726f7665722e4e6f726d52756c6529»
                                                                         x29
                                                                         x28)))
                                                           else
@@ -9446,7 +8112,7 @@ def «Authoring.script5» :=
                                                                     _root_.Geb.Kernel.Tree →
                                                                       _root_.Geb.Kernel.Tree →
                                                                         _root_.Geb.Kernel.Tree) := (fun (x16 : _root_.Geb.Kernel.Tree) =>
-                                                  _root_.GebMirror.Metalogic.«$417574686f72696e672f5352732e61744f72»
+                                                  _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
                                                     _root_.GebMirror.Metalogic.«Authoring.failSR»
                                                     x7
                                                     x16);
@@ -10215,6 +8881,56 @@ def «Authoring.scriptBits» :=
                                                       (_root_.Geb.Kernel.leaf 1)));
     x6
 
+def «$285365712e7461696c20284c69737420284c6973742054292929» :=
+  fun (x0 : _root_.List
+      (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
+    let x1 : _root_.List
+      (_root_.List
+        (_root_.List
+          _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+      (β := _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
+      x0
+      ([] : _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
+      (fun (_ : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+         (x2 : _root_.List
+           (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
+        x2);
+    x1
+
+def «$285365712e64726f7020284c69737420284c6973742054292929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List
+      (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
+    let x2 : _root_.List
+      (_root_.List
+        (_root_.List
+          _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
+      _root_.GebMirror.Metalogic.«$285365712e7461696c20284c69737420284c6973742054292929»
+      x1
+      x0;
+    x2
+
+def «$285365712e61744f7220284c69737420284c6973742054292929» :=
+  fun (x0 : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+    (x1 : _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List
+      (_root_.List
+        _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+      (β := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+      (_root_.GebMirror.Metalogic.«$285365712e64726f7020284c69737420284c6973742054292929»
+        x2
+        x1)
+      x0
+      (fun (x3 : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
+         (_ : _root_.List
+           (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
+        x3);
+    x3
+
 def «Authoring.script4» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -10276,7 +8992,7 @@ def «Authoring.script4» :=
                                                                     _root_.Geb.Kernel.Tree →
                                                                       _root_.Geb.Kernel.Tree →
                                                                         _root_.Geb.Kernel.Tree) := (fun (x17 : _root_.Geb.Kernel.Tree) =>
-                                                  _root_.GebMirror.Metalogic.«$417574686f72696e672f5352732e61744f72»
+                                                  _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
                                                     _root_.GebMirror.Metalogic.«Authoring.failSR»
                                                     x7
                                                     x17);
@@ -10535,7 +9251,7 @@ def «Authoring.script4» :=
                                                           (_root_.GebMirror.Metalogic.«Base.range»
                                                             (_root_.GebMirror.Metalogic.«Prelude.length» x23))
                                                           (fun (x31 : _root_.Geb.Kernel.Tree) =>
-                                                            _root_.GebMirror.Metalogic.«$417574686f72696e672f4b6964732e61744f72»
+                                                            _root_.GebMirror.Metalogic.«$285365712e61744f7220284c69737420284c6973742054292929»
                                                               ([] : _root_.List (_root_.List
                                                                 _root_.Geb.Kernel.Tree))
                                                               x27
@@ -11053,7 +9769,7 @@ def «Authoring.script2» :=
                                                                     _root_.Geb.Kernel.Tree →
                                                                       _root_.Geb.Kernel.Tree →
                                                                         _root_.Geb.Kernel.Tree) := (fun (x16 : _root_.Geb.Kernel.Tree) =>
-                                                  _root_.GebMirror.Metalogic.«$417574686f72696e672f5352732e61744f72»
+                                                  _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
                                                     _root_.GebMirror.Metalogic.«Authoring.failSR»
                                                     x7
                                                     x16);
@@ -11934,7 +10650,7 @@ def «Authoring.scriptLogic» :=
                           _root_.Geb.Kernel.Tree →
                             _root_.Geb.Kernel.Tree →
                               _root_.Geb.Kernel.Tree) := (fun (x17 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$417574686f72696e672f5352732e61744f72»
+        _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
           _root_.GebMirror.Metalogic.«Authoring.failSR»
           x7
           x17);
@@ -13065,7 +11781,7 @@ def «Authoring.equationScript» :=
                                                                           _root_.Geb.Kernel.Tree →
                                                                             _root_.Geb.Kernel.Tree →
                                                                               _root_.Geb.Kernel.Tree) := (fun (x12 : _root_.Geb.Kernel.Tree) =>
-                                                        _root_.GebMirror.Metalogic.«$417574686f72696e672f5352732e61744f72»
+                                                        _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
                                                           _root_.GebMirror.Metalogic.«Authoring.failSR»
                                                           x7
                                                           x12);
@@ -13808,11 +12524,12 @@ def «Authoring.boundedEval» :=
             (β := _root_.List _root_.Geb.Kernel.Tree)
             (fun (_ : _root_.Geb.Kernel.Tree)
                (x11 : _root_.List _root_.Geb.Kernel.Tree) =>
-              (_root_.GebMirror.Metalogic.«$50726f7665722f4f4e46522e6e6f7468696e67» :: x11))
+              (_root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672050726f7665722e4e465229» ::
+                x11))
             ([] : _root_.List _root_.Geb.Kernel.Tree)
             x9)
         x4
-        (_root_.GebMirror.Metalogic.«$50726f7665722f4a6f624c2e73696e676c65»
+        (_root_.GebMirror.Metalogic.«$285365712e73696e676c652050726f7665722e4a6f6229»
           (_root_.GebMirror.Metalogic.«Prover.job»
             x5
             (_root_.GebMirror.Metalogic.«Language.objs» x6)
@@ -13832,10 +12549,10 @@ def «Authoring.exhausted» :=
     (x7 : _root_.List _root_.Geb.Kernel.Tree)
     (x8 : _root_.Geb.Kernel.Tree) =>
     let x9 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.and»
-      (_root_.GebMirror.Metalogic.«$50726f7665722f4f4e46522e69734a757374»
+      (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a7573742050726f7665722e4e465229»
         (_root_.GebMirror.Metalogic.«Prover.eval» x0 x1 x2 x3 x4 x5 x6 x7 x8))
       (_root_.GebMirror.Metalogic.«Base.not»
-        (_root_.GebMirror.Metalogic.«$50726f7665722f4f4e46522e69734a757374»
+        (_root_.GebMirror.Metalogic.«$284f7074696f6e2e69734a7573742050726f7665722e4e465229»
           (_root_.GebMirror.Metalogic.«Authoring.boundedEval» x0 x1 x2 x3 x4 x5 x6 x7 x8)));
     x9
 
@@ -14512,124 +13229,6 @@ def «Authoring.showType» :=
       x1;
     x2
 
-def «$417574686f72696e672f53686f77732e73696e676c65» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
-      _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree) := (x0 ::
-      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree)));
-    x1
-
-def «$417574686f72696e672f53686f77732e6c656e677468» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$417574686f72696e672f53686f77732e617070656e64» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-    (x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x2 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (x2 : _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f53686f77732e72657665727365» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) →
-        _root_.List
-          (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree) →
-           _root_.List
-             (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-         (x3 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x1)
-      x0
-      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree));
-    x1
-
-def «$417574686f72696e672f53686f77732e7461696c» :=
-  fun (x0 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      x0
-      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree))
-      (fun (_ : _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x2);
-    x1
-
-def «$417574686f72696e672f53686f77732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-    let x2 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree →
-        _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List
-        (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f53686f77732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f53686f77732e61744f72» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List
-      (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.List _root_.Geb.Kernel.Tree →
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f53686f77732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-         (_ : _root_.List
-           (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
-        x3);
-    x3
-
 def «Authoring.showNothing» :=
   fun (_ : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.GebMirror.Metalogic.«Authoring.opaqueOf»
@@ -14826,7 +13425,7 @@ def «Authoring.showCall» :=
     (x3 : _root_.Geb.Kernel.Tree)
     (x4 : _root_.List _root_.Geb.Kernel.Tree)
     (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x6 : _root_.Geb.Kernel.Tree := (let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468»
+    let x6 : _root_.Geb.Kernel.Tree := (let x6 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
                                           _root_.GebMirror.Metalogic.«Translation.lib»;
                                         let x7 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prelude.and»
                                           (_root_.GebMirror.Metalogic.«Base.isEmpty» x4)
@@ -14955,6 +13554,57 @@ def «Authoring.showCall» :=
                                                   x5);
     x6
 
+def «$285365712e7461696c20284172726f7720284c69737420542920542929» :=
+  fun (x0 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    let x1 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (β := _root_.List
+        (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      x0
+      ([] : _root_.List (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree))
+      (fun (_ : _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List
+           (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+        x2);
+    x1
+
+def «$285365712e64726f7020284172726f7720284c69737420542920542929» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+    let x2 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List
+        (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+      _root_.GebMirror.Metalogic.«$285365712e7461696c20284172726f7720284c69737420542920542929»
+      x1
+      x0;
+    x2
+
+def «$285365712e61744f7220284172726f7720284c69737420542920542929» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List
+      (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«$285365712e64726f7020284172726f7720284c69737420542920542929»
+        x2
+        x1)
+      x0
+      (fun (x3 : _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
+         (_ : _root_.List
+           (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
+        x3);
+    x3
+
 def «Authoring.showStep» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -14970,7 +13620,7 @@ def «Authoring.showStep» :=
       let x8 : _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree →
           _root_.Geb.Kernel.Tree := (fun (x8 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$417574686f72696e672f53686f77732e61744f72»
+        _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920542929»
           _root_.GebMirror.Metalogic.«Authoring.showNothing»
           x4
           (_root_.Geb.Kernel.Const.add x8 (_root_.Geb.Kernel.leaf 1)));
@@ -15217,7 +13867,7 @@ def «Authoring.displayRules» :=
       (_root_.Geb.Kernel.leaf 4)
       (_root_.GebMirror.Metalogic.«Derivation.terms»
         ([] : _root_.List _root_.Geb.Kernel.Tree))) ::
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f52756c65732e73696e676c65»
+      (_root_.GebMirror.Metalogic.«$285365712e73696e676c652050726f7665722e4e6f726d52756c6529»
         (_root_.GebMirror.Metalogic.«Prover.nrRule»
           (_root_.Geb.Kernel.leaf 5)
           (_root_.GebMirror.Metalogic.«Derivation.terms»
@@ -16975,150 +15625,16 @@ def «Authoring.document» :=
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) (x0 :: x1)
 
-def «$417574686f72696e672f4f446f632e6e6f7468696e67» :=
+def «$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e446f63756d656e7429» :=
   _root_.Geb.Kernel.Const.node
     (_root_.Geb.Kernel.leaf 0)
     ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «$417574686f72696e672f4f446f632e6a757374» :=
+def «$284f7074696f6e2e6a75737420417574686f72696e672e446f63756d656e7429» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 1)
       (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$417574686f72696e672f4f446f632e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$417574686f72696e672f4f446f632e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$417574686f72696e672f4f446f632e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f4f446f632e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$417574686f72696e672f4f446f632e6a757374» x2);
-    x2
-
-def «$417574686f72696e672f4f446f632e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
 
 def «Authoring.readDocument» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
@@ -17197,14 +15713,14 @@ def «Authoring.readDocument» :=
                                                 (_root_.Geb.Kernel.leaf 2)
                                                 (_root_.Geb.Kernel.Const.children x2)));
                                           if (_root_.GebMirror.Metalogic.«Base.isEmpty» x4).label ≠ 0 then
-                                            _root_.GebMirror.Metalogic.«$417574686f72696e672f4f446f632e6e6f7468696e67»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e446f63756d656e7429»
                                           else
-                                            _root_.GebMirror.Metalogic.«$417574686f72696e672f4f446f632e6a757374»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420417574686f72696e672e446f63756d656e7429»
                                               (_root_.GebMirror.Metalogic.«Authoring.document»
                                                 (_root_.GebMirror.Metalogic.«Prelude.get» x3)
                                                 x4)
                                         else
-                                          _root_.GebMirror.Metalogic.«$417574686f72696e672f4f446f632e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e446f63756d656e7429»);
     x1
 
 def «Authoring.formList» :=
@@ -17212,170 +15728,18 @@ def «Authoring.formList» :=
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) (x0 :: x1)
 
-def «$417574686f72696e672f4f466f726d732e6e6f7468696e67» :=
+def «$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329» :=
   _root_.Geb.Kernel.Const.node
     (_root_.Geb.Kernel.leaf 0)
     ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «$417574686f72696e672f4f466f726d732e6a757374» :=
+def «$284f7074696f6e2e6a75737420417574686f72696e672e466f726d7329» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 1)
       (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
-def «$417574686f72696e672f4f466f726d732e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$417574686f72696e672f4f466f726d732e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$417574686f72696e672f4f466f726d732e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f4f466f726d732e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$417574686f72696e672f4f466f726d732e6a757374» x2);
-    x2
-
-def «$417574686f72696e672f4f466f726d732e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
-
-def «$417574686f72696e672f4974656d732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$417574686f72696e672f4974656d732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$417574686f72696e672f4974656d732e617070656e64» :=
+def «$285365712e617070656e64204c616e67756167652e545061697229» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -17387,89 +15751,6 @@ def «$417574686f72696e672f4974656d732e617070656e64» :=
         (x2 :: x3))
       x1
       x0;
-    x2
-
-def «$417574686f72696e672f4974656d732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$417574686f72696e672f4974656d732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$417574686f72696e672f4974656d732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f4974656d732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f4974656d732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f4974656d732e64726f70» x2 x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
-
-def «$417574686f72696e672f4974656d734f662e6d6170» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        ((x0 x2) :: x3))
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      x1;
-    x2
-
-def «$417574686f72696e672f4974656d4f75742e6d6170» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        ((x0 x2) :: x3))
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      x1;
     x2
 
 def «Authoring.readDocuments» :=
@@ -17484,7 +15765,7 @@ def «Authoring.readDocuments» :=
           (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
           let _ : _root_.List
             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          _root_.GebMirror.Metalogic.«$417574686f72696e672f4f466f726d732e6e6f7468696e67»
+          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329»
         else
           let x4 : _root_.List
             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
@@ -17533,7 +15814,7 @@ def «Authoring.readDocuments» :=
             (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
             let _ : _root_.List
               _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x12;
-            _root_.GebMirror.Metalogic.«$417574686f72696e672f4f466f726d732e6e6f7468696e67»
+            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329»
           else
             let x13 : _root_.List
               _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x12;
@@ -17584,122 +15865,35 @@ def «Authoring.readDocuments» :=
               (_root_.GebMirror.Metalogic.«Prelude.and»
                 (_root_.Geb.Kernel.Const.lt
                   (_root_.Geb.Kernel.leaf 0)
-                  (_root_.GebMirror.Metalogic.«$417574686f72696e672f4974656d732e6c656e677468» x11))
+                  (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e545061697229»
+                    x11))
                 (_root_.Geb.Kernel.Const.lt x9 x18))).label ≠ 0 then
-              _root_.GebMirror.Metalogic.«$417574686f72696e672f4f466f726d732e6e6f7468696e67»
+              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329»
             else
-              _root_.GebMirror.Metalogic.«$417574686f72696e672f4f466f726d732e6a757374»
+              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420417574686f72696e672e466f726d7329»
                 (_root_.GebMirror.Metalogic.«Authoring.formList»
                   (if (_root_.Geb.Kernel.Const.eq
-                    (_root_.GebMirror.Metalogic.«$417574686f72696e672f4974656d732e6c656e677468» x11)
+                    (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e545061697229»
+                      x11)
                     (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
                     x18
                   else
                     x9)
-                  (_root_.GebMirror.Metalogic.«$417574686f72696e672f4974656d732e617070656e64»
-                    (_root_.GebMirror.Metalogic.«$417574686f72696e672f4974656d734f662e6d6170»
+                  (_root_.GebMirror.Metalogic.«$285365712e617070656e64204c616e67756167652e545061697229»
+                    (_root_.GebMirror.Metalogic.«$284d61702e6d61702054204c616e67756167652e545061697229»
                       (fun (x21 : _root_.Geb.Kernel.Tree) =>
                         _root_.GebMirror.Metalogic.«Language.pr» x18 x21)
                       x20)
                     x11)))
       (if (_root_.GebMirror.Metalogic.«Base.isEmpty» x0).label ≠ 0 then
-        _root_.GebMirror.Metalogic.«$417574686f72696e672f4f466f726d732e6e6f7468696e67»
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329»
       else
-        _root_.GebMirror.Metalogic.«$417574686f72696e672f4f466f726d732e6a757374»
+        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420417574686f72696e672e466f726d7329»
           (_root_.GebMirror.Metalogic.«Authoring.formList»
             (_root_.Geb.Kernel.leaf 0)
             ([] : _root_.List _root_.Geb.Kernel.Tree)))
       x0;
     x1
-
-def «$417574686f72696e672f52657175657374732e73696e676c65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := (x0 ::
-      ([] : _root_.List _root_.Geb.Kernel.Tree));
-    x1
-
-def «$417574686f72696e672f52657175657374732e6c656e677468» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-      (_root_.Geb.Kernel.leaf 0)
-      x0;
-    x1
-
-def «$417574686f72696e672f52657175657374732e617070656e64» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        (x2 :: x3))
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f52657175657374732e72657665727365» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree →
-        _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree →
-           _root_.List _root_.Geb.Kernel.Tree)
-         (x3 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2 (x1 :: x3))
-      (fun (x1 : _root_.List _root_.Geb.Kernel.Tree) => x1)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree);
-    x1
-
-def «$417574686f72696e672f52657175657374732e7461696c» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.List _root_.Geb.Kernel.Tree)
-      x0
-      ([] : _root_.List _root_.Geb.Kernel.Tree)
-      (fun (_ : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-        x2);
-    x1
-
-def «$417574686f72696e672f52657175657374732e64726f70» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
-      (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f52657175657374732e7461696c»
-      x1
-      x0;
-    x2
-
-def «$417574686f72696e672f52657175657374732e61744f72» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree)
-    (x2 : _root_.Geb.Kernel.Tree) =>
-    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$417574686f72696e672f52657175657374732e64726f70»
-        x2
-        x1)
-      x0
-      (fun (x3 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        x3);
-    x3
 
 def «Authoring.results» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -17998,76 +16192,6 @@ def «Authoring.Results.member» :=
         x0)
       (_root_.Geb.Kernel.leaf 0)
 
-def «$417574686f72696e672f456163684465636c2e616c6c» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.and» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 1)
-      x1;
-    x2
-
-def «$417574686f72696e672f456163684465636c2e616e79» :=
-  fun (x0 : _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (fun (x2 : _root_.Geb.Kernel.Tree) (x3 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«Prelude.or» (x0 x2) x3)
-      (_root_.Geb.Kernel.leaf 0)
-      x1;
-    x2
-
-def «$417574686f72696e672f456163684465636c2e6973456d707479» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.eq
-      (_root_.Geb.Kernel.Const.foldr
-        (α := _root_.Geb.Kernel.Tree)
-        (β := _root_.Geb.Kernel.Tree)
-        (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
-        (_root_.Geb.Kernel.leaf 0)
-        x0)
-      (_root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$417574686f72696e672f456163684465636c2e74616b65» :=
-  fun (x0 : _root_.Geb.Kernel.Tree)
-    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.List
-      _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree)
-                                   (fun (_ : _root_.Geb.Kernel.Tree)
-                                      (x3 : _root_.Geb.Kernel.Tree) =>
-                                     _root_.Geb.Kernel.Const.add x3 (_root_.Geb.Kernel.leaf 1))
-                                   (_root_.Geb.Kernel.leaf 0)
-                                   x1;
-                                 (_root_.Geb.Kernel.Const.foldr
-                                   (α := _root_.Geb.Kernel.Tree)
-                                   (β := _root_.Geb.Kernel.Tree ×
-                                     _root_.List _root_.Geb.Kernel.Tree)
-                                   (fun (x3 : _root_.Geb.Kernel.Tree)
-                                      (x4 : _root_.Geb.Kernel.Tree ×
-                                        _root_.List _root_.Geb.Kernel.Tree) =>
-                                     (_root_.Geb.Kernel.Const.add (x4).1 (_root_.Geb.Kernel.leaf 1),
-                                       if (_root_.Geb.Kernel.Const.lt
-                                         (_root_.Geb.Kernel.Const.sub
-                                           (_root_.Geb.Kernel.Const.sub x2 (x4).1)
-                                           (_root_.Geb.Kernel.leaf 1))
-                                         x0).label ≠ 0 then
-                                         (x3 :: (x4).2)
-                                       else
-                                         (x4).2))
-                                   (_root_.Geb.Kernel.leaf 0,
-                                     ([] : _root_.List _root_.Geb.Kernel.Tree))
-                                   x1).2);
-    x2
-
 def «Authoring.noResults» :=
   _root_.GebMirror.Metalogic.«Authoring.results»
     (_root_.Geb.Kernel.Const.node
@@ -18130,7 +16254,7 @@ def «Authoring.readDefinition» :=
                                                       (_root_.Geb.Kernel.leaf 1)))
                                                 x4));
                                           if (_root_.GebMirror.Metalogic.«Prelude.isSome» x6).label ≠ 0 then
-                                            _root_.GebMirror.Metalogic.«$4c616e67756167652f4f4c4465666e2e6a757374»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a757374204c616e67756167652e4c4465666e29»
                                               (_root_.GebMirror.Metalogic.«Language.ldefn»
                                                 (_root_.Geb.Kernel.leaf 0)
                                                 (_root_.GebMirror.Metalogic.«Language.objs»
@@ -18148,9 +16272,9 @@ def «Authoring.readDefinition» :=
                                                 (_root_.GebMirror.Metalogic.«Prelude.get» x5)
                                                 (_root_.GebMirror.Metalogic.«Prelude.get» x6))
                                           else
-                                            _root_.GebMirror.Metalogic.«$4c616e67756167652f4f4c4465666e2e6e6f7468696e67»
+                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e4c4465666e29»
                                         else
-                                          _root_.GebMirror.Metalogic.«$4c616e67756167652f4f4c4465666e2e6e6f7468696e67»);
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e67204c616e67756167652e4c4465666e29»);
     x4
 
 def «Authoring.reading» :=
@@ -18174,6 +16298,13 @@ def «Authoring.namesOfFour» :=
           _root_.Geb.Kernel.leaf 97,
           _root_.Geb.Kernel.leaf 116])
         _root_.GebMirror.Metalogic.«Authoring.natRef»))
+
+def «$285365712e73696e676c652044657269766174696f6e2e4465636c29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := (x0 ::
+      ([] : _root_.List _root_.Geb.Kernel.Tree));
+    x1
 
 def «Authoring.readForm» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
@@ -18485,9 +16616,9 @@ def «Authoring.readForm» :=
                                                           (_root_.Geb.Kernel.Const.children x18)
                                                           (_root_.GebMirror.Metalogic.«Prelude.single»
                                                             (_root_.GebMirror.Metalogic.«Reader.nameOf» x28))))
-                                                      (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e617070656e64»
+                                                      (_root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                                         x20
-                                                        (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e73696e676c65»
+                                                        (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
                                                           (_root_.GebMirror.Metalogic.«Derivation.declDef»
                                                             x32))))
                                                     (_root_.Geb.Kernel.Const.node
@@ -18517,9 +16648,9 @@ def «Authoring.readForm» :=
                                               x10
                                               (_root_.GebMirror.Metalogic.«Authoring.formList»
                                                 x23
-                                                (_root_.GebMirror.Metalogic.«$417574686f72696e672f4974656d732e617070656e64»
+                                                (_root_.GebMirror.Metalogic.«$285365712e617070656e64204c616e67756167652e545061697229»
                                                   x25
-                                                  (_root_.GebMirror.Metalogic.«$417574686f72696e672f4974656d732e73696e676c65»
+                                                  (_root_.GebMirror.Metalogic.«$285365712e73696e676c65204c616e67756167652e545061697229»
                                                     (_root_.GebMirror.Metalogic.«Language.pr» x26 x27))))
                                               x14);
     x4
@@ -18561,6 +16692,46 @@ def «Authoring.firstRepeated» :=
       (_root_.GebMirror.Metalogic.«Prelude.reverse» x0)).2;
     x1
 
+def «$285365712e7461696c204c616e67756167652e545061697229» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      x0
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+        x2);
+    x1
+
+def «$285365712e64726f70204c616e67756167652e545061697229» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      _root_.GebMirror.Metalogic.«$285365712e7461696c204c616e67756167652e545061697229»
+      x1
+      x0;
+    x2
+
+def «$285365712e61744f72204c616e67756167652e545061697229» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree) =>
+    let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (_root_.GebMirror.Metalogic.«$285365712e64726f70204c616e67756167652e545061697229»
+        x2
+        x1)
+      x0
+      (fun (x3 : _root_.Geb.Kernel.Tree)
+         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
+        x3);
+    x3
+
 def «Authoring.readTheorems» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -18569,7 +16740,7 @@ def «Authoring.readTheorems» :=
     (x4 : _root_.Geb.Kernel.Tree)
     (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x6 : _root_.Geb.Kernel.Tree := (let x6 : _root_.List
-                                          _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$417574686f72696e672f4974656d4f75742e6d6170»
+                                          _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e5450616972205429»
                                           (fun (x6 : _root_.Geb.Kernel.Tree) =>
                                             _root_.GebMirror.Metalogic.«Authoring.theoremName»
                                               (_root_.GebMirror.Metalogic.«Language.p2» x6))
@@ -18579,7 +16750,7 @@ def «Authoring.readTheorems» :=
                                           (β := _root_.Geb.Kernel.Tree)
                                           (fun (x7 : _root_.Geb.Kernel.Tree)
                                              (x8 : _root_.Geb.Kernel.Tree) =>
-                                            let x9 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$417574686f72696e672f4974656d732e61744f72»
+                                            let x9 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e61744f72204c616e67756167652e545061697229»
                                               (_root_.GebMirror.Metalogic.«Language.pr»
                                                 (_root_.Geb.Kernel.leaf 0)
                                                 (_root_.Geb.Kernel.leaf 0))
@@ -18818,7 +16989,7 @@ def «Authoring.readSources» :=
                                               x12);
                                           let x12 : _root_.List _root_.Geb.Kernel.Tree := x11;
                                           let x13 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$417574686f72696e672f4974656d4f75742e6d6170»
+                                            _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$284d61702e6d6170204c616e67756167652e5450616972205429»
                                             (fun (x13 : _root_.Geb.Kernel.Tree) =>
                                               _root_.GebMirror.Metalogic.«Authoring.theoremName»
                                                 (_root_.GebMirror.Metalogic.«Language.p2» x13))
@@ -18979,7 +17150,7 @@ def «Authoring.readSources» :=
                                                   x31);
                                               let x31 : _root_.List _root_.Geb.Kernel.Tree := x30;
                                               if (_root_.Geb.Kernel.Const.eq
-                                                (_root_.GebMirror.Metalogic.«$417574686f72696e672f4974656d732e6c656e677468»
+                                                (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e545061697229»
                                                   x31)
                                                 (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
                                                 _root_.GebMirror.Metalogic.«Authoring.readBad»
@@ -19023,150 +17194,16 @@ def «Authoring.stuck» :=
         (x1 ::
           (x2 :: (x3 :: (x4 :: ([] : _root_.List _root_.Geb.Kernel.Tree))))))
 
-def «$417574686f72696e672f4f456e74726965732e6e6f7468696e67» :=
+def «$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e456e7472794c69737429» :=
   _root_.Geb.Kernel.Const.node
     (_root_.Geb.Kernel.leaf 0)
     ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «$417574686f72696e672f4f456e74726965732e6a757374» :=
+def «$284f7074696f6e2e6a7573742044657269766174696f6e2e456e7472794c69737429» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 1)
       (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
-
-def «$417574686f72696e672f4f456e74726965732e69734a757374» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree := (let x1 : _root_.Geb.Kernel.Tree := x0;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x1)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x2 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          let _ : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x2
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x3 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x3);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x2
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x5 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x5);
-                                          _root_.Geb.Kernel.leaf 1
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x1;
-                                          _root_.Geb.Kernel.leaf 0);
-    x1
-
-def «$417574686f72696e672f4f456e74726965732e66726f6d4d61796265» :=
-  fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := x1;
-                                        if (_root_.Geb.Kernel.Const.eq
-                                          (_root_.Geb.Kernel.Const.label x2)
-                                          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-                                          let x3 : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          let x4 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.Geb.Kernel.Tree)
-                                            x3
-                                            (_root_.Geb.Kernel.leaf 0)
-                                            (fun (x4 : _root_.Geb.Kernel.Tree)
-                                               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x4);
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-                                            (α := _root_.Geb.Kernel.Tree)
-                                            (β := _root_.List _root_.Geb.Kernel.Tree)
-                                            x3
-                                            ([] : _root_.List _root_.Geb.Kernel.Tree)
-                                            (fun (_ : _root_.Geb.Kernel.Tree)
-                                               (x6 : _root_.List _root_.Geb.Kernel.Tree) =>
-                                              x6);
-                                          x4
-                                        else
-                                          let _ : _root_.List
-                                            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
-                                            x2;
-                                          x0);
-    x2
-
-def «$417574686f72696e672f4f456e74726965732e6e74684f66» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
-    (x1 : _root_.Geb.Kernel.Tree) =>
-    let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree)
-      (_root_.Geb.Kernel.Const.iter
-        (α := _root_.List _root_.Geb.Kernel.Tree)
-        (fun (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
-          _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x2
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x4 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x4))
-        x0
-        x1)
-      _root_.GebMirror.Metalogic.«$417574686f72696e672f4f456e74726965732e6e6f7468696e67»
-      (fun (x2 : _root_.Geb.Kernel.Tree)
-         (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$417574686f72696e672f4f456e74726965732e6a757374» x2);
-    x2
-
-def «$417574686f72696e672f4f456e74726965732e616c6c4a757374» :=
-  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
-    let x1 : _root_.Geb.Kernel.Tree ×
-      _root_.List
-        _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
-      (α := _root_.Geb.Kernel.Tree)
-      (β := _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree)
-      (fun (x1 : _root_.Geb.Kernel.Tree)
-         (x2 : _root_.Geb.Kernel.Tree × _root_.List _root_.Geb.Kernel.Tree) =>
-        let x3 : _root_.Geb.Kernel.Tree := x1;
-        if (_root_.Geb.Kernel.Const.eq
-          (_root_.Geb.Kernel.Const.label x3)
-          (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
-          let x4 : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          let x5 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.Geb.Kernel.Tree)
-            x4
-            (_root_.Geb.Kernel.leaf 0)
-            (fun (x5 : _root_.Geb.Kernel.Tree)
-               (_ : _root_.List _root_.Geb.Kernel.Tree) =>
-              x5);
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
-            (α := _root_.Geb.Kernel.Tree)
-            (β := _root_.List _root_.Geb.Kernel.Tree)
-            x4
-            ([] : _root_.List _root_.Geb.Kernel.Tree)
-            (fun (_ : _root_.Geb.Kernel.Tree)
-               (x7 : _root_.List _root_.Geb.Kernel.Tree) =>
-              x7);
-          ((x2).1, (x5 :: (x2).2))
-        else
-          let _ : _root_.List
-            _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          (_root_.Geb.Kernel.leaf 0, (x2).2))
-      (_root_.Geb.Kernel.leaf 1, ([] : _root_.List _root_.Geb.Kernel.Tree))
-      x0;
-    x1
 
 def «Authoring.admit» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
@@ -19182,7 +17219,7 @@ def «Authoring.admit» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x3;
-                                          _root_.GebMirror.Metalogic.«$417574686f72696e672f4f456e74726965732e6e6f7468696e67»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e456e7472794c69737429»
                                         else
                                           let x4 : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
@@ -19242,7 +17279,7 @@ def «Authoring.admit» :=
                                             (fun (_ : _root_.Geb.Kernel.Tree)
                                                (x13 : _root_.List _root_.Geb.Kernel.Tree) =>
                                               x13);
-                                          _root_.GebMirror.Metalogic.«$417574686f72696e672f4f456e74726965732e6a757374»
+                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e456e7472794c69737429»
                                             x11);
     x3
 
@@ -20037,6 +18074,63 @@ def «Authoring.declaredGlobals» :=
                                           x13);
     x2
 
+def «$28456163682e74616b652044657269766174696f6e2e4465636c29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+                                   (α := _root_.Geb.Kernel.Tree)
+                                   (β := _root_.Geb.Kernel.Tree)
+                                   (fun (_ : _root_.Geb.Kernel.Tree)
+                                      (x3 : _root_.Geb.Kernel.Tree) =>
+                                     _root_.Geb.Kernel.Const.add x3 (_root_.Geb.Kernel.leaf 1))
+                                   (_root_.Geb.Kernel.leaf 0)
+                                   x1;
+                                 (_root_.Geb.Kernel.Const.foldr
+                                   (α := _root_.Geb.Kernel.Tree)
+                                   (β := _root_.Geb.Kernel.Tree ×
+                                     _root_.List _root_.Geb.Kernel.Tree)
+                                   (fun (x3 : _root_.Geb.Kernel.Tree)
+                                      (x4 : _root_.Geb.Kernel.Tree ×
+                                        _root_.List _root_.Geb.Kernel.Tree) =>
+                                     (_root_.Geb.Kernel.Const.add (x4).1 (_root_.Geb.Kernel.leaf 1),
+                                       if (_root_.Geb.Kernel.Const.lt
+                                         (_root_.Geb.Kernel.Const.sub
+                                           (_root_.Geb.Kernel.Const.sub x2 (x4).1)
+                                           (_root_.Geb.Kernel.leaf 1))
+                                         x0).label ≠ 0 then
+                                         (x3 :: (x4).2)
+                                       else
+                                         (x4).2))
+                                   (_root_.Geb.Kernel.leaf 0,
+                                     ([] : _root_.List _root_.Geb.Kernel.Tree))
+                                   x1).2);
+    x2
+
+def «$285365712e7461696c2044657269766174696f6e2e4465636c29» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.List _root_.Geb.Kernel.Tree)
+      x0
+      ([] : _root_.List _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree)
+         (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
+        x2);
+    x1
+
+def «$285365712e64726f702044657269766174696f6e2e4465636c29» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x2 : _root_.List
+      _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
+      (α := _root_.List _root_.Geb.Kernel.Tree)
+      _root_.GebMirror.Metalogic.«$285365712e7461696c2044657269766174696f6e2e4465636c29»
+      x1
+      x0;
+    x2
+
 def «Authoring.certified» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
@@ -20103,13 +18197,13 @@ def «Authoring.certified» :=
                                                   (_root_.GebMirror.Metalogic.«Prelude.drop»
                                                     x13
                                                     (_root_.Geb.Kernel.Const.children x10)))))
-                                            (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e617070656e64»
-                                              (_root_.GebMirror.Metalogic.«$417574686f72696e672f456163684465636c2e74616b65»
+                                            (_root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
+                                              (_root_.GebMirror.Metalogic.«$28456163682e74616b652044657269766174696f6e2e4465636c29»
                                                 x13
                                                 x12)
-                                              (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e617070656e64»
+                                              (_root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                                 x7
-                                                (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e64726f70»
+                                                (_root_.GebMirror.Metalogic.«$285365712e64726f702044657269766174696f6e2e4465636c29»
                                                   x13
                                                   x12))));
     x3
@@ -20303,7 +18397,7 @@ def «Authoring.placesOf» :=
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.Geb.Kernel.Tree := (let x2 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.add
                                           (_root_.GebMirror.Metalogic.«Prelude.length» x1)
-                                          (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468»
+                                          (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
                                             (_root_.GebMirror.Metalogic.«Logic.connectives»
                                               (_root_.Geb.Kernel.leaf 0)));
                                         _root_.Geb.Kernel.Const.node
@@ -21041,7 +19135,7 @@ def «Authoring.itemsFor» :=
                                    x2;
                                  let x7 : _root_.Geb.Kernel.Tree →
                                    _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Authoring.placeOf»
-                                   (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468»
+                                   (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
                                      _root_.GebMirror.Metalogic.«Translation.lib»)
                                    (_root_.GebMirror.Metalogic.«Authoring.placesOf» x3 x4)
                                    (_root_.GebMirror.Metalogic.«Prelude.length» x4);
@@ -21179,7 +19273,7 @@ def «Authoring.begin» :=
                                                   (fun (_ : _root_.Geb.Kernel.Tree) =>
                                                     _root_.GebMirror.Metalogic.«Authoring.unnamed»)
                                                   (_root_.GebMirror.Metalogic.«Base.range»
-                                                    (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e6c656e677468»
+                                                    (_root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
                                                       x4))))
                                               x4)
                                             x13
@@ -21215,9 +19309,9 @@ def «Authoring.accompany» :=
                                            x11
                                            (_root_.Geb.Kernel.leaf 3);
                                          let x20 : _root_.List
-                                           _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e617070656e64»
+                                           _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                            x7
-                                           (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e73696e676c65»
+                                           (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
                                              (_root_.GebMirror.Metalogic.«Derivation.declLang»
                                                (_root_.GebMirror.Metalogic.«Authoring.requestThm» x4)
                                                x8));
@@ -21271,7 +19365,7 @@ def «Authoring.accompany» :=
                                                x1)
                                              (_root_.GebMirror.Metalogic.«Authoring.connectivesAt» x2)
                                              (_root_.GebMirror.Metalogic.«Authoring.normalDepth» x4)
-                                             (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e6c656e677468»
+                                             (_root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
                                                x7)
                                              (_root_.GebMirror.Metalogic.«Authoring.requestThm» x4);
                                            if (_root_.GebMirror.Metalogic.«Prelude.isSome» x22).label ≠ 0 then
@@ -21346,9 +19440,9 @@ def «Authoring.accompany» :=
                                                          (_root_.GebMirror.Metalogic.«Authoring.requestName» x4)
                                                          (_root_.GebMirror.Metalogic.«Authoring.requestName»
                                                            x4))))
-                                                   (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e617070656e64»
+                                                   (_root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                                      x20
-                                                     (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e73696e676c65»
+                                                     (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
                                                        x25)))
                                                  x28
                                                  x10
@@ -21396,9 +19490,9 @@ def «Authoring.taken» :=
     (x7 : _root_.Geb.Kernel.Tree)
     (x8 : _root_.Geb.Kernel.Tree) =>
     let x9 : _root_.Geb.Kernel.Tree := (let x9 : _root_.List
-                                          _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e617070656e64»
+                                          _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                           x3
-                                          (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e73696e676c65»
+                                          (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
                                             (_root_.GebMirror.Metalogic.«Derivation.declLang»
                                               (_root_.GebMirror.Metalogic.«Authoring.requestThm» x1)
                                               (_root_.Geb.Kernel.Const.child
@@ -21456,9 +19550,9 @@ def «Authoring.taken» :=
                                                   (_root_.GebMirror.Metalogic.«Theory.l2»
                                                     (_root_.GebMirror.Metalogic.«Authoring.requestName» x1)
                                                     (_root_.GebMirror.Metalogic.«Authoring.requestName» x1))))
-                                              (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e617070656e64»
+                                              (_root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                                 x9
-                                                (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e73696e676c65»
+                                                (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
                                                   (_root_.GebMirror.Metalogic.«Derivation.declLang»
                                                     x11
                                                     (_root_.Geb.Kernel.Const.child
@@ -21936,7 +20030,7 @@ def «Authoring.advance» :=
                                                   (_root_.GebMirror.Metalogic.«Authoring.requestThm» x7)
                                                   x34)
                                             else
-                                              _root_.GebMirror.Metalogic.«$417574686f72696e672f4f456e74726965732e6e6f7468696e67»);
+                                              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e456e7472794c69737429»);
                                             if (_root_.Geb.Kernel.Const.eq
                                               (_root_.Geb.Kernel.Const.label x35)
                                               (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
@@ -22123,9 +20217,9 @@ def «Authoring.resumeWith» :=
                                             (_root_.GebMirror.Metalogic.«Authoring.globalsFor» x13 x2)
                                             x15;
                                           let x19 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.add
-                                            (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468»
+                                            (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
                                               _root_.GebMirror.Metalogic.«Translation.lib»)
-                                            (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468»
+                                            (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
                                               x2);
                                           let x20 : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Authoring.rulesOf»
@@ -22536,7 +20630,7 @@ def «Authoring.transport» :=
                                           x3;
                                         let x5 : _root_.Geb.Kernel.Tree →
                                           _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Authoring.placeOf»
-                                          (_root_.GebMirror.Metalogic.«$417574686f72696e672f4c442e6c656e677468»
+                                          (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e4c4465666e29»
                                             _root_.GebMirror.Metalogic.«Translation.lib»)
                                           x4
                                           (_root_.GebMirror.Metalogic.«Prelude.length» x3);
@@ -22637,6 +20731,17 @@ def «Authoring.stated» :=
                                           _root_.GebMirror.Metalogic.«Prelude.none»);
     x1
 
+def «$285365712e6c656e67746820417574686f72696e672e5265717565737429» :=
+  fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
+      (α := _root_.Geb.Kernel.Tree)
+      (β := _root_.Geb.Kernel.Tree)
+      (fun (_ : _root_.Geb.Kernel.Tree) (x2 : _root_.Geb.Kernel.Tree) =>
+        _root_.Geb.Kernel.Const.add x2 (_root_.Geb.Kernel.leaf 1))
+      (_root_.Geb.Kernel.leaf 0)
+      x0;
+    x1
+
 def «Authoring.matches» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
@@ -22651,12 +20756,14 @@ def «Authoring.matches» :=
             _root_.Geb.Kernel.leaf 1
           else
             _root_.Geb.Kernel.leaf 2)
-          (_root_.GebMirror.Metalogic.«$417574686f72696e672f52657175657374732e6c656e677468»
+          (_root_.GebMirror.Metalogic.«$285365712e6c656e67746820417574686f72696e672e5265717565737429»
             x1))
-        (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e6c656e677468» x2))
+        (_root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
+          x2))
       (_root_.GebMirror.Metalogic.«Prelude.and»
         (_root_.Geb.Kernel.Const.eq
-          (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e6c656e677468» x2)
+          (_root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
+            x2)
           (_root_.GebMirror.Metalogic.«Prelude.length» x3))
         (_root_.Geb.Kernel.Const.foldr
           (α := _root_.Geb.Kernel.Tree)
@@ -22880,7 +20987,7 @@ def «Authoring.replayWith» :=
                                                 (_root_.GebMirror.Metalogic.«Authoring.matches»
                                                   x11
                                                   x15
-                                                  (_root_.GebMirror.Metalogic.«$417574686f72696e672f4465636c732e64726f70»
+                                                  (_root_.GebMirror.Metalogic.«$285365712e64726f702044657269766174696f6e2e4465636c29»
                                                     (_root_.Geb.Kernel.Const.add x23 x25)
                                                     x22)
                                                   (_root_.GebMirror.Metalogic.«Prelude.drop»
