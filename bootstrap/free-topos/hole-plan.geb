@@ -1,0 +1,166 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The logical premises of a checked sketch, in postorder. Rewriting premises retain their
+; certificates. Each logical premise carries the full sequent at which its closed lemma is used.
+
+(module HolePlan
+  (export Premise rewriting proving ProofNode proofNode Premises premises Nodes nodes plan)
+  (import Prelude)
+  (import Base)
+  (import PartialHorn)
+  (import Theory)
+  (import Language)
+  (import Derivation)
+  (import Prover)
+  (import Conversion)
+  (import ProofHoles)
+  (import HoleConditions)
+
+  (data Premise (rewriting T) (proving Thm))
+  (data Premises (premises & Premise))
+  (data ProofNode (proofNode Thm T Premises))
+  (data Nodes (nodes & ProofNode))
+  (deftype MaybeNodes (Option.Maybe Nodes))
+  (deftype Planner (Arrow Thm MaybeNodes))
+  (deftype Plan (Prod T Planner))
+  (defn proveAt ((n T) (g Ts) (hs Ts) (p T)) Premise (proving (theoremAt n g hs p)))
+  (defn proofPremises ((G Globals) (E (List Entry)) (R Ts) (a Thm) (d T)) ProofNode
+    (let*
+      ((r T (label d)) (n T (thArity a)) (g Ts (thCtx a)) (g1 Ts (tail g)) (hs Ts (thHyps a))
+       (p T (thConcl a))
+       (t T (mArg p 0))
+       (u T (mArg p 1))
+       (first T (mD d 0))
+       (second T (mD d 1))
+       (c T (at g 0))
+       (ps Ts (mArgs d))
+       (os Ts (children second))
+       (sg Ts (if (eq r 39) (children (get (applyInst E first os p))) (children (mD d 2))))
+       (rule T (if (eq r 39) (applyAt first os sg (nil T)) d))
+       (goal (Arrow Ts (Arrow Ts (Arrow T Premise))) (proveAt n)))
+      (proofNode a rule
+        (premises
+          (cond ((eq r 22) (Few.l2 Premise (goal g hs first) (goal g (append hs (single first)) p)))
+            ((or (eq r 23) (eq r 24))
+             (let rw T (at ps 0)
+               (Few.l2 Premise (rewriting rw)
+                 (goal g hs (if (eq r 23) (get ((convCheck G E R n rw) 0 g 0 hs p)) first)))))
+            ((eq r 25)
+             (Few.l2 Premise (goal g (append hs (single t)) u) (goal g (append hs (single u)) t)))
+            ((eq r 26)
+             (case (expParts (get (typeIn G n g t)))
+               ((Option.just TPair ab)
+                (Seq.single Premise
+                  (goal (cons (p1 ab) g) (mapT weaken1 hs)
+                    (mEq (app (weaken1 t) (var 0)) (app (weaken1 u) (var 0))))))
+               (else (nil Premise))))
+            ((or (eq r 27) (eq r 39))
+             (case (thmAt E first)
+               ((Option.just Thm b)
+                (Map.map T Premise (lam ((h T)) (goal g hs (instTerm os sg h))) (thHyps b)))
+               (else (nil Premise))))
+            ((or (eq r 19) (eq r 28))
+             (case (lowerHyps G n g1 hs)
+               ((Option.just Terms H)
+                (let*
+                  ((base (Arrow T T) (lam ((v T)) (subst v (instVar (mArr first (nil T) mStar)))))
+                   (step (Arrow T T)
+                     (lam ((v T)) (mEq (natSuccAt second v) (subst (mD d 2) (atVar0 v))))))
+                  (if (eq r 19)
+                    (Few.l3 Premise (goal g1 (termsOf H) (mEq (base t) (base u)))
+                      (goal g hs (step t))
+                      (goal g hs (step u)))
+                    (Few.l2 Premise (goal g1 (termsOf H) (base p))
+                      (goal g (append hs (single p)) (natSuccAt second p))))))
+               (else (nil Premise))))
+            ((or (eq r 20) (eq r 29))
+             (case (lowerHyps G n g1 hs)
+               ((Option.just Terms H)
+                (let*
+                  ((A T (get (listPart c))) (g2 Ts (cons c (cons A g1)))
+                   (h2 Ts (mapT weaken2 (termsOf H)))
+                   (base (Arrow T T)
+                     (lam ((v T)) (subst v (instVar (mArr first (single A) mStar)))))
+                   (step (Arrow T T)
+                     (lam ((v T))
+                       (mEq (listConsAt second A v) (subst (mD d 2) (atVar0 (weakenElem v)))))))
+                  (if (eq r 20)
+                    (Few.l3 Premise (goal g1 (termsOf H) (mEq (base t) (base u)))
+                      (goal g2 h2 (step t))
+                      (goal g2 h2 (step u)))
+                    (Few.l2 Premise (goal g1 (termsOf H) (base p))
+                      (goal g2 (append h2 (single (weakenElem p))) (listConsAt second A p))))))
+               (else (nil Premise))))
+            ((eq r 34)
+             (case (coprodParts c)
+               ((Option.just TPair ab)
+                (let*
+                  ((A T (p1 ab)) (B T (p2 ab))
+                   (side (Arrow T T) (lam ((k T)) (subst p (atVar0 (mArr k (l2 A B) (var 0)))))))
+                  (Few.l2 Premise (goal (cons A g1) hs (side first))
+                    (goal (cons B g1) hs (side second)))))
+               (else (nil Premise))))
+            ((eq r 36)
+             (case (Option.nthOf Primitive (gPrims G) first)
+               ((Option.just Primitive v)
+                (Seq.single Premise
+                  (goal (cons (phSubst os (prDom v)) g1) hs
+                    (subst p (atVar0 (mArr first os (var 0)))))))
+               (else (nil Premise))))
+            ((eq r 32)
+             (let*
+               ((A T (get (roseLabel c))) (C T (get (typeIn G n g t)))
+                (side (Arrow T Premise)
+                  (lam ((v T))
+                    (goal (l2 (list c) A) (nil T)
+                      (mEq (roseNodeAt first c A v)
+                        (subst (mD d 3) (atVar0 (roseMapAt second (mD d 2) C v))))))))
+               (Few.l2 Premise (side t) (side u))))
+            ((eq r 33)
+             (case (lowerHyps G n g1 hs)
+               ((Option.just Terms H)
+                (let A T (get (roseLabel c))
+                  (Seq.single Premise
+                    (goal (cons (list c) (cons A g1))
+                      (append (mapT weaken2 (termsOf H)) (single (roseHyp second (mD d 2) p)))
+                      (roseNodeAt first c A p)))))
+               (else (nil Premise))))
+            (else (Map.map T Premise rewriting ps)))))))
+  ; Collect each logical child's nodes before its parent. The two lists must have equal lengths.
+  (defn appendNodes ((xs MaybeNodes) (ys MaybeNodes)) MaybeNodes
+    (case xs
+      ((Option.just Nodes a)
+       (case a
+         ((nodes & ls)
+          (case ys
+            ((Option.just Nodes b)
+             (case b ((nodes & rs) (Option.just Nodes (nodes (Seq.append ProofNode ls rs))))))
+            (else (Option.nothing Nodes))))))
+      (else (Option.nothing Nodes))))
+  (defn collect ((cs (List Plan)) (ps (List Premise)) (v ProofNode)) MaybeNodes
+    ((foldr Plan (Arrow (List Premise) MaybeNodes)
+       (lam ((c Plan) (rest (Arrow (List Premise) MaybeNodes)) (xs (List Premise)))
+         (lcase Premise MaybeNodes xs (Option.nothing Nodes)
+           (lam ((x Premise) (ys (List Premise)))
+             (case x ((rewriting rw) (rest ys))
+               ((proving b) (appendNodes ((snd c) b) (rest ys)))))))
+       (lam ((xs (List Premise)))
+         (if (Each.isEmpty Premise xs) (Option.just Nodes (nodes (Seq.single ProofNode v)))
+           (Option.nothing Nodes)))
+       cs) ps))
+  (defn plan ((G Globals) (E (List Entry)) (R Ts) (d T) (a Thm)) MaybeNodes
+    ((snd
+       (foldSketch Plan
+         (lam ((h T))
+           (pair (dNode 18 (nil T) (nil T))
+             (lam ((b Thm)) (Option.just Nodes (nodes (nil ProofNode))))))
+         (lam ((nd T) (cs (List Plan)))
+           (let rule T
+             (node (label nd) (cons (child nd 0) (Map.map Plan T (lam ((c Plan)) (fst c)) cs)))
+             (pair rule
+               (lam ((b Thm))
+                 (let v ProofNode (proofPremises G E R b rule)
+                   (case v ((proofNode a1 r ps) (case ps ((premises & xs) (collect cs xs v))))))))))
+         d)) a)))

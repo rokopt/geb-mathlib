@@ -11,6 +11,7 @@ public import GebTests.Prototypes.FreeTopos.Agreement.Conversion
 public import GebTests.Prototypes.FreeTopos.Agreement.Derivation
 public import GebTests.Prototypes.FreeTopos.Agreement.Load
 public import GebTests.Prototypes.FreeTopos.Agreement.Provers
+public import GebTests.Prototypes.FreeTopos.Agreement.ProofHoles
 public import GebTests.Prototypes.FreeTopos.Agreement.Reader
 public import GebTests.Prototypes.FreeTopos.Agreement.Tactics
 public import GebTests.Prototypes.FreeTopos.Agreement.Translation
@@ -99,6 +100,8 @@ combinator prover's other agreements).
   accepts as the check in Lean does, with the same instances.
 * {lit}`machineRun_agree` — the loaded reduction by the environment machine written in Geb is the
   function the emitted Lean binds to it.
+* {lit}`proofHoles_agree` — the loaded checker reports the Lean obligations, and a returned
+  certificate proves the closed conditional theorem.
 * {lit}`conversion_agree` — the loaded conversion checker written in Geb decides as the conversion
   checker in Lean at the certificates none of whose steps names a prepared theorem, and checks a
   development's declarations as the check in Lean; the loaded evaluation at literals evaluates
@@ -587,6 +590,26 @@ theorem machineRun_agree : ∃ G' : List Glob, load metalogic = some G' ∧
       Internal.Accelerate.machineRun f = f ∧ «Conversion.machineRun$accel» = f :=
   ⟨_, metalogic.load_globals, «Conversion.machineRun», metalogic_machineRun,
     Internal.Accelerate.machineRun_eq machineRun_agrees, machineRun_accel⟩
+
+/-- The loaded proof-hole checker reports the Lean checker's sequents. Its translator returns
+certificates of the closed conditional theorem in the original conversion environment. -/
+theorem proofHoles_agree {α : Type} (G : Internal.Globals) (E : Array Internal.Entry) (R : List ℕ)
+    (e : α → Tree) (g : α → Internal.Thm) (decl : Tree → Tree)
+    (hg : ∀ h, decl (e h) = encThm (g h)) :
+    ∃ gl : List Glob, load metalogic = some gl ∧
+      (∃ f : Ty.den checkSketchTy, gl[1848]? = some ⟨checkSketchTy, f⟩ ∧
+        ∀ a d, ProofHoles.PlainSketch d →
+          f (encGlobals G) (E.toList.map encEntry) (R.map leaf) decl (encThm a)
+            (ProofHoles.encSketch e d) = encOpt ((Internal.ProofHoles.check G E R g a d).map
+              fun hs ↦ RoseTree.node 0 (hs.map fun (h, b) ↦ encPair (e h, encThm b)))) ∧
+      (∃ f : Ty.den certifySketchTy, gl[1997]? = some ⟨certifySketchTy, f⟩ ∧
+        ∀ o j a d c, Plain c →
+          f (encGlobals G) (E.toList.map encEntry) (R.map leaf) (leaf o) (leaf j) decl (encThm a)
+            (ProofHoles.encSketch e d) = encOpt (some (encConv c)) →
+              (Internal.ProofHoles.Closed.conditional o g a d).convChecks G E R c = true) :=
+  ⟨_, metalogic.load_globals,
+    ⟨_, metalogic_checkSketch, ProofHoles.checkSketch_eq G E R e g decl hg⟩,
+    ⟨_, metalogic_certifySketch, ProofHoles.convChecks_of_certify G E R e g decl hg⟩⟩
 
 end GebTests.Prototypes.FreeTopos.Agreement
 

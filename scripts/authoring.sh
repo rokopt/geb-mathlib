@@ -44,7 +44,13 @@ if [p.strip() for p in parts[:len(base)]] != [p.strip() for p in base]:
 header = re.sub(r'^public import .*$', 'public import GebMirror.Metalogic.Tactics',
                 full.split('\ndef «', 1)[0], flags=re.M)
 header = header.replace('namespace GebBoot', 'namespace GebMirror.Metalogic')
-Path(sys.argv[2]).write_text(header + '\n' + ''.join(parts[len(base):]) +
+body = ''.join(parts[len(base):])
+# Authoring and the later metalogic layers can independently instantiate the same template.
+# Qualify instances introduced by this runner, keeping references to shared instances intact.
+local_instances = set(re.findall(r'^def «(\$[^»]+)»', body, re.M))
+body = re.sub(r'«(\$[^»]+)»',
+              lambda m: ('Authoring.' if m[1] in local_instances else '') + m[0], body)
+Path(sys.argv[2]).write_text(header + '\n' + body +
                             '\nend GebMirror.Metalogic\n\nend\n')
 PY
 

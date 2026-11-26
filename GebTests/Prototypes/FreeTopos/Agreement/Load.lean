@@ -1372,6 +1372,36 @@ theorem metalogic_checkConvDev :
       infer_lams tT _ [tT, tList tT, tList tT] h)
     metalogic.«Conversion.checkConvDev_heq»))
 
+/-! The proof-hole checker and its conditional certificate translator. -/
+
+/-- The type of the function reporting a sketch's open sequents. -/
+def checkSketchTy : Tree := [tT, tList tT, tList tT, tArrow tT tT, tT, tT].foldr tArrow tT
+
+/-- The type of the translator, with the starting indices of the logic definitions and theorems. -/
+def certifySketchTy : Tree :=
+  [tT, tList tT, tList tT, tT, tT, tArrow tT tT, tT, tT].foldr tArrow tT
+
+kernel_rfl metalogic_g1848 : metalogic.globals[1848]? = some metalogic.g1848
+kernel_rfl metalogic_g1997 : metalogic.globals[1997]? = some metalogic.g1997
+
+set_option maxRecDepth 100000 in
+/-- The loaded program's sketch checker has the mirror's type and denotation. -/
+theorem metalogic_checkSketch :
+    metalogic.globals[1848]? = some (⟨checkSketchTy, «ProofHoles.checkSketch»⟩ : Glob) :=
+  metalogic_g1848.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step1848).elim fun _ h ↦
+      infer_lams tT _ [tT, tList tT, tList tT, tArrow tT tT, tT, tT] h)
+    metalogic.«ProofHoles.checkSketch_heq»))
+
+set_option maxRecDepth 100000 in
+/-- The loaded program's conditional certificate translator has the mirror's type and denotation. -/
+theorem metalogic_certifySketch :
+    metalogic.globals[1997]? = some (⟨certifySketchTy, «HoleCertificates.certify»⟩ : Glob) :=
+  metalogic_g1997.trans (congrArg some (glob_ext
+    ((infer_of_loadStep metalogic.step1997).elim fun _ h ↦
+      infer_lams tT _ [tT, tList tT, tList tT, tT, tT, tArrow tT tT, tT, tT] h)
+    metalogic.«HoleCertificates.certify_heq»))
+
 /-! The checker's functions: the partial Horn checker, the theory, the inference of typings and
 the step of a development. -/
 

@@ -4,8 +4,8 @@
 ;
 ; The metalogic: its checker, its translation, its prover, the checker with a step of conversion,
 ; with the evaluation at literals and the environment machine, its tactics, its combinators, the
-; printer and the check of elementary-affine certificates, a layer of emitted Lean to a part. Each
-; entry is a definition whose mirror's agreement with the loaded program is proved.
+; printer, the check of elementary-affine certificates and the checker of proof sketches.
+; Each part has a layer of emitted Lean. The kernel checks the entries against the loaded program.
 
 (program metalogic (edition 0) (document (syntax authoring 0) (schema 0) (prose verso 0))
   (layers
@@ -22,7 +22,11 @@
     (Tactics free-topos/tactics.geb)
     (Combinator free-topos/combinator.geb)
     (Printer datatype.geb printer.geb)
-    (Affine affine.geb))
+    (Affine affine.geb)
+    (ProofHoles free-topos/holes.geb free-topos/hole-conditions.geb free-topos/hole-plan.geb
+      free-topos/hole-sequent.geb
+      free-topos/hole-rose.geb
+      free-topos/hole-certificates.geb))
   (entries Derivation.checkDev Translation.program Translation.trGlobals Translation.thm
     Prover.prepareRules
     Prover.byNorm
@@ -108,4 +112,10 @@
     Conversion.machineRun
     Conversion.convCheck
     Conversion.thmConvChecks
-    Conversion.checkConvDev))
+    Conversion.checkConvDev
+    ProofHoles.checkSketch
+    ProofHoles.fill
+    ProofHoles.finish
+    HoleConditions.conditional
+    HoleConditions.directCertify
+    HoleCertificates.certify))

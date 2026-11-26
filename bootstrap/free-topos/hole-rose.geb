@@ -1,0 +1,118 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The list induction used to transfer a rose-tree induction hypothesis from a list of
+; propositions to the equality of the two lists of recursive results.
+
+(module HoleRose (export rebuildList rebuildProof mapEquation mapProof inductionBody cutBy)
+  (import Prelude)
+  (import Base)
+  (import Theory)
+  (import Language)
+  (import Derivation)
+  (import Prover)
+  (import Tactics)
+  (import HoleConditions)
+
+  (defn normBy ((rs Ts)) T (dNode 37 (l2 (node 0 rs) 64) (nil T)))
+  (defn joinByRules ((rs Ts)) T (let p T (normBy rs) (dNode 18 (nil T) (l2 p p))))
+  (defn nd0 ((r T)) T (dNode r (nil T) (nil T)))
+  (defn congBy ((cs Ts)) T (dNode 2 (nil T) cs))
+  (defn transBy ((p T) (q T)) T (dNode 1 (nil T) (l2 p q)))
+  (defn readHyp ((i T)) T (dNode 17 (l2 i 0) (nil T)))
+  (defn normHyp ((i T)) T (normBy (single (node 6 (single i)))))
+  (defn cutBy ((p T) (c T) (d T)) T (dNode 22 (single p) (l2 c d)))
+  (defn impElim ((j T) (p T) (q T) (c T) (d T)) T (applyAt (add j 4) (nil T) (l2 q p) (l2 c d)))
+  (defn tails ((kl T) (kc T) (xs T)) T
+    (let* ((z T (mArr kl (single omega) mStar)) (v T (mFst (var 0))))
+      (mListRec (mPair z z) (mPair (mArr kc (single omega) (mPair (var 1) v)) v) xs)))
+  (defn rebuildList ((n T) (kl T) (kc T)) Thm
+    (theoremAt n (single (list omega)) (nil T) (mEq (mFst (tails kl kc (var 0))) (var 0))))
+  (defn rebuildProof ((kl T) (kc T)) T
+    (let*
+      ((rule (Arrow T (Arrow Ts T)) (lam ((r T) (xs Ts)) (node 0 (l2 r (node 0 xs)))))
+       (proj T (rule 4 (nil T))))
+      (dNode 20 (l3 kl kc (mArr kc (single omega) (mPair (var 1) (var 0))))
+        (l3 (joinByRules (l2 (rule 11 (single kl)) proj))
+          (joinByRules (l2 (rule 12 (single kc)) proj))
+          (joinByRules (nil T))))))
+  (defn mapEquation ((o T) (n T) (kl T) (kc T) (r T) (C T) (t T) (u T)) Thm
+    (theoremAt n (single (list r)) (nil T)
+      (impL o (roseHyp kl kc (mEq t u)) (mEq (roseMapAt kl kc C t) (roseMapAt kl kc C u)))))
+  (defn destructorEq ((i T)) T (dNode 18 (nil T) (l2 (normHyp i) (nd0 0))))
+  (defn tailStep ((cc T) (i T)) T (transBy (congBy (single cc)) (transBy (nd0 5) (readHyp i))))
+  (defn fromBy ((p T) (rw T) (c T)) T (dNode 24 (single p) (l2 rw c)))
+  (defn mapProof ((o T) (j T) (n T) (kl T) (kc T) (r T) (C T) (t T) (u T) (hs Ts)) T
+    (let*
+      ((a Thm (mapEquation o n kl kc r C t u)) (h T (roseHyp kl kc (mEq t u)))
+       (q T (mEq (roseMapAt kl kc C t) (roseMapAt kl kc C u)))
+       (k T (length hs))
+       (hcons T (listConsAt kc r h))
+       (qcons T (listConsAt kc r q))
+       (ht T (weakenElem h))
+       (qt T (weakenElem q))
+       (p T (subst (mEq t u) (atVar0 (var 1))))
+       (truth T (mEq mStar mStar))
+       (ml T (mArg ht 0))
+       (mr T (mArg ht 1))
+       (lhs T (mArr kc (single omega) (mPair p ml)))
+       (rhs T (mArr kc (single omega) (mPair truth mr)))
+       (hc T (mEq lhs rhs))
+       (headEq T (mEq (mListRec truth (var 1) lhs) (mListRec truth (var 1) rhs)))
+       (tailEq T (mEq (mSnd (tails kl kc lhs)) (mSnd (tails kl kc rhs))))
+       (rl T (mEq (mFst (tails kl kc ml)) ml))
+       (rr T (mEq (mFst (tails kl kc mr)) mr))
+       (stepHs Ts (append hs (l3 (weakenElem (thConcl a)) hcons hc)))
+       (rb Thm (rebuildList n kl kc))
+       (cc T (dNode 12 (single kc) (nil T)))
+       (consCong T (congBy (l2 cc cc)))
+       (headProof T (fromBy headEq consCong (destructorEq (add k 2))))
+       (tailProof T
+         (fromBy tailEq (congBy (l2 (tailStep cc (add k 3)) (tailStep cc (add k 4))))
+           (destructorEq (add k 2))))
+       (vHead T (dNode 23 (nil T) (l2 (readHyp (add k 5)) (joinByRules (nil T)))))
+       (vTail T (impElim j ht qt (hypAt k) (hypAt (add k 6))))
+       (last T
+         (dNode 18 (nil T)
+           (l2 (transBy cc (congBy (single (congBy (l2 (readHyp (add k 7)) (readHyp (add k 8)))))))
+             cc)))
+       (z T (mArr kl (single r) mStar))
+       (cz T (dNode 11 (single kl) (nil T)))
+       (base T
+         (impI j k (subst h (instVar z)) (subst q (instVar z)) (dNode 18 (nil T) (l2 cz cz)))))
+      (bindO (specialize o j stepHs rb ml)
+        (lam ((dl T))
+          (mapO
+            (lam ((dr T))
+              (let step T
+                (impI j (add k 1) hcons qcons
+                  (cutBy hc (fromBy hcons consCong (hypAt (add k 1)))
+                    (cutBy rl dl
+                      (cutBy rr dr
+                        (cutBy (mEq p truth) headProof
+                          (cutBy ht tailProof (cutBy p vHead (cutBy qt vTail last))))))))
+                (dNode 29 (l2 kl kc) (l2 base step))))
+            (specialize o j (append stepHs (single rl)) rb mr))))))
+  ; Recover both algebra equations from their closed lemmas and apply induction with the
+  ; equality of the mapped lists from the list induction above.
+  (defn inductionBody ((o T) (j T) (d T) (a Thm) (b Thm) (c Thm) (m Thm) (hs Ts) (q T)) T
+    (let*
+      ((kl T (mD d 1)) (kc T (mD d 2)) (ih T (roseHyp kl kc (thConcl a))) (k T (length hs))
+       (f T (thConcl b))
+       (g T (thConcl c))
+       (lhs T (transBy (readHyp (add k 1)) (normHyp (add k 3))))
+       (rhs T (transBy (readHyp (add k 2)) (normHyp (add k 3)))))
+      (bindO (discharge o j (append hs (single ih)) b)
+        (lam ((db T))
+          (bindO (discharge o j (append hs (l2 ih f)) c)
+            (lam ((dc T))
+              (mapO
+                (lam ((dm T))
+                  (dNode 33 (l3 (mD d 0) kl kc)
+                    (single
+                      (cutBy f db
+                        (cutBy g dc
+                          (cutBy q (impElim j ih q dm (hypAt k))
+                            (dNode 18 (nil T) (l2 lhs rhs))))))))
+                (specialize o j (append hs (l3 ih f g)) m (var 0))))))))))

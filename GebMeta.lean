@@ -380,8 +380,10 @@ definition's loading step as an axiom
 generates for the metalogic's program, a layer to a module. -/
 def loadingAxiomModules : NameSet :=
   NameSet.ofList [`GebMirror.Metalogic.Load.Checker, `GebMirror.Metalogic.Load.Translation,
-    `GebMirror.Metalogic.Load.Prover, `GebMirror.Metalogic.Load.Tactics,
-    `GebMirror.Metalogic.Load.Combinator, `GebMirror.Metalogic.Load.Printer]
+    `GebMirror.Metalogic.Load.Prover, `GebMirror.Metalogic.Load.Conversion,
+    `GebMirror.Metalogic.Load.Tactics, `GebMirror.Metalogic.Load.Combinator,
+    `GebMirror.Metalogic.Load.Printer, `GebMirror.Metalogic.Load.Affine,
+    `GebMirror.Metalogic.Load.ProofHoles]
 
 /-- Exact module names whose axioms are permitted in either loading
 mode: the modules stating, by `evaluation_axiom`, the checks of the

@@ -27,6 +27,7 @@ import GebTests.Prototypes.FreeTopos.Benchmark
 import GebTests.Prototypes.FreeTopos.Certificates
 import GebTests.Prototypes.FreeTopos.Certified
 import GebTests.Prototypes.FreeTopos.ConversionMirror
+import GebTests.Prototypes.FreeTopos.ProofHolesMirror
 import GebTests.Prototypes.FreeTopos.Expansion
 import GebTests.Prototypes.FreeTopos.Graphs
 import GebTests.Prototypes.FreeTopos.Internal
