@@ -130,9 +130,9 @@ with a checked example, a theorem written in Geb and a record whose
 certificate replays after relocation. The next milestone combines
 these capabilities in a client maintained in its own repository. The
 steps toward it follow, each with its state, numbered as they were
-added; {ref "downstream-order"}[The order of the remaining steps] gives
-the order in which those that remain are taken and which of them proceed
-together.
+added. All are complete, and
+{ref "downstream-order"}[The order of the remaining work] gives the
+order of the work that proceeds alongside the client.
 
 1. Complete. Assemble and share the first library. The library is
    `library/`: its manifest lists the sources of its modules (step 8),
@@ -165,8 +165,8 @@ together.
    that changes neither the library nor a record: the client pins the
    archives by their digests, and `fetch-geb.sh` places the release at
    `geb/`, where the editor and `check.sh` run its executables, built, with
-   no Lake (`scripts/tests/test-release.sh`). No release is published
-   (step 10).
+   no Lake (`scripts/tests/test-release.sh`). Step 10 publishes the
+   first release.
 2. Complete. Make a check take the time of what changed. Each stage's
    time is linear in the program: the elaboration of modules holds its
    names in tries, and the typing and the reading check each form
@@ -386,12 +386,13 @@ together.
    and checks that a module declared by both is rejected, even with
    disjoint exports ({ref "files-editions"}[Files, editions and the
    host boundary]).
-10. Give a client the tools without a build of them, and a description
-    of the language. The host executables import the kernel's modules,
-    which import mathlib, so that a client building them fetches
+10. Complete. Give a client the tools without a build of them, and a
+    description of the language. The host executables import the kernel's
+    modules, which import mathlib, so that a client building them fetches
     mathlib's cache and, from an empty Lake directory, builds for an hour
     or more (`editors/vscode/README.md`). A release holds them built
-    (step 1), and the first is made at a tag
+    (step 1), and the first is the tag `v4.37.0-rc1`, the name of the
+    Lean toolchain it is built with
     (`docs/rules/ci-and-workflow.md` § Releases), of the pre-release
     edition `0`, whose elaboration is fixed by the pinned release
     ({ref "files-editions"}[Files, editions and the host boundary]). The
@@ -435,24 +436,12 @@ together.
     (`scripts/tests/test-client.sh`,
     {ref "improvements"}[Improvements]).
 
-### The order of the remaining steps
+### The order of the remaining work
 %%%
 tag := "downstream-order"
 %%%
 
-Steps 1 through 9 and 11 through 13 are complete. The first published
-release is the remaining step.
-
-:::table +header
-*
-  * Step
-  * When to start
-  * Artifacts to check
-*
-  * 10, the first published release
-  * Now, the language guide and its checked examples are in place
-  * Release archives, editor packages and the manual
-:::
+Steps 1 through 13 are complete.
 
 Each stage-test comparison shares a loaded compiler across its inputs.
 The stage-0 example comparison took 3.0 seconds with repeated loading
@@ -9339,8 +9328,8 @@ tag := "the-next-phase"
 
 The Lean host, library and downstream client are the subjects of
 {ref "downstream-authoring"}[A Geb library and its downstream application].
-The {ref "downstream-order"}[remaining release step] checks the packaged
-tools against that client. Its editor uses the proof cache and navigation
+The release workflow checks the packaged tools against that client
+(`docs/rules/ci-and-workflow.md` § Releases). Its editor uses the proof cache and navigation
 index. The stage tests load each compiler once per comparison, and the Geb
 reader scans and parses source text in constant call depth
 ({ref "improvements"}[Improvements]). The compilers, metalogic and library
