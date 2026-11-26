@@ -3,7 +3,8 @@
 ; translation's trees.
 
 (module Tactics
-  (export ttL impL trueI apps byMode byNF hypRules byRoseIndWith byListCases byListSplit bySplit2
+  (export ttL impL impI trueI apps byMode byNF hypRules byRoseIndWith byListCases byListSplit
+    bySplit2
     withWeakHyps
     withInsts
     withChildHyps

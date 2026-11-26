@@ -21,20 +21,20 @@ def «Logic.conjL» :=
       (_root_.GebMirror.Metalogic.«Theory.l2» x2 x1);
     x3
 
-def «$284665772e6c32204c616e67756167652e4c4465666e29» :=
+def Authoring.«$284665772e6c32204c616e67756167652e4c4465666e29» :=
   fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
       (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
     x2
 
-def «$284665772e6c33204c616e67756167652e4c4465666e29» :=
+def Authoring.«$284665772e6c33204c616e67756167652e4c4465666e29» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree) =>
     let x3 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$284665772e6c32204c616e67756167652e4c4465666e29»
+      (_root_.GebMirror.Metalogic.Authoring.«$284665772e6c32204c616e67756167652e4c4465666e29»
         x1
         x2));
     x3
@@ -46,7 +46,7 @@ def «Logic.connectives» :=
                                    (_root_.GebMirror.Metalogic.«Theory.l2»
                                      _root_.GebMirror.Metalogic.«Theory.omega»
                                      _root_.GebMirror.Metalogic.«Theory.omega»);
-                                 _root_.GebMirror.Metalogic.«$284665772e6c33204c616e67756167652e4c4465666e29»
+                                 _root_.GebMirror.Metalogic.Authoring.«$284665772e6c33204c616e67756167652e4c4465666e29»
                                    (_root_.GebMirror.Metalogic.«Language.ldefn»
                                      (_root_.Geb.Kernel.leaf 0)
                                      (_root_.GebMirror.Metalogic.«Language.objs»
@@ -185,38 +185,38 @@ def «Logic.conjE» :=
                                                       _root_.GebMirror.Metalogic.«Tactics.trueI»)))))));
     x4
 
-def «$284665772e6c322044657269766174696f6e2e4465636c29» :=
+def Authoring.«$284665772e6c322044657269766174696f6e2e4465636c29» :=
   fun (x0 : _root_.Geb.Kernel.Tree) (x1 : _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
       (x1 :: ([] : _root_.List _root_.Geb.Kernel.Tree)));
     x2
 
-def «$284665772e6c332044657269766174696f6e2e4465636c29» :=
+def Authoring.«$284665772e6c332044657269766174696f6e2e4465636c29» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree) =>
     let x3 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$284665772e6c322044657269766174696f6e2e4465636c29»
+      (_root_.GebMirror.Metalogic.Authoring.«$284665772e6c322044657269766174696f6e2e4465636c29»
         x1
         x2));
     x3
 
-def «$284665772e6c342044657269766174696f6e2e4465636c29» :=
+def Authoring.«$284665772e6c342044657269766174696f6e2e4465636c29» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree)
     (x3 : _root_.Geb.Kernel.Tree) =>
     let x4 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$284665772e6c332044657269766174696f6e2e4465636c29»
+      (_root_.GebMirror.Metalogic.Authoring.«$284665772e6c332044657269766174696f6e2e4465636c29»
         x1
         x2
         x3));
     x4
 
-def «$284665772e6c352044657269766174696f6e2e4465636c29» :=
+def Authoring.«$284665772e6c352044657269766174696f6e2e4465636c29» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree)
@@ -224,7 +224,7 @@ def «$284665772e6c352044657269766174696f6e2e4465636c29» :=
     (x4 : _root_.Geb.Kernel.Tree) =>
     let x5 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$284665772e6c342044657269766174696f6e2e4465636c29»
+      (_root_.GebMirror.Metalogic.Authoring.«$284665772e6c342044657269766174696f6e2e4465636c29»
         x1
         x2
         x3
@@ -247,7 +247,7 @@ def «Logic.connectiveRules» :=
                                    (_root_.Geb.Kernel.leaf 0)
                                    ([] : _root_.List _root_.Geb.Kernel.Tree)
                                    ([] : _root_.List _root_.Geb.Kernel.Tree);
-                                 _root_.GebMirror.Metalogic.«$284665772e6c352044657269766174696f6e2e4465636c29»
+                                 _root_.GebMirror.Metalogic.Authoring.«$284665772e6c352044657269766174696f6e2e4465636c29»
                                    (_root_.GebMirror.Metalogic.«Derivation.declLang»
                                      (_root_.GebMirror.Metalogic.«Derivation.mkThm»
                                        (_root_.Geb.Kernel.leaf 0)
@@ -448,20 +448,20 @@ def «Logic.exuL» :=
       (_root_.GebMirror.Metalogic.«Prelude.single» x2);
     x3
 
-def «$284665772e6c34204c616e67756167652e4c4465666e29» :=
+def Authoring.«$284665772e6c34204c616e67756167652e4c4465666e29» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree)
     (x3 : _root_.Geb.Kernel.Tree) =>
     let x4 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$284665772e6c33204c616e67756167652e4c4465666e29»
+      (_root_.GebMirror.Metalogic.Authoring.«$284665772e6c33204c616e67756167652e4c4465666e29»
         x1
         x2
         x3));
     x4
 
-def «$284665772e6c35204c616e67756167652e4c4465666e29» :=
+def Authoring.«$284665772e6c35204c616e67756167652e4c4465666e29» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree)
@@ -469,14 +469,14 @@ def «$284665772e6c35204c616e67756167652e4c4465666e29» :=
     (x4 : _root_.Geb.Kernel.Tree) =>
     let x5 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$284665772e6c34204c616e67756167652e4c4465666e29»
+      (_root_.GebMirror.Metalogic.Authoring.«$284665772e6c34204c616e67756167652e4c4465666e29»
         x1
         x2
         x3
         x4));
     x5
 
-def «$284665772e6c36204c616e67756167652e4c4465666e29» :=
+def Authoring.«$284665772e6c36204c616e67756167652e4c4465666e29» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree)
@@ -485,7 +485,7 @@ def «$284665772e6c36204c616e67756167652e4c4465666e29» :=
     (x5 : _root_.Geb.Kernel.Tree) =>
     let x6 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
-      (_root_.GebMirror.Metalogic.«$284665772e6c35204c616e67756167652e4c4465666e29»
+      (_root_.GebMirror.Metalogic.Authoring.«$284665772e6c35204c616e67756167652e4c4465666e29»
         x1
         x2
         x3
@@ -510,7 +510,7 @@ def «Logic.connectivesAll» :=
                                      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Tactics.impL» x0;
                                  _root_.GebMirror.Metalogic.«$285365712e617070656e64204c616e67756167652e4c4465666e29»
                                    (_root_.GebMirror.Metalogic.«Logic.connectives» x0)
-                                   (_root_.GebMirror.Metalogic.«$284665772e6c36204c616e67756167652e4c4465666e29»
+                                   (_root_.GebMirror.Metalogic.Authoring.«$284665772e6c36204c616e67756167652e4c4465666e29»
                                      (_root_.GebMirror.Metalogic.«Language.ldefn»
                                        (_root_.Geb.Kernel.leaf 1)
                                        x2
@@ -742,7 +742,7 @@ def «Logic.allI» :=
               (_root_.GebMirror.Metalogic.«Theory.l2» _root_.GebMirror.Metalogic.«Tactics.trueI» x0)))));
     x1
 
-def «$285365712e617070656e642044657269766174696f6e2e4465636c29» :=
+def Authoring.«$285365712e617070656e642044657269766174696f6e2e4465636c29» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -864,10 +864,10 @@ def «Logic.connectiveRulesAll» :=
                                                    (_root_.Geb.Kernel.leaf 2))))
                                              (_root_.GebMirror.Metalogic.«Logic.dHyp»
                                                (_root_.Geb.Kernel.leaf 0)))))));
-                                 _root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
+                                 _root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                    (_root_.GebMirror.Metalogic.«Logic.connectiveRules» x0 x1)
-                                   (_root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
-                                     (_root_.GebMirror.Metalogic.«$284665772e6c342044657269766174696f6e2e4465636c29»
+                                   (_root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
+                                     (_root_.GebMirror.Metalogic.Authoring.«$284665772e6c342044657269766174696f6e2e4465636c29»
                                        (_root_.GebMirror.Metalogic.«Derivation.declLang»
                                          (_root_.GebMirror.Metalogic.«Derivation.mkThm»
                                            (_root_.Geb.Kernel.leaf 1)
@@ -995,7 +995,7 @@ def «Logic.connectiveRulesAll» :=
                                            (_root_.GebMirror.Metalogic.«Language.var»
                                              (_root_.Geb.Kernel.leaf 1))
                                            (_root_.Geb.Kernel.leaf 3))))
-                                     (_root_.GebMirror.Metalogic.«$284665772e6c332044657269766174696f6e2e4465636c29»
+                                     (_root_.GebMirror.Metalogic.Authoring.«$284665772e6c332044657269766174696f6e2e4465636c29»
                                        (_root_.GebMirror.Metalogic.«Derivation.declLang»
                                          (_root_.GebMirror.Metalogic.«Derivation.mkThm»
                                            (_root_.Geb.Kernel.leaf 0)
@@ -2194,7 +2194,7 @@ def «Formula.noProof» :=
     (_ : _root_.Geb.Kernel.Tree) =>
     _root_.GebMirror.Metalogic.«Prelude.none»
 
-def «$285365712e6c656e67746820284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929» :=
+def Authoring.«$285365712e6c656e67746820284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929» :=
   fun (x0 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree →
@@ -2213,7 +2213,7 @@ def «$285365712e6c656e67746820284172726f7720284c69737420542920284172726f7720284
       x0;
     x1
 
-def «$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929» :=
+def Authoring.«$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929» :=
   fun (x0 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree →
@@ -2244,7 +2244,7 @@ def «$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c697
         x2);
     x1
 
-def «$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929» :=
+def Authoring.«$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree →
@@ -2259,12 +2259,12 @@ def «$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c697
         (_root_.List _root_.Geb.Kernel.Tree →
           _root_.List _root_.Geb.Kernel.Tree →
             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      _root_.GebMirror.Metalogic.«$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929»
+      _root_.GebMirror.Metalogic.Authoring.«$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929»
       x1
       x0;
     x2
 
-def «$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929» :=
+def Authoring.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
       _root_.List _root_.Geb.Kernel.Tree →
         _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
@@ -2283,7 +2283,7 @@ def «$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c697
       (β := _root_.List _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree →
           _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929»
+      (_root_.GebMirror.Metalogic.Authoring.«$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929»
         x2
         x1)
       x0
@@ -2432,7 +2432,7 @@ def «Formula.applyTheorem» :=
                 (_root_.GebMirror.Metalogic.«Derivation.instTerm» x2 x3 x20))
               (_root_.Geb.Kernel.Const.eq
                 (_root_.GebMirror.Metalogic.«Prelude.length» x24)
-                (_root_.GebMirror.Metalogic.«$285365712e6c656e67746820284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929»
+                (_root_.GebMirror.Metalogic.Authoring.«$285365712e6c656e67746820284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929»
                   x4))))).label ≠ 0 then
           _root_.GebMirror.Metalogic.«Base.mapO»
             (fun (x25 : _root_.Geb.Kernel.Tree) =>
@@ -2444,7 +2444,7 @@ def «Formula.applyTheorem» :=
             (_root_.GebMirror.Metalogic.«Base.allSomeT»
               (_root_.GebMirror.Metalogic.«Base.mapT»
                 (fun (x25 : _root_.Geb.Kernel.Tree) =>
-                  _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929»
+                  _root_.GebMirror.Metalogic.Authoring.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f772054205429292929»
                     _root_.GebMirror.Metalogic.«Formula.noProof»
                     x4
                     x25
@@ -3110,7 +3110,7 @@ def «Authoring.globalsFor» :=
               x1))));
     x2
 
-def «$285365712e6c656e6774682044657269766174696f6e2e4465636c29» :=
+def Authoring.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
       (α := _root_.Geb.Kernel.Tree)
@@ -3122,13 +3122,13 @@ def «$285365712e6c656e6774682044657269766174696f6e2e4465636c29» :=
     x1
 
 def «Authoring.ruleCount» :=
-  _root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
+  _root_.GebMirror.Metalogic.Authoring.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
     (_root_.GebMirror.Metalogic.«Logic.connectiveRules»
       (_root_.Geb.Kernel.leaf 0)
       (_root_.Geb.Kernel.leaf 0))
 
 def «Authoring.ruleCountAll» :=
-  _root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
+  _root_.GebMirror.Metalogic.Authoring.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
     (_root_.GebMirror.Metalogic.«Logic.connectiveRulesAll»
       (_root_.Geb.Kernel.leaf 0)
       (_root_.Geb.Kernel.leaf 0))
@@ -3156,7 +3156,7 @@ def «Authoring.declaredAt» :=
         (_root_.GebMirror.Metalogic.«Logic.connectivesAll» (_root_.Geb.Kernel.leaf 0)));
     x1
 
-def «$285365712e73696e676c652050726f7665722e4e6f726d52756c6529» :=
+def Authoring.«$285365712e73696e676c652050726f7665722e4e6f726d52756c6529» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
@@ -3179,7 +3179,7 @@ def «Authoring.rulesOf» :=
                                        (_root_.GebMirror.Metalogic.«Derivation.terms»
                                          (_root_.GebMirror.Metalogic.«Prelude.single»
                                            _root_.GebMirror.Metalogic.«Authoring.kZero»))) ::
-                                       (_root_.GebMirror.Metalogic.«$285365712e73696e676c652050726f7665722e4e6f726d52756c6529»
+                                       (_root_.GebMirror.Metalogic.Authoring.«$285365712e73696e676c652050726f7665722e4e6f726d52756c6529»
                                          (_root_.GebMirror.Metalogic.«Prover.nrRule»
                                            (_root_.Geb.Kernel.leaf 10)
                                            (_root_.GebMirror.Metalogic.«Derivation.terms»
@@ -4444,7 +4444,7 @@ def «Authoring.ilogic» :=
                                               _root_.GebMirror.Metalogic.«Prelude.none»);
     x4
 
-def «$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c6973742054292054292929» :=
+def Authoring.«$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c6973742054292054292929» :=
   fun (x0 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
@@ -4468,7 +4468,7 @@ def «$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c697
         x2);
     x1
 
-def «$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c6973742054292054292929» :=
+def Authoring.«$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c6973742054292054292929» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree →
@@ -4480,12 +4480,12 @@ def «$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c697
       (α := _root_.List
         (_root_.List _root_.Geb.Kernel.Tree →
           _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      _root_.GebMirror.Metalogic.«$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c6973742054292054292929»
+      _root_.GebMirror.Metalogic.Authoring.«$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c6973742054292054292929»
       x1
       x0;
     x2
 
-def «$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c6973742054292054292929» :=
+def Authoring.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c6973742054292054292929» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
       _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
     (x1 : _root_.List
@@ -4499,7 +4499,7 @@ def «$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c697
         _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
       (β := _root_.List _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c6973742054292054292929»
+      (_root_.GebMirror.Metalogic.Authoring.«$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c6973742054292054292929»
         x2
         x1)
       x0
@@ -4535,7 +4535,7 @@ def «Authoring.itermStep» :=
                                        _root_.List _root_.Geb.Kernel.Tree →
                                          _root_.List _root_.Geb.Kernel.Tree →
                                            _root_.Geb.Kernel.Tree := (fun (x11 : _root_.Geb.Kernel.Tree) =>
-                                       _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c6973742054292054292929»
+                                       _root_.GebMirror.Metalogic.Authoring.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c6973742054292054292929»
                                          _root_.GebMirror.Metalogic.«Authoring.failIR»
                                          x5
                                          x11);
@@ -5003,12 +5003,12 @@ def «Authoring.hypOk» :=
             (_root_.Geb.Kernel.Const.child x2 (_root_.Geb.Kernel.leaf 0))));
     x3
 
-def «$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e53746174656d656e7429» :=
+def Authoring.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e53746174656d656e7429» :=
   _root_.Geb.Kernel.Const.node
     (_root_.Geb.Kernel.leaf 0)
     ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «$284f7074696f6e2e6a75737420417574686f72696e672e53746174656d656e7429» :=
+def Authoring.«$284f7074696f6e2e6a75737420417574686f72696e672e53746174656d656e7429» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 1)
@@ -5188,7 +5188,7 @@ def «Authoring.readQuantified» :=
                                           if (_root_.GebMirror.Metalogic.«Prelude.and»
                                             (_root_.GebMirror.Metalogic.«Prelude.isSome» x21)
                                             (_root_.GebMirror.Metalogic.«Prelude.isSome» x22)).label ≠ 0 then
-                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420417574686f72696e672e53746174656d656e7429»
+                                            _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6a75737420417574686f72696e672e53746174656d656e7429»
                                               (_root_.GebMirror.Metalogic.«Authoring.statement»
                                                 (_root_.Geb.Kernel.Const.node
                                                   (_root_.Geb.Kernel.leaf 0)
@@ -5210,9 +5210,9 @@ def «Authoring.readQuantified» :=
                                                       (_root_.GebMirror.Metalogic.«Prelude.get» x21)))
                                                   (_root_.GebMirror.Metalogic.«Prelude.get» x22)))
                                           else
-                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e53746174656d656e7429»
+                                            _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e53746174656d656e7429»
                                         else
-                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e53746174656d656e7429»);
+                                          _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e53746174656d656e7429»);
     x8
 
 def «Authoring.readStatement» :=
@@ -5259,7 +5259,7 @@ def «Authoring.readStatement» :=
           (_root_.Geb.Kernel.leaf 1)
           (_root_.Geb.Kernel.Const.child x5 (_root_.Geb.Kernel.leaf 2))
       else
-        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e53746174656d656e7429»
+        _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e53746174656d656e7429»
     else
       _root_.GebMirror.Metalogic.«Authoring.readQuantified»
         x0
@@ -5825,7 +5825,7 @@ def «Authoring.languageRules» :=
       x0;
     x1
 
-def «$285365712e617070656e642050726f7665722e4e6f726d52756c6529» :=
+def Authoring.«$285365712e617070656e642050726f7665722e4e6f726d52756c6529» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -5844,7 +5844,7 @@ def «Authoring.rulesIn» :=
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
     (x2 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x3 : _root_.List
-      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e617070656e642050726f7665722e4e6f726d52756c6529»
+      _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e642050726f7665722e4e6f726d52756c6529»
       (_root_.GebMirror.Metalogic.«Prover.prepareRules» x0 x1)
       (let x3 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Authoring.foldedOf»
          x1;
@@ -7021,7 +7021,7 @@ def «Authoring.byTests» :=
       (_root_.Geb.Kernel.leaf 0);
     x10
 
-def «$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929» :=
+def Authoring.«$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929» :=
   fun (x0 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree →
@@ -7108,7 +7108,7 @@ def «$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c697
         x2);
     x1
 
-def «$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929» :=
+def Authoring.«$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree →
@@ -7147,12 +7147,12 @@ def «$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c697
                         _root_.List _root_.Geb.Kernel.Tree →
                           _root_.Geb.Kernel.Tree →
                             _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)))
-      _root_.GebMirror.Metalogic.«$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
+      _root_.GebMirror.Metalogic.Authoring.«$285365712e7461696c20284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
       x1
       x0;
     x2
 
-def «$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929» :=
+def Authoring.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree →
       _root_.List _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree →
@@ -7211,7 +7211,7 @@ def «$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c697
                       _root_.List _root_.Geb.Kernel.Tree →
                         _root_.Geb.Kernel.Tree →
                           _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      (_root_.GebMirror.Metalogic.«$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
+      (_root_.GebMirror.Metalogic.Authoring.«$285365712e64726f7020284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
         x2
         x1)
       x0
@@ -7241,7 +7241,7 @@ def «$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c697
         x3);
     x3
 
-def «$285365712e6c656e6774682050726f7665722e4e6f726d52756c6529» :=
+def Authoring.«$285365712e6c656e6774682050726f7665722e4e6f726d52756c6529» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
       (α := _root_.Geb.Kernel.Tree)
@@ -7310,7 +7310,7 @@ def «Authoring.script6» :=
                                                                     _root_.Geb.Kernel.Tree →
                                                                       _root_.Geb.Kernel.Tree →
                                                                         _root_.Geb.Kernel.Tree) := (fun (x16 : _root_.Geb.Kernel.Tree) =>
-                                                  _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
+                                                  _root_.GebMirror.Metalogic.Authoring.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
                                                     _root_.GebMirror.Metalogic.«Authoring.failSR»
                                                     x7
                                                     x16);
@@ -7958,11 +7958,11 @@ def «Authoring.script6» :=
                                                                   (fun (x29 : _root_.List
                                                                        _root_.Geb.Kernel.Tree) =>
                                                                     (x25
-                                                                      (_root_.GebMirror.Metalogic.«$285365712e6c656e6774682050726f7665722e4e6f726d52756c6529»
+                                                                      (_root_.GebMirror.Metalogic.Authoring.«$285365712e6c656e6774682050726f7665722e4e6f726d52756c6529»
                                                                         x29)).2
                                                                       x26
                                                                       x27
-                                                                      (_root_.GebMirror.Metalogic.«$285365712e617070656e642050726f7665722e4e6f726d52756c6529»
+                                                                      (_root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e642050726f7665722e4e6f726d52756c6529»
                                                                         x29
                                                                         x28)))
                                                           else
@@ -8112,7 +8112,7 @@ def «Authoring.script5» :=
                                                                     _root_.Geb.Kernel.Tree →
                                                                       _root_.Geb.Kernel.Tree →
                                                                         _root_.Geb.Kernel.Tree) := (fun (x16 : _root_.Geb.Kernel.Tree) =>
-                                                  _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
+                                                  _root_.GebMirror.Metalogic.Authoring.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
                                                     _root_.GebMirror.Metalogic.«Authoring.failSR»
                                                     x7
                                                     x16);
@@ -8881,7 +8881,7 @@ def «Authoring.scriptBits» :=
                                                       (_root_.Geb.Kernel.leaf 1)));
     x6
 
-def «$285365712e7461696c20284c69737420284c6973742054292929» :=
+def Authoring.«$285365712e7461696c20284c69737420284c6973742054292929» :=
   fun (x0 : _root_.List
       (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
     let x1 : _root_.List
@@ -8898,7 +8898,7 @@ def «$285365712e7461696c20284c69737420284c6973742054292929» :=
         x2);
     x1
 
-def «$285365712e64726f7020284c69737420284c6973742054292929» :=
+def Authoring.«$285365712e64726f7020284c69737420284c6973742054292929» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List
       (_root_.List (_root_.List _root_.Geb.Kernel.Tree))) =>
@@ -8907,12 +8907,12 @@ def «$285365712e64726f7020284c69737420284c6973742054292929» :=
         (_root_.List
           _root_.Geb.Kernel.Tree)) := _root_.Geb.Kernel.Const.iter
       (α := _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
-      _root_.GebMirror.Metalogic.«$285365712e7461696c20284c69737420284c6973742054292929»
+      _root_.GebMirror.Metalogic.Authoring.«$285365712e7461696c20284c69737420284c6973742054292929»
       x1
       x0;
     x2
 
-def «$285365712e61744f7220284c69737420284c6973742054292929» :=
+def Authoring.«$285365712e61744f7220284c69737420284c6973742054292929» :=
   fun (x0 : _root_.List (_root_.List _root_.Geb.Kernel.Tree))
     (x1 : _root_.List (_root_.List (_root_.List _root_.Geb.Kernel.Tree)))
     (x2 : _root_.Geb.Kernel.Tree) =>
@@ -8921,7 +8921,7 @@ def «$285365712e61744f7220284c69737420284c6973742054292929» :=
         _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.lcase
       (α := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
       (β := _root_.List (_root_.List _root_.Geb.Kernel.Tree))
-      (_root_.GebMirror.Metalogic.«$285365712e64726f7020284c69737420284c6973742054292929»
+      (_root_.GebMirror.Metalogic.Authoring.«$285365712e64726f7020284c69737420284c6973742054292929»
         x2
         x1)
       x0
@@ -8992,7 +8992,7 @@ def «Authoring.script4» :=
                                                                     _root_.Geb.Kernel.Tree →
                                                                       _root_.Geb.Kernel.Tree →
                                                                         _root_.Geb.Kernel.Tree) := (fun (x17 : _root_.Geb.Kernel.Tree) =>
-                                                  _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
+                                                  _root_.GebMirror.Metalogic.Authoring.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
                                                     _root_.GebMirror.Metalogic.«Authoring.failSR»
                                                     x7
                                                     x17);
@@ -9251,7 +9251,7 @@ def «Authoring.script4» :=
                                                           (_root_.GebMirror.Metalogic.«Base.range»
                                                             (_root_.GebMirror.Metalogic.«Prelude.length» x23))
                                                           (fun (x31 : _root_.Geb.Kernel.Tree) =>
-                                                            _root_.GebMirror.Metalogic.«$285365712e61744f7220284c69737420284c6973742054292929»
+                                                            _root_.GebMirror.Metalogic.Authoring.«$285365712e61744f7220284c69737420284c6973742054292929»
                                                               ([] : _root_.List (_root_.List
                                                                 _root_.Geb.Kernel.Tree))
                                                               x27
@@ -9769,7 +9769,7 @@ def «Authoring.script2» :=
                                                                     _root_.Geb.Kernel.Tree →
                                                                       _root_.Geb.Kernel.Tree →
                                                                         _root_.Geb.Kernel.Tree) := (fun (x16 : _root_.Geb.Kernel.Tree) =>
-                                                  _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
+                                                  _root_.GebMirror.Metalogic.Authoring.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
                                                     _root_.GebMirror.Metalogic.«Authoring.failSR»
                                                     x7
                                                     x16);
@@ -10650,7 +10650,7 @@ def «Authoring.scriptLogic» :=
                           _root_.Geb.Kernel.Tree →
                             _root_.Geb.Kernel.Tree →
                               _root_.Geb.Kernel.Tree) := (fun (x17 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
+        _root_.GebMirror.Metalogic.Authoring.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
           _root_.GebMirror.Metalogic.«Authoring.failSR»
           x7
           x17);
@@ -11781,7 +11781,7 @@ def «Authoring.equationScript» :=
                                                                           _root_.Geb.Kernel.Tree →
                                                                             _root_.Geb.Kernel.Tree →
                                                                               _root_.Geb.Kernel.Tree) := (fun (x12 : _root_.Geb.Kernel.Tree) =>
-                                                        _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
+                                                        _root_.GebMirror.Metalogic.Authoring.«$285365712e61744f7220284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f7720284c697374205429202850726f64205420284172726f77204c616e67756167652e476c6f62616c7320284172726f7720284c6973742044657269766174696f6e2e456e7472792920284172726f7720284c6973742050726f7665722e4e6f726d52756c652920284172726f7720284c69737420542920284172726f7720284c69737420542920284172726f77205420284172726f7720542054292929292929292929292929»
                                                           _root_.GebMirror.Metalogic.«Authoring.failSR»
                                                           x7
                                                           x12);
@@ -13554,7 +13554,7 @@ def «Authoring.showCall» :=
                                                   x5);
     x6
 
-def «$285365712e7461696c20284172726f7720284c69737420542920542929» :=
+def Authoring.«$285365712e7461696c20284172726f7720284c69737420542920542929» :=
   fun (x0 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
     let x1 : _root_.List
@@ -13572,7 +13572,7 @@ def «$285365712e7461696c20284172726f7720284c69737420542920542929» :=
         x2);
     x1
 
-def «$285365712e64726f7020284172726f7720284c69737420542920542929» :=
+def Authoring.«$285365712e64726f7020284172726f7720284c69737420542920542929» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)) =>
@@ -13581,12 +13581,12 @@ def «$285365712e64726f7020284172726f7720284c69737420542920542929» :=
         _root_.Geb.Kernel.Tree) := _root_.Geb.Kernel.Const.iter
       (α := _root_.List
         (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
-      _root_.GebMirror.Metalogic.«$285365712e7461696c20284172726f7720284c69737420542920542929»
+      _root_.GebMirror.Metalogic.Authoring.«$285365712e7461696c20284172726f7720284c69737420542920542929»
       x1
       x0;
     x2
 
-def «$285365712e61744f7220284172726f7720284c69737420542920542929» :=
+def Authoring.«$285365712e61744f7220284172726f7720284c69737420542920542929» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
     (x1 : _root_.List
       (_root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree))
@@ -13595,7 +13595,7 @@ def «$285365712e61744f7220284172726f7720284c69737420542920542929» :=
       _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
       (α := _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
       (β := _root_.List _root_.Geb.Kernel.Tree → _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$285365712e64726f7020284172726f7720284c69737420542920542929»
+      (_root_.GebMirror.Metalogic.Authoring.«$285365712e64726f7020284172726f7720284c69737420542920542929»
         x2
         x1)
       x0
@@ -13620,7 +13620,7 @@ def «Authoring.showStep» :=
       let x8 : _root_.Geb.Kernel.Tree →
         _root_.List _root_.Geb.Kernel.Tree →
           _root_.Geb.Kernel.Tree := (fun (x8 : _root_.Geb.Kernel.Tree) =>
-        _root_.GebMirror.Metalogic.«$285365712e61744f7220284172726f7720284c69737420542920542929»
+        _root_.GebMirror.Metalogic.Authoring.«$285365712e61744f7220284172726f7720284c69737420542920542929»
           _root_.GebMirror.Metalogic.«Authoring.showNothing»
           x4
           (_root_.Geb.Kernel.Const.add x8 (_root_.Geb.Kernel.leaf 1)));
@@ -13867,7 +13867,7 @@ def «Authoring.displayRules» :=
       (_root_.Geb.Kernel.leaf 4)
       (_root_.GebMirror.Metalogic.«Derivation.terms»
         ([] : _root_.List _root_.Geb.Kernel.Tree))) ::
-      (_root_.GebMirror.Metalogic.«$285365712e73696e676c652050726f7665722e4e6f726d52756c6529»
+      (_root_.GebMirror.Metalogic.Authoring.«$285365712e73696e676c652050726f7665722e4e6f726d52756c6529»
         (_root_.GebMirror.Metalogic.«Prover.nrRule»
           (_root_.Geb.Kernel.leaf 5)
           (_root_.GebMirror.Metalogic.«Derivation.terms»
@@ -15625,12 +15625,12 @@ def «Authoring.document» :=
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) (x0 :: x1)
 
-def «$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e446f63756d656e7429» :=
+def Authoring.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e446f63756d656e7429» :=
   _root_.Geb.Kernel.Const.node
     (_root_.Geb.Kernel.leaf 0)
     ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «$284f7074696f6e2e6a75737420417574686f72696e672e446f63756d656e7429» :=
+def Authoring.«$284f7074696f6e2e6a75737420417574686f72696e672e446f63756d656e7429» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 1)
@@ -15713,14 +15713,14 @@ def «Authoring.readDocument» :=
                                                 (_root_.Geb.Kernel.leaf 2)
                                                 (_root_.Geb.Kernel.Const.children x2)));
                                           if (_root_.GebMirror.Metalogic.«Base.isEmpty» x4).label ≠ 0 then
-                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e446f63756d656e7429»
+                                            _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e446f63756d656e7429»
                                           else
-                                            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420417574686f72696e672e446f63756d656e7429»
+                                            _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6a75737420417574686f72696e672e446f63756d656e7429»
                                               (_root_.GebMirror.Metalogic.«Authoring.document»
                                                 (_root_.GebMirror.Metalogic.«Prelude.get» x3)
                                                 x4)
                                         else
-                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e446f63756d656e7429»);
+                                          _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e446f63756d656e7429»);
     x1
 
 def «Authoring.formList» :=
@@ -15728,18 +15728,18 @@ def «Authoring.formList» :=
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node (_root_.Geb.Kernel.leaf 0) (x0 :: x1)
 
-def «$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329» :=
+def Authoring.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329» :=
   _root_.Geb.Kernel.Const.node
     (_root_.Geb.Kernel.leaf 0)
     ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «$284f7074696f6e2e6a75737420417574686f72696e672e466f726d7329» :=
+def Authoring.«$284f7074696f6e2e6a75737420417574686f72696e672e466f726d7329» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 1)
       (x0 :: ([] : _root_.List _root_.Geb.Kernel.Tree))
 
-def «$285365712e617070656e64204c616e67756167652e545061697229» :=
+def Authoring.«$285365712e617070656e64204c616e67756167652e545061697229» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -15765,7 +15765,7 @@ def «Authoring.readDocuments» :=
           (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
           let _ : _root_.List
             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
-          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329»
+          _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329»
         else
           let x4 : _root_.List
             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x3;
@@ -15814,7 +15814,7 @@ def «Authoring.readDocuments» :=
             (_root_.Geb.Kernel.leaf 0)).label ≠ 0 then
             let _ : _root_.List
               _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x12;
-            _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329»
+            _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329»
           else
             let x13 : _root_.List
               _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children x12;
@@ -15868,9 +15868,9 @@ def «Authoring.readDocuments» :=
                   (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e545061697229»
                     x11))
                 (_root_.Geb.Kernel.Const.lt x9 x18))).label ≠ 0 then
-              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329»
+              _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329»
             else
-              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420417574686f72696e672e466f726d7329»
+              _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6a75737420417574686f72696e672e466f726d7329»
                 (_root_.GebMirror.Metalogic.«Authoring.formList»
                   (if (_root_.Geb.Kernel.Const.eq
                     (_root_.GebMirror.Metalogic.«$285365712e6c656e677468204c616e67756167652e545061697229»
@@ -15879,16 +15879,16 @@ def «Authoring.readDocuments» :=
                     x18
                   else
                     x9)
-                  (_root_.GebMirror.Metalogic.«$285365712e617070656e64204c616e67756167652e545061697229»
+                  (_root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e64204c616e67756167652e545061697229»
                     (_root_.GebMirror.Metalogic.«$284d61702e6d61702054204c616e67756167652e545061697229»
                       (fun (x21 : _root_.Geb.Kernel.Tree) =>
                         _root_.GebMirror.Metalogic.«Language.pr» x18 x21)
                       x20)
                     x11)))
       (if (_root_.GebMirror.Metalogic.«Base.isEmpty» x0).label ≠ 0 then
-        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329»
+        _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6e6f7468696e6720417574686f72696e672e466f726d7329»
       else
-        _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a75737420417574686f72696e672e466f726d7329»
+        _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6a75737420417574686f72696e672e466f726d7329»
           (_root_.GebMirror.Metalogic.«Authoring.formList»
             (_root_.Geb.Kernel.leaf 0)
             ([] : _root_.List _root_.Geb.Kernel.Tree)))
@@ -16299,7 +16299,7 @@ def «Authoring.namesOfFour» :=
           _root_.Geb.Kernel.leaf 116])
         _root_.GebMirror.Metalogic.«Authoring.natRef»))
 
-def «$285365712e73696e676c652044657269766174696f6e2e4465636c29» :=
+def Authoring.«$285365712e73696e676c652044657269766174696f6e2e4465636c29» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
       _root_.Geb.Kernel.Tree := (x0 ::
@@ -16616,9 +16616,9 @@ def «Authoring.readForm» :=
                                                           (_root_.Geb.Kernel.Const.children x18)
                                                           (_root_.GebMirror.Metalogic.«Prelude.single»
                                                             (_root_.GebMirror.Metalogic.«Reader.nameOf» x28))))
-                                                      (_root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
+                                                      (_root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                                         x20
-                                                        (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
+                                                        (_root_.GebMirror.Metalogic.Authoring.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
                                                           (_root_.GebMirror.Metalogic.«Derivation.declDef»
                                                             x32))))
                                                     (_root_.Geb.Kernel.Const.node
@@ -16648,7 +16648,7 @@ def «Authoring.readForm» :=
                                               x10
                                               (_root_.GebMirror.Metalogic.«Authoring.formList»
                                                 x23
-                                                (_root_.GebMirror.Metalogic.«$285365712e617070656e64204c616e67756167652e545061697229»
+                                                (_root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e64204c616e67756167652e545061697229»
                                                   x25
                                                   (_root_.GebMirror.Metalogic.«$285365712e73696e676c65204c616e67756167652e545061697229»
                                                     (_root_.GebMirror.Metalogic.«Language.pr» x26 x27))))
@@ -16692,7 +16692,7 @@ def «Authoring.firstRepeated» :=
       (_root_.GebMirror.Metalogic.«Prelude.reverse» x0)).2;
     x1
 
-def «$285365712e7461696c204c616e67756167652e545061697229» :=
+def Authoring.«$285365712e7461696c204c616e67756167652e545061697229» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
       _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
@@ -16705,25 +16705,25 @@ def «$285365712e7461696c204c616e67756167652e545061697229» :=
         x2);
     x1
 
-def «$285365712e64726f70204c616e67756167652e545061697229» :=
+def Authoring.«$285365712e64726f70204c616e67756167652e545061697229» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
       _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
       (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$285365712e7461696c204c616e67756167652e545061697229»
+      _root_.GebMirror.Metalogic.Authoring.«$285365712e7461696c204c616e67756167652e545061697229»
       x1
       x0;
     x2
 
-def «$285365712e61744f72204c616e67756167652e545061697229» :=
+def Authoring.«$285365712e61744f72204c616e67756167652e545061697229» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree)
     (x2 : _root_.Geb.Kernel.Tree) =>
     let x3 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
       (α := _root_.Geb.Kernel.Tree)
       (β := _root_.Geb.Kernel.Tree)
-      (_root_.GebMirror.Metalogic.«$285365712e64726f70204c616e67756167652e545061697229»
+      (_root_.GebMirror.Metalogic.Authoring.«$285365712e64726f70204c616e67756167652e545061697229»
         x2
         x1)
       x0
@@ -16750,7 +16750,7 @@ def «Authoring.readTheorems» :=
                                           (β := _root_.Geb.Kernel.Tree)
                                           (fun (x7 : _root_.Geb.Kernel.Tree)
                                              (x8 : _root_.Geb.Kernel.Tree) =>
-                                            let x9 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e61744f72204c616e67756167652e545061697229»
+                                            let x9 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.Authoring.«$285365712e61744f72204c616e67756167652e545061697229»
                                               (_root_.GebMirror.Metalogic.«Language.pr»
                                                 (_root_.Geb.Kernel.leaf 0)
                                                 (_root_.Geb.Kernel.leaf 0))
@@ -17194,12 +17194,12 @@ def «Authoring.stuck» :=
         (x1 ::
           (x2 :: (x3 :: (x4 :: ([] : _root_.List _root_.Geb.Kernel.Tree))))))
 
-def «$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e456e7472794c69737429» :=
+def Authoring.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e456e7472794c69737429» :=
   _root_.Geb.Kernel.Const.node
     (_root_.Geb.Kernel.leaf 0)
     ([] : _root_.List _root_.Geb.Kernel.Tree)
 
-def «$284f7074696f6e2e6a7573742044657269766174696f6e2e456e7472794c69737429» :=
+def Authoring.«$284f7074696f6e2e6a7573742044657269766174696f6e2e456e7472794c69737429» :=
   fun (x0 : _root_.Geb.Kernel.Tree) =>
     _root_.Geb.Kernel.Const.node
       (_root_.Geb.Kernel.leaf 1)
@@ -17219,7 +17219,7 @@ def «Authoring.admit» :=
                                           let _ : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
                                             x3;
-                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e456e7472794c69737429»
+                                          _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e456e7472794c69737429»
                                         else
                                           let x4 : _root_.List
                                             _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.children
@@ -17279,7 +17279,7 @@ def «Authoring.admit» :=
                                             (fun (_ : _root_.Geb.Kernel.Tree)
                                                (x13 : _root_.List _root_.Geb.Kernel.Tree) =>
                                               x13);
-                                          _root_.GebMirror.Metalogic.«$284f7074696f6e2e6a7573742044657269766174696f6e2e456e7472794c69737429»
+                                          _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6a7573742044657269766174696f6e2e456e7472794c69737429»
                                             x11);
     x3
 
@@ -18074,7 +18074,7 @@ def «Authoring.declaredGlobals» :=
                                           x13);
     x2
 
-def «$28456163682e74616b652044657269766174696f6e2e4465636c29» :=
+def Authoring.«$28456163682e74616b652044657269766174696f6e2e4465636c29» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
@@ -18107,7 +18107,7 @@ def «$28456163682e74616b652044657269766174696f6e2e4465636c29» :=
                                    x1).2);
     x2
 
-def «$285365712e7461696c2044657269766174696f6e2e4465636c29» :=
+def Authoring.«$285365712e7461696c2044657269766174696f6e2e4465636c29» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.List
       _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.lcase
@@ -18120,13 +18120,13 @@ def «$285365712e7461696c2044657269766174696f6e2e4465636c29» :=
         x2);
     x1
 
-def «$285365712e64726f702044657269766174696f6e2e4465636c29» :=
+def Authoring.«$285365712e64726f702044657269766174696f6e2e4465636c29» :=
   fun (x0 : _root_.Geb.Kernel.Tree)
     (x1 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x2 : _root_.List
       _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.iter
       (α := _root_.List _root_.Geb.Kernel.Tree)
-      _root_.GebMirror.Metalogic.«$285365712e7461696c2044657269766174696f6e2e4465636c29»
+      _root_.GebMirror.Metalogic.Authoring.«$285365712e7461696c2044657269766174696f6e2e4465636c29»
       x1
       x0;
     x2
@@ -18197,13 +18197,13 @@ def «Authoring.certified» :=
                                                   (_root_.GebMirror.Metalogic.«Prelude.drop»
                                                     x13
                                                     (_root_.Geb.Kernel.Const.children x10)))))
-                                            (_root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
-                                              (_root_.GebMirror.Metalogic.«$28456163682e74616b652044657269766174696f6e2e4465636c29»
+                                            (_root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
+                                              (_root_.GebMirror.Metalogic.Authoring.«$28456163682e74616b652044657269766174696f6e2e4465636c29»
                                                 x13
                                                 x12)
-                                              (_root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
+                                              (_root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                                 x7
-                                                (_root_.GebMirror.Metalogic.«$285365712e64726f702044657269766174696f6e2e4465636c29»
+                                                (_root_.GebMirror.Metalogic.Authoring.«$285365712e64726f702044657269766174696f6e2e4465636c29»
                                                   x13
                                                   x12))));
     x3
@@ -19273,7 +19273,7 @@ def «Authoring.begin» :=
                                                   (fun (_ : _root_.Geb.Kernel.Tree) =>
                                                     _root_.GebMirror.Metalogic.«Authoring.unnamed»)
                                                   (_root_.GebMirror.Metalogic.«Base.range»
-                                                    (_root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
+                                                    (_root_.GebMirror.Metalogic.Authoring.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
                                                       x4))))
                                               x4)
                                             x13
@@ -19309,9 +19309,9 @@ def «Authoring.accompany» :=
                                            x11
                                            (_root_.Geb.Kernel.leaf 3);
                                          let x20 : _root_.List
-                                           _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
+                                           _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                            x7
-                                           (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
+                                           (_root_.GebMirror.Metalogic.Authoring.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
                                              (_root_.GebMirror.Metalogic.«Derivation.declLang»
                                                (_root_.GebMirror.Metalogic.«Authoring.requestThm» x4)
                                                x8));
@@ -19365,7 +19365,7 @@ def «Authoring.accompany» :=
                                                x1)
                                              (_root_.GebMirror.Metalogic.«Authoring.connectivesAt» x2)
                                              (_root_.GebMirror.Metalogic.«Authoring.normalDepth» x4)
-                                             (_root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
+                                             (_root_.GebMirror.Metalogic.Authoring.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
                                                x7)
                                              (_root_.GebMirror.Metalogic.«Authoring.requestThm» x4);
                                            if (_root_.GebMirror.Metalogic.«Prelude.isSome» x22).label ≠ 0 then
@@ -19440,9 +19440,9 @@ def «Authoring.accompany» :=
                                                          (_root_.GebMirror.Metalogic.«Authoring.requestName» x4)
                                                          (_root_.GebMirror.Metalogic.«Authoring.requestName»
                                                            x4))))
-                                                   (_root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
+                                                   (_root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                                      x20
-                                                     (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
+                                                     (_root_.GebMirror.Metalogic.Authoring.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
                                                        x25)))
                                                  x28
                                                  x10
@@ -19490,9 +19490,9 @@ def «Authoring.taken» :=
     (x7 : _root_.Geb.Kernel.Tree)
     (x8 : _root_.Geb.Kernel.Tree) =>
     let x9 : _root_.Geb.Kernel.Tree := (let x9 : _root_.List
-                                          _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
+                                          _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                           x3
-                                          (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
+                                          (_root_.GebMirror.Metalogic.Authoring.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
                                             (_root_.GebMirror.Metalogic.«Derivation.declLang»
                                               (_root_.GebMirror.Metalogic.«Authoring.requestThm» x1)
                                               (_root_.Geb.Kernel.Const.child
@@ -19550,9 +19550,9 @@ def «Authoring.taken» :=
                                                   (_root_.GebMirror.Metalogic.«Theory.l2»
                                                     (_root_.GebMirror.Metalogic.«Authoring.requestName» x1)
                                                     (_root_.GebMirror.Metalogic.«Authoring.requestName» x1))))
-                                              (_root_.GebMirror.Metalogic.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
+                                              (_root_.GebMirror.Metalogic.Authoring.«$285365712e617070656e642044657269766174696f6e2e4465636c29»
                                                 x9
-                                                (_root_.GebMirror.Metalogic.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
+                                                (_root_.GebMirror.Metalogic.Authoring.«$285365712e73696e676c652044657269766174696f6e2e4465636c29»
                                                   (_root_.GebMirror.Metalogic.«Derivation.declLang»
                                                     x11
                                                     (_root_.Geb.Kernel.Const.child
@@ -20030,7 +20030,7 @@ def «Authoring.advance» :=
                                                   (_root_.GebMirror.Metalogic.«Authoring.requestThm» x7)
                                                   x34)
                                             else
-                                              _root_.GebMirror.Metalogic.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e456e7472794c69737429»);
+                                              _root_.GebMirror.Metalogic.Authoring.«$284f7074696f6e2e6e6f7468696e672044657269766174696f6e2e456e7472794c69737429»);
                                             if (_root_.Geb.Kernel.Const.eq
                                               (_root_.Geb.Kernel.Const.label x35)
                                               (_root_.Geb.Kernel.leaf 1)).label ≠ 0 then
@@ -20731,7 +20731,7 @@ def «Authoring.stated» :=
                                           _root_.GebMirror.Metalogic.«Prelude.none»);
     x1
 
-def «$285365712e6c656e67746820417574686f72696e672e5265717565737429» :=
+def Authoring.«$285365712e6c656e67746820417574686f72696e672e5265717565737429» :=
   fun (x0 : _root_.List _root_.Geb.Kernel.Tree) =>
     let x1 : _root_.Geb.Kernel.Tree := _root_.Geb.Kernel.Const.foldr
       (α := _root_.Geb.Kernel.Tree)
@@ -20756,13 +20756,13 @@ def «Authoring.matches» :=
             _root_.Geb.Kernel.leaf 1
           else
             _root_.Geb.Kernel.leaf 2)
-          (_root_.GebMirror.Metalogic.«$285365712e6c656e67746820417574686f72696e672e5265717565737429»
+          (_root_.GebMirror.Metalogic.Authoring.«$285365712e6c656e67746820417574686f72696e672e5265717565737429»
             x1))
-        (_root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
+        (_root_.GebMirror.Metalogic.Authoring.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
           x2))
       (_root_.GebMirror.Metalogic.«Prelude.and»
         (_root_.Geb.Kernel.Const.eq
-          (_root_.GebMirror.Metalogic.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
+          (_root_.GebMirror.Metalogic.Authoring.«$285365712e6c656e6774682044657269766174696f6e2e4465636c29»
             x2)
           (_root_.GebMirror.Metalogic.«Prelude.length» x3))
         (_root_.Geb.Kernel.Const.foldr
@@ -20987,7 +20987,7 @@ def «Authoring.replayWith» :=
                                                 (_root_.GebMirror.Metalogic.«Authoring.matches»
                                                   x11
                                                   x15
-                                                  (_root_.GebMirror.Metalogic.«$285365712e64726f702044657269766174696f6e2e4465636c29»
+                                                  (_root_.GebMirror.Metalogic.Authoring.«$285365712e64726f702044657269766174696f6e2e4465636c29»
                                                     (_root_.Geb.Kernel.Const.add x23 x25)
                                                     x22)
                                                   (_root_.GebMirror.Metalogic.«Prelude.drop»

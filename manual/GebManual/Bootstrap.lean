@@ -459,11 +459,11 @@ driver and replay its certificate from Geb source. Before the bulk port,
 measure rule selection, matching and traversal, and compare searches
 with and without the check at storage, retaining independent certificate
 replay ({ref "searches-remaining"}[The searches' remaining time]).
-The Geb transcription of the proof-hole checker proceeds independently
-of the editor's display of datatype holes. Integrate changes to each
+The proof-hole checker is now in Geb. The editor's display of datatype
+holes is a separate task. Integrate changes to each
 committed artifact one at a time. A structured rejection from the
-compiler regenerates its image, as step 4 did. The proof-hole checker
-regenerates metalogic mirrors, as the bootstrap source changes of step 12 did.
+compiler regenerates its image, as step 4 did. The proof-hole checker is the final
+layer of the metalogic mirror.
 Changes to the proof runner for datatype
 statements or tactics needed by a proof script regenerate its emitted Lean
 (`scripts/authoring.sh regen`).
@@ -681,12 +681,12 @@ the sections below detail:
     development, through a proof in Lean that rewriting by them reaches
     that literal ({ref "conversion-continuation"}[Completing the checker
     with a step of conversion]). The checker of proof holes is written
-    in Lean over those conversion rules, with conditional soundness and
-    completed proofs returned as conversion certificates
+    in Lean and Geb over those conversion rules. The Lean checker has a
+    conditional soundness theorem, and both return completed proofs
+    as conversion certificates
     ({ref "typed-holes"}[Typed holes]). Open sketches translate to
     conditional conversion certificates through closed lemmas, including
     rose-tree uniqueness premises and embedded sequent certificates.
-    The Geb transcription remains.
     The checker of the shared
     certificates, by unsharing, is required if measurement shows the
     checking or storage of certificates to need it, and follows the
@@ -4234,10 +4234,9 @@ tag := "authoring-compatibility"
   * Complete: a hole stands where a script stands, and each hole and each
     step of a script that fails is reported at its place with its goal, a
     statement the document reads, the theorems after it proved under its
-    theorem; the report is the prover's, and the checker of holes that
-    certifies a theorem under its obligations is written in Lean
-    ({ref "typed-holes"}[Typed holes]), with open sketches translated to
-    conditional conversion certificates; its transcription into Geb remains
+    theorem. The prover reports these goals. The separate proof-hole checker
+    in Lean and Geb can translate open sketches to conditional conversion
+    certificates ({ref "typed-holes"}[Typed holes])
 *
   * The cache of a development
     ({ref "proof-cache"}[The cache of a development])
@@ -5876,14 +5875,29 @@ premise or adapt an embedded sequent certificate.
 `GebTests/Prototypes/FreeTopos/InternalHolesSequent.lean` test conditional
 certificates under binders, cut and induction, hypothesis references in
 conversion steps, repeated holes, open rose-tree uniqueness and sequent
-transport. The Geb transcription remains. The authoring interface is that of
+transport. In `bootstrap/metalogic.manifest`, the `ProofHoles` layer
+exposes `ProofHoles.checkSketch`, `ProofHoles.fill` and `ProofHoles.finish`.
+A hole is a node of label 42 over its identity. Rule nodes retain the
+conversion certificate encoding. `HoleConditions.conditional` computes
+the closed theorem, and `HoleCertificates.certify` checks the sketch,
+constructs a certificate, and replays it at that theorem in the original
+environment. `GebTests/Prototypes/FreeTopos/Agreement/ProofHoles.lean`
+proves agreement on acceptance, the occurrence report and the closed theorem
+for encoded sketches with serializable conversion rules. It also proves
+that every certificate the Geb translator returns passes the Geb conversion
+checker. `proofHoles_agree` in `GebTests/Prototypes/FreeTopos/Agreement.lean`
+connects both results to the globals loaded from the manifest.
+`GebTests/Prototypes/FreeTopos/ProofHolesMirror.lean` exercises the emitted
+checker and the certificates it returns.
+
+The authoring interface is that of
 {ref "proof-holes"}[Holes and goals]: a hole of a proof script is a tactic
 of the prover written in Geb, whose derivation of the script holds, where
 the hole's tactic is run, a leaf of no rule that keeps the sequent the
 tactic is given, and the runner reports those leaves, with the sequents of
 the steps that fail in a script that proves nothing, and writes no
-certificate. Nothing checks that report; this checker, transcribed, is
-what certifies a sketch's conclusion under the sequents of its holes.
+certificate. To certify a conclusion under the sequents of its holes,
+the metalogic checker takes a sketch and its declarations.
 
 The checker of holes in programs is written in Lean, in the suspending
 form (`Geb/Prototypes/Kernel/Holes.lean`). A checker written as
@@ -9403,9 +9417,6 @@ integrated in sequence.
   the logarithm. The steps in their order, and what remains of them,
   are stated in {ref "conversion-continuation"}[Completing the checker
   with a step of conversion].
-* The proof-sketch checker in Lean already produces conditional
-  conversion certificates. Its transcription into Geb can proceed
-  independently of holes in the datatype language ({ref "typed-holes"}[Typed holes]).
 * Expose datatype statements in Geb proof documents and port the
   datatype-soundness deductions from their Lean drivers. The soundness
   of typing is already proved with the prover written in Geb
@@ -9502,8 +9513,9 @@ the admission repeatable. Its Lean implementation checks open sketches
 with conditional validity and returns conversion certificates for
 completed sketches. Open sketches translate to conditional certificates
 through closed lemmas, including open rose-tree uniqueness premises and
-embedded sequent certificates. The Geb transcription remains
-({ref "typed-holes"}[Typed holes]). The checker of the shared certificates, admitted
+embedded sequent certificates. The Geb implementation replays these
+certificates with the conversion checker ({ref "typed-holes"}[Typed holes]).
+The checker of the shared certificates, admitted
 by unsharing, a translation that spells out each index as its term and
 each rule of the oracle as the typing lemmas the prover emits without it,
 speeds the developments of the combinators' certificates, which the

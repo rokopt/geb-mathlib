@@ -1,0 +1,358 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Restrict an embedded sequent certificate to the subobject of the added hypotheses.
+; The combinator prover builds intermediate equations in a private development. Its first
+; entry is the given certificate. Every subsequent theorem citation is an identity instance
+; of an earlier equation at the same object variables. Assembly turns these citations into
+; cut hypotheses and keeps the given certificate in its original environment.
+
+(module HoleSequent (export weakenSequent) (import Prelude) (import Base) (import PartialHorn)
+  (import Theory)
+  (import Infer)
+  (import Language)
+  (import Derivation as D)
+  (import Combinator)
+  (import Combinator.Comp as M)
+  (import HoleConditions)
+  (defn equalizerAxiom ((i T)) T (add beforeProduct (add (Seq.length Sequent productAxioms) i)))
+  (defn classifierAxiom ((i T)) T
+    (add beforeExponential (add (Seq.length Sequent exponentialAxioms) i)))
+
+  (defn diagonalDfd ((m PTy)) TreeM
+    (let A T (child (child (tyT m) 0) 0)
+      (M.bind T T (pmGuard (equal (tyT m) (diag A)))
+        (lam ((ok T))
+          (let d T (dom (tyT m))
+            (M.bind EqnCert T
+              (pInst (srcAx (equalizerAxiom 7))
+                (l2 (comp (tyT m) (cFst d d)) (comp (tyT m) (cSnd d d))))
+              (lam ((qc EqnCert))
+                (let* ((q Eqn (ecEqn qc)) (f T (cFst A A)))
+                  (M.bind PTy T (typeTerm f)
+                    (lam ((tf PTy))
+                      (M.bind PTy T (typeTerm (comp f (eqLhs q)))
+                        (lam ((tq PTy))
+                          (let*
+                            ((c T (cCong (tyDfd tq) (l2 (tyDfd tf) (ecCert qc))))
+                             (p Eqn (monoCond (tyT m))))
+                            (M.bind T T (pByNorm baseRules (eqn (eqLhs p) (comp f (eqLhs q))))
+                              (lam ((cl T))
+                                (M.bind T T (pByNorm baseRules (eqn (comp f (eqRhs q)) (eqRhs p)))
+                                  (lam ((cr T))
+                                    (M.pure T
+                                      (cAx (classifierAxiom 4) (single (tyT m)) (single (tyDfd m))
+                                        (single (cTrans cl (cTrans c cr))))))))))))))))))))))
+
+  ; Typing equality's classifier needs the diagonal's monomorphism certificate. All other
+  ; operations use the combinator prover's typing with this same procedure for subterms.
+  (defn sequentOp ((pt PatTy) (k T) (ys (List PTy))) TypingM
+    (if (and (eq k 27) (eq (Seq.length PTy ys) 1))
+      (let m PTy (Seq.atOr PTy pty0 ys 0)
+        (M.bind T PTy (diagonalDfd m)
+          (lam ((c T)) (M.bind PTy PTy (typeOpTy pt k Sorts.arr (chi (tyT m)) c ys) memoRet))))
+      (typeOp pt k ys)))
+  (defn sequentStep
+    ((pt PatTy) (lf (Arrow T TypingM)) (term (Arrow T T)) (nd T) (rs (List TypingM)))
+    TypingM
+    (if (eq (label nd) 0) (if (eq (arity nd) 1) (lf (label (child nd 0))) (M.fail PTy))
+      (M.bind (Option.Maybe PTy) PTy (lookup (term nd))
+        (lam ((m (Option.Maybe PTy)))
+          (case m ((Option.just PTy y) (M.pure PTy y))
+            ((Option.nothing PTy)
+             (M.bind PTys PTy (seqY rs)
+               (lam ((ys PTys)) (sequentOp pt (sub (label nd) 1) (ptysOf ys))))))))))
+  (defn sequentTypers ((rec Typers)) Typers
+    (pair
+      (lam ((env (List PTy)) (p T))
+        (para TypingM
+          (sequentStep (fst rec)
+            (lam ((i T))
+              (case (Option.nthOf PTy env i) ((Option.just PTy y) (M.pure PTy y))
+                (else (M.fail PTy))))
+            (phSubst (Map.map PTy T tyT env)))
+          p))
+      (lam ((p T)) (para TypingM (sequentStep (fst rec) (typeVar (snd rec)) (lam ((v T)) v)) p))))
+  (def typedTerm
+    (snd
+      (iter Typers sequentTypers
+        (pair (lam ((env (List PTy)) (t T)) (M.fail PTy)) (lam ((t T)) (M.fail PTy)))
+        8)))
+
+  (defn atomicSide ((t T)) PairM
+    (M.bind PTy TPair (typedTerm t)
+      (lam ((y PTy))
+        (M.pure TPair (if (eq (tySort y) Sorts.obj) (pr (tyLo y) (tyLoC y)) (pr t (tyDfd y)))))))
+
+  (defn rewriteComposite ((rec (Arrow T PairM)) (t T) (c T)) PairM
+    (M.bind PTy TPair (typedTerm t)
+      (lam ((y PTy))
+        (M.bind (Option.Maybe TPair) TPair
+          (M.orElse (Option.Maybe TPair)
+            (M.bind TPair (Option.Maybe TPair) (rewriteRoot baseRules t)
+              (lam ((rew TPair)) (M.pure (Option.Maybe TPair) (Option.just TPair rew))))
+            (M.pure (Option.Maybe TPair) (Option.nothing TPair)))
+          (lam ((result (Option.Maybe TPair)))
+            (case result
+              ((Option.just TPair rew)
+               (M.bind TPair TPair (rec (p1 rew))
+                 (lam ((nf TPair))
+                   (M.pure TPair (pr (p1 nf) (cTrans c (cTrans (p2 rew) (p2 nf))))))))
+              (else (M.pure TPair (pr t c)))))))))
+
+  ; Normalize composition and object arguments while preserving the defining arrows
+  ; of equalizers in atomic arrow arguments.
+  (defn compositionStep ((rec (Arrow T PairM)) (nd T) (rs (List PairM))) PairM
+    (M.bind PTy TPair (typedTerm nd)
+      (lam ((y PTy))
+        (cond ((eq (tySort y) Sorts.obj) (M.pure TPair (pr (tyLo y) (tyLoC y))))
+          ((eq (label nd) 0) (M.pure TPair (pr nd (tyDfd y))))
+          (else
+            (M.bind Pairs TPair
+              (seqP (if (eq (label nd) 4) rs (Map.map T PairM atomicSide (children nd))))
+              (lam ((xs Pairs))
+                (let*
+                  ((ls (List TPair) (pairsOf xs)) (u T (node (label nd) (Map.map TPair T p1 ls)))
+                   (c T (if (equal nd u) (tyDfd y) (cCong (tyDfd y) (Map.map TPair T p2 ls)))))
+                  (if (eq (label nd) 4) (rewriteComposite rec u c) (M.pure TPair (pr u c)))))))))))
+  (def normal
+    (iter (Arrow T PairM) (lam ((rec (Arrow T PairM)) (t T)) (para PairM (compositionStep rec) t))
+      (lam ((t T)) (M.fail TPair))
+      64))
+
+  (defn normalizeEq ((q Eqn)) TreeM
+    (M.bind TPair T (normal (eqLhs q))
+      (lam ((l TPair))
+        (M.bind TPair T (normal (eqRhs q))
+          (lam ((r TPair))
+            (M.bind T T (pmGuard (equal (p1 l) (p1 r)))
+              (lam ((ok T)) (M.pure T (cTrans (p2 l) (cSymm (p2 r)))))))))))
+
+  (defn transportEq ((q Eqn) (c T) (z Eqn)) TreeM
+    (M.bind T T (normalizeEq (eqn (eqLhs z) (eqLhs q)))
+      (lam ((l T))
+        (M.bind T T (normalizeEq (eqn (eqRhs q) (eqRhs z)))
+          (lam ((r T)) (M.pure T (cTrans l (cTrans c r))))))))
+
+  (defn compCong ((f Eqn) (g Eqn) (cf T) (cg T)) TreeM
+    (M.bind PTy T (typedTerm (comp (eqLhs f) (eqLhs g)))
+      (lam ((y PTy)) (M.pure T (cCong (tyDfd y) (l2 cf cg))))))
+
+  (defn postcompose ((f T) (q Eqn) (c T)) TreeM
+    (M.bind PTy T (typedTerm f) (lam ((y PTy)) (compCong (dfd f) q (tyDfd y) c))))
+
+  (defn precompose ((q Eqn) (c T) (g T)) TreeM
+    (M.bind PTy T (typedTerm g) (lam ((y PTy)) (compCong q (dfd g) c (tyDfd y)))))
+
+  (defn truthEquation ((p T)) EqnCertM
+    (let q T (comp tru (bang (dom p)))
+      (M.bind PTy EqnCert (typedTerm (eqz p q))
+        (lam ((y PTy)) (pInst (srcAx (equalizerAxiom 7)) (l2 p q))))))
+
+  (defn truthFactor ((p T) (k T) (c T)) PairM
+    (let q T (comp tru (bang (dom p)))
+      (M.bind PTy TPair (typedTerm p)
+        (lam ((tp PTy))
+          (M.bind PTy TPair (typedTerm q)
+            (lam ((tq PTy))
+              (M.bind PTy TPair (typedTerm k)
+                (lam ((tk PTy))
+                  (M.bind PTy TPair (typedTerm (eqz p q))
+                    (lam ((te PTy))
+                      (let*
+                        ((args Ts (l3 p q k)) (ds Ts (l3 (tyDfd tp) (tyDfd tq) (tyDfd tk)))
+                         (l T (truthLift p k)))
+                        (M.bind T TPair
+                          (addLemma (dfd l) (cAx (equalizerAxiom 10) args ds (l2 (tyDfd te) c)))
+                          (lam ((dl T))
+                            (M.bind T TPair
+                              (addLemma (eqn (dom l) (tyLo tk))
+                                (cTrans (cAx (equalizerAxiom 11) args ds (single dl)) (tyLoC tk)))
+                              (lam ((ld T))
+                                (M.bind T TPair
+                                  (addLemma (eqn (cod l) (tyLo te))
+                                    (cTrans (cAx (equalizerAxiom 12) args ds (single dl))
+                                      (tyLoC te)))
+                                  (lam ((lc T))
+                                    (M.bind PTy TPair
+                                      (memoRet (pty l Sorts.arr dl (tyLo tk) ld (tyLo te) lc))
+                                      (lam ((y PTy))
+                                        (M.bind T TPair
+                                          (addLemma (eqn (comp (truthIncl p) l) k)
+                                            (cAx (equalizerAxiom 13) args ds (single dl)))
+                                          (lam ((e T)) (M.pure TPair (pr l e)))))))))))))))))))))))
+
+  (data Subobject (subobject T T Pairs))
+  (deftype SubM (Arrow PhScope (Arrow PSt (M.Out Subobject))))
+  (defn subDom ((s Subobject)) T (case s ((subobject X i Hs) X)))
+  (defn inclusion ((s Subobject)) T (case s ((subobject X i Hs) i)))
+  (defn facts ((s Subobject)) (List TPair) (case s ((subobject X i Hs) (pairsOf Hs))))
+
+  (defn restrictFact ((s Subobject) (i T) (dom1 T) (m T) (v TPair)) PairM
+    (let* ((h T (p1 v)) (q Eqn (eqn (comp h (inclusion s)) (comp tru (bang (subDom s))))))
+      (M.bind T TPair (precompose q (p2 v) i)
+        (lam ((c T))
+          (let z Eqn (eqn (comp h m) (comp tru (bang dom1)))
+            (M.bind T TPair (transportEq (eqn (comp (eqLhs q) i) (comp (eqRhs q) i)) c z)
+              (lam ((d T))
+                (M.bind T TPair (addLemma z d) (lam ((e T)) (M.pure TPair (pr h e)))))))))))
+
+  (defn intersect ((s Subobject) (H T)) SubM
+    (let*
+      ((p T (comp H (inclusion s))) (i T (truthIncl p)) (X T (truthEq p))
+       (m T (comp (inclusion s) i)))
+      (M.bind Pairs Subobject (seqP (Map.map TPair PairM (restrictFact s i X m) (facts s)))
+        (lam ((fs Pairs))
+          (M.bind EqnCert Subobject (truthEquation p)
+            (lam ((qc EqnCert))
+              (let z Eqn (eqn (comp H m) (comp tru (bang X)))
+                (M.bind T Subobject (transportEq (ecEqn qc) (ecCert qc) z)
+                  (lam ((d T))
+                    (M.bind T Subobject (addLemma z d)
+                      (lam ((c T))
+                        (M.pure Subobject
+                          (subobject X m
+                            (pairs
+                              (Seq.append TPair (pairsOf fs)
+                                (Seq.single TPair (pr H c)))))))))))))))))
+
+  (data Factor (factor T T T))
+  (deftype FactorM (Arrow PhScope (Arrow PSt (M.Out Factor))))
+  (defn through ((f Factor)) T (case f ((factor m k e) m)))
+  (defn liftOf ((f Factor)) T (case f ((factor m k e) k)))
+  (defn equation ((f Factor)) T (case f ((factor m k e) e)))
+  (defn factOf ((s Subobject) (H T)) T
+    (foldr TPair T (lam ((v TPair) (rest T)) (if (equal H (p1 v)) (some (p2 v)) rest)) none
+      (facts s)))
+
+  (defn factorStep ((s Subobject) (f Factor) (H T)) FactorM
+    (let fact T (factOf s H)
+      (M.bind T Factor (pmGuard (isSome fact))
+        (lam ((ok T))
+          (let* ((p T (comp H (through f))) (q T (comp tru (bang (dom p)))))
+            (M.bind T Factor
+              (postcompose H (eqn (comp (through f) (liftOf f)) (inclusion s)) (equation f))
+              (lam ((he T))
+                (M.bind T Factor
+                  (transportEq
+                    (eqn (comp H (comp (through f) (liftOf f))) (comp tru (bang (subDom s))))
+                    (cTrans he (get fact))
+                    (eqn (comp p (liftOf f)) (comp q (liftOf f))))
+                  (lam ((e T))
+                    (M.bind TPair Factor (truthFactor p (liftOf f) e)
+                      (lam ((k TPair))
+                        (M.bind T Factor
+                          (postcompose (through f) (eqn (comp (truthIncl p) (p1 k)) (liftOf f))
+                            (p2 k))
+                          (lam ((h T))
+                            (let*
+                              ((m T (comp (through f) (truthIncl p)))
+                               (z Eqn (eqn (comp m (p1 k)) (inclusion s))))
+                              (M.bind T Factor
+                                (transportEq
+                                  (eqn (comp (through f) (comp (truthIncl p) (p1 k))) (inclusion s))
+                                  (cTrans h (equation f))
+                                  z)
+                                (lam ((d T))
+                                  (M.bind T Factor (addLemma z d)
+                                    (lam ((c T))
+                                      (M.pure Factor (factor m (p1 k) c))))))))))))))))))))
+
+  (defn sideEquation ((s Subobject) (f Factor) (arrow T) (old T) (target T)) TreeM
+    (M.bind T T (postcompose arrow (eqn (comp (through f) (liftOf f)) (inclusion s)) (equation f))
+      (lam ((c T))
+        (transportEq (eqn (comp arrow (comp (through f) (liftOf f))) (comp arrow (inclusion s))) c
+          (eqn (comp old (liftOf f)) target)))))
+
+  (defn weakenProof ((G Globals) (a D.Thm) (hs Ts) (orig T)) TreeM
+    (let*
+      ((n T (D.thArity a)) (X T (ctxObj (D.thCtx a))) (old Eqn (seqConcl (D.thmSeq G a)))
+       (b D.Thm (theoremAt n (D.thCtx a) hs (D.thConcl a)))
+       (target Eqn (seqConcl (D.thmSeq G b)))
+       (arrows Eqn (seqConcl (D.thmSeq G (theoremAt n (D.thCtx a) (nil T) (D.thConcl a))))))
+      (M.bind T T (addLemma old orig)
+        (lam ((h T))
+          (M.bind Subobject T
+            (foldr T SubM
+              (lam ((H T) (acc SubM))
+                (M.bind Subobject Subobject acc
+                  (lam ((u Subobject)) (intersect u (D.thmArrow G a H)))))
+              (M.pure Subobject (subobject X (idt X) (pairs (nil TPair))))
+              (reverse hs))
+            (lam ((s Subobject))
+              (M.bind T T (normalizeEq (eqn (comp (idt X) (inclusion s)) (inclusion s)))
+                (lam ((e T))
+                  (M.bind Factor T
+                    (foldr T FactorM
+                      (lam ((H T) (acc FactorM))
+                        (M.bind Factor Factor acc
+                          (lam ((u Factor)) (factorStep s u (D.thmArrow G a H)))))
+                      (M.pure Factor (factor (idt X) (inclusion s) e))
+                      (reverse (D.thHyps a)))
+                    (lam ((f Factor))
+                      (M.bind T T (sideEquation s f (eqLhs arrows) (eqLhs old) (eqLhs target))
+                        (lam ((l T))
+                          (M.bind T T (sideEquation s f (eqRhs arrows) (eqRhs old) (eqRhs target))
+                            (lam ((r T))
+                              (M.bind T T (precompose old h (liftOf f))
+                                (lam ((c T))
+                                  (M.pure T (cTrans (cSymm l) (cTrans c r)))))))))))))))))))
+
+  ; Only the prover's own citations are lowered. The original certificate is the
+  ; first cut and may cite any entry of the real environment. Instance terms and the
+  ; indices carried by the base rules are data and are copied verbatim.
+  (deftype Lower (Arrow T T))
+  (defn lower ((axiomList (List Sequent)) (count T) (d T)) T
+    ((para Lower
+       (lam ((nd T) (cs (List Lower)) (depth T))
+         (let*
+           ((l T (label nd)) (xs Ts (children nd)) (i T (child nd 0))
+            (applyD (Arrow Lower T) (lam ((f Lower)) (f depth))))
+           (cond ((eq l PRule.thm) (cHyp (add depth (sub (sub count 1) i))))
+             ((or (eq l PRule.refl) (eq l PRule.hyp)) nd)
+             ((eq l PRule.strict) (cStrict i ((Seq.atOr Lower (lam ((k T)) 0) cs 1) depth)))
+             ((eq l PRule.cut)
+              (node l
+                (l2 ((Seq.atOr Lower (lam ((k T)) 0) cs 0) depth)
+                  ((Seq.atOr Lower (lam ((k T)) 0) cs 1) (add depth 1)))))
+             ((eq l PRule.ax)
+              (let k T
+                (add 1
+                  (length
+                    (seqCtx (Seq.atOr Sequent (mkSeq (nil T) (nil Eqn) (eqn 0 0)) axiomList i))))
+                (node l (append (take k xs) (Map.map Lower T applyD (Seq.drop Lower k cs))))))
+             (else (node l (Map.map Lower T applyD cs))))))
+       d) 0))
+  (defn assemble ((axiomList (List Sequent)) (ds (List DevEntry)) (p T)) T
+    (let n T (Seq.length DevEntry ds)
+      (foldr T T
+        (lam ((i T) (body T))
+          (case (Option.nthOf DevEntry ds i)
+            ((Option.just DevEntry v)
+             (case v ((devEntry a c) (node PRule.cut (l2 (if i (lower axiomList i c) c) body)))))
+            (else body)))
+        (lower axiomList n p)
+        (range n))))
+  (defn weakenSequent ((G Globals) (E (List D.Entry)) (a D.Thm) (hs Ts) (c T)) T
+    (if (D.certifies G E c (D.thmSeq G a))
+      (case (compileDefs G)
+        ((Option.just PDefnList ds)
+         (case ds
+           ((pdefns & defs)
+            (case
+              ((weakenProof G a hs c)
+               (scope (sorts (replicate (D.thArity a) Sorts.obj)) (eqns (nil Eqn)))
+               (pmStart (nil DevEntry) defs 0))
+              ((M.ok T q)
+               (case q
+                 ((M.res T p st)
+                  (let proof T (assemble (thyAxioms (ext defs)) (stDev st) p)
+                    (if
+                      (D.certifies G E proof
+                        (D.thmSeq G (theoremAt (D.thArity a) (D.thCtx a) hs (D.thConcl a))))
+                      (some proof)
+                      none)))))
+              (else none)))))
+        (else none))
+      none)))

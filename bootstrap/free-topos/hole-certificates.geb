@@ -1,0 +1,126 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Translate a checked sketch to a conversion certificate of its closed conditional theorem.
+; Each logical node proves one closed lemma under the holes and the preceding lemmas.
+; The final cuts discharge these local lemmas in the original theorem environment.
+
+(module HoleCertificates (export certify) (import Prelude) (import Base) (import Theory)
+  (import Language)
+  (import Derivation)
+  (import Prover)
+  (import Conversion)
+  (import ProofHoles)
+  (import HoleConditions)
+  (import HolePlan)
+  (import HoleRose)
+  (import HoleSequent)
+
+  (data Ledger (ledger Terms Terms))
+  (deftype Progress (Option.Maybe Ledger))
+  (defn claimsOf ((s Ledger)) Ts (case s ((ledger hs ds) (termsOf hs))))
+  (defn proofsOf ((s Ledger)) Ts (case s ((ledger hs ds) (termsOf ds))))
+  (defn andThen ((m Progress) (f (Arrow Ledger Progress))) Progress
+    (case m ((Option.just Ledger s) (f s)) (else (Option.nothing Ledger))))
+  (defn containsClaim ((s Ledger) (p T)) T (anyT (lam ((q T)) (equal p q)) (claimsOf s)))
+  ; Accept a lemma only when its closed proof checks under the preceding claims.
+  (defn recordLemma ((G Globals) (E (List Entry)) (R Ts) (o T) (j T) (a Thm) (body T) (s Ledger))
+    Progress
+    (if (isSome body)
+      (let* ((claims Ts (claimsOf s)) (p T (condition o a)) (c T (close o j claims a (get body))))
+        (if (thmConvChecks G E R (theoremAt (thArity a) (nil T) claims p) c)
+          (Option.just Ledger
+            (ledger (terms (append claims (single p)))
+              (terms (append (proofsOf s) (single (node 0 (l2 p c)))))))
+          (Option.nothing Ledger)))
+      (Option.nothing Ledger)))
+  (defn regular ((G Globals) (E (List Entry)) (o T) (j T) (hs Ts) (a Thm) (r T) (ps (List Premise)))
+    T
+    (if (eq (label r) 31)
+      (mapO (lam ((d T)) (dNode 31 (single d) (nil T)))
+        (weakenSequent G E a (append hs (thHyps a)) (mD r 0)))
+      (mapO (lam ((ds T)) (shifted (length hs) r (children ds)))
+        (allSomeT
+          (Map.map Premise T
+            (lam ((p Premise))
+              (case p ((rewriting d) (some (shiftTree (length hs) d)))
+                ((proving b) (discharge o j hs b))))
+            ps)))))
+  (defn roseLemmas
+    ((G Globals) (E (List Entry)) (R Ts) (o T) (j T) (a Thm) (d T) (b Thm) (c Thm) (s Ledger))
+    Progress
+    (let*
+      ((n T (thArity a)) (r T (at (thCtx a) 0)) (kl T (mD d 1)) (kc T (mD d 2))
+       (t T (mArg (thConcl a) 0))
+       (u T (mArg (thConcl a) 1))
+       (C T (get (typeIn G n (thCtx a) t)))
+       (rb Thm (rebuildList n kl kc))
+       (m Thm (mapEquation o n kl kc r C t u))
+       (a0 Thm (theoremAt n (thCtx a) (nil T) (thConcl a)))
+       (q T (mEq (roseMapAt kl kc C t) (roseMapAt kl kc C u)))
+       (addOne (Arrow Thm (Arrow T (Arrow Ledger Progress))) (recordLemma G E R o j))
+       (sr Progress
+         (if (containsClaim s (condition o rb)) (Option.just Ledger s)
+           (addOne rb (some (rebuildProof kl kc)) s))))
+      (andThen sr
+        (lam ((v Ledger))
+          (let sm Progress
+            (if (containsClaim v (condition o m)) (Option.just Ledger v)
+              (addOne m (mapProof o j n kl kc r C t u (bodyAssumptions o (claimsOf v) m)) v))
+            (andThen sm
+              (lam ((w Ledger))
+                (let sa Progress
+                  (addOne a0 (inductionBody o j d a0 b c m (bodyAssumptions o (claimsOf w) a0) q) w)
+                  (if (isEmpty (thHyps a)) sa
+                    (andThen sa
+                      (lam ((z Ledger))
+                        (addOne a
+                          (discharge o j (append (bodyAssumptions o (claimsOf z) a) (thHyps a)) a0)
+                          z))))))))))))
+  (defn asGoal ((xs (List Premise)) (i T)) (Option.Maybe Thm)
+    (case (Option.nthOf Premise xs i)
+      ((Option.just Premise p)
+       (case p ((proving b) (Option.just Thm b)) (else (Option.nothing Thm))))
+      (else (Option.nothing Thm))))
+  (defn synthesize ((G Globals) (E (List Entry)) (R Ts) (o T) (j T) (v ProofNode) (s Ledger))
+    Progress
+    (case v
+      ((proofNode a r ps)
+       (if (containsClaim s (condition o a)) (Option.just Ledger s)
+         (case ps
+           ((premises & xs)
+            (if (eq (label r) 32)
+              (case (asGoal xs 0)
+                ((Option.just Thm b)
+                 (case (asGoal xs 1) ((Option.just Thm c) (roseLemmas G E R o j a r b c s))
+                   (else (Option.nothing Ledger))))
+                (else (Option.nothing Ledger)))
+              (recordLemma G E R o j a (regular G E o j (bodyAssumptions o (claimsOf s) a) a r xs)
+                s))))))))
+  (defn assemble ((o T) (j T) (H Ts) (a Thm) (s Ledger)) T
+    (let p T (condition o a)
+      (mapO
+        (lam ((d T))
+          (implyFrom o j 0 H p
+            (foldr T T (lam ((v T) (c T)) (cutBy (child v 0) (child v 1) c)) d (proofsOf s))))
+        (hypothesis (claimsOf s) p))))
+  (defn candidate ((G Globals) (E (List Entry)) (R Ts) (o T) (j T) (goals Goals) (a Thm) (d T)) T
+    (case (plan G E R d a)
+      ((Option.just Nodes ns)
+       (case ns
+         ((nodes & xs)
+          (let H Ts (mapT (lam ((h T)) (condition o (goals h))) (holes d))
+            (case
+              (foldr ProofNode Progress
+                (lam ((v ProofNode) (m Progress)) (andThen m (synthesize G E R o j v)))
+                (Option.just Ledger (ledger (terms H) (terms (nil T))))
+                (Seq.reverse ProofNode xs))
+              ((Option.just Ledger s) (assemble o j H a s))
+              (else none))))))
+      (else none)))
+  (defn certify ((G Globals) (E (List Entry)) (R Ts) (o T) (j T) (goals Goals) (a Thm) (d T)) T
+    (if (checks G E R goals a d)
+      (bindO (candidate G E R o j goals a d)
+        (lam ((c T)) (if (thmConvChecks G E R (conditional o goals a d) c) (some c) none)))
+      none)))

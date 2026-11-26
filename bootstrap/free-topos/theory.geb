@@ -49,6 +49,9 @@
     diag
     truthEq
     truthIncl
+    monoCond
+    truthLift
+    eqz
     categoryAxioms
     terminalAxioms
     productAxioms

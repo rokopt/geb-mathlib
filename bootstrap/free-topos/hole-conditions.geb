@@ -1,0 +1,143 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Close a hole's sequent over its hypotheses and variables and recover it under local hypotheses.
+; A proved formula is represented by the node over its formula and its conversion certificate.
+
+(module HoleConditions
+  (export condition hypothesis specialize discharge implyFrom close bodyAssumptions shifted
+    shiftTree
+    conditional
+    directCertify
+    theoremAt
+    applyAt
+    hypAt)
+  (import Prelude)
+  (import Base)
+  (import Theory)
+  (import Language)
+  (import Derivation)
+  (import Prover)
+  (import Tactics)
+  (import Conversion)
+  (import ProofHoles)
+
+  (defn theoremAt ((n T) (g Ts) (hs Ts) (p T)) Thm (mkThm n (objs g) (terms hs) p))
+  (defn hypAt ((i T)) T (dNode 21 (single i) (nil T)))
+  (defn applyAt ((j T) (os Ts) (ts Ts) (ds Ts)) T (dNode 27 (l3 j (node 0 os) (node 0 ts)) ds))
+  (defn condition ((o T) (a Thm)) T
+    (foldr T T (lam ((A T) (p T)) (mDefn (add o 3) (single A) (single (mLam A p))))
+      (foldr T T (impL o) (thConcl a) (thHyps a))
+      (reverse (thCtx a))))
+  (defn hypothesis ((hs Ts) (p T)) T
+    (mapO hypAt
+      (foldr T T (lam ((q T) (i T)) (if (equal p q) (some 0) (mapO (lam ((k T)) (add k 1)) i))) none
+        hs)))
+  (defn proved ((p T) (d T)) T (node 0 (l2 p d)))
+  (defn specializeAt ((o T) (j T) (t T) (v T)) T
+    (let* ((p T (child v 0)) (pred T (mArg p 0)) (A T (child (mD p 1) 0)))
+      (if
+        (and (mIs 11 1 p)
+          (and (eq (mD p 0) (add o 3)) (and (eq (arity (mD p 1)) 1) (mIs 5 1 pred))))
+        (some
+          (proved (subst (mArg pred 0) (instVar t))
+            (dNode 24 (single (app pred t))
+              (l2 (dNode 3 (nil T) (nil T))
+                (applyAt (add j 5) (single A) (l2 t pred) (single (child v 1)))))))
+        none)))
+  (defn specialize ((o T) (j T) (hs Ts) (a Thm) (t T)) T
+    (let p T (condition o a)
+      (bindO (hypothesis hs p)
+        (lam ((d T)) (mapO (lam ((v T)) (child v 1)) (specializeAt o j t (proved p d)))))))
+  (defn applyCondition ((o T) (j T) (hs Ts) (h T) (v T)) T
+    (let* ((p T (child v 0)) (q T (mArg p 0)))
+      (if (equal p (impL o h q))
+        (mapO (lam ((dh T)) (proved q (applyAt (add j 4) (nil T) (l2 q h) (l2 (child v 1) dh))))
+          (hypothesis hs h))
+        none)))
+  (defn discharge ((o T) (j T) (claims Ts) (a Thm)) T
+    (let*
+      ((hs Ts (append claims (thHyps a))) (p T (condition o a))
+       (start T (mapO (proved p) (hypothesis hs p)))
+       (vars T
+         (foldr T T (lam ((i T) (m T)) (bindO m (specializeAt o j (var i)))) start
+           (range (length (thCtx a)))))
+       (body T
+         (foldr T T (lam ((h T) (m T)) (bindO m (applyCondition o j hs h))) vars
+           (reverse (thHyps a)))))
+      (bindO body (lam ((v T)) (if (equal (child v 0) (thConcl a)) (some (child v 1)) none)))))
+
+  ; Shift the indices of hypotheses in a rule and in the normalizer's rule lists, leaving a
+  ; theorem index, a term in a rule, and all the other fields of a conversion step in place.
+  (defn baseData ((k T) (r T) (xs Ts)) Ts
+    (if (or (eq r 17) (eq r 21)) (cons (add k (at xs 0)) (tail xs)) xs))
+  (defn shiftNorm ((k T) (r T)) T
+    (let xs Ts (children r)
+      (cond
+        ((eq (label r) 0)
+         (node 0 (l2 (at xs 0) (node 0 (baseData k (at xs 0) (children (at xs 1)))))))
+        ((eq (label r) 6) (node 6 (single (add k (at xs 0)))))
+        (else r))))
+  (defn shifted ((k T) (d T) (cs Ts)) T
+    (let*
+      ((r T (label d)) (dt Ts (children (child d 0)))
+       (shift (Arrow T T) (lam ((rs T)) (node 0 (mapT (shiftNorm k) (children rs))))))
+      (dNode r
+        (cond ((or (eq r 37) (eq r 38)) (cons (shift (at dt 0)) (tail dt)))
+          ((eq r 41) (append (take 5 dt) (single (shift (at dt 5)))))
+          (else (baseData k r dt)))
+        cs)))
+  (defn shiftTree ((k T) (d T)) T (para T (lam ((nd T) (cs Ts)) (shifted k nd (tail cs))) d))
+
+  ; The last hypothesis is discharged first. Each introduction uses its index after the
+  ; fixed prefix and before the hypotheses already discharged.
+  (defn implyFrom ((o T) (j T) (k T) (hs Ts) (p T) (d T)) T
+    (child
+      (foldr T T
+        (lam ((i T) (v T))
+          (let h T (at hs i)
+            (proved (impL o h (child v 0)) (impI j (add k i) h (child v 0) (child v 1)))))
+        (proved p d)
+        (range (length hs)))
+      1))
+  (defn allIntro ((d T)) T
+    (let beta T (dNode 3 (nil T) (nil T))
+      (dNode 23 (nil T)
+        (l2 (dNode 8 (nil T) (nil T))
+          (dNode 26 (nil T)
+            (single
+              (dNode 23 (nil T)
+                (l2 (dNode 2 (nil T) (l2 beta beta)) (dNode 25 (nil T) (l2 trueI d))))))))))
+  (defn close ((o T) (j T) (claims Ts) (a Thm) (d T)) T
+    (iter T allIntro
+      (implyFrom o j (add (length claims) (length (thCtx a))) (thHyps a) (thConcl a) d)
+      (length (thCtx a))))
+  (defn bodyAssumptions ((o T) (claims Ts) (a Thm)) Ts
+    (append claims (replicate (length (thCtx a)) (ttL o))))
+  (defn conditional ((o T) (goals Goals) (a Thm) (d T)) Thm
+    (theoremAt (thArity a) (nil T) (nil T)
+      (foldr T T (impL o) (condition o a) (mapT (lam ((h T)) (condition o (goals h))) (holes d)))))
+
+  ; Direct translation retains the original term context. The uniqueness rule checks its two
+  ; premises in an empty hypothesis list. Conversion reductions do not inspect their premises.
+  (deftype Under (Arrow Ts T))
+  (defn direct ((o T) (j T) (goals Goals) (d T)) Under
+    (foldSketch Under (lam ((h T) (hs Ts)) (discharge o j hs (goals h)))
+      (lam ((nd T) (cs (List Under)) (hs Ts))
+        (let* ((r T (label nd)) (n T (length hs)))
+          (if (and (lt 36 r) (not (eq r 39))) (some (shifted n nd (nil T)))
+            (mapO (lam ((ds T)) (shifted n nd (children ds)))
+              (allSomeT (Map.map Under T (lam ((f Under)) (f (if (eq r 32) (nil T) hs))) cs))))))
+      d))
+  (defn directCertify ((G Globals) (E (List Entry)) (R Ts) (o T) (j T) (goals Goals) (a Thm) (d T))
+    T
+    (if (checks G E R goals a d)
+      (let*
+        ((H Ts (mapT (lam ((h T)) (condition o (goals h))) (holes d))) (hs Ts (append H (thHyps a)))
+         (p T (thConcl a))
+         (b Thm (theoremAt (thArity a) (thCtx a) (nil T) (foldr T T (impL o) p hs))))
+        (bindO ((direct o j goals d) H)
+          (lam ((body T))
+            (let c T (implyFrom o j 0 hs p body) (if (thmConvChecks G E R b c) (some c) none)))))
+      none)))

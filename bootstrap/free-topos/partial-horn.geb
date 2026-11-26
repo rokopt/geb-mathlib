@@ -15,7 +15,8 @@
 ; declare them.
 
 (module PartialHorn
-  (export PRule.hyp PRule.refl PRule.symm PRule.trans PRule.cong PRule.strict PRule.ax PRule.thm
+  (export PRule.hyp PRule.refl PRule.symm PRule.trans PRule.cong PRule.strict PRule.ax PRule.cut
+    PRule.thm
     phVar
     phOp
     PT

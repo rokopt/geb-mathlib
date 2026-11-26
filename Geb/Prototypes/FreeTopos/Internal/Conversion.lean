@@ -362,6 +362,29 @@ def convFastStep (G : Globals) (E : Array Entry) (R : List ℕ) (n : ℕ) (l : C
 def convCheckFast (G : Globals) (E : Array Entry) (R : List ℕ) (n : ℕ) (d : ConvDeriv) : Checks :=
   (RoseTree.para (convFastStep G E R n) d).checks
 
+/-- A conversion step preserves uniform rewriting and agrees with the ordinary step on
+the children's checks. This applies to both derivations and open sketches. -/
+theorem convFastStep_eq (G : Globals) (E : Array Entry) (R : List ℕ) (n : ℕ) (l : ConvRule)
+    (cs : List (ConvDeriv × FastChecks)) (hu : ∀ c ∈ cs, c.2.1.Uniform) :
+    (convFastStep G E R n l cs).1.Uniform ∧ (convFastStep G E R n l cs).checks =
+      convStep G E R n l (cs.map fun c ↦ (c.1, c.2.checks)) := by
+  rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc, rs⟩
+  · have h := fastStep_eq G E n r (cs.map fun c ↦ (RoseTree.node c.1.label.toRule [], c.2))
+      fun c hc ↦ by
+        obtain ⟨x, hx, rfl⟩ := List.mem_map.mp hc
+        exact hu x hx
+    simpa only [convFastStep, convStep, List.map_map, Function.comp_def] using h
+  all_goals
+    refine ⟨fun Γ k Φ t ↦ ?_, ?_⟩
+    · simp only [convFastStep, ConvRule.hyps, map_weakenBy_zero]
+    simp only [convFastStep, FastChecks.checks, ConvRule.hyps, map_weakenBy_zero]
+  case applyMatch | lit => rfl
+  case machine =>
+    refine Prod.ext (funext fun Γ ↦ funext fun Φ ↦ funext fun t ↦ ?_) rfl
+    split
+    · simp only [convStep, machineReduceBy, *, ite_true]
+    · rfl
+
 /-- The conversion checker with its rewriting under weakened hypotheses rewrites uniformly, and
 its results are the conversion checker's. -/
 theorem para_convFastStep (G : Globals) (E : Array Entry) (R : List ℕ) (n : ℕ) : ∀ d : ConvDeriv,
@@ -369,33 +392,13 @@ theorem para_convFastStep (G : Globals) (E : Array Entry) (R : List ℕ) (n : �
       (RoseTree.para (convFastStep G E R n) d).checks = convCheck G E R n d :=
   RoseTree.ind fun l ds ih ↦ by
     rw [RoseTree.para_node, convCheck_node]
-    have hcs : (ds.map fun d ↦ (d, RoseTree.para (convFastStep G E R n) d)).map
-        (fun c ↦ (c.1, c.2.checks)) = ds.map fun d ↦ (d, convCheck G E R n d) := by
-      rw [List.map_map]
-      exact List.map_congr_left fun d hd ↦ by rw [Function.comp_apply, (ih d hd).2]
-    rcases l with r | ⟨rs, fuel⟩ | ⟨rs, fuel, depth⟩ | ⟨j, θ⟩ | j | ⟨fuel, m, except, kl, kc, rs⟩
-    · obtain ⟨hu, hc⟩ := fastStep_eq G E n r
-        (ds.map fun d ↦ (RoseTree.node d.label.toRule [], RoseTree.para (convFastStep G E R n) d))
-        fun c hc ↦ by
-          obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
-          exact (ih d hd).1
-      simp only [convFastStep, convStep, List.map_map, Function.comp_def]
-      refine ⟨hu, hc.trans (congrArg _ ?_)⟩
-      rw [List.map_map]
-      exact List.map_congr_left fun d hd ↦ by rw [Function.comp_apply, (ih d hd).2]
-    all_goals
-      refine ⟨fun Γ k Φ t ↦ ?_, ?_⟩
-      · simp only [convFastStep, ConvRule.hyps, map_weakenBy_zero]
-      simp only [convFastStep]
-      rw [hcs]
-      simp only [FastChecks.checks, ConvRule.hyps, map_weakenBy_zero]
-    -- the remaining steps' rewritings read no hypothesis, nor the machine's without rules
-    case applyMatch | lit => rfl
-    case machine =>
-      refine Prod.ext (funext fun Γ ↦ funext fun Φ ↦ funext fun t ↦ ?_) rfl
-      split
-      · simp only [convStep, machineReduceBy, *, ite_true]
-      · rfl
+    have h := convFastStep_eq G E R n l (ds.map fun d ↦ (d, RoseTree.para (convFastStep G E R n) d))
+      fun c hc ↦ by
+        obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
+        exact (ih d hd).1
+    refine ⟨h.1, h.2.trans (congrArg _ ?_)⟩
+    rw [List.map_map]
+    exact List.map_congr_left fun d hd ↦ by rw [Function.comp_apply, (ih d hd).2]
 
 /-- The conversion checker is the conversion checker with its rewriting under hypotheses weakened
 where they are read, by which the compiler replaces it. -/

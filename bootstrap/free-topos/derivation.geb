@@ -52,6 +52,8 @@
     scopesOf
     bindPT
     certifies
+    thmArrow
+    thmSeq
     Scope
     scope
     scopeCtx

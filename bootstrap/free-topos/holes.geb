@@ -1,0 +1,79 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Proof sketches over the conversion rules. A rule retains its certificate encoding, the
+; node of its rule data followed by its premises. A hole is the node of label 42 over its
+; identity, a tree. Declarations assign a sequent to each identity. Only the rule premises
+; are traversed as sketches: a term in the rule data may itself contain the label of a hole.
+
+(module ProofHoles
+  (export Goals foldSketch mkHole holes wellFormed checks checkSketch graft fill finish)
+  (import Prelude)
+  (import Base)
+  (import Language)
+  (import Derivation)
+  (import Conversion)
+
+  (def holeTag 42)
+  (defn mkHole ((h T)) T (node holeTag (single h)))
+  (deftype Goals (Arrow T Thm))
+  (defn wellFormed ((G Globals) (a Thm)) T
+    (let* ((n T (thArity a)) (g Ts (thCtx a)))
+      (and (allT (isTy G n) g)
+        (and (allT (isFormula G n g) (thHyps a)) (isFormula G n g (thConcl a))))))
+
+  ; Fold over premises alone, retaining the original node at each rule.
+  (defn (foldSketch A) ((varCase (Arrow T A)) (ruleCase (Arrow T (Arrow (List A) A))) (d T)) A
+    (para A
+      (lam ((nd T) (cs (List A)))
+        (if (eq (label nd) holeTag) (varCase (child nd 0)) (ruleCase nd (Seq.tail A cs))))
+      d))
+  (defn holes ((d T)) Ts
+    (foldSketch Ts single (lam ((nd T) (cs (List Ts))) (foldr Ts Ts append (nil T) cs)) d))
+
+  ; Check the shape of every sketch node, including uninspected premises of a conversion step.
+  (defn shaped ((d T)) T
+    (para T
+      (lam ((nd T) (cs Ts))
+        (if (eq (label nd) holeTag) (eq (arity nd) 1)
+          (and (lt (label nd) holeTag) (and (lt 0 (arity nd)) (allT (lam ((v T)) v) (tail cs))))))
+      d))
+
+  ; Keep each child's root rule for the conversion checker's identity test under binders.
+  ; A hole takes the nonidentity marker join, as in the Lean checker.
+  (defn rootRule ((d T)) T
+    (if (eq (label d) holeTag) (node 18 (single 0)) (node (label d) (single (child d 0)))))
+  (defn holeChecks ((G Globals) (n T) (a Thm)) CK
+    (lam ((md T) (g Ts) (k T) (hs Ts) (phi T))
+      (if md (and (wellFormed G a) (equal (rep a) (rep (mkThm n (objs g) (terms hs) phi)))) none)))
+  (defn run ((G Globals) (E (List Entry)) (R Ts) (n T) (goals Goals) (d T)) CK
+    (foldSketch CK (lam ((h T)) (holeChecks G n (goals h)))
+      (lam ((nd T) (cs (List CK)))
+        (convStep G E R n (node (label nd) (cons (child nd 0) (mapT rootRule (tail (children nd)))))
+          (cons (lam ((md T) (g Ts) (k T) (hs Ts) (t T)) 0) cs)))
+      d))
+  (defn checks ((G Globals) (E (List Entry)) (R Ts) (goals Goals) (a Thm) (d T)) T
+    (and (shaped d)
+      (and (wellFormed G a)
+        (and (allT (lam ((h T)) (wellFormed G (goals h))) (holes d))
+          ((run G E R (thArity a) goals d) 1 (thCtx a) 0 (thHyps a) (thConcl a))))))
+  ; The report is an optional node over identity and sequent pairs in occurrence order.
+  (defn checkSketch ((G Globals) (E (List Entry)) (R Ts) (goals Goals) (a Thm) (d T)) T
+    (if (checks G E R goals a d)
+      (some (node 0 (mapT (lam ((h T)) (node 0 (cons h (single (rep (goals h)))))) (holes d))))
+      none))
+  (defn graft ((sigma (Arrow T T)) (d T)) T
+    (foldSketch T sigma (lam ((nd T) (cs Ts)) (node (label nd) (cons (child nd 0) cs))) d))
+  (defn fill
+    ((G Globals) (E (List Entry)) (R Ts) (goals Goals) (a Thm) (d T) (newGoals Goals)
+     (sigma (Arrow T T)))
+    T
+    (if
+      (and (checks G E R goals a d)
+        (allT (lam ((h T)) (checks G E R newGoals (goals h) (sigma h))) (holes d)))
+      (let result T (graft sigma d) (if (checks G E R newGoals a result) (some result) none))
+      none))
+  ; A closed sketch already has the wire representation of its conversion certificate.
+  (defn finish ((G Globals) (E (List Entry)) (R Ts) (goals Goals) (a Thm) (d T)) T
+    (if (and (isEmpty (holes d)) (checks G E R goals a d)) (some d) none)))
