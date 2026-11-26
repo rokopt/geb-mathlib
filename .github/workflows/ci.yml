@@ -109,6 +109,7 @@ jobs:
           bash scripts/tests/test-value-migration.sh
           bash scripts/tests/test-proof-scripts.sh
           bash scripts/tests/test-proof-cache.sh
+          bash scripts/tests/test-proof-typed.sh
           bash scripts/tests/test-client.sh
           bash scripts/tests/test-client-upgrade.sh
           bash scripts/tests/test-support.sh

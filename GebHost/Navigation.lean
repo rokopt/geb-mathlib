@@ -554,16 +554,26 @@ def completions (st : State) (focus : Focus) : List Symbol :=
     (focus.scope.locals ++ globals).foldl (fun out s ↦
       if out.any (·.name == s.name) then out else out ++ [s]) []
 
+/-- The hypotheses of membership that the binders of a statement over the datatype language
+name: the third element of a binder {lit}`(x A h)`. -/
+def membershipNames (file : String) (binders : Locate.Located) : List Symbol :=
+  binders.children.filterMap fun b ↦
+    match b.children with
+    | [_, _, h] => localSymbol file h b "hypothesis"
+    | _ => none
+
 /-- The names introduced by the outer binders and assumptions of a proof statement. -/
 def statementNames (file : String) (formulas := false) : Locate.Located → List Symbol :=
   RoseTree.para fun _ rs ↦
     let kw := rs.head?.bind (·.1.label.2) |>.map textOf |>.getD ""
     let arg := rs[1]?.map Prod.fst
     let tail := rs.getLast?.map Prod.snd |>.getD []
-    if kw == "internal" then
+    if kw == "typed" then tail
+    else if kw == "internal" then
       tail ++ arg.toList.flatMap fun a ↦
         a.children.filterMap fun n ↦ localSymbol file n n "object"
-    else if kw == "forall" then tail ++ arg.toList.flatMap (localBinders file)
+    else if kw == "forall" then
+      tail ++ arg.toList.flatMap fun a ↦ localBinders file a ++ membershipNames file a
     else if kw == (if formulas then "assuming" else "implies") then
       tail ++ (rs.drop 1 |>.dropLast).filterMap fun (h, _) ↦
         h.children.head?.bind fun n ↦ localSymbol file n h "hypothesis"
@@ -581,7 +591,7 @@ def proofScope (file : String) (pos : Locate.Pos) (t : Locate.Located)
     let here : Scope := { locals := locals }
     let childAt (i : Nat) (ls : List Symbol) :=
       rs[i]?.filter (fun c ↦ contains c.1.label.1 pos) |>.map fun c ↦
-        c.2 (statement && ["internal", "forall",
+        c.2 (statement && ["typed", "internal", "forall",
           if formulas then "assuming" else "implies"].contains kw) ls
     let namesAt (i : Nat) (kind := "variable") :=
       nodes[i]?.toList.flatMap fun ns ↦
@@ -593,9 +603,12 @@ def proofScope (file : String) (pos : Locate.Pos) (t : Locate.Located)
     let mut added : List Symbol := []
     let mut body : List Nat := []
     let mut outer := locals
-    if statement && kw == "internal" then
+    if statement && kw == "typed" then body := [1]
+    else if statement && kw == "internal" then
       added := namesAt 1 "object"; body := [2]
-    else if (statement && kw == "forall") || kw == "lam" then
+    else if statement && kw == "forall" then
+      added := boundAt 1 ++ nodes[1]?.toList.flatMap (membershipNames file); body := [2]
+    else if kw == "lam" then
       added := boundAt 1; body := [2]
     else if statement && kw == (if formulas then "assuming" else "implies") then
       added := (nodes.drop 1 |>.dropLast).filterMap fun h ↦
@@ -668,7 +681,8 @@ def proofDeclaration (src : Source) (st : State) (t : Locate.Located) : State :=
       (symbols.filter (·.kind == "theorem")).map (fun s ↦ (s.name, s.name))
     let formulas := (src.forms.find? (Locate.headIs Authoring.kwProofs)).any fun doc ↦
       ((doc.children[1]?.bind (·.label.2)) == some ['5'] ||
-        (doc.children[1]?.bind (·.label.2)) == some ['6']) &&
+        (doc.children[1]?.bind (·.label.2)) == some ['6'] ||
+        (doc.children[1]?.bind (·.label.2)) == some ['7']) &&
         t.children[2]?.any (Locate.headIs "internal".toList)
     let locals := t.children[2]?.toList.flatMap (statementNames src.file formulas)
     let scope := if t.children[3]?.any (contains ·.label.1 p) then

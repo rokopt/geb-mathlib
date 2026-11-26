@@ -1,0 +1,43 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Theorems stated over the library's datatypes, the optional values of {geb}`Optional.Option` and
+; the byte strings of {geb}`Bytes.Bytes`. Each statement's types and terms are those of the
+; datatype language, which the compiler reads after the program a development is proved against,
+; so that a declaration with type parameters is compiled at the types a statement uses it at,
+; whether or not the program uses it there. A client's proof document imports this one and is
+; proved against the client's program.
+
+(proofs 7 (program library) (import Trees.proofs.geb)
+  ; The value of an optional value that holds one is that value, whatever the default.
+  (theorem or-else-some
+    (typed (forall ((d T) (x T)) (equal (Optional.orElse T d (Optional.some T x)) x)))
+    (by (reduce full lambek)))
+  ; The value of the optional value that holds none is the default.
+  (theorem or-else-none (typed (forall ((d T)) (equal (Optional.orElse T d (Optional.none T)) d)))
+    (by (reduce full)))
+  ; A byte string is the byte string of its bytes. The statement holds of the members of
+  ; {geb}`Bytes.Bytes`, the trees of label 0, and of no other tree, whose label the right side
+  ; keeps: the binder names the hypothesis that its variable is a member. The tree is the node of
+  ; a label and children, and its label is empty or a bit before a bitstring; at the empty label
+  ; both sides are the node of label 0 over the children, and at any other the hypothesis reduces
+  ; to the equation of the leaves 0 and 1, whose labels a conditional sends to falsity and truth.
+  (theorem bytes-of-bytes
+    (typed
+      (forall ((b Bytes.Bytes member)) (equal (case b ((Bytes.bytes & cs) (Bytes.bytes cs))) b)))
+    (by
+      (obtain nb tree-node () (b)
+        (exists-elim nb (l e1)
+          (exists-elim e1 (cs e2)
+            (reduce-hypotheses full (e2)
+              (obtain cl list-cases (Bit) (l)
+                (or-elim cl (l0 l1)
+                  (reduce-hypotheses full (l0) (reduce full e2 l0 lambek map-id map-fusion))
+                  (exists-elim l1 (x l2)
+                    (exists-elim l2 (xs l3)
+                      (reduce-hypotheses full (l3)
+                        (reduce-hypothesis member m1 full (e2 l3)
+                          (congruence m1 (g (z T) (lib cond Omega (lib lab z) true false))
+                            (reduce-hypothesis g g1 full ()
+                              (holds g1 (f) (absurd f full)))))))))))))))))
