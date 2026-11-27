@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Prove and replay the developments of bootstrap/proofs/ from their Geb sources: each proof
 # document that no other imports, with the documents it imports, against the program it names.
-# The searches run side by side and take from minutes to tens of minutes compiled, so
+# The searches run side by side and take from minutes to two hours compiled, so
 # slow-checks.yml runs this script, and scripts/tests/test-proof-scripts.sh proves the
 # development of tree-cases.proofs.geb alone.
 set -euo pipefail

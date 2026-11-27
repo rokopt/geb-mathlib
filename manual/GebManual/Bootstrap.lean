@@ -470,9 +470,14 @@ and a request are each rebuilt from their case analyses. The tactic
 carries the one hypothesis of membership through the
 case analysis; a goal with further hypotheses about the member waits on a
 script that reverts them with it, which the tactic's parts compose
-({name}`Geb.FreeTopos.Tactics.byRevert`). Port one
-soundness deduction from its Lean
-driver and replay its certificate from Geb source. For the bulk port,
+({name}`Geb.FreeTopos.Tactics.byRevert`). The first deduction of the
+datatype language's soundness, at an atom, is ported from its Lean driver,
+and its certificate replays from Geb source
+({ref "datatype-atom"}[The soundness of the datatype language at an atom]).
+The deductions at the other forms remain to be ported, each in a document
+that imports the one before it; that section gives what the first port
+found of the proof runner's costs, a companion's default normal form and
+the preparation of a script's rules among them. For the bulk port,
 {ref "searches-remaining"}[The searches' remaining time] gives the cost
 of rule selection, matching and traversal in `datatype-app` and the cost
 of checking its declarations when storing them.
@@ -4249,7 +4254,10 @@ tag := "authoring-compatibility"
     in which the library proves theorems about the members of its
     datatypes ({ref "member-cases"}[The case analysis of a member of a
     datatype]).
-    The soundness deductions remain to be ported from Lean to Geb scripts.
+    The datatype language's soundness at an atom is ported from Lean to
+    Geb scripts
+    ({ref "datatype-atom"}[The soundness of the datatype language at an
+    atom]); its deductions at the other forms remain to be ported.
 *
   * `let*` and `cond`, expanded in the elaboration of modules, and the
     sources written in them
@@ -6721,8 +6729,13 @@ theorems over its datatypes are stated so
 adds the script of the case analysis of a member of a datatype, which
 proves a goal under the hypothesis of membership at each constructor and
 refutes the hypothesis at every other tree
-({ref "member-cases"}[The case analysis of a member of a datatype]). The port
-of the datatype language's soundness remains. The syntax of
+({ref "member-cases"}[The case analysis of a member of a datatype]). The
+datatype language's soundness at an atom is stated and proved under
+`bootstrap/proofs/`, about the program of
+`bootstrap/datatype-soundness.manifest`, in a document that imports the
+fundamental lemma's lemmas
+({ref "datatype-atom"}[The soundness of the datatype language at an atom]);
+the port of its deductions at the other forms remains. The syntax of
 statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
 acceptance]). It adds no rule to the metalogic: a script is a program for
@@ -9463,7 +9476,12 @@ integrated in sequence.
   the logarithm. The steps in their order, and what remains of them,
   are stated in {ref "conversion-continuation"}[Completing the checker
   with a step of conversion].
-* Port the datatype-soundness deductions from their Lean drivers. Proof
+* Port the datatype-soundness deductions from their Lean drivers. The
+  deduction at an atom is ported: its document declares the relation at
+  the datatype language's types and the statement of the soundness at a
+  source form, which the deductions at the other forms are stated in
+  ({ref "datatype-atom"}[The soundness of the datatype language at an
+  atom]). Proof
   documents state theorems over the datatype language
   ({ref "typed-statements"}[Statements over the datatype language]), and
   the case analysis of a member of a datatype, which a proof about the
