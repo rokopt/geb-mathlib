@@ -4025,7 +4025,13 @@ import-direction rules above are enforced by
   first the lemmas of weakening, state and prove the developments of
   `NormalizationBase.lean`, `NormalizationConst.lean`,
   `NormalizationRel.lean` and `Normalization.lean`, the fundamental lemma
-  of the evaluator, about the program of `bootstrap/normalization.manifest`;
+  of the evaluator, about the program of `bootstrap/normalization.manifest`.
+  The document `datatype-atom.proofs.geb`, importing
+  `normalization-rel.proofs.geb`, states the soundness of the datatype
+  language's typing at a source form, with the relation at the datatype
+  language's types, and proves it at an atom, the development of
+  `DatatypeBase.lean`, about the program of
+  `bootstrap/datatype-soundness.manifest`.
   `scripts/proofs.sh` proves and replays them all, and
   `slow-checks.yml` runs it. Statements over the datatype language's
   datatypes remain to be exposed.

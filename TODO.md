@@ -169,8 +169,11 @@ analysis of a member of a datatype, a tactic of the prover written in Geb
 and its script, by which `library/Members.proofs.geb` proves theorems about
 the members of the library's datatypes. The tactic carries the hypothesis
 of membership alone through the case analysis: a script that reverts
-further hypotheses about the member with it is not written. Porting
-the deductions of the datatype language's soundness remains outstanding.
+further hypotheses about the member with it is not written.
+`bootstrap/proofs/datatype-atom.proofs.geb` ports the first deduction of
+the datatype language's soundness, at an atom, with the relation and the
+statement the others are stated in; porting the deductions at the other
+forms remains outstanding.
 The Bootstrap chapter's authoring table states what of the proof syntax,
 holes and editor acceptance remains.
 

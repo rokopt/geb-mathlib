@@ -406,7 +406,7 @@ The documents under `bootstrap/proofs/` state and prove developments in the
 proof-source profile of `bootstrap/authoring.geb` (the manual's chapter
 Writing a first Geb development), each against the program it names. A
 development's search runs the prover written in Geb, compiled, and takes
-from a minute to tens of minutes. `scripts/tests/test-proof-scripts.sh`,
+from a minute to two hours. `scripts/tests/test-proof-scripts.sh`,
 which `ci.yml` and `scripts/test-tooling.sh` run, proves and replays the
 development of `tree-cases.proofs.geb` and exercises each form of the
 profile on the example of `examples/authoring/`, and

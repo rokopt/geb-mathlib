@@ -615,7 +615,7 @@ choose it:
 
 `scripts/proofs.sh` proves and replays the developments, each document that
 no other imports with those it imports. Their searches take from minutes to
-tens of minutes compiled, so `slow-checks.yml` runs the script, and
+two hours compiled, so `slow-checks.yml` runs the script, and
 `scripts/tests/test-proof-scripts.sh` proves the development of
 `tree-cases.proofs.geb` and exercises each form on the example.
 
@@ -1230,6 +1230,136 @@ constructor of a field before the remaining children, the cases a
 datatype's constructors do not have, a hypothesis that is not one of
 membership, the names a case may not take, goals at a hole of a case, and
 the versions before `8`, which do not read the script.
+
+# The soundness of the datatype language at an atom
+%%%
+tag := "datatype-atom"
+%%%
+
+The document `bootstrap/proofs/datatype-atom.proofs.geb` states and proves
+the first deduction of the datatype language's soundness, the development
+of `GebTests/Prototypes/FreeTopos/DatatypeBase.lean`: the soundness of the
+stage-1 compiler's typing at an atom, about the program of
+`bootstrap/datatype-soundness.manifest`. It imports
+`normalization-rel.proofs.geb`, so that the lemmas of the evaluator's
+fundamental lemma are proved again of that program, as a document that
+imports a development proves it in a larger program
+({ref "internal-statements"}[Statements over the internal language]).
+
+The document declares the statement's definitions
+({ref "definition-scripts"}[Definitions and natural numbers]). The relation
+at a type of the datatype language, `typed-related`, is the fold of the type
+into predicates on values in a context, the program's definitions with the
+markers of its datatypes: it is the fundamental lemma's relation at the
+kernel's types, and at a datatype it holds of the quotations of the
+datatype's members. With it are the relations of an environment to a named
+context and of the definitions to the typing environment's, the coherences
+of the reader's numeral abbreviations, names and keywords with the typing
+environment, and the recognizers' agreement with membership. The soundness
+at a source form, `typing-sound-at`, states under those hypotheses that if
+the form expands, its expansion has a type, and the expansion's erasure, its
+numeral abbreviations expanded, resolves in the scope of a named context's
+names, then the resolved term's evaluation converges to a value related at
+the type.
+
+The lemmas are those the Lean development proves before the case of an
+atom:
+
+* The equality of trees is reflexive, by induction on the tree.
+* The reader's index of a name among names and the typing's type of a name
+  among named types are stated at the empty list and at a construction, and
+  the first field that the erasure of a clause reads by the case analysis of
+  a node's children is the node's first child.
+* Each function of the pipeline is stated at an atom. The expansion, the
+  erasure and the typing are structural recursions, which the compiler
+  writes as the kernel's fold whose step sees the node, so that the
+  children their step is given are the atom's characters by the lemma of
+  `normalization-const.proofs.geb` on that fold, at the type of each fold's
+  values. The reader's resolution and the test of source forms rebuild a
+  node from their children's results in their own steps: a definition names
+  each of the two folds, written as its source writes it, and the first
+  component of the fold at a tree is the tree by the uniqueness of the
+  tree's fold, as the first component of the type checker's fold is. The
+  expansion of numeral abbreviations at an atom is the abbreviation of the
+  atom's name where it has one, and the test of source forms gives that the
+  expansion fixes the atom's characters.
+* The reader's scope of a named context's names agrees with the context at
+  a name that is neither a numeral nor abbreviated: a name with a type in
+  the context has an index in the scope, and a name with an index in the
+  scope has the type of the context's entry at that index. Both are by
+  induction on the context.
+* Each primitive's constant is related at the primitive's type in the
+  typing, by the fundamental lemma's relation of it at the kernel's type,
+  the two relations unfolded at the type to one formula; a quotation is
+  related at the type of trees and the unit value at the unit type.
+* A name with an index among the primitives' names has the index of one of
+  them: the name's equality with each primitive's name is decided in
+  order.
+
+The soundness at an atom decides the typing's tests in the typing's order,
+each with the reader's test at the same name, by the case analysis of the
+test's value ({ref "reduction-scripts"}[Reductions and cited theorems in
+formula proofs]). A keyword and a name the erasure binds have no type. A
+numeral, and a name that abbreviates one, resolve to a quotation. A name
+with an index in the scope is a variable, whose value the environment's
+relation gives at the entry the scope's agreement finds. A name with a type
+among the definitions is a reference, whose evaluation converges by the
+definitions' relation. A primitive's name is the primitive of its index
+among the primitives' names; the unit value's is the unit value; and any
+other name has no type.
+
+Five properties of the proof runner constrain the document:
+
+* A theorem's companion is, unless the theorem states another, its sides in
+  weak normal form with every definition unfolded
+  ({ref "development-scripts"}[Abbreviations, folds and searches]). Where a
+  side applies a function of the pipeline to a variable, that reduction
+  unfolds the function's cases and the functions they call: the check of a
+  document with one such theorem, its script a hole, was stopped at 15
+  gigabytes of memory. Every theorem of the document therefore states its
+  companion's normal form, `(normal full RULE…)`, under a rule
+  `(folded NAME…)` that keeps the pipeline's functions folded, and its
+  scripts reduce under such a rule.
+* The rules of a `with-rules` are prepared where the script gives them. In
+  one run, a script of the soundness at an atom with five nested
+  `with-rules` of the document's vocabulary had not ended in 500 seconds,
+  where the script without them ended in 186. The case analysis therefore
+  gives its rules once, around the whole script: the equation of each case
+  is reduced by the equations before it (`reduce-hypothesis`), and the
+  reductions after it name the reduced equation as a rule.
+* A normal form writes a term bound by `let` at each of its occurrences.
+  The reader's index of a name in a construction reads the name's index
+  in the rest twice, so its normal form at the list of the primitives'
+  names, the tests of the name's equality undecided, doubles at each name.
+  The document states the index at a construction through a definition of
+  its own, `index-after`, of the equality's bitstring and the rest's
+  index, which the reductions keep folded, with its equations at an
+  equality that fails and at one that holds.
+* A step of a script takes longer as its goal has more hypotheses. With
+  the name's equality with each primitive's name decided inside the
+  soundness at an atom, the branch of a name that is no primitive's took
+  1514 seconds in one run; with those tests in a lemma of one hypothesis,
+  whose conclusion's cases the theorem takes, the branch took 199.
+* A term `(kernel t)` does not read a variable that a fold of lists binds.
+  The name and the type of a named context's entry, the entry's first and
+  second children, are therefore applications of two closed kernel
+  functions.
+
+```
+lake exe geb-author prove bootstrap/proofs/datatype-atom.proofs.geb \
+  /tmp/datatype-atom.cert
+lake exe geb-author replay bootstrap/proofs/datatype-atom.proofs.geb \
+  /tmp/datatype-atom.cert
+```
+
+`scripts/proofs.sh` proves and replays the document with the other
+developments of `bootstrap/proofs/`. In one run on one machine with no
+cache, the development was proved in 101 minutes and its certificate, of
+14 megabytes, replayed in 18; in runs with a cache, the imported lemmas
+were proved against the program in 48 minutes, the document's lemmas in
+about 6 and the soundness at an atom in 43. The soundness's deductions at
+the forms other than an atom remain to be ported
+({ref "the-next-phase"}[The next phase]).
 
 # The cache of a development
 %%%
