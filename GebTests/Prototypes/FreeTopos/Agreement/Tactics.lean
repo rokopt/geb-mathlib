@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebTests.Prototypes.FreeTopos.Agreement.Provers
+public import GebTests.Prototypes.FreeTopos.Agreement.Conversion
 public import GebTests.Prototypes.FreeTopos.Agreement.Translation
 public import Geb.Prototypes.FreeTopos.Tactics
 
@@ -30,7 +30,8 @@ exactly the derivations the Lean tactics construct.
 
 ## Main statements
 
-* {lit}`byMode_eq`, {lit}`byNF_eq`, {lit}`normH_eq` — the proofs by reduction agree.
+* {lit}`byMode_eq`, {lit}`byMachine_eq`, {lit}`byNF_eq`, {lit}`normH_eq` — the proofs by reduction
+  agree.
 * {lit}`byListIndWeak_eq`, {lit}`byListSplit_eq`, {lit}`bitsInd_eq` and the proofs by induction
   and case analysis beside them agree.
 * {lit}`withWeakHyps_eq`, {lit}`withInsts_eq`, {lit}`withChildHyps_eq`, {lit}`byImpI_eq` and the
@@ -183,6 +184,31 @@ theorem byWeak_eq (G : Internal.Globals) (E : Array Internal.Entry) (n : ℕ)
     PRel («Tactics.byWeak» (encGlobals G) (E.toList.map encEntry) (leaf n) rs')
       (Tactics.byWeak G E n rs) :=
   byMode_eq .weak G E n rs' rs hrs
+
+/-- The mirror's environment-machine tactic returns the encoded Lean certificate exactly when
+the machine joins the equation's sides. -/
+theorem byMachine_eq (G : Internal.Globals) (E : Array Internal.Entry) (n fuel bound : ℕ)
+    (exc : List ℕ) (kl kc : ℕ) (rs' : List Tree) (rs : List NormRule)
+    (hrs : List.Forall₂ RRel rs' rs) :
+    PRel («Tactics.byMachine» (encGlobals G) (E.toList.map encEntry) (leaf n) (leaf fuel)
+        (leaf bound) (exc.map leaf) (leaf kl) (leaf kc) rs')
+      (Tactics.byMachine G E n fuel bound exc kl kc rs) := fun Γ Φ t u ↦ by
+  let step : ConvDeriv := .node (.machine fuel bound exc kl kc (rs.map NormRule.unprepare)) []
+  let cert : ConvDeriv := .node .join [step, step]
+  have plain : Conversion.Plain cert := by
+    have hr (a : NormRule) (j θ root m k) : a.unprepare ≠ .thmAt j θ root m k := by
+      cases a <;> simp [NormRule.unprepare]
+    simp [cert, step, Conversion.plain_node, Conversion.RulePlain, Conversion.Unprepared, hr]
+  have h := (Conversion.convCheck_eq G E [] n cert plain).2 Γ Φ (Term.eq t u)
+  simp only [«Tactics.byMachine», rulesNode_eq rs' rs hrs, mEq_eq]
+  change (if («Conversion.convCheck» (encGlobals G) (E.toList.map encEntry) []
+      (leaf n) (encConv cert) (leaf 1) Γ (leaf 0) (Φ.map encTerm) (encTerm (Term.eq t u))).label ≠ 0
+      then «Prelude.some» (encConv cert) else «Prelude.none») = _
+  simp only [List.map_nil] at h
+  simp only [h, ofBool_label]
+  change _ = encOpt ((if (Internal.convCheck G E [] n cert).2 Γ Φ (Term.eq t u)
+      then some cert else none).map encConv)
+  split <;> rfl
 
 /-- The simplification of the mirror's tactics: the options, lists and pairs of the program, the
 derivations' nodes and the terms' builders, and the given lemmas. -/

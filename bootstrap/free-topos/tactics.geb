@@ -39,7 +39,8 @@
     byFixed
     byRest
     byLabels
-    byMemberCases)
+    byMemberCases
+    byMachine)
   (import Prelude)
   (import Base)
   (import Theory)
@@ -48,6 +49,7 @@
   (import Derivation)
   (import Translation)
   (import Prover)
+  (import Conversion as Conv)
 
   ; the bindings of optional theorems, assignments, conditionals' parts, masked rewritings and
   ; trees, as the base binds optional trees
@@ -1025,4 +1027,14 @@
       (lam ((pos T) (acc T) (w T) (c T)) q)
       d))
   (defn byMemberCases ((G Globals) (o T) (lb T) (lk T) (h T) (i T) (d T) (clause PvC) (q Pv)) Pv
-    (byRevert o lb h (byTreeSplit lk i (byLabels G clause q d 1 1 1 0)))))
+    (byRevert o lb h (byTreeSplit lk i (byLabels G clause q d 1 1 1 0))))
+
+  ; Prove an equation by checking the join of two steps with the same machine parameters.
+  (defn byMachine
+    ((G Globals) (E (List Entry)) (n T) (fuel T) (bound T) (exc Ts) (kl T) (kc T) (rs NRs))
+    Pv
+    (let*
+      ((step T (dNode 41 (l6 fuel bound (node 0 exc) kl kc (rulesNode rs)) (nil T)))
+       (cert T (dNode 18 (nil T) (l2 step step))))
+      (lam ((g Ts) (hs Ts) (t T) (u T))
+        (if ((Conv.convCheck G E (nil T) n cert) 1 g 0 hs (mEq t u)) (some cert) none)))))
