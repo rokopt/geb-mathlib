@@ -1,0 +1,48 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Theorems about the members of the library's datatypes, each proved by cases on the constructor
+; of a member. A statement over a datatype holds of every tree unless its binder names the
+; hypothesis that its variable is a member; the case analysis of a member proves a goal under
+; that hypothesis at each constructor of the datatype, in the variables of the constructor's
+; fields, and at every other tree from the hypothesis, which fails there. A client's proof
+; document imports this one and is proved against the client's program.
+
+(proofs 8 (program library) (import Trees.proofs.geb)
+  ; An optional value is rebuilt from its case analysis. The optional values of
+  ; {geb}`Optional.Option` have two constructors, of no field and of one, so that a member is the
+  ; tree of label 0 over no children or the tree of label 1 over one.
+  (theorem option-of-cases
+    (typed
+      (forall ((m (Optional.Option T) member))
+        (equal
+          (case m ((Optional.none T) (Optional.none T)) ((Optional.some T x) (Optional.some T x)))
+          m)))
+    (by (member-cases member m lambek () (reduce full) (x) (reduce full lambek))))
+  ; A byte string is the byte string of its bytes: the constructor of {geb}`Bytes.Bytes` takes
+  ; the remaining children as its last field, so that a member is the tree of label 0 over any
+  ; children.
+  (theorem bytes-of-cases
+    (typed
+      (forall ((b Bytes.Bytes member)) (equal (case b ((Bytes.bytes & cs) (Bytes.bytes cs))) b)))
+    (by (member-cases member b lambek (& cs) (reduce full lambek map-id map-fusion))))
+  ; A failure of a request is rebuilt from its case analysis: of the three constructors of
+  ; {geb}`Requests.Failure` the first has one field, a byte string, and the others none.
+  (theorem failure-of-cases
+    (typed
+      (forall ((f Requests.Failure member))
+        (equal
+          (case f ((Requests.other b) (Requests.other b)) ((Requests.notFound) Requests.notFound)
+            ((Requests.denied) Requests.denied))
+          f)))
+    (by (member-cases member f lambek (b) (reduce full lambek) () (reduce full) () (reduce full))))
+  ; A request is rebuilt from its case analysis: the constructors of {geb}`Requests.Request`
+  ; have one field and two.
+  (theorem request-of-cases
+    (typed
+      (forall ((r Requests.Request member))
+        (equal
+          (case r ((Requests.read p) (Requests.read p)) ((Requests.write p b) (Requests.write p b)))
+          r)))
+    (by (member-cases member r lambek (p) (reduce full lambek) (p b) (reduce full lambek)))))

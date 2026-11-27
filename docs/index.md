@@ -3936,6 +3936,13 @@ import-direction rules above are enforced by
   variable is a member of its datatype. The documents of `library/` state
   the library's theorems over its datatypes, and
   `scripts/tests/test-proof-typed.sh` exercises the form.
+  Version 8 adds the case analysis of a member of a datatype,
+  `(member-cases h x LEMMA (FIELD …) SCRIPT …)`, which proves a goal under
+  the hypothesis of membership at each constructor of the datatype, by the
+  tactic `Tactics.byMemberCases` of `bootstrap/free-topos/tactics.geb`;
+  `library/Members.proofs.geb` proves theorems about the members of the
+  library's datatypes by it, and `scripts/tests/test-proof-members.sh`
+  exercises the form.
   The executable
   `geb-author` compiles manifest programs, checks tree-valued examples,
   proves theorems about a program's definitions, in a context of variables
@@ -5011,12 +5018,20 @@ import-direction rules above are enforced by
   their instances, and implications introduced and eliminated
   (`Tactics/Hypotheses.lean`), by the instances of hypotheses and case
   analysis of the variables the sides are stuck on
-  (`Tactics/Search.lean`), and by case analysis of a tree variable by
+  (`Tactics/Search.lean`), by case analysis of a tree variable by
   Lambek's lemma and rewriting under a conditional's mask
-  (`Tactics/Trees.lean`). Tested by the proofs of
+  (`Tactics/Trees.lean`), and by cases on the constructor of a member of
+  a datatype, under the hypothesis of membership that a recognizer of
+  the datatype language states: the hypothesis reverted, the tree, its
+  label's bits and its children split, and the hypothesis refuted at
+  every tree that is no member, a comparison of the number of children
+  stuck on a list's tail decided by the cases of the lowest bits of the
+  tail's length (`Tactics/Members.lean`). Tested by the proofs of
   `GebTests/Prototypes/FreeTopos/` that use them: `TranslationProofs.lean`,
-  `Weakening.lean`, `Substitution.lean`, `TreeCases.lean` and
-  `Expansion.lean`. `bootstrap/free-topos/tactics.geb`, in the
+  `Weakening.lean`, `Substitution.lean`, `TreeCases.lean`,
+  `Expansion.lean` and, for the members of datatypes, `Members.lean`,
+  whose program is recognizers written as the expansion writes them.
+  `bootstrap/free-topos/tactics.geb`, in the
   metalogic's program, is the tactics written again in the datatype
   language: `Agreement/Tactics.lean` proves each of its definitions
   equal to the Lean definition it transcribes at every

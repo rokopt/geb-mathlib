@@ -91,7 +91,7 @@ program after it by `transport`
 # The proof-source profile
 
 A proof document is `(proofs V THEOREM…)`, its version `V` being `0`, `1`,
-`2`, `3`, `4`, `5`, `6` or `7`, with one or more theorems of distinct names, each
+`2`, `3`, `4`, `5`, `6`, `7` or `8`, with one or more theorems of distinct names, each
 `(theorem NAME STATEMENT (by SCRIPT))`. Version `1` reads:
 
 ```
@@ -154,7 +154,8 @@ cites no theorem, so its certificate saves no companion and has the format
 `geb-proof/v1`, whose certificates therefore still replay; version `1`
 writes `geb-proof/v2`, version `2` `geb-proof/v3`, version `3`
 `geb-proof/v4`, version `4` `geb-proof/v5`, version `5` `geb-proof/v6`,
-version `6` `geb-proof/v7` and version `7` `geb-proof/v8`. An unknown or unbound
+version `6` `geb-proof/v7`, version `7` `geb-proof/v8` and version `8`
+`geb-proof/v9`. An unknown or unbound
 name, a name declared twice,
 a malformed form, an unsupported version, a false equation or an
 unsuccessful search is rejected. Failure of a bounded search does not establish that the
@@ -1114,8 +1115,8 @@ A recognizer compares the arity of a node with the number of a
 constructor's fields, a test of the length of the list of the children that
 reduction decides at a list of a known length alone. The case analysis of a
 member of a datatype whose constructors have fixed numbers of fields, as
-that an optional value is none or holds a value, therefore takes lemmas on
-that arithmetic, which no tactic composes yet.
+that an optional value is none or holds a value, is the tactic of version
+`8` ({ref "member-cases"}[The case analysis of a member of a datatype]).
 
 `scripts/tests/test-proof-typed.sh` proves and replays the library's
 documents, alone and against a program that names the library as a layer,
@@ -1124,6 +1125,111 @@ types the program uses them at nowhere, the statements the compiler and the
 reader reject, goals, the cache, the durable spellings, a record of the
 development (`scripts/preserve.py`), the transport of a certificate to a
 changed program and navigation.
+
+# The case analysis of a member of a datatype
+%%%
+tag := "member-cases"
+%%%
+
+Version `8` reads what version `7` reads, imports documents of versions
+`1` to `8`, and adds one script:
+
+```
+SCRIPT ::= … | (member-cases h x LEMMA CASE…)
+CASE ::= (FIELD…) SCRIPT | (FIELD… & REST) SCRIPT
+```
+
+The script proves an equation under the hypothesis `h` that the variable
+`x`, a tree, is a member of a datatype: the hypothesis that a binder
+`(x D h)` of a statement over the datatype language names
+({ref "typed-statements"}[Statements over the datatype language]). It has
+one case for each constructor of the datatype, in the order of their
+declaration, a constructor's label being its position: the names of the
+constructor's fields, the last after `&` where the constructor's last field
+takes the remaining children, and the script that proves the goal at that
+constructor. `LEMMA` names the theorem that a tree is the node of its
+unfolding, `lambek` of `library/Trees.proofs.geb`.
+
+A case's script is read in the variables of the constructor's fields, each a
+tree, with the variables and the hypotheses of the goal. Its goal is the
+script's at the tree of the constructor's label over the fields, written as
+the node of the label's bitstring and the list of the fields, which a
+reduction computes on. The name `h` there names the normal form of the
+hypothesis at that tree, the hypothesis itself being no longer named: the
+equation of the tree of label 1 with itself where every field is a tree,
+and otherwise what the recognizer's tests of the fields that are members of
+datatypes reduce to. A hypothesis other than `h` that mentions `x` still
+states what it stated of `x`, which the goal no longer mentions.
+
+The tactic is `Geb.FreeTopos.Tactics.byMemberCases`
+(`Geb/Prototypes/FreeTopos/Tactics/Members.lean`), written in Geb as
+`Tactics.byMemberCases` of `bootstrap/free-topos/tactics.geb` and proved
+in Lean to construct the same derivations
+(`GebTests/Prototypes/FreeTopos/Agreement/Tactics.lean`). It reverts the
+hypothesis, proving the implication of the goal by the hypothesis equal to
+truth, so that a case analysis of the tree reaches the hypothesis as it
+reaches the goal. It then takes the tree apart, into a label and a list of
+children by the lemma, the label into its bits, as many as distinguish the
+labels of the constructors, and the list of children into as many elements
+as the constructor of the label has fields. At each case it introduces the
+hypothesis again and reduces it. At a label of no constructor, and at fewer
+children than a constructor's fields, the hypothesis reduces to the
+equation of the trees of labels 0 and 1, from which the tactic proves the
+goal: the conditional on a tree's label between the goal's two sides is the
+one side at the first tree and the other at the second.
+
+At more children than a constructor of a fixed number of fields has, the
+list of children is a number of elements before a list that is a variable,
+and the recognizer's comparison of the list's length with the number of
+fields does not reduce: the length is that number of successors of the
+length of the variable, a fold that is stuck. The tactic reduces the
+hypothesis with the successor of the translation's library kept folded,
+finds the term its successors are applied to, generalizes that term to a
+variable, a bitstring, and takes the cases of the variable's lowest bits,
+one more than the bits of the number of fields. At each of them the
+comparison reduces, to falsity, and the hypothesis is refuted as at a label
+of no constructor. The arithmetic of a node's arity is so decided by
+cases and by reduction, and no lemma on it is cited.
+
+A constructor whose last field takes the remaining children has no such
+case: its recognizer tests that the children are at least its other fields,
+and the script of its case is read at those fields before a list, the
+variable `REST`. The hypothesis there keeps that test, which does not
+reduce at a list that is a variable, and the tests of the remaining
+children.
+
+`library/Members.proofs.geb` states theorems of the library's datatypes so
+proved: an optional value is rebuilt from its case analysis,
+
+```
+(theorem option-of-cases
+  (typed
+    (forall ((m (Optional.Option T) member))
+      (equal
+        (case m ((Optional.none T) (Optional.none T))
+          ((Optional.some T x) (Optional.some T x)))
+        m)))
+  (by (member-cases member m lambek () (reduce full) (x) (reduce full lambek))))
+```
+
+as are a failure of a request, of three constructors, and a request, whose
+constructors have one field and two; and a byte string is the byte string
+of its bytes, by the one case `(& cs)` of the constructor of `Bytes.Bytes`.
+A case of fields cites `lambek`: the case analysis the statement writes
+takes a field as a child of the tree, which the translation rebuilds from
+its unfolding.
+
+```
+lake exe geb-author prove library/Members.proofs.geb /tmp/members.cert
+lake exe geb-author replay library/Members.proofs.geb /tmp/members.cert
+```
+
+`scripts/tests/test-proof-members.sh` proves and replays the document, alone
+and from a program that names the library as a layer, and exercises a
+constructor of a field before the remaining children, the cases a
+datatype's constructors do not have, a hypothesis that is not one of
+membership, the names a case may not take, goals at a hole of a case, and
+the versions before `8`, which do not read the script.
 
 # The cache of a development
 %%%

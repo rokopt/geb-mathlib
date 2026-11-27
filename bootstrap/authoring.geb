@@ -38,7 +38,9 @@
 ; reads: the host compiles, after the program's sources, the definitions that hold their terms
 ; ({geb}`Authoring.typed`), and a statement is read from its definition's erasure
 ; ({geb}`Authoring.readTyped`), so that the bundle a development with such statements is given
-; is that of the program so extended.
+; is that of the program so extended. Version 8 adds the case analysis of a member of a datatype,
+; (member-cases h x LEMMA (FIELD ...) SCRIPT ...), by the tactic {geb}`Tactics.byMemberCases`
+; ({geb}`Authoring.scriptMembers`).
 ; Statements and scripts are read before any proof is searched; a proof is a certificate of the
 ; checker with a step of conversion, a reduction whose derivation is past the prover's bound
 ; named by the step that computes it, and every certificate is checked by {geb}`Conversion.certStep`, the step of the check of developments
@@ -1309,6 +1311,98 @@
                    (bySplit2 3 4 1 (deeper 1 (add p w)) (deeper 1 (add p (mul 2 w)))))))
              (lam ((pos T) (p T)) ((snd (levelAt 3 (getD bits 0))) G E base))
              (range (getD bits 0))) (getD i 0) 1)))))
+  ; The case analysis of a member of a datatype, in version 8, (member-cases h x LEMMA (FIELD ...)
+  ; SCRIPT ...): under the hypothesis h that the tree variable x is a member of a datatype, the
+  ; hypothesis that a binder (x D h) of a statement over the datatype language names, the goal is
+  ; proved at each constructor of the datatype, in the order of their declaration, by the script
+  ; after the names of the constructor's fields, the last after & where the constructor's last
+  ; field takes the remaining children. LEMMA names the theorem that a tree is the node of its
+  ; unfolding. A script is read in the variables of its case, the constructor's fields among them,
+  ; the goal being that of the tree of the constructor's label over the fields, and under h, which
+  ; there names the normal form of the hypothesis at that tree, the hypothesis as the goal stated
+  ; it being no longer named.
+  ; The tactic proves the goal at every other tree from the hypothesis, which fails there
+  ; ({geb}`Tactics.byMemberCases`): the comparison of the number of the children with that of a
+  ; constructor's fields is decided, at a list of more children, by the cases of the lowest bits
+  ; of the length of the list's tail, the reduction keeping the successor folded so that the
+  ; length is found.
+  (deftype PvI (Arrow T Pv))
+  (defn foldSucc ((r NormRule)) NormRule
+    (case r ((nrBelow m old) (if (lt 0 m) (nrBelow m (terms (cons D.succ (termsOf old)))) r))
+      (else r)))
+  (defn scriptMembers
+    ((v T) (eb T) (n T) (o T) (thms Ts) (es Ts) (childR (Arrow T SR)) (vars Ts) (kts Ts) (hyps Ts))
+    (Prod T Tac)
+    (let*
+      ((k T (length es)) (m T (div (sub k 4) 2)) (hn T (Source.nameOf (at es 1)))
+       (hi T (if (Source.isAtom (at es 1)) (Source.indexOf hn hyps) none))
+       (i T (if (Source.isAtom (at es 2)) (Source.indexOf (Source.nameOf (at es 2)) vars) none))
+       (lk T (lemmaOf eb thms (at es 3)))
+       (amp (Arrow T T) (lam ((e T)) (word e (quote (0 38)))))
+       (bindersAt (Arrow T Ts) (lam ((c T)) (children (at es (add 4 (mul 2 c))))))
+       (ampsAt (Arrow T T)
+         (lam ((c T))
+           (foldr T T (lam ((b T) (acc T)) (if (amp b) (add acc 1) acc)) 0 (bindersAt c))))
+       (restAt (Arrow T T)
+         (lam ((c T))
+           (let bs Ts (bindersAt c) (and (lt 1 (length bs)) (amp (at bs (sub (length bs) 2)))))))
+       (namesAt (Arrow T Ts)
+         (lam ((c T))
+           (mapT Source.nameOf
+             (foldr T Ts (lam ((b T) (acc Ts)) (if (amp b) acc (cons b acc))) (nil T)
+               (bindersAt c)))))
+       (fixedAt (Arrow T T) (lam ((c T)) (sub (length (namesAt c)) (if (restAt c) 1 0))))
+       (blanks (Arrow T Ts) (lam ((q T)) (mapT (lam ((z T)) unnamed) (range q))))
+       (kept Ts (mapT (lam ((x T)) (if (equal x hn) unnamed x)) hyps))
+       (scopeAt (Arrow T (Prod T Tac))
+         (lam ((c T))
+           (let*
+             ((ns Ts (namesAt c)) (a T (fixedAt c)) (rest T (restAt c)) (j T (log2 (add c 1)))
+              (fields Ts
+                (foldr T Ts
+                  (lam ((t T) (acc Ts))
+                    (append acc (l2 (if (and rest (eq (add t 1) a)) (at ns a) unnamed) (at ns t))))
+                  (nil T)
+                  (range a)))
+              (news Ts
+                (append fields
+                  (append (blanks (mul 3 j))
+                    (l2 (if (and rest (eq a 0)) (at ns 0) unnamed) unnamed)))))
+             (childR (add 5 (mul 2 c)) (append news vars)
+               (append (mapT (lam ((z T)) none) news) kts)
+               (append kept (append (blanks (add j a)) (l3 unnamed unnamed hn)))))))
+       (clauseOk (Arrow T T)
+         (lam ((c T))
+           (let e T (at es (add 4 (mul 2 c)))
+             (and (Source.isList e)
+               (and (allT (lam ((b T)) (or (amp b) (bindable v b))) (children e))
+                 (and (eq (ampsAt c) (if (restAt c) 1 0))
+                   (and (distinctFrom (append vars (append hyps thms)) (namesAt c))
+                     (fst (scopeAt c))))))))))
+      (pair
+        (and (lt 5 k)
+          (and (eq (mod k 2) 0)
+            (and (isSome hi) (and (isSome i) (and (isSome lk) (allT clauseOk (range m)))))))
+        (lam ((G Globals) (E (List Entry)) (base NRs))
+          (let*
+            ((rsS NRs
+               (foldr NormRule NRs (lam ((r NormRule) (acc NRs)) (cons (foldSucc r) acc))
+                 (nil NormRule)
+                 base)) (refute Pv (refuteMember G E n o 0 base))
+             (clauses (List PvI)
+               (foldr T (List PvI)
+                 (lam ((c T) (acc (List PvI)))
+                   (cons
+                     (let p Pv ((snd (scopeAt c)) G E base)
+                       (if (restAt c) (byRest G E n o 0 base (fixedAt c) p)
+                         (byFixed G E n o 0 base rsS (fixedAt c) (add (log2 (add (fixedAt c) 1)) 1)
+                           p)))
+                     acc))
+                 (nil PvI)
+                 (range m))))
+            (byMemberCases G o 0 (getD lk 0) (getD hi 0) (getD i 0) (add (log2 m) 1)
+              (lam ((lbl T) (c T)) ((Seq.atOr PvI (lam ((c0 T)) refute) clauses lbl) c))
+              refute))))))
   ; The tactics version 3 adds. The induction on a tree, (tree-induction x (l cs ih) SCRIPT),
   ; proves a goal without hypotheses by its proof at the node of a label l and children cs for
   ; its innermost variable x, under the hypothesis ih that the goal holds at each child: the
@@ -1447,6 +1541,8 @@
                  (let found T ((snd r0) G E base g hs t u)
                    (if (isSome found) found ((snd r1) G E base g hs t u))))))))
         ((headed nd (quote (0 bits-cases))) (scriptBits n es childR vars kts hyps))
+        ((and (lt 7 v) (headed nd (quote (0 member-cases))))
+         (scriptMembers v eb n o thms es childR vars kts hyps))
         (else (script5 v eb gt defs ovars thms nd rs vars kts hyps)))))
   ; The tactics version 2 adds. The uniqueness of a list's fold, (fold-induction x (y r) STEP FUEL
   ; RULE ...), proves the goal by induction on its innermost variable where both sides at a head y
@@ -2285,7 +2381,7 @@
         (and (isSome parsed)
           (and (eq (length (children (get parsed))) 1)
             (and (Source.isList root)
-              (and (word (child root 0) (quote (0 proofs))) (and (isSome v) (lt (get v) 8))))))
+              (and (word (child root 0) (quote (0 proofs))) (and (isSome v) (lt (get v) 9))))))
         (let fs Ts
           (expandForms (get v)
             (foldr T Ts

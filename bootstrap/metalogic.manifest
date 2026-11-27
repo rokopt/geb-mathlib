@@ -71,6 +71,15 @@
     Tactics.maskRw
     Tactics.byMaskSubs
     Tactics.byGeneralize
+    Tactics.byRevert
+    Tactics.byLabelClash
+    Tactics.withMember
+    Tactics.refuteMember
+    Tactics.refuteLonger
+    Tactics.byFixed
+    Tactics.byRest
+    Tactics.byLabels
+    Tactics.byMemberCases
     Combinator.typeTerm
     Combinator.pNormalize
     Combinator.pInst
@@ -106,6 +115,7 @@
     Tactics.unnodeU
     Tactics.occRewrite
     Tactics.abstractTerm
+    Tactics.stuckLength
     Affine.check
     Literals.litEval
     Literals.ready

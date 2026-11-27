@@ -1,6 +1,6 @@
 ; The tactics of the internal language (Geb.FreeTopos.Tactics), composed from its prover: proofs
-; by reduction, by induction and case analysis, with hypotheses, by search, and about the
-; translation's trees.
+; by reduction, by induction and case analysis, with hypotheses, by search, about the
+; translation's trees, and by cases on a member of a datatype.
 
 (module Tactics
   (export ttL impL impI trueI apps byMode byNF hypRules byRoseIndWith byListCases byListSplit
@@ -29,7 +29,17 @@
     abstractTerm
     maskRw
     byMaskSubs
-    byGeneralize)
+    byGeneralize
+    byRevert
+    byLabelClash
+    stuckLength
+    withMember
+    refuteMember
+    refuteLonger
+    byFixed
+    byRest
+    byLabels
+    byMemberCases)
   (import Prelude)
   (import Base)
   (import Theory)
@@ -890,4 +900,129 @@
     (lam ((g Ts) (hs Ts) (t T) (u T))
       (let* ((F T (abstractTerm a c t)) (H T (abstractTerm a c u)))
         (mapO (lam ((q T)) (applyAbs c (length hs) F H (dNode 26 (nil T) (single q))))
-          (p (cons a g) (mapT weaken1 hs) (app (weaken1 F) (var 0)) (app (weaken1 H) (var 0))))))))
+          (p (cons a g) (mapT weaken1 hs) (app (weaken1 F) (var 0)) (app (weaken1 H) (var 0)))))))
+
+  ; members of datatypes: the proof of an equation from its implication by a hypothesis, so that a
+  ; case analysis reaches the hypothesis; the proof of any equation from a hypothesis that equates
+  ; a tree of empty label with a tree of a label that is not empty; the hypothesis of membership
+  ; introduced again in normal form, and refuted at a tree that is no member, at more children
+  ; than a constructor has fields by the cases of the lowest bits of the length the recognizer's
+  ; comparison is stuck on; and the cases of a member's label and children
+  (defn byRevert ((o T) (lb T) (h T) (p Pv)) Pv
+    (lam ((g Ts) (hs Ts) (t T) (u T))
+      (bindO (nth hs h)
+        (lam ((psi T))
+          (let* ((q T (mEq t u)) (chi T (impL o psi q)) (tt T (ttL o)))
+            (mapO
+              (lam ((d T))
+                (dNode 27 (l3 (add lb 4) (node 0 (nil T)) (node 0 (l2 q psi)))
+                  (l2
+                    (dNode 22 (single (mEq chi tt))
+                      (l2 d (dNode 23 (nil T) (l2 (dNode 17 (l2 (length hs) 0) (nil T)) trueI))))
+                    (dNode 21 (single h) (nil T)))))
+              (p g hs chi tt)))))))
+  (defn labelPick ((a T) (s T)) T
+    (mLam treeTy
+      (mLam a
+        (mLam a
+          (condT a (call D.lab (nil T) (single (var 2))) (var (if s 1 0)) (var (if s 0 1)))))))
+  (defn labelClashWith ((G Globals) (E (List Entry)) (n T) (rs NRs) (h T) (s T)) Pv
+    (lam ((g Ts) (hs Ts) (t T) (u T))
+      (bindO (typeIn G n g t)
+        (lam ((a T))
+          (bindPT (bindTP (nth hs h) eqParts)
+            (lam ((ll TPair))
+              (let*
+                ((P T (labelPick a s)) (K0 T (mLam a (mLam a (var 1))))
+                 (K1 T (mLam a (mLam a (var 0))))
+                 (ext Pv (byFunExt G n (byFunExt G n (byWeak G E n rs))))
+                 (A0 T (app P (p1 ll)))
+                 (A1 T (app P (p2 ll)))
+                 (psi0 T (mEq A0 K0))
+                 (psi1 T (mEq A1 K1)))
+                (bindO (ext g hs A0 K0)
+                  (lam ((d0 T))
+                    (mapO
+                      (lam ((d1 T))
+                        (let*
+                          ((refl T (dNode 0 (nil T) (nil T))) (beta T (dNode 3 (nil T) (nil T)))
+                           (at2 RW (lam ((l T)) (app (app (app P l) t) u)))
+                           (side RW
+                             (lam ((k T))
+                               (dNode 1 (nil T)
+                                 (l2
+                                   (dNode 2 (nil T)
+                                     (l2 (dNode 2 (nil T) (l2 (dNode 17 (l2 k 0) (nil T)) refl))
+                                       refl))
+                                   (dNode 1 (nil T) (l2 (dNode 2 (nil T) (l2 beta refl)) beta))))))
+                           (dchi T
+                             (dNode 18 (nil T)
+                               (l2
+                                 (dNode 2 (nil T)
+                                   (l2
+                                     (dNode 2 (nil T)
+                                       (l2 (dNode 2 (nil T) (l2 refl (dNode 17 (l2 h 0) (nil T))))
+                                         refl))
+                                     refl))
+                                 refl))))
+                          (dNode 22 (single psi0)
+                            (l2 d0
+                              (dNode 22 (single psi1)
+                                (l2 d1
+                                  (dNode 24 (single (mEq (at2 (p1 ll)) (at2 (p2 ll))))
+                                    (l2
+                                      (dNode 2 (nil T)
+                                        (l2 (side (length hs)) (side (add (length hs) 1))))
+                                      dchi))))))))
+                      (ext g (append hs (single psi0)) A1 K1)))))))))))
+  (defn byLabelClash ((G Globals) (E (List Entry)) (n T) (rs NRs) (h T)) Pv
+    (lam ((g Ts) (hs Ts) (t T) (u T))
+      (let r T (labelClashWith G E n rs h 0 g hs t u)
+        (if (isSome r) r (labelClashWith G E n rs h 1 g hs t u)))))
+  (defn succArg ((u T)) T
+    (if (and (mIs 11 1 u) (eq (mD u 0) D.succ))
+      (let a T (mArg u 0) (if (and (eq (label a) 11) (eq (mD a 0) D.succ)) none (some a)))
+      none))
+  (defn stuckLength ((t T)) T (findSomeT succArg (openSubterms t)))
+  (defn withMember ((G Globals) (E (List Entry)) (n T) (o T) (lb T) (rs NRs) (k Pv)) Pv
+    (byImpI G E o lb
+      (lam ((g Ts) (hs Ts) (t T) (u T))
+        (withWeakHyps G E n rs (single (sub (length hs) 1)) (lam ((extra NRs)) k) 3 g hs t u))))
+  (defn refuteMember ((G Globals) (E (List Entry)) (n T) (o T) (lb T) (rs NRs)) Pv
+    (withMember G E n o lb rs
+      (lam ((g Ts) (hs Ts) (t T) (u T)) (byLabelClash G E n rs (sub (length hs) 1) g hs t u))))
+  (defn refuteLonger ((G Globals) (E (List Entry)) (n T) (o T) (lb T) (rs NRs) (rsS NRs) (e T)) Pv
+    (withMember G E n o lb rsS
+      (lam ((g Ts) (hs Ts) (t T) (u T))
+        (let i T (sub (length hs) 1)
+          (bindO (bindO (nth hs i) stuckLength)
+            (lam ((s T))
+              (byRevert o lb i (byGeneralize bitsTy s (byBits G (refuteMember G E n o lb rs) e 0)) g
+                hs
+                t
+                u)))))))
+  (defn byChildren ((G Globals) (short Pv) (last PvAt) (a T)) PvAt
+    (iter PvAt (lam ((rec PvAt) (i T)) (byListSplit G 0 i short (rec 0))) last a))
+  (defn byFixed
+    ((G Globals) (E (List Entry)) (n T) (o T) (lb T) (rs NRs) (rsS NRs) (a T) (e T) (p Pv))
+    PvAt
+    (byChildren G (refuteMember G E n o lb rs)
+      (lam ((i T))
+        (byListSplit G 0 i (withMember G E n o lb rs p) (refuteLonger G E n o lb rs rsS e)))
+      a))
+  (defn byRest ((G Globals) (E (List Entry)) (n T) (o T) (lb T) (rs NRs) (a T) (p Pv)) PvAt
+    (byChildren G (refuteMember G E n o lb rs) (lam ((i T)) (withMember G E n o lb rs p)) a))
+  ; the provers of the cases of a label: at the index of a bitstring, the number one more than the
+  ; label of the bits taken, the weight of the next bit and the index of the list of children
+  (deftype PvL (Arrow T (Arrow T (Arrow T (Arrow T Pv)))))
+  (deftype PvC (Arrow T PvAt))
+  (defn byLabels ((G Globals) (p PvC) (q Pv) (d T)) PvL
+    (iter PvL
+      (lam ((rec PvL) (pos T) (acc T) (w T) (c T))
+        (byListSplit G 0 pos (p (sub acc 1) c)
+          (bySplit2 3 4 1 (rec 1 (add acc w) (mul 2 w) (add c 3))
+            (rec 1 (add acc (mul 2 w)) (mul 2 w) (add c 3)))))
+      (lam ((pos T) (acc T) (w T) (c T)) q)
+      d))
+  (defn byMemberCases ((G Globals) (o T) (lb T) (lk T) (h T) (i T) (d T) (clause PvC) (q Pv)) Pv
+    (byRevert o lb h (byTreeSplit lk i (byLabels G clause q d 1 1 1 0)))))

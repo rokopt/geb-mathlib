@@ -141,8 +141,10 @@ order of the work that proceeds alongside the client.
 1. Complete. Assemble and share the first library. The library is
    `library/`: its manifest lists the sources of its modules (step 8),
    whose notes hold checked examples, and its proof documents hold its
-   theorems, `Bytes.proofs.geb` one about a function of lists of trees and
-   `Datatypes.proofs.geb` those stated over its datatypes. The client
+   theorems, `Bytes.proofs.geb` one about a function of lists of trees,
+   `Datatypes.proofs.geb` those stated over its datatypes and
+   `Members.proofs.geb` those proved by cases on a member of a datatype.
+   The client
    template `examples/client/` is the root of a repository whose Git
    submodule `geb/` pins the Geb and library revisions, the library being
    a directory of the Geb repository, and places the library's sources
@@ -459,10 +461,16 @@ Exercise host-tool changes in the client with the editor's reports.
 The proof work in {ref "the-next-phase"}[The next phase] proceeds alongside
 the client. Proof documents state theorems over the datatype language
 ({ref "typed-statements"}[Statements over the datatype language]), and the
-library states its first over its datatypes. A library theorem about the
-members of a datatype whose constructors have fixed numbers of fields
-waits on the case analysis of a member, which takes lemmas on the
-arithmetic of a node's arity or a tactic composing them. Port one
+library states its first over its datatypes. A theorem about the members
+of a datatype is proved by cases on a member's constructor, a tactic of
+the prover written in Geb and a script of version 8 of the proof profile
+({ref "member-cases"}[The case analysis of a member of a datatype]), by
+which the library proves that an optional value, a failure of a request
+and a request are each rebuilt from their case analyses. The tactic
+carries the one hypothesis of membership through the
+case analysis; a goal with further hypotheses about the member waits on a
+script that reverts them with it, which the tactic's parts compose
+({name}`Geb.FreeTopos.Tactics.byRevert`). Port one
 soundness deduction from its Lean
 driver and replay its certificate from Geb source. Before the bulk port,
 measure rule selection, matching and traversal, and compare searches
@@ -758,9 +766,10 @@ Extension:
   theorems over kernel types and the internal language, import earlier
   theorems, report goals at holes and failed steps, and replay saved
   certificates. Version 6 expresses the proof of the evaluator's fundamental
-  lemma, and version 7 states theorems over the datatype language, whose
-  terms the compiler types and erases. The authoring tools cache proved
-  theorems and retain a development's
+  lemma, version 7 states theorems over the datatype language, whose
+  terms the compiler types and erases, and version 8 proves a theorem
+  about the members of a datatype by cases on a member's constructor. The
+  authoring tools cache proved theorems and retain a development's
   documents, elaborated definitions and certificate. The first literate
   inclusion renders its documentation. The next work follows
   {ref "downstream-authoring"}[A Geb library and its downstream application].
@@ -4234,8 +4243,12 @@ tag := "authoring-compatibility"
     statement read as that of its erasure, a binder naming the hypothesis
     that its variable is a member of its datatype, in which the library
     states theorems over its datatypes
-    ({ref "typed-statements"}[Statements over the datatype language]). The
-    case analysis of a member of a datatype by a tactic is ready.
+    ({ref "typed-statements"}[Statements over the datatype language]); and
+    version 8 adds the case analysis of a member of a datatype, a tactic
+    of the prover written in Geb proved to agree with its Lean prototype,
+    in which the library proves theorems about the members of its
+    datatypes ({ref "member-cases"}[The case analysis of a member of a
+    datatype]).
     The soundness deductions remain to be ported from Lean to Geb scripts.
 *
   * `let*` and `cond`, expanded in the elaboration of modules, and the
@@ -6704,7 +6717,11 @@ the hypothesis that its variable is a member of its datatype; the program
 a development with such statements is proved against is the manifest's
 followed by those definitions, which its certificate names. The library's
 theorems over its datatypes are stated so
-({ref "typed-statements"}[Statements over the datatype language]). The port
+({ref "typed-statements"}[Statements over the datatype language]). Version 8
+adds the script of the case analysis of a member of a datatype, which
+proves a goal under the hypothesis of membership at each constructor and
+refutes the hypothesis at every other tree
+({ref "member-cases"}[The case analysis of a member of a datatype]). The port
 of the datatype language's soundness remains. The syntax of
 statements and proof scripts
 is a step of the sequence ({ref "authoring-sequence"}[The sequence and its
@@ -7437,7 +7454,9 @@ beside it compose them: proofs by reduction to a depth, by induction and
 case analysis of lists, bitstrings, rose trees, coproducts and trees,
 with hypotheses and their instances cut in as rewriting rules, by the
 search of the hypotheses' instances and of the variables the sides are
-stuck on, and by rewriting under a conditional's mask.
+stuck on, by rewriting under a conditional's mask, and by cases on the
+constructor of a member of a datatype
+({name}`Geb.FreeTopos.Tactics.byMemberCases`).
 `GebTests/Prototypes/FreeTopos/Agreement/Tactics.lean` proves each of
 their definitions, the functions of terms the search uses among them,
 equal to the Lean definition it transcribes by the same method, at
@@ -9446,10 +9465,12 @@ integrated in sequence.
   with a step of conversion].
 * Port the datatype-soundness deductions from their Lean drivers. Proof
   documents state theorems over the datatype language
-  ({ref "typed-statements"}[Statements over the datatype language]); the
-  case analysis of a member of a datatype, which a proof about the
+  ({ref "typed-statements"}[Statements over the datatype language]), and
+  the case analysis of a member of a datatype, which a proof about the
   members of a datatype with constructors of fixed numbers of fields
-  takes, is not yet a tactic. The soundness
+  takes, is a tactic and a script
+  ({ref "member-cases"}[The case analysis of a member of a datatype]).
+  The soundness
   of typing is already proved with the prover written in Geb
   ({ref "datatype-completion"}[The datatype language's completion]).
   Before the bulk of the port, measure rule selection, matching and

@@ -110,6 +110,7 @@ jobs:
           bash scripts/tests/test-proof-scripts.sh
           bash scripts/tests/test-proof-cache.sh
           bash scripts/tests/test-proof-typed.sh
+          bash scripts/tests/test-proof-members.sh
           bash scripts/tests/test-client.sh
           bash scripts/tests/test-client-upgrade.sh
           bash scripts/tests/test-support.sh

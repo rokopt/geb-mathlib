@@ -109,6 +109,10 @@ supplies a type for each before its arguments
 
 {gebProofs "library/library.manifest" "Datatypes.proofs.geb"}
 
+## Theorems about the members of the datatypes
+
+{gebProofs "library/library.manifest" "Members.proofs.geb"}
+
 # Writing a Geb program
 %%%
 tag := "program-language"
