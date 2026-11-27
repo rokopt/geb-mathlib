@@ -840,12 +840,65 @@ saves no traversal. Looking up a definition among the globals in an
 array rather than a list changes the search's time by less than 1 in
 100.
 
-Two measurements locate the next change: the division of the
-reduction's remainder among the matching of a rule's left side, the
-choice of the rules tried at a node and the traversal; and, in the
-check, how often the same formula's type is inferred at successive
-instances of theorems. Each certificate is read and checked by a module
-of `GebTests/Prototypes/FreeTopos/Certified/`
-(`docs/rules/ci-and-workflow.md` § Certificates), so the check as stored
-is no certificate's only check, and whether the search keeps it is open
+On one AArch64 host with Lean 4.37.0-rc1, two runs of `geb-certify DIR datatype-app`
+on the same CPU read the committed `datatype-base`, `datatype-atom` and `datatype-list`
+certificates. With the storage check, the generator timed the search at 582.7 seconds.
+With only `checkAfter` omitted it took 392.9 seconds, a saving of 189.8 seconds
+(32.6 percent). Both runs built the table of declarations and read it back.
+The timer excludes reading the prerequisites and writing the certificate's text.
+Each run produced the committed `datatype-app.cert` byte for byte.
+
+In a third run with the storage check and probes, the search took 592.9 seconds.
+Constructing the eight proofs took 272.5 seconds, encoding their declarations
+as a table of distinct nodes 116.7, reading the table back 0.06, and checking
+the declarations 203.7. The following times are estimates from sampling the
+process's CPU time every 5 milliseconds during proof construction. Each sample
+counts toward the innermost operation. The 242 calls to
+{name}`Geb.FreeTopos.Internal.evalFast` account for 252.2 CPU seconds.
+
+:::table +header
+*
+  * Operation in the reduction
+  * CPU seconds
+*
+  * Trying candidate rules, including applying successful rewrites and building their
+    derivations, with the left-side matches counted below
+  * 100.8, including 10.8 in substitutions at the root
+*
+  * Matching theorem left sides, including their root-shape test
+  * 43.5
+*
+  * Matching hypothesis left sides, including the test under weakening
+  * 36.6
+*
+  * Computing child contexts
+  * 54.9
+*
+  * Traversing and rebuilding terms and derivations outside the rule attempts and contexts
+  * 8.5, including 1.2 counting uses of a bound variable
+*
+  * Selecting candidates by root label and scanning the bucket to the first success
+  * 7.0, including 1.5 looking up the bucket
+*
+  * Preparing the rules and hypotheses and building the index
+  * 0.9
+:::
+
+At 26,988,382 visits to a root the search tried 855,048,252 candidates, 31.7 per visit.
+It called a theorem's pattern matcher 226,113,631 times and rewrote a root 813,454
+times across all rules. A more selective index could save work in the candidate
+rules and their matchers. Looking up the bucket itself accounts for about 1.5 seconds.
+
+During the storage check, {name}`Geb.FreeTopos.Internal.instOk` tested the type
+of 1,560 operands expected to be formulas. Of these, 837 were structurally equal
+to a formula typed at the immediately preceding theorem instance, with the same
+globals, object arity and context. Inferring the types of those repeats took
+42.6 of the 70.3 CPU seconds spent inferring formula operands' types. This gives
+a bound on what reusing the preceding instance's result could save before the
+cost of testing for a hit.
+
+The independent replay used `checkedAfterIn`, the check in
+`Certified/DatatypeForms.lean`'s `appChecked`. It read the file written with
+the storage check omitted and accepted all eight declarations after the 365
+prerequisite declarations. Whether the searches keep their check at storage is open
 (`TODO.md` § The slow checks among the routine checks).

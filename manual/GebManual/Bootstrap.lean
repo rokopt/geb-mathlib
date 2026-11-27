@@ -472,10 +472,10 @@ case analysis; a goal with further hypotheses about the member waits on a
 script that reverts them with it, which the tactic's parts compose
 ({name}`Geb.FreeTopos.Tactics.byRevert`). Port one
 soundness deduction from its Lean
-driver and replay its certificate from Geb source. Before the bulk port,
-measure rule selection, matching and traversal, and compare searches
-with and without the check at storage, retaining independent certificate
-replay ({ref "searches-remaining"}[The searches' remaining time]).
+driver and replay its certificate from Geb source. For the bulk port,
+{ref "searches-remaining"}[The searches' remaining time] gives the cost
+of rule selection, matching and traversal in `datatype-app` and the cost
+of checking its declarations when storing them.
 The proof-hole checker is now in Geb. The editor's display of datatype
 holes is a separate task. Integrate changes to each
 committed artifact one at a time. A structured rejection from the
@@ -9473,12 +9473,10 @@ integrated in sequence.
   The soundness
   of typing is already proved with the prover written in Geb
   ({ref "datatype-completion"}[The datatype language's completion]).
-  Before the bulk of the port, measure rule selection, matching and
-  traversal in the reduction. Compare search times with and without
-  the check of each declaration as it is stored, retaining the
-  independent check of each saved certificate. Passing searches are
-  cached by their inputs (`scripts/pre-push.sh`,
-  {ref "searches-remaining"}[The searches' remaining time]).
+  The `datatype-app` search has been timed with and without the check at
+  storage, with independent replay of the saved certificate
+  ({ref "searches-remaining"}[The searches' remaining time]).
+  Passing searches are cached by their inputs (`scripts/pre-push.sh`).
 * Accelerations ({ref "speed-and-second-host"}[Speed and a second
   host]), in progress: the binding and the conversion checker's
   reduction by the environment machine are complete, and the hash
