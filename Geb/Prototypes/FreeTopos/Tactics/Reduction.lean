@@ -56,6 +56,15 @@ def byMode (m : Internal.Depth) (G : Internal.Globals) (E : Array Entry) (n : �
 def byWeak (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule) :
     Internal.Prover := byMode .weak G E n rs
 
+/-- Prove an equation by a join of two environment-machine steps, testing the proposed
+certificate with the conversion checker. The machine unfolds definitions below the bound except
+those listed and rewrites by the named rules. -/
+def byMachine (G : Internal.Globals) (E : Array Entry) (n fuel bound : ℕ) (except : List ℕ)
+    (kl kc : ℕ) (rs : List NormRule) : Internal.Prover := fun Γ Φ t u ↦
+  let step := RoseTree.node (.machine fuel bound except kl kc (rs.map NormRule.unprepare)) []
+  let cert : ConvDeriv := RoseTree.node .join [step, step]
+  if (Internal.convCheck G E [] n cert).2 Γ Φ (Term.eq t u) then some cert else none
+
 /-- The proof of an equation by rewriting its sides to their normal forms at a depth and proving
 the rewritten equation by {lit}`p`. -/
 def byNF (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule)

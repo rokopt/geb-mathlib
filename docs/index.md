@@ -3943,6 +3943,10 @@ import-direction rules above are enforced by
   `library/Members.proofs.geb` proves theorems about the members of the
   library's datatypes by it, and `scripts/tests/test-proof-members.sh`
   exercises the form.
+  Version 9 adds `(machine FUEL RULE…)`. The Lean and Geb
+  `Tactics.byMachine` tactics check the join of two environment-machine
+  steps. The script can keep definitions folded and rewrite by named
+  hypotheses and theorems.
   The executable
   `geb-author` compiles manifest programs, checks tree-valued examples,
   proves theorems about a program's definitions, in a context of variables

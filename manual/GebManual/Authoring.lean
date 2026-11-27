@@ -90,9 +90,17 @@ program after it by `transport`
 
 # The proof-source profile
 
-A proof document is `(proofs V THEOREM…)`, its version `V` being `0`, `1`,
-`2`, `3`, `4`, `5`, `6`, `7` or `8`, with one or more theorems of distinct names, each
-`(theorem NAME STATEMENT (by SCRIPT))`. Version `1` reads:
+A proof document is `(proofs V THEOREM…)`, its version `V` a numeral from `0` through `9`,
+with one or more theorems of distinct names, each
+`(theorem NAME STATEMENT (by SCRIPT))`.
+Version `9` adds `(machine FUEL RULE…)` for equations. The environment machine reduces both
+sides within the given recursion depth, including under abstractions and in fold steps. It unfolds
+the translation library and the program's definitions. An optional first rule
+`(folded NAME…)` keeps the listed definitions opaque. The remaining rules name rewrites at the
+roots of normal forms, including hypotheses and earlier theorems. The certificate joins the
+two machine steps when their results agree. For example,
+`(theorem product (equal (mul 127 127) 16129) (by (machine 256)))` proves a closed computation.
+Version `1` reads:
 
 ```
 STATEMENT ::= (forall ((x A) …) PROPOSITION) | PROPOSITION
@@ -154,8 +162,8 @@ cites no theorem, so its certificate saves no companion and has the format
 `geb-proof/v1`, whose certificates therefore still replay; version `1`
 writes `geb-proof/v2`, version `2` `geb-proof/v3`, version `3`
 `geb-proof/v4`, version `4` `geb-proof/v5`, version `5` `geb-proof/v6`,
-version `6` `geb-proof/v7`, version `7` `geb-proof/v8` and version `8`
-`geb-proof/v9`. An unknown or unbound
+version `6` `geb-proof/v7`, version `7` `geb-proof/v8`, version `8`
+`geb-proof/v9` and version `9` `geb-proof/v10`. An unknown or unbound
 name, a name declared twice,
 a malformed form, an unsupported version, a false equation or an
 unsuccessful search is rejected. Failure of a bounded search does not establish that the

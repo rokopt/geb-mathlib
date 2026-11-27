@@ -103,8 +103,47 @@ with tempfile.TemporaryDirectory(prefix='geb-author-test-') as directory:
         run('replay', manifest, proofs, certificate, ok=False)
 
     reject_proof(original_proofs.replace('Pair.left', 'Pair.missing'))
-    reject_proof(original_proofs.replace('(proofs 1', '(proofs 9'))
+    reject_proof(original_proofs.replace('(proofs 1', '(proofs 10'))
     reject_proof(original_proofs.replace('(by (normalize 64))', '(by (unknown 64))'))
+
+    # Machine steps replay from the certificate, including after the unfolding bound,
+    # folded definitions and named theorems move in the program and development.
+    machine = root / 'Machine.proofs.geb'
+    machine_cert = root / 'machine.cert'
+    machine_cache = root / 'machine-cache'
+    machine_text = '''(proofs 9 (program pair)
+      (theorem product (equal (mul 15 15) 225) (by (machine 256)))
+      (theorem first-folded (forall ((x T) (y T)) (equal (Pair.first x y) x))
+        (by (reduce weak)) (normal weak (folded Pair.first)))
+      (theorem first-again (forall ((x T) (y T)) (equal (Pair.first x y) x))
+        (by (machine 64 (folded Pair.first) first-folded)))
+      (theorem from-hyp (forall ((x T) (y T))
+        (implies (same (equal x y)) (equal (Pair.first x y) y))) (by (machine 64 same))))
+'''
+    machine.write_text(machine_text)
+    run('prove', '--cache', machine_cache, machine, machine_cert)
+    run('replay', machine, machine_cert)
+    source.write_text(original_source.replace('(export first left)', '(export first left) (def pad 0)'))
+    moved = root / 'machine-moved.cert'
+    run('transport', machine, machine_cert, moved)
+    run('replay', machine, moved)
+    fresh = root / 'machine-fresh.cert'
+    run('prove', machine, fresh)
+    assert moved.read_bytes() == fresh.read_bytes()
+    source.write_text(original_source)
+    machine.write_text(machine_text.replace('(theorem product',
+        '(theorem extra (equal 1 1) (by (normalize 64)))\n  (theorem product'))
+    cached = run('prove', '--cache', machine_cache, machine, moved)
+    assert b'1 proved,' in cached.stdout, cached.stdout
+    run('replay', machine, moved)
+    for old, new in [('225', '224'), ('machine 256', 'machine 0'), ('machine 256', 'machine'),
+                     ('Pair.first) first-folded', 'Pair.first)'),
+                     ('(folded Pair.first) first-folded', 'first-folded (folded Pair.first)'),
+                     ('(folded Pair.first) first-folded', '(folded Pair.missing) first-folded'),
+                     ('proofs 9', 'proofs 8')]:
+        machine.write_text(machine_text.replace(old, new))
+        run('prove', machine, moved, ok=False)
+
     reject_proof('(proofs 0)')
     reject_proof(original_proofs + '\n(proofs 0)')
     reject_proof('(proofs 0 (theorem dup (equal Pair.first Pair.left) (by (normalize 64)))'

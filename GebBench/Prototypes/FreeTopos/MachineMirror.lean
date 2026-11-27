@@ -7,6 +7,8 @@ module
 
 public import GebTests.Prototypes.FreeTopos.Literals
 public import GebTests.Prototypes.FreeTopos.Agreement.Conversion
+public import Geb.Prototypes.FreeTopos.Tactics.Reduction
+public import GebMirror.Metalogic.Tactics
 
 set_option doc.verso true in
 /-!
@@ -25,7 +27,8 @@ with no function bound to it, whose machine computes a delayed value where it bu
 The machines are one function of the term reduced, so the checkers accept the same
 certificates; the table measures what reading the encoded data costs the bound reduction, and
 what computing each delayed value costs the reduction written in Geb. The measurements of the
-latter stop after the first product at which it takes longer than a bound.
+latter stop after the first product at which it takes longer than a bound. The final two columns
+time the Lean and Geb tactics and check their answers against the expected certificate.
 
 ## Main definitions
 
@@ -99,15 +102,13 @@ def timeOnce (f : Unit → Bool) : IO (Bool × ℕ) := do
   pure (b, (t₁ - t₀) / 1000)
 
 set_option compiler.extract_closed false in
-/-- The measurements: each row the factor, whether the checkers accept, the times of the checker
-in Lean and of the checker written in Geb, whose reduction is bound to the machine in Lean, and
-the time of the reduction written in Geb with no function bound to it, in microseconds, at a
-depth of recursion of the machine; the last is measured until it takes longer than a bound, in
-microseconds, and is empty after; an error where the three differ. Closed terms are not
-extracted, so that each check runs when it is timed rather than when the program starts. -/
+/-- Each row records the factor, whether the checkers accept, and the times in microseconds for
+the two checkers, the unaccelerated Geb reduction and the two tactics. The unaccelerated reduction
+is timed up to the first product at which it takes longer than the bound. The benchmark checks
+agreement of the verdicts and the certificates. Closed terms are evaluated when timed. -/
 def run (fuel : ℕ := 256) (bound : ℕ := 2000000) : IO Unit := do
   IO.println ("factor,accepted,lean_checker_microseconds,geb_checker_microseconds," ++
-    "geb_machine_microseconds")
+    "geb_machine_microseconds,lean_tactic_microseconds,geb_tactic_microseconds")
   (← IO.getStdout).flush
   let mut unbound := true
   for a in sizes do
@@ -116,13 +117,23 @@ def run (fuel : ℕ := 256) (bound : ℕ := 2000000) : IO Unit := do
     let (okL, tL) ← timeOnce fun _ ↦ provesLean fuel t u
     let (okG, tG) ← timeOnce fun _ ↦ provesGeb fuel t u
     if okL != okG then throw (IO.userError s!"mul {a} {a}: the checkers differ ({okL} {okG})")
+    let expected := if okL then some (encConv (byMachineAt fuel)) else none
+    let (sameL, tTL) ← timeOnce fun _ ↦
+      ((Tactics.byMachine G entries 0 fuel Translation.lib.length [] 0 1 [] [] [] t u).map
+        encConv) == expected
+    let (sameG, tTG) ← timeOnce fun _ ↦
+      «Tactics.byMachine» (encGlobals G) (entries.toList.map encEntry) (leaf 0) (leaf fuel)
+        (leaf Translation.lib.length) [] (leaf 0) (leaf 1) [] [] [] (encTerm t) (encTerm u) ==
+          encOpt expected
+    if !(sameL && sameG) then throw (IO.userError s!"mul {a} {a}: unexpected tactic certificate")
     let mut cell := ""
     if unbound then
       let (okM, tM) ← timeOnce fun _ ↦ reducesGeb fuel t u
       if okL != okM then throw (IO.userError s!"mul {a} {a}: the machines differ ({okL} {okM})")
       cell := toString tM
       if tM > bound then unbound := false
-    IO.println (",".intercalate [toString a, toString okL, toString tL, toString tG, cell])
+    IO.println (",".intercalate [toString a, toString okL, toString tL, toString tG, cell,
+      toString tTL, toString tTG])
     (← IO.getStdout).flush
 
 end GebBench.Prototypes.FreeTopos.MachineMirror

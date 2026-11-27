@@ -40,7 +40,8 @@
 ; ({geb}`Authoring.readTyped`), so that the bundle a development with such statements is given
 ; is that of the program so extended. Version 8 adds the case analysis of a member of a datatype,
 ; (member-cases h x LEMMA (FIELD ...) SCRIPT ...), by the tactic {geb}`Tactics.byMemberCases`
-; ({geb}`Authoring.scriptMembers`).
+; ({geb}`Authoring.scriptMembers`). Version 9 adds (machine FUEL RULE ...), a join by two
+; environment-machine steps. An optional first (folded NAME ...) keeps those definitions opaque.
 ; Statements and scripts are read before any proof is searched; a proof is a certificate of the
 ; checker with a step of conversion, a reduction whose derivation is past the prover's bound
 ; named by the step that computes it, and every certificate is checked by {geb}`Conversion.certStep`, the step of the check of developments
@@ -1872,6 +1873,20 @@
              (pair (and (lt 1 k) (and (isSome (depthOf at1)) (rulesOkAt 2)))
                (lam ((G Globals) (E (List Entry)) (base NRs))
                  (byMode (getD (depthOf at1) 0) G E n (rulesIn E (rulesAt 2) base)))))
+            ((and (lt 8 v) (headed nd (quote (0 machine))))
+             (let*
+               ((mask T (at es 2)) (folded T (isFolded v mask)) (start T (if folded 3 2))
+                (exc Ts (if folded (drop 1 (children mask)) (nil T))))
+               (pair
+                 (and (and (lt 1 k) (isSome (number at1)))
+                   (and (allT (lam ((a T)) (isSome (foldedId defs a))) exc)
+                     (and (rulesOkAt start) (not (anyT (isFolded v) (drop start es))))))
+                 (lam ((G Globals) (E (List Entry)) (base NRs))
+                   (byMachine G E n (getD (number at1) 0) (connectivesAt defs)
+                     (mapT (lam ((a T)) (getD (foldedId defs a) 0)) exc)
+                     0
+                     1
+                     (rulesAt start))))))
             ((headed nd (quote (0 auto)))
              (pair
                (and (lt 2 k)
@@ -2381,7 +2396,7 @@
         (and (isSome parsed)
           (and (eq (length (children (get parsed))) 1)
             (and (Source.isList root)
-              (and (word (child root 0) (quote (0 proofs))) (and (isSome v) (lt (get v) 9))))))
+              (and (word (child root 0) (quote (0 proofs))) (and (isSome v) (lt (get v) 10))))))
         (let fs Ts
           (expandForms (get v)
             (foldr T Ts
@@ -2767,9 +2782,9 @@
   ; A derivation with the entries its rules cite renumbered: the rewriting by a theorem and the
   ; application of one, the rules of positions 16 and 27, cite the theorem's entry by the first
   ; of their data, and a step of the prover's reductions, of positions 37 and 38, by the rules it
-  ; names, the first of its data, a theorem at objects by the first of its fields. A node's
-  ; premises are its children after the node of its rule's data, which is otherwise kept as it
-  ; is.
+  ; names, the first of its data. A machine step, at position 41, holds its rules in its sixth
+  ; datum. A theorem rule cites its entry by its first field. A node's premises are its children
+  ; after the node of its rule's data.
   (defn datumAt ((g (Arrow T T)) (i T) (ds Ts)) Ts
     (append (take i ds) (cons (g (at ds i)) (drop (add i 1) ds))))
   (defn firstBy ((g (Arrow T T)) (x T)) T (node (label x) (datumAt g 0 (children x))))
@@ -2783,6 +2798,7 @@
             (cons
               (cond ((or (eq l 16) (eq l 27)) (firstBy f data))
                 ((or (eq l 37) (eq l 38)) (firstBy (reciteRules f) data))
+                ((eq l 41) (node 0 (datumAt (reciteRules f) 5 (children data))))
                 (else data))
               (tail rs)))))
       d))
@@ -2837,9 +2853,10 @@
   ; one and in the unfolding of those below an index but those excepted. The index of the
   ; runner's rules is that of the first connective, whose place is the first connective's after
   ; the present definitions, so that the rule at the places is the one the runner gives the
-  ; present program. The other data are types and the indices of primitives, of entries, of
-  ; hypotheses and of variables, which name no definition, and a certificate of the combinators,
-  ; which is kept as it is.
+  ; present program. A machine step holds that bound in its second datum, the definitions it
+  ; keeps folded in its third, and its rules in its sixth. The other data are types and the
+  ; indices of primitives, of entries, of hypotheses and of variables, which name no definition,
+  ; and a certificate of the combinators, which is kept as it is.
   (defn transportRule ((f (Arrow T T)) (r T)) T
     (cond ((eq (label r) 1) (node 1 (single (f (child r 0)))))
       ((eq (label r) 2) (node 2 (l2 (f (child r 0)) (node 0 (mapT f (children (child r 1)))))))
@@ -2853,6 +2870,9 @@
       ((or (eq l 22) (eq l 24)) (datumAt (transportTerm f) 0 ds))
       ((or (eq l 37) (eq l 38))
        (datumAt (lam ((rs T)) (node 0 (mapT (transportRule f) (children rs)))) 0 ds))
+      ((eq l 41)
+       (datumAt (lam ((rs T)) (node 0 (mapT (transportRule f) (children rs)))) 5
+         (datumAt (lam ((exc T)) (node 0 (mapT f (children exc)))) 2 (datumAt f 1 ds))))
       (else ds)))
   ; A derivation with the definitions its rules' data name at the places a function gives; the
   ; leaf that stands for no derivation is kept.

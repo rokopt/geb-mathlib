@@ -80,6 +80,7 @@
     Tactics.byRest
     Tactics.byLabels
     Tactics.byMemberCases
+    Tactics.byMachine
     Combinator.typeTerm
     Combinator.pNormalize
     Combinator.pInst

@@ -5481,6 +5481,56 @@ def «Tactics.byMemberCases» :=
           (_root_.Geb.Kernel.leaf 0)));
     x9
 
+def «Tactics.byMachine» :=
+  fun (x0 : _root_.Geb.Kernel.Tree)
+    (x1 : _root_.List _root_.Geb.Kernel.Tree)
+    (x2 : _root_.Geb.Kernel.Tree)
+    (x3 : _root_.Geb.Kernel.Tree)
+    (x4 : _root_.Geb.Kernel.Tree)
+    (x5 : _root_.List _root_.Geb.Kernel.Tree)
+    (x6 : _root_.Geb.Kernel.Tree)
+    (x7 : _root_.Geb.Kernel.Tree)
+    (x8 : _root_.List _root_.Geb.Kernel.Tree) =>
+    let x9 : _root_.List _root_.Geb.Kernel.Tree →
+      _root_.List _root_.Geb.Kernel.Tree →
+        _root_.Geb.Kernel.Tree →
+          _root_.Geb.Kernel.Tree →
+            _root_.Geb.Kernel.Tree := (let x9 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                                         (_root_.Geb.Kernel.leaf 41)
+                                         (_root_.GebMirror.Metalogic.«Theory.l6»
+                                           x3
+                                           x4
+                                           (_root_.Geb.Kernel.Const.node
+                                             (_root_.Geb.Kernel.leaf 0)
+                                             x5)
+                                           x6
+                                           x7
+                                           (_root_.GebMirror.Metalogic.«Prover.rulesNode» x8))
+                                         ([] : _root_.List _root_.Geb.Kernel.Tree);
+                                       let x10 : _root_.Geb.Kernel.Tree := _root_.GebMirror.Metalogic.«Prover.dNode»
+                                         (_root_.Geb.Kernel.leaf 18)
+                                         ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                         (_root_.GebMirror.Metalogic.«Theory.l2» x9 x9);
+                                       fun (x11 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x12 : _root_.List _root_.Geb.Kernel.Tree)
+                                         (x13 : _root_.Geb.Kernel.Tree)
+                                         (x14 : _root_.Geb.Kernel.Tree) =>
+                                         if (_root_.GebMirror.Metalogic.«Conversion.convCheck»
+                                           x0
+                                           x1
+                                           ([] : _root_.List _root_.Geb.Kernel.Tree)
+                                           x2
+                                           x10
+                                           (_root_.Geb.Kernel.leaf 1)
+                                           x11
+                                           (_root_.Geb.Kernel.leaf 0)
+                                           x12
+                                           (_root_.GebMirror.Metalogic.«Language.mEq» x13 x14)).label ≠ 0 then
+                                           _root_.GebMirror.Metalogic.«Prelude.some» x10
+                                         else
+                                           _root_.GebMirror.Metalogic.«Prelude.none»);
+    x9
+
 end GebMirror.Metalogic
 
 end

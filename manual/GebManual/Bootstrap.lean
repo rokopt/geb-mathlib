@@ -690,9 +690,9 @@ the sections below detail:
     its certificates, measured with their reductions named by steps and
     kept at derivations, whose checks take less. The step of the
     environment machine rewrites by hypotheses and by the development's
-    theorems, as the prover's normalization does; the tactics name the
-    steps `norm` and `eval`, the searches reducing by the prover's
-    compiled reduction, and do not name it. Its evaluation of
+    theorems, as the prover's normalization does. The proof script `machine`
+    joins the sides of an equation by two such steps. The reduction tactics
+    name the steps `norm` and `eval`. The checker's evaluation of
     primitives at literals is written in Lean beside it
     (`Geb/Prototypes/FreeTopos/Literals.lean`): a step rewrites the
     library's addition, truncated difference, multiplication, equality,
@@ -10003,7 +10003,7 @@ remains of them, and the constraints each of them carries.
    milliseconds of a check of two steps at that development, which a
    reading kept between the steps of one certificate would remove.
 3. The naming of the steps by the provers and the tactics, in Lean and
-   in Geb together: complete, but for the two parts stated after it. A
+   in Geb together: complete for the prover's reductions and the environment machine. A
    prover or a tactic that returned the derivation a reduction computes,
    as {name}`Geb.FreeTopos.Tactics.byMode` returned those
    {name}`Geb.FreeTopos.Internal.eval` computes, returns the step that
@@ -10027,15 +10027,12 @@ remains of them, and the constraints each of them carries.
    with no step; the derivations of a cache and of a
    certificate carried to a changed program are read with the entries
    their steps' rules cite renumbered and the definitions those rules
-   unfold at their places (`recite`, `transportRule`). Two parts
-   remain. The searches do not reduce by the environment machine, and no
-   tactic names the step `machine`: the prover's compiled reduction
-   ({name}`Geb.FreeTopos.Internal.evalFast`) is the searches', and a
-   check computes a step `norm` or `eval` by the same reduction, so
-   that it takes the reduction's time
-   ({ref "conversion-open"}[The questions that remain open]). And no
-   tactic names the evaluation at literals, whose emission has
-   constraints of its own:
+   unfold at their places (`recite`, `transportRule`). In Lean and Geb the
+   `byMachine` tactic tests the join of two `machine` steps with the conversion checker.
+   The `machine` script of proof profile 9 selects it for an equation, with a depth
+   bound, definitions to keep folded and rules for rewriting. The automatic searches
+   use the prover's compiled reduction ({name}`Geb.FreeTopos.Internal.evalFast`).
+   Emitting a step of evaluation at literals remains, with these constraints:
    * A step of evaluation rewrites the whole term at its node, and is
      rejected unless that term is built of the evaluated definitions
      over literals. At a subterm it stands under the base checker's
@@ -10150,8 +10147,10 @@ tag := "conversion-open"
   the step `eval` 18.8 and the step `machine` 0.179
   ({ref "measurements"}[The measurements]). The machine normalizes under
   abstractions and the steps of folds, so that two sides whose normal
-  forms differ only in a fold's step are joined. No tactic names it. The
-  translation of a development's derivations
+  forms differ only in a fold's step are joined. The `machine` script requests this join.
+  For the equation of the product of 127 with itself and 16129, the certificate written by
+  `geb-author prove` for the `pair` example program occupies 13,814 bytes with
+  `(machine 256)` and 25,419 with `(reduce full)`. The translation of a development's derivations
   ({name}`Geb.FreeTopos.Internal.devByMachine`) replaces each join that
   the machine also joins by two steps of the machine. On the
   certificates of weakening, of substitution and of the expansion's
@@ -10321,11 +10320,10 @@ that `Agreement/Prove.lean` states the agreement with the Lean prover as
 it is defined. Like the checker's, it changes the mirrored program, and
 its time bears only on a run of the loaded prover.
 
-The searches do not reduce by the environment machine
-({name}`Geb.FreeTopos.Internal.machineReduce`): a search's reductions
-compute the derivations its certificates keep, each within the provers'
-bound, and the machine computes a result alone, so it enters a search
-when a tactic names the step `machine` in place of a reduction
+The automatic searches compute the derivations their certificates keep,
+each within the provers' bound. An explicit `machine` script searches by the
+environment machine ({name}`Geb.FreeTopos.Internal.machineReduce`), which computes
+a result alone, and names its steps in the certificate
 ({ref "conversion-continuation"}[Completing the checker with a step of
 conversion], step 3). The
 compiled reduction above brings every search within minutes
